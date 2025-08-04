@@ -101,7 +101,7 @@ class LogicNetwork {
     };
     this.nodes.add(newNode);
     console.log(concept_id);
-    defaultRecordLogicNetwork.record_LogicNode(node_id, label, node_x, node_y, concept_id);
+    // defaultRecordLogicNetwork.record_LogicNode(node_id, label, node_x, node_y, concept_id);
     return this.nodes;
   }
 
@@ -152,7 +152,7 @@ class LogicNetwork {
   //エッジを追加する
   addEdge(E_start, E_end) {
     this.edges.add({ from: E_start, to: E_end });
-    defaultRecordLogicNetwork.record_LogicEdge(E_start, E_end);
+    // defaultRecordLogicNetwork.record_LogicEdge(E_start, E_end);
   }
 
   //ドラッグ開始
@@ -261,10 +261,14 @@ class LogicNetwork {
     return "default";
   }
 
-  maketriangle(topic, concept_id = null) {
+  maketriangle(topic, f_node_id, f_reason_id = null, f_fact_id = null,) {
     if (topic === undefined) {
       topic = "New claim";
     }
+    
+    
+    const reason_content = "New reason";
+    const fact_content = "New fact";
 
     // 三角形の中心座標とサイズを設定
     const centerX = 0; // 中心のX座標
@@ -280,20 +284,23 @@ class LogicNetwork {
     const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
 
     // ノードを追加
-    const node1Id = this.generateUniqueNumberText();
-    const node2Id = this.generateUniqueNumberText();
-    const node3Id = this.generateUniqueNumberText();
+    const triangle_id = this.generateUniqueNumberText();
+    const claim_id = this.generateUniqueNumberText();
+    const reason_id = this.generateUniqueNumberText();
+    const fact_id = this.generateUniqueNumberText();
 
-    this.addNode(node1Id, topic, node1X, node1Y, concept_id); // 最初のノードにconceptIDを設定
-    this.addNode(node2Id, "New Node", node2X, node2Y);
-    this.addNode(node3Id, "New Node", node3X, node3Y);
+    this.addNode(claim_id, topic, node1X, node1Y, f_node_id); // 最初のノードにconceptIDを設定
+    this.addNode(reason_id, reason_content, node2X, node2Y);
+    this.addNode(fact_id, fact_content, node3X, node3Y);
 
     // エッジを追加して三角形を形成
-    this.addEdge(node1Id, node2Id);
-    this.addEdge(node2Id, node3Id);
-    this.addEdge(node3Id, node1Id);
+    this.addEdge(claim_id, reason_id);
+    this.addEdge(reason_id, fact_id);
+    this.addEdge(fact_id, claim_id);
 
     console.log("三角形を作成しました");
+
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id, f_node_id, f_reason_id, f_fact_id, topic, reason_content, fact_content)
   }
 
   // Forestのノードを起点に三角ロジックを作成する
@@ -305,18 +312,18 @@ class LogicNetwork {
       return;
     }
 
-    // 選択されたノードのconceptIDを取得
-    const conceptID = this.GetConceptId(selected_fnode.id);
-    console.log("Selected node conceptID:", conceptID);
+    // 選択されたノードのIDを取得（conceptIDの代わり）
+    const forestNodeId = selected_fnode.id;
+    console.log("Selected Forest node ID:", forestNodeId);
 
-    // maketriangleを呼び出し、中心座標とconceptIDを渡す
-    this.maketriangle(selected_fnode.topic, conceptID);
+    // maketriangleを呼び出し、ForestのノードIDを渡す
+    this.maketriangle(selected_fnode.topic, forestNodeId);
   }
   // マインドマップの選択ノードの内容を論理ネットワークの選択ノードに反映する
   applyForestToTriangle() {
     // 左側（マインドマップ）の選択ノードを取得
-    const ForestNode = this.CheckSelectedNode();
-    if (!ForestNode || !ForestNode.topic) {
+    const f_node_id = this.CheckSelectedNode();
+    if (!f_node_id || !f_node_id.topic) {
       alert("左側のノードを選択してください");
       return;
     }
@@ -329,9 +336,9 @@ class LogicNetwork {
     }
 
     // 右側ノードのラベルを左側ノードの内容で更新
-    this.editNode(LogicNodeId, ForestNode.topic);
+    this.editNode(LogicNodeId, f_node_id.topic);
     alert("右側ノードの内容を更新しました");
-    defaultRecordLogicNetwork.update_LogicNodelabel(LogicNodeId, ForestNode.topic);
+    defaultRecordLogicNetwork.update_f_to_LogicNodelabel(LogicNodeId, f_node_id.topic, f_node_id);
   }
 
   // 三角ロジックの事実や理由付けを主張として三角ロジックを作成
@@ -452,18 +459,22 @@ class LogicNetwork {
 }
 
 class RecordLogicNetwork{
-  record_LogicNode (node_id, label, x, y, concept_id){
+  record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id, f_claim_id, f_reason_id, f_fact_id, claim_content, reason_content, fact_content){
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
       data: {
-        node_id : node_id,
-        label : label,
-        x : x,
-        y : y,
-        concept_id : concept_id,
+        triangle_id : triangle_id,
+        claim_id : claim_id,
+        reason_id : reason_id,
+        fact_id : fact_id,
+        f_claim_id : f_claim_id,
+        f_reason_id : f_reason_id,
+        f_fact_id : f_fact_id,
+        claim_content : claim_content,
+        reason_content : reason_content,
+        fact_content : fact_content,
         purpose : 'record',
-        record_thing : 'node'
       },
       dataType: "json",
       success: function(response) {
@@ -480,41 +491,15 @@ class RecordLogicNetwork{
     });
   }
 
-  update_LogicNodePosition (movedNodeId, x, y){
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        movedNodeId : movedNodeId,
-        x : x,
-        y : y,
-        purpose : 'update',
-        update_thing : 'node'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log(response); // ← ここでレスポンス確認
-        if (response.status === "success") {
-          console.log("記録成功:", response.node_id);
-        } else {
-          console.error("エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("通信エラー:", error);
-      }
-    })
-  }
-
-  update_LogicNodelabel(LogicNodeId, newlabel) {
+  update_f_to_LogicNodelabel(LogicNodeId, newlabel, f_node_id) {
     $.ajax({
     url: "php/logic_maneger.php",
     type: "POST",
     data: {
       updatedNodeId: LogicNodeId,
       label: newlabel,
+      f_node_id: f_node_id,
       purpose: 'update',
-      update_thing: 'node'
     },
     dataType: "json",
     success: function(response) {

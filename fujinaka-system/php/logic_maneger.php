@@ -15,94 +15,41 @@ $user_id = $_SESSION['USERID']; // ユーザーID
 $purpose =$_POST['purpose'];
 
 if ($purpose === 'record') {
-    $record_thing = $_POST['record_thing'];
-    if ($record_thing === 'node') {
-        $logic_node_id = $_POST["node_id"];
-        $label = $_POST["label"];
-        $concept_id = $_POST["concept_id"];
-        $x = $_POST["x"];
-        $y = $_POST["y"];
-        $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+    $triangle_id = $_POST["triangle_id"];
+    $claim_id = $_POST["claim_id"];
+    $reason_id = $_POST["reason_id"];
+    $fact_id = $_POST["fact_id"];
+    $f_claim_id = $_POST["f_claim_id"];
+    $f_reason_id = $_POST["f_reason_id"];
+    $f_fact_id = $_POST["f_fact_id"];
+    $claim_content = $_POST["claim_content"];
+    $reason_content = $_POST["reason_content"];
+    $fact_content = $_POST["fact_content"];
+    $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-        $sql = "INSERT INTO logic_node (logic_node_id, label, f_concept_id, x, y, created_at, updated_at) 
-                VALUES ('$logic_node_id', '$label', '$concept_id', '$x', '$y', '$timestamp', '$timestamp')";
+    $sql = "INSERT INTO logic_triangle (triangle_id, claim_id, reason_id, fact_id, f_claim_id, f_reason_id, f_fact_id, claim_content, reason_content, fact_content, claim_created_at, claim_updated_at, reason_created_at, reason_updated_at, fact_created_at, fact_updated_at) 
+            VALUES ('$triangle_id', '$claim_id', '$reason_id', '$fact_id', '$f_claim_id', '$f_reason_id', '$f_fact_id', '$claim_content', '$reason_content', '$fact_content', '$timestamp', '$timestamp', '$timestamp', '$timestamp', '$timestamp', '$timestamp')";
 
-        if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $logic_node_id]);
-        } else {
-            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
-        }
-    }  
-    else if ($record_thing === 'edge') {
-        if (isset($_POST["edge_start"], $_POST["edge_end"])) { // パラメータの存在チェック
-            $logic_edges_id = uniqid('edge_', true);
-            $edge_start = $_POST["edge_start"];
-            $edge_end = $_POST["edge_end"];
-            $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
-    
-            $sql = "INSERT INTO logic_edge (logic_edge_id, edge_start, edge_end, created_at, updated_at) 
-                    VALUES ('$logic_edges_id', '$edge_start', '$edge_end', '$timestamp', '$timestamp')";
-    
-            if ($mysqli->query($sql)) {
-                echo json_encode(["status" => "success", "message" => "エッジが記録されました", "edge_id" => $logic_edges_id]);
-            } else {
-                echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
-            }
-        } else {
-            echo json_encode(["status" => "error", "message" => "必要なパラメータが不足しています (edge_start, edge_end)"]);
-        }
+    if ($mysqli->query($sql)) {
+        echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $logic_node_id]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
     }
     
 }
 
 else if ($purpose === 'update') {
-    $update_thing = $_POST['update_thing'];
-    if ($update_thing === 'node') {
-        $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
-    
-        // ノードの移動（座標更新）の場合  
-        if (isset($_POST["movedNodeId"])) {
-            $movedNodeId = $_POST["movedNodeId"];
-            $x = $_POST["x"];
-            $y = $_POST["y"];
+    $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+    $updatedNodeId = $_POST["updatedNodeId"];
+    $newlabel = $_POST["label"];
+    $f_node_id = $_POST["f_node_id"];
 
-            $sql = "UPDATE logic_node SET x = '$x', y = '$y', updated_at = '$timestamp' WHERE logic_node_id = '$movedNodeId'";
+    $sql = "UPDATE logic_triangle SET label = '$newlabel', f_concept_id = '$f_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
 
-            if ($mysqli->query($sql)) {
-                echo json_encode(["status" => "success", "message" => "ノードの位置が更新されました", "node_id" => $movedNodeId]);
-            } else {
-                echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
-            }
-        }
-        // ノードのラベル更新の場合
-        else if (isset($_POST["updatedNodeId"])) {
-            $updatedNodeId = $_POST["updatedNodeId"];
-            $label = $_POST["label"];
-
-            $sql = "UPDATE logic_node SET label = '$label', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
-
-            if ($mysqli->query($sql)) {
-                echo json_encode(["status" => "success", "message" => "ノードのラベルが更新されました", "node_id" => $updatedNodeId]);
-            } else {
-                echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
-            }
-        }
-        // clickedNodeIdの場合（既存のダブルクリック編集用）
-        else if (isset($_POST["clickedNodeId"])) {
-            $clickedNodeId = $_POST["clickedNodeId"];
-            $label = $_POST["label"];
-
-            $sql = "UPDATE logic_node SET label = '$label', updated_at = '$timestamp' WHERE logic_node_id = '$clickedNodeId'";
-
-            if ($mysqli->query($sql)) {
-                echo json_encode(["status" => "success", "message" => "ノードが更新されました", "node_id" => $clickedNodeId]);
-            } else {
-                echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
-            }
-        }
-        else {
-            echo json_encode(["status" => "error", "message" => "必要なパラメータが不足しています (movedNodeId, updatedNodeId, または clickedNodeId)"]);
-        }
+    if ($mysqli->query($sql)) {
+        echo json_encode(["status" => "success", "message" => "ノードが更新されました", "node_id" => $updatedNodeId]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
     }
 }
 
