@@ -426,6 +426,23 @@ input:checked+label::after {
 	margin-bottom: 5px;
 }
 
+#logic_conmenu{
+  width:160px;
+  background-color:#f8fffd;
+  border:1px solid #B3E0D8;
+  display:none;
+  position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#logic_conmenu.on{
+  display:block;
+}
+#logic_conmenu ul{
+  list-style:none;
+  margin:0px;
+  padding:5px;
+}
 /* マインドマップ上で右クリックしたときのメニュー */
 #mindmap_conmenu{
   width:160px;

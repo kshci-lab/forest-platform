@@ -1911,4 +1911,25 @@ select[name="mttime_list"] {
 
 
 
+/* logic_networkの右クリックメニュー */
+#logic_conmenu {
+  width: 160px;
+  background-color: #f8fffd;
+  border: 1px solid #B3E0D8;
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  text-align: center;
+}
+
+#logic_conmenu.on {
+  display: block;
+}
+
+#logic_conmenu ul {
+  list-style: none;
+  margin: 0px;
+  padding: 5px;
+}
+
 /* -------------------------------------------------------------- */

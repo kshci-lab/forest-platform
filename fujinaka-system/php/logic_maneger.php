@@ -54,17 +54,58 @@ if ($purpose === 'record') {
 }
 
 else if ($purpose === 'update') {
+    $update_thing = $_POST['update_thing'] ?? null;
     $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
-    $updatedNodeId = $_POST["updatedNodeId"];
-    $newlabel = $_POST["label"];
-    $f_node_id = $_POST["f_node_id"];
+    
+    if ($update_thing === 'label') {
+        // ノードのラベルのみ更新（edit_LogicNode用）
+        $node_id = $_POST["node_id"];
+        $new_label = $_POST["new_label"];
 
-    $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
+        $sql = "UPDATE logic_node SET label = '$new_label', updated_at = '$timestamp' WHERE logic_node_id = '$node_id'";
 
-    if ($mysqli->query($sql)) {
-        echo json_encode(["status" => "success", "message" => "ノードが更新されました", "node_id" => $updatedNodeId]);
-    } else {
-        echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "ノードのラベルが更新されました", "node_id" => $node_id]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
+    } else if ($update_thing === 'f_to_LogicNodelabel') {
+        // ForestからLogicノードへの更新（update_f_to_LogicNodelabel用）
+        $updatedNodeId = $_POST["updatedNodeId"];
+        $newlabel = $_POST["label"];
+        $f_node_id = $_POST["f_node_id"];
+
+        $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
+
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
+    } 
+}
+
+else if ($purpose === 'delete') {
+    $delete_thing = $_POST['delete_thing'];
+    if ($delete_thing === 'node') {
+        $node_id = $_POST["node_id"];
+        $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+
+        // ノードを削除する代わりに、node_id以外の項目をNULLに更新
+        $sql = "UPDATE logic_node SET 
+                label = NULL, 
+                f_node_id = NULL, 
+                x = NULL, 
+                y = NULL, 
+                created_at = NULL,
+                updated_at = '$timestamp' 
+                WHERE logic_node_id = '$node_id'";
+
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "ノードの内容がクリアされました", "node_id" => $node_id]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
     }
 }
 
@@ -104,19 +145,4 @@ else if ($purpose === 'load') {
     }
 }
 
-else if ($purpose === 'delete') {
-    $delete_thing = $_POST['delete_thing'];
-    if ($delete_thing === 'node') {
-        $node_id = $_POST["node_id"];
-
-        $sql = "DELETE FROM logic_node  WHERE logic_node_id = '$node_id'";
-
-        if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "ノードが削除されました", "node_id" => $node_id]);
-        } else {
-            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
-        }
-    }
-
-}
 ?>

@@ -235,6 +235,12 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                 <div id="mynetwork"></div>
               </div>
 
+              <div id="logic_conmenu">
+                <ul>
+                  <li><a href="javascript:void(0);" onClick="createNodeFromLogic()">Forestに反映</a></li>
+                </ul>
+              </div>
+
               <div id="mindmap_conmenu">
                 <ul>
                   <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.createTriangleFromForest()">三角ロジックを作成</a></li>

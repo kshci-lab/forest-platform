@@ -7,12 +7,16 @@ class LogicNetwork {
     this.nodes = new vis.DataSet();
     this.edges = new vis.DataSet();
     this.options = {
-      physics: false,
+      physics: false, // ノードが物理演算で動かないようにする
       interaction: {
         multiselect: false,
+        dragNodes: false, // ノードのドラッグを無効化
       },
       edges: {
       smooth: false // これを追加
+      },
+      nodes: {
+        fixed: true, // ノードを固定位置に配置
       }
     };
     this.latest_selected_node_info = {
@@ -90,9 +94,13 @@ class LogicNetwork {
   addNode(node_id, label, node_x, node_y, concept_id = null) {
     let node_color = '#fffacd';
     let node_shape = 'box';
+    
+    // ラベルが長い場合は自動で改行を挿入
+    let formatted_label = this.formatLabelWithLineBreaks(label);
+    
     const newNode = {
       id: node_id,
-      label: label,
+      label: formatted_label,
       color: node_color,
       shape: node_shape,
       x: node_x,
@@ -103,6 +111,19 @@ class LogicNetwork {
     console.log(concept_id);
     // defaultRecordLogicNetwork.record_LogicNode(node_id, label, node_x, node_y, concept_id);
     return this.nodes;
+  }
+
+  // ラベルに自動改行を挿入する関数
+  formatLabelWithLineBreaks(label, maxCharsPerLine = 10) {
+    if (!label || label.length <= maxCharsPerLine) {
+      return label;
+    }
+    
+    let result_label = '';
+    for (let i = 0; i < label.length; i += maxCharsPerLine) {
+      result_label += label.substr(i, maxCharsPerLine) + '\n';
+    }
+    return result_label.trim(); // 末尾の不要な改行を除去
   }
 
   //ノードのラベル編集(完了)
@@ -118,6 +139,7 @@ class LogicNetwork {
       node.label = result_label;
       // 編集を反映
       this.nodes.update(node);
+      defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label);
     }
   }
 
@@ -137,16 +159,24 @@ class LogicNetwork {
     
   }
 
-  //ノードを削除する
+  //ノードを削除する（内容をクリアする）
   deleteNode (){
     const selectNodeId = this.ownNetwork.getSelection().nodes[0];
     if(selectNodeId !== undefined){
+        // エッジは削除
         this.edges.remove(this.ownNetwork.getConnectedEdges(selectNodeId));
-        this.nodes.remove({id: selectNodeId});
+        
+        // ノード自体は削除せず、ラベルを空にしてクリアした状態にする
+        const clearedNode = {
+          id: selectNodeId,
+          label: "", // ラベルを空にする
+          color: '#f0f0f0', // 色を薄いグレーに変更してクリア状態を示す
+          shape: 'box'
+        };
+        this.nodes.update(clearedNode);
     }
+    // データベース側でもノードの内容をNULLにする
     defaultRecordLogicNetwork.delete_LogicNode(selectNodeId);
-    defaultRecordLogicNetwork.delete_LogicEdge(selectNodeId, "");
-    defaultRecordLogicNetwork.delete_LogicEdge("", selectNodeId);
   }
 
   //エッジを追加する
@@ -206,16 +236,6 @@ class LogicNetwork {
         this.latest_selected_node_info.y = nodeBoundingBox.bottom + 10;
       }
     }
-  }
-
-  deleteEdge() {
-    const selectEdgeId = this.ownNetwork.getSelection().edges[0];
-    const startid = this.edges.get(selectEdgeId).from;
-    const endid = this.edges.get(selectEdgeId).to;
-        if(selectEdgeId !== undefined){
-            this.edges.remove({id: selectEdgeId});
-        }
-    defaultRecordLogicNetwork.delete_LogicEdge(startid, endid);
   }
 
   CheckSelectedNode(){
@@ -287,19 +307,90 @@ class LogicNetwork {
     return "default";
   }
 
-  maketriangle(topic, f_node_id,) {
+  // 独立した三角ロジック群の数をカウントする補助関数
+  countIndependentTriangleGroups() {
+    const edges = this.edges.get();
+    const nodeConnections = new Map();
+    
+    // エッジからノードの接続情報を構築
+    edges.forEach(edge => {
+      if (!nodeConnections.has(edge.from)) {
+        nodeConnections.set(edge.from, new Set());
+      }
+      if (!nodeConnections.has(edge.to)) {
+        nodeConnections.set(edge.to, new Set());
+      }
+      nodeConnections.get(edge.from).add(edge.to);
+      nodeConnections.get(edge.to).add(edge.from);
+    });
+
+    // 三角形を検出し、グループ化
+    const triangleGroups = [];
+    const visitedNodes = new Set();
+    
+    for (const [nodeA, connectionsA] of nodeConnections) {
+      if (visitedNodes.has(nodeA)) continue;
+      
+      for (const nodeB of connectionsA) {
+        if (visitedNodes.has(nodeB)) continue;
+        
+        for (const nodeC of connectionsA) {
+          if (nodeC === nodeB || visitedNodes.has(nodeC)) continue;
+          
+          if (nodeConnections.get(nodeB).has(nodeC) && 
+              nodeConnections.get(nodeC).has(nodeB)) {
+            
+            // 三角形を発見 - この三角形と接続されている全ノードをグループとする
+            const group = new Set([nodeA, nodeB, nodeC]);
+            const toVisit = [nodeA, nodeB, nodeC];
+            
+            // 接続されている全ノードを探索（階層的な三角形も含む）
+            while (toVisit.length > 0) {
+              const currentNode = toVisit.pop();
+              if (nodeConnections.has(currentNode)) {
+                for (const connectedNode of nodeConnections.get(currentNode)) {
+                  if (!group.has(connectedNode)) {
+                    group.add(connectedNode);
+                    toVisit.push(connectedNode);
+                  }
+                }
+              }
+            }
+            
+            // グループに含まれる全ノードを訪問済みにマーク
+            for (const node of group) {
+              visitedNodes.add(node);
+            }
+            
+            triangleGroups.push(group);
+            break;
+          }
+        }
+        if (visitedNodes.has(nodeA)) break;
+      }
+    }
+    
+    return triangleGroups.length;
+  }
+
+  maketriangle(topic, f_node_id) {
     if (topic === undefined) {
       topic = "New claim";
     }
     
-    
     const reason_content = "New reason";
     const fact_content = "New fact";
 
-    // 三角形の中心座標とサイズを設定
-    const centerX = 0; // 中心のX座標
-    const centerY = 0; // 中心のY座標
+    // 独立した三角ロジック群の数に基づいて位置を決定
+    const independentGroups = this.countIndependentTriangleGroups();
+    const gridSpacing = 300; // 三角形群間の間隔を大きめに設定
+    
+    // 右に並べるレイアウト（横一列）
+    const centerX = independentGroups * gridSpacing;
+    const centerY = 0; // Y座標は固定
     const size = 100; // 三角形の辺の長さ
+
+    console.log(`新しい三角形グループ ${independentGroups + 1} を作成中 (位置: x=${centerX}, y=${centerY})`);
 
     // 三角形の頂点の座標を計算
     const node1X = centerX;
@@ -476,12 +567,15 @@ class LogicNetwork {
       nodeData.sort((a, b) => a.node_id.localeCompare(b.node_id));
       
       nodeData.forEach(node => {
+        // ラベルがNULLまたは空の場合は削除済みノードとして扱う
+        const isDeleted = !node.label || node.label === null || node.label === '';
+        
         const restoredNode = {
           id: node.node_id,
-          label: node.label || "Node",
+          label: isDeleted ? "" : (node.label || "Node"),
           x: parseFloat(node.x) || 0,
           y: parseFloat(node.y) || 0,
-          color: '#fffacd',
+          color: isDeleted ? '#f0f0f0' : '#fffacd', // 削除済みは薄いグレー
           shape: 'box',
           concept_id: node.concept_id || null
         };
@@ -568,6 +662,31 @@ class RecordLogicNetwork{
     });
   }
 
+  edit_LogicNode(node_id, new_label) {
+    $.ajax({
+      url: "php/logic_maneger.php",
+      type: "POST",
+      data: {
+        node_id: node_id,
+        new_label: new_label,
+        purpose: 'update',
+        update_thing: 'label'
+      },
+      dataType: "json",
+      success: function(response) {
+        console.log("ラベル編集レスポンス:", response);
+        if (response.status === "success") {
+          console.log("ラベル編集成功:", response.node_id);
+        } else {
+          console.error("ラベル編集エラー:", response.message);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error("ラベル編集通信エラー:", error);
+      }
+    });
+  }
+
   update_f_to_LogicNodelabel(LogicNodeId, newlabel, f_node_id) {
     $.ajax({
       url: "php/logic_maneger.php",
@@ -577,6 +696,7 @@ class RecordLogicNetwork{
         label: newlabel,
         f_node_id: f_node_id,
         purpose: 'update',
+        update_thing: 'f_to_LogicNodelabel'
       },
       dataType: "json",
       success: function(response) {
@@ -648,9 +768,14 @@ class RecordLogicNetwork{
 
 window.addEventListener('load', async () => {
   defaultLogicNetwork = new LogicNetwork("mynetwork", "load");
+  window.defaultLogicNetwork = defaultLogicNetwork; // windowオブジェクトに明示的に設定
   
   // データベースから復元
   await defaultLogicNetwork.initializeFromDatabase();
+  
+  // デバッグ用: 初期化確認
+  console.log('defaultLogicNetwork initialized:', !!window.defaultLogicNetwork);
+  console.log('ownNetwork exists:', !!window.defaultLogicNetwork.ownNetwork);
   
   $('#mynetwork').css('visibility', 'visible');
   
@@ -681,6 +806,45 @@ window.addEventListener('load', async () => {
   $(`#ln_refresh`).on("click", async e => {
     await defaultLogicNetwork.refreshNetwork();
   });
+
+  // mynetwork（ネットワークエリア）に右クリックイベントを追加
+  const mynetwork = document.getElementById('mynetwork');
+  console.log('mynetwork要素:', mynetwork); // デバッグ用
+  
+  if (mynetwork) {
+    mynetwork.addEventListener('contextmenu', function(e) {
+      console.log('ネットワーク右クリックイベント発生'); // デバッグ用
+      e.preventDefault(); // デフォルトの右クリックメニューを無効化
+      
+      // コンテキストメニューの位置を設定
+      const menu = document.getElementById('logic_conmenu');
+      console.log('メニュー要素:', menu); // デバッグ用
+      if (menu) {
+        menu.style.left = e.pageX + 'px';
+        menu.style.top = e.pageY + 'px';
+        menu.className = 'on'; // メニューを表示
+        console.log('メニューを表示しました'); // デバッグ用
+      } else {
+        console.log('logic_conmenuが見つかりません'); // デバッグ用
+      }
+    });
+  } else {
+    console.log('mynetworkが見つかりません'); // デバッグ用
+  }
+
+  // 画面のどこかをクリックしたらコンテキストメニューを非表示にする
+  document.addEventListener('click', function() {
+    const menu = document.getElementById('logic_conmenu');
+    if (menu) {
+      menu.className = '';
+    }
+  });
+
+  // 初期化時に logic_conmenu を確実に非表示にする
+  const logicMenu = document.getElementById('logic_conmenu');
+  if (logicMenu) {
+    logicMenu.className = '';
+  }
 });
 
 // グローバル関数として追加（HTMLから呼び出すため）
@@ -691,6 +855,7 @@ async function refreshLogicNetwork() {
     alert("ロジックネットワークが初期化されていません");
   }
 }
+
 
 
 // document.getElementById("logic_btn").addEventListener("click", () => {
@@ -709,20 +874,3 @@ async function refreshLogicNetwork() {
 //     defaultLogicNetwork.deleteEdge();
 //   });
 // });
-function addTagToNode(nodeId, tag) {
-  const node = defaultLogicNetwork.nodes.get(nodeId);
-  // 既存のタグ（[主張][事実][理由付け]）を除去してから新しいタグを付与
-  const newLabel = node.label.replace(/\s*\[(主張|事実|理由付け)\]$/, '') + ' [' + tag + ']';
-  defaultLogicNetwork.nodes.update({ id: nodeId, label: newLabel });
-}
-
-// タグボタン生成
-['主張', '事実', '理由付け'].forEach(tag => {
-  const btn = document.createElement('button');
-  btn.textContent = tag;
-  btn.onclick = () => {
-    addTagToNode(nodeId, tag);
-    tagMenu.remove();
-  };
-  tagMenu.appendChild(btn);
-});

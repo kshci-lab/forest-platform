@@ -263,6 +263,7 @@
             }
 
         },
+        
 
         insert_node_before:function(node_before, nodeid, topic, data){
             if(!jm.util.is_node(node_before)){
