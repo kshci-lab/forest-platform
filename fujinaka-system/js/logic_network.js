@@ -6,6 +6,10 @@ class LogicNetwork {
     defaultRecordLogicNetwork = new RecordLogicNetwork();
     this.nodes = new vis.DataSet();
     this.edges = new vis.DataSet();
+    
+    // 三角形のサイズを定数として定義
+    this.TRIANGLE_SIZE = 100; // 三角形の辺の長さ
+    
     this.options = {
       physics: false, // ノードが物理演算で動かないようにする
       interaction: {
@@ -91,7 +95,7 @@ class LogicNetwork {
   }
 
   //ノードを追加する
-  addNode(node_id, label, node_x, node_y, concept_id = null) {
+  addNode(node_id, label, node_x, node_y, concept_id = null, node_type = null) {
     let node_color = '#fffacd';
     let node_shape = 'box';
     
@@ -105,7 +109,8 @@ class LogicNetwork {
       shape: node_shape,
       x: node_x,
       y: node_y,
-      concept_id: concept_id // conceptIDを追加
+      concept_id: concept_id, // conceptIDを追加
+      node_type: node_type // ノードタイプを追加
     };
     this.nodes.add(newNode);
     console.log(concept_id);
@@ -131,14 +136,37 @@ class LogicNetwork {
     //ノードのラベルの編集
     const node = this.nodes.get(node_id);
     if (node) { // IDに相当するノードがある場合の中身を編集
+      // 元のラベルがnullまたは空の場合（削除済みノード）をチェック
+      const wasDeleted = !node.label || node.label === null || node.label === '';
+      
       let result_label = '';
       for (let i = 0; i < node_content.length; i += 10) {
         result_label += node_content.substr(i, 10) + '\n';
       }
       result_label = result_label.trim(); // 末尾の不要な改行を除去
-      node.label = result_label;
+      
+      // ノードの情報を更新
+      const updatedNode = {
+        ...node,
+        label: result_label
+      };
+      
+      // 元が削除済みノードの場合、色とスタイルを復元
+      if (wasDeleted && result_label.length > 0) {
+        updatedNode.color = '#fffacd'; // 通常のノード色に復元
+      }
+      
+      // Forestから反映されたノードの場合は点線スタイルを保持
+      if (node.forest_origin) {
+        updatedNode.borderWidth = 2;
+        updatedNode.borderWidthSelected = 2;
+        updatedNode.shapeProperties = {
+          borderDashes: [5, 5] // 点線のパターンを保持
+        };
+      }
+      
       // 編集を反映
-      this.nodes.update(node);
+      this.nodes.update(updatedNode);
       defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label);
     }
   }
@@ -163,8 +191,6 @@ class LogicNetwork {
   deleteNode (){
     const selectNodeId = this.ownNetwork.getSelection().nodes[0];
     if(selectNodeId !== undefined){
-        // エッジは削除
-        this.edges.remove(this.ownNetwork.getConnectedEdges(selectNodeId));
         
         // ノード自体は削除せず、ラベルを空にしてクリアした状態にする
         const clearedNode = {
@@ -388,7 +414,7 @@ class LogicNetwork {
     // 右に並べるレイアウト（横一列）
     const centerX = independentGroups * gridSpacing;
     const centerY = 0; // Y座標は固定
-    const size = 100; // 三角形の辺の長さ
+    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
 
     console.log(`新しい三角形グループ ${independentGroups + 1} を作成中 (位置: x=${centerX}, y=${centerY})`);
 
@@ -400,15 +426,15 @@ class LogicNetwork {
     const node3X = centerX + size / 2;
     const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
 
-    // ノードを追加
+    // ノードを追加（ノードタイプを指定）
     const triangle_id = this.generateUniqueNumberText();
     const claim_id = this.generateUniqueNumberText();
     const reason_id = this.generateUniqueNumberText();
     const fact_id = this.generateUniqueNumberText();
 
-    this.addNode(claim_id, topic, node1X, node1Y, f_node_id); // 最初のノードにconceptIDを設定
-    this.addNode(reason_id, reason_content, node2X, node2Y);
-    this.addNode(fact_id, fact_content, node3X, node3Y);
+    this.addNode(claim_id, topic, node1X, node1Y, f_node_id, "claim"); // 主張ノード
+    this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason"); // 理由ノード
+    this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact"); // 事実ノード
 
     // エッジを追加して三角形を形成
     this.addEdge(claim_id, reason_id);
@@ -462,9 +488,31 @@ class LogicNetwork {
         return;
       }
 
+      // 右側ノードの現在の状態をチェック
+      const currentLogicNode = this.nodes.get(LogicNodeId);
+      const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
+
       // 右側ノードのラベルを左側ノードの内容で更新
       console.log("applyForestToTriangle: editNodeを呼び出し");
       this.editNode(LogicNodeId, f_node.topic);
+      
+      // Forestから反映されたノードに特別なスタイルを適用
+      const updatedNode = this.nodes.get(LogicNodeId);
+      this.nodes.update({
+        ...updatedNode,
+        color: '#fffacd', // 通常のノード色
+        borderWidth: 2,
+        borderWidthSelected: 2,
+        shapeProperties: {
+          borderDashes: [5, 5] // 点線のパターン [線の長さ, 間隔の長さ]
+        },
+        forest_origin: true // Forestから反映されたことを示すフラグ
+      });
+      
+      // 削除済みノードだった場合の追加処理
+      if (wasDeleted && f_node.topic.length > 0) {
+        console.log("削除済みノードを復元しました");
+      }
       
       alert("右側ノードの内容を更新しました");
       
@@ -501,13 +549,14 @@ class LogicNetwork {
     const centerX = baseNode.x;
     const centerY = baseNode.y;
     const conceptID = baseNode.concept_id || null; // 既存ノードのconceptIDを取得
-    const size = 100; // 三角形の辺の長さ
+    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
   
-    // 三角形の他の2つの頂点の座標を計算
+    // 三角形の他の2つの頂点の座標を計算（maketriangleと同じ計算式を使用）
+    // 選択されたノードを上の頂点として扱い、残り2つのノードを下に配置
     const node2X = centerX - size / 2;
-    const node2Y = centerY + size / (2 * Math.sqrt(3)); // 左下の頂点
+    const node2Y = centerY + size / Math.sqrt(3); // 左下の頂点
     const node3X = centerX + size / 2;
-    const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
+    const node3Y = centerY + size / Math.sqrt(3); // 右下の頂点
     
     // 新しい三角ロジックのIDを生成
     const triangle_id = this.generateUniqueNumberText();

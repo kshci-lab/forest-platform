@@ -263,7 +263,7 @@
             }
 
         },
-        
+
 
         insert_node_before:function(node_before, nodeid, topic, data){
             if(!jm.util.is_node(node_before)){
@@ -2533,6 +2533,17 @@
             }
             d.setAttribute('nodeid',node.id);
             d.style.visibility='hidden';
+            
+            // ノードにクラス情報がある場合は適用
+            if (node.data && node.data.class) {
+                d.className = node.data.class;
+                // logic-origin-nodeクラスの場合は追加のスタイルも適用
+                if (node.data.class.includes('logic-origin-node')) {
+                    d.style.border = "2px dashed #4CAF50";
+                    d.style.boxShadow = "0 0 5px rgba(76, 175, 80, 0.3)";
+                }
+            }
+            
             this._reset_node_custom_style(d, node.data);
 
             parent_node.appendChild(d);
@@ -3323,7 +3334,165 @@
         return _jm;
     };
 
+    // logic_networkで選択されたノードをjsMindに追加する関数
+    jm.createNodeFromLogic = function() {
+        try {
+            // デバッグ情報
+            console.log('window.defaultLogicNetwork:', window.defaultLogicNetwork);
+            console.log('window.defaultLogicNetwork?.ownNetwork:', window.defaultLogicNetwork?.ownNetwork);
+            
+            // defaultLogicNetworkが存在するかチェック
+            if (!window.defaultLogicNetwork) {
+                alert("ロジックネットワークが初期化されていません (defaultLogicNetwork not found)");
+                return;
+            }
+            
+            if (!window.defaultLogicNetwork.ownNetwork) {
+                alert("ロジックネットワークが初期化されていません (ownNetwork not found)");
+                return;
+            }
+
+            // 選択されたノードを取得
+            const selectedNodes = window.defaultLogicNetwork.ownNetwork.getSelection().nodes;
+            
+            if (selectedNodes.length === 0) {
+                alert("logic_networkでノードを選択してください");
+                return;
+            }
+
+            if (selectedNodes.length > 1) {
+                alert("複数のノードが選択されています。一つのノードを選択してください");
+                return;
+            }
+
+            const selectedNodeId = selectedNodes[0];
+            const nodeData = window.defaultLogicNetwork.nodes.get(selectedNodeId);
+            
+            if (!nodeData) {
+                alert("選択されたノードのデータが見つかりません");
+                return;
+            }
+
+            // jsMindの選択されたノードを取得
+            const jmSelectedNode = window._jm ? window._jm.get_selected_node() : null;
+            
+            if (!jmSelectedNode) {
+                alert("jsMindでノードを選択してください");
+                return;
+            }
+
+            // logic_networkのノードラベルを取得・整理
+            let cleanLabel = nodeData.label || "新しいノード";
+            if (typeof cleanLabel === 'string' && cleanLabel.includes('\n')) {
+                cleanLabel = cleanLabel.split('\n')[0]; // 改行がある場合は最初の行のみ使用
+            }
+            
+            // 新しいノードIDを生成
+            const newNodeId = jm.util.uuid.newid();
+            
+            // jsMindに新しいノードを追加
+            if (window._jm) {
+                const result = window._jm.add_node(jmSelectedNode, newNodeId, cleanLabel);
+                if (result) {
+                    // データベースに記録（他のノード追加処理と同様）
+                    var jmnode = document.getElementsByTagName("jmnode");
+
+                    // 親ノードの情報を取得
+                    var p_type = null;
+                    var p_concept = null;
+                    for(var i=0; i<jmnode.length; i++){
+                        if(jmSelectedNode.id == jmnode[i].getAttribute("nodeid")){
+                            p_type = jmnode[i].getAttribute("type");
+                            p_concept = jmnode[i].getAttribute("concept_id");
+                            break;
+                        }
+                    }
+
+                    // ノードタイプは"answer"で固定
+                    var n_type = "answer";
+                    
+                    // 答えノードなので親ノードのconcept_idを取得
+                    var n_concept = p_concept || "";
+
+                    // 新しく作成されたノードに属性を設定
+                    for(var j=0; j<jmnode.length; j++){
+                        if(newNodeId == jmnode[j].getAttribute("nodeid")){
+                            jmnode[j].setAttribute("concept_id", n_concept);
+                            jmnode[j].setAttribute("type", n_type);
+                            jmnode[j].setAttribute("parent_id", jmSelectedNode.id);
+                            jmnode[j].setAttribute("logic_origin", "true"); // logic_networkから作成されたことを示すフラグ
+                            
+                            // logic_networkから作成されたノードであることを視覚的に区別
+                            jmnode[j].classList.add("logic-origin-node");
+                            // 追加のスタイルで区別（破線の境界線を追加）
+                            jmnode[j].style.border = "2px dashed #4CAF50";
+                            jmnode[j].style.boxShadow = "0 0 5px rgba(76, 175, 80, 0.3)";
+
+                            // データベースに挿入
+                            $.ajax({
+                                url: "php/insert_node.php",
+                                type: "POST",
+                                data: { 
+                                    insert : "logic_node",
+                                    id : newNodeId,
+                                    parent_id : jmSelectedNode.id,
+                                    type : n_type,
+                                    concept_id : n_concept,
+                                    x : jmnode[j].style.left,
+                                    y : jmnode[j].style.top,
+                                    content : cleanLabel,
+                                    class : "logic-origin-node", // 特別なクラス名をデータベースにも保存
+                                    logic_node_id : selectedNodeId // 元のlogic_networkノードID
+                                },
+                                success: function(response) {
+                                    console.log('Logic node inserted successfully:', response);
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error('Failed to insert logic node:', error);
+                                }
+                            });
+
+                            // 活動記録
+                            if (typeof Record_activities === 'function') {
+                                Record_activities(newNodeId,
+                                                jmSelectedNode.id,
+                                                "add_from_logic",
+                                                cleanLabel,
+                                                n_concept,
+                                                n_type,
+                                                jsMind.util.uuid.newid()
+                                               );
+                            }
+                            break;
+                        }
+                    }
+
+                    // シートを更新
+                    $.ajax({
+                        url: "php/update_node.php",
+                        type: "POST",
+                        data: { update : "sheet" }
+                    });
+
+                    alert(`ノード "${cleanLabel}" をjsMindに追加しました`);
+                } else {
+                    alert("ノードの追加に失敗しました");
+                }
+            } else {
+                alert("jsMindが初期化されていません");
+            }
+        } catch (error) {
+            console.error('createNodeFromLogic error:', error);
+            alert("エラーが発生しました: " + error.message);
+        }
+    };
+
     // register global variables
     $w[__name__] = jm;
+
+    // HTMLから呼び出せるようにグローバル関数を作成
+    $w.createNodeFromLogic = function() {
+        return jm.createNodeFromLogic();
+    };
 
 })(window);
