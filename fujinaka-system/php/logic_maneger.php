@@ -39,11 +39,12 @@ if ($purpose === 'record') {
         $f_node_id = $_POST["f_node_id"];
         $x = $_POST["x"];
         $y = $_POST["y"];
+        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 0; // edited パラメータを追加
 
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, x, y, created_at, updated_at) 
-                VALUES ('$node_id', '$label', '$f_node_id', '$x', '$y', '$timestamp', '$timestamp')";
+        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, x, y, edited, created_at, updated_at) 
+                VALUES ('$node_id', '$label', '$f_node_id', '$x', '$y', '$edited', '$timestamp', '$timestamp')";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $node_id]);
@@ -61,8 +62,9 @@ else if ($purpose === 'update') {
         // ノードのラベルのみ更新（edit_LogicNode用）
         $node_id = $_POST["node_id"];
         $new_label = $_POST["new_label"];
+        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
 
-        $sql = "UPDATE logic_node SET label = '$new_label', updated_at = '$timestamp' WHERE logic_node_id = '$node_id'";
+        $sql = "UPDATE logic_node SET label = '$new_label', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$node_id'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードのラベルが更新されました", "node_id" => $node_id]);
@@ -74,8 +76,9 @@ else if ($purpose === 'update') {
         $updatedNodeId = $_POST["updatedNodeId"];
         $newlabel = $_POST["label"];
         $f_node_id = $_POST["f_node_id"];
+        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
 
-        $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
+        $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
@@ -89,6 +92,7 @@ else if ($purpose === 'delete') {
     $delete_thing = $_POST['delete_thing'];
     if ($delete_thing === 'node') {
         $node_id = $_POST["node_id"];
+        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 0;
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
         // ノードを削除する代わりに、node_id以外の項目をNULLに更新
@@ -98,7 +102,8 @@ else if ($purpose === 'delete') {
                 x = NULL, 
                 y = NULL, 
                 created_at = NULL,
-                updated_at = '$timestamp' 
+                updated_at = '$timestamp',
+                edited = '$edited'
                 WHERE logic_node_id = '$node_id'";
 
         if ($mysqli->query($sql)) {
@@ -114,7 +119,7 @@ else if ($purpose === 'load') {
     
     if ($load_thing === 'all') {
         // ノードデータを取得
-        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, x, y FROM logic_node ORDER BY created_at";
+        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, x, y, edited FROM logic_node ORDER BY created_at";
         $nodesResult = $mysqli->query($nodesSql);
         $nodes = [];
         if ($nodesResult) {

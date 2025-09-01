@@ -13,11 +13,15 @@ class LogicNetwork {
     this.options = {
       physics: false, // ノードが物理演算で動かないようにする
       interaction: {
-        multiselect: false,
+        multiselect: false,// 複数選択を無効化
         dragNodes: false, // ノードのドラッグを無効化
       },
       edges: {
-      smooth: false // これを追加
+        smooth: false, //エッジが直線になる
+        color: {
+          color: 'black', // エッジの色（黒）
+        },
+        width: 1
       },
       nodes: {
         fixed: true, // ノードを固定位置に配置
@@ -95,26 +99,48 @@ class LogicNetwork {
   }
 
   //ノードを追加する
-  addNode(node_id, label, node_x, node_y, concept_id = null, node_type = null) {
+  addNode(node_id, label, node_x, node_y, f_node_id = null, node_type = null, edited = 0) {
     let node_color = '#fffacd';
     let node_shape = 'box';
     
     // ラベルが長い場合は自動で改行を挿入
     let formatted_label = this.formatLabelWithLineBreaks(label);
     
+    // editedとf_node_idに基づいてスタイルを設定
+    let borderWidth = 0; // 枠無し
+    let borderColor = '#fffacd'; // ノードと同じ
+    let borderDashes = false;
+    
+    // Forestから持ってきた場合（f_node_idがある場合）は緑色で常に実線
+    if (f_node_id !== null) {
+      borderWidth = 2;
+      borderColor = '#228B22'; // 緑色（フォレストグリーン）
+      borderDashes = false;
+    }
+    // 通常のノードの場合は枠無し（何もしない）
+    
     const newNode = {
       id: node_id,
       label: formatted_label,
-      color: node_color,
+      color: {
+        background: node_color,
+        border: borderColor
+      },
       shape: node_shape,
+      borderWidth: borderWidth,
+      borderWidthSelected: borderWidth,
+      shapeProperties: {
+        borderDashes: borderDashes
+      },
       x: node_x,
       y: node_y,
-      concept_id: concept_id, // conceptIDを追加
-      node_type: node_type // ノードタイプを追加
+      f_node_id: f_node_id,
+      node_type: node_type,
+      edited: edited
     };
     this.nodes.add(newNode);
-    console.log(concept_id);
-    // defaultRecordLogicNetwork.record_LogicNode(node_id, label, node_x, node_y, concept_id);
+    console.log(f_node_id);
+    // defaultRecordLogicNetwork.record_LogicNode(node_id, label, node_x, node_y, f_node_id);
     return this.nodes;
   }
 
@@ -129,6 +155,34 @@ class LogicNetwork {
       result_label += label.substr(i, maxCharsPerLine) + '\n';
     }
     return result_label.trim(); // 末尾の不要な改行を除去
+  }
+
+  // ノードにスタイルを適用するヘルパー関数
+  applyNodeStyle(node) {
+    // editedとf_node_idに基づいてスタイルを設定
+    let borderWidth = 0; // 枠無し
+    let borderColor = '#fffacd'; // ノードと同じ
+    let backgroundColor = '#fffacd'; // デフォルトの背景色
+    let borderDashes = false;
+    
+    // Forestから持ってきた場合（f_node_idがある場合）は緑色で常に実線
+    if (node.f_node_id !== null && node.f_node_id !== undefined) {
+      borderWidth = 2;
+      borderColor = '#228B22'; // 緑色（フォレストグリーン）
+      borderDashes = false;
+    }
+    // 通常のノードの場合は枠無し（何もしない）
+    
+    // ノードのスタイルを設定
+    node.color = {
+      background: backgroundColor,
+      border: borderColor
+    };
+    node.borderWidth = borderWidth;
+    node.borderWidthSelected = borderWidth;
+    node.shapeProperties = {
+      borderDashes: borderDashes
+    };
   }
 
   //ノードのラベル編集(完了)
@@ -148,26 +202,23 @@ class LogicNetwork {
       // ノードの情報を更新
       const updatedNode = {
         ...node,
-        label: result_label
+        label: result_label,
+        edited: 1 // 編集されたので1に設定
       };
+      
+      // スタイルを適用
+      this.applyNodeStyle(updatedNode);
       
       // 元が削除済みノードの場合、色とスタイルを復元
       if (wasDeleted && result_label.length > 0) {
-        updatedNode.color = '#fffacd'; // 通常のノード色に復元
-      }
-      
-      // Forestから反映されたノードの場合は点線スタイルを保持
-      if (node.forest_origin) {
-        updatedNode.borderWidth = 2;
-        updatedNode.borderWidthSelected = 2;
-        updatedNode.shapeProperties = {
-          borderDashes: [5, 5] // 点線のパターンを保持
-        };
+        updatedNode.color.background = '#fffacd'; // 通常のノード色に復元
       }
       
       // 編集を反映
       this.nodes.update(updatedNode);
-      defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label);
+      
+      // データベースに編集状態を記録（edited = 1）
+      defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label, 1);
     }
   }
 
@@ -201,13 +252,21 @@ class LogicNetwork {
         };
         this.nodes.update(clearedNode);
     }
-    // データベース側でもノードの内容をNULLにする
-    defaultRecordLogicNetwork.delete_LogicNode(selectNodeId);
+    // データベース側でもノードの内容をNULLにする（edited = 0で削除状態）
+    defaultRecordLogicNetwork.delete_LogicNode(selectNodeId, 0);
   }
 
   //エッジを追加する
   addEdge(E_start, E_end) {
-    this.edges.add({ from: E_start, to: E_end });
+    this.edges.add({ 
+      from: E_start, 
+      to: E_end,
+      color: {
+        color: '#848484', // エッジの色（グレー）
+        highlight: '#848484',
+        hover: '#848484'
+      }
+    });
   }
 
   //ドラッグ開始
@@ -307,28 +366,28 @@ class LogicNetwork {
     }
   }
 
-  // nodeIDを引数にしてconceptIDを取得する関数（presentation.jsと同様）
-  GetConceptId(nodeID){
+  // nodeIDを引数にしてf_node_idを取得する関数（presentation.jsと同様）
+  GetForestNodeId(nodeID){
     var node_obj = document.getElementsByTagName("jmnode");
-    var conceptID = "default";
+    var forestNodeID = "default";
 
     for(let k=0; k<node_obj.length; k++){
       if(node_obj[k].getAttribute("nodeid") == nodeID){//回ってきたidが選択中ノードの時
-        conceptID = node_obj[k].getAttribute("concept_id");//コンセプトid
-        console.log("Logic Network - ConceptID:", conceptID);
+        forestNodeID = node_obj[k].getAttribute("f_node_id");//f_node_id
+        console.log("Logic Network - F_Node_ID:", forestNodeID);
       }
-      if(conceptID != "default"){//同じコンセプトIDがいくつか存在するから
+      if(forestNodeID != "default"){//同じf_node_idがいくつか存在するから
         break;
       }
     }
-    return conceptID;
+    return forestNodeID;
   }
 
-  // 現在選択されているマインドマップノードのconceptIDを取得
-  getSelectedNodeConceptId(){
+  // 現在選択されているマインドマップノードのf_node_idを取得
+  getSelectedNodeForestId(){
     const selected_node = this.CheckSelectedNode();
     if(selected_node && selected_node.id){
-      return this.GetConceptId(selected_node.id);
+      return this.GetForestNodeId(selected_node.id);
     }
     return "default";
   }
@@ -432,9 +491,9 @@ class LogicNetwork {
     const reason_id = this.generateUniqueNumberText();
     const fact_id = this.generateUniqueNumberText();
 
-    this.addNode(claim_id, topic, node1X, node1Y, f_node_id, "claim"); // 主張ノード
-    this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason"); // 理由ノード
-    this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact"); // 事実ノード
+    this.addNode(claim_id, topic, node1X, node1Y, f_node_id, "claim", 0); // 主張ノード
+    this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason", 0); // 理由ノード
+    this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact", 0); // 事実ノード
 
     // エッジを追加して三角形を形成
     this.addEdge(claim_id, reason_id);
@@ -443,9 +502,10 @@ class LogicNetwork {
 
     console.log("三角形を作成しました");
 
-    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic, node1X, node1Y, f_node_id);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, node2X, node2Y);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, node3X, node3Y);
+    // 新規作成されたノードなので edited = 0 を設定
+    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic, node1X, node1Y, f_node_id, 0);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, node2X, node2Y, null, 0);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, node3X, node3Y, null, 0);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
   }
 
@@ -498,16 +558,18 @@ class LogicNetwork {
       
       // Forestから反映されたノードに特別なスタイルを適用
       const updatedNode = this.nodes.get(LogicNodeId);
-      this.nodes.update({
+      const styledNode = {
         ...updatedNode,
-        color: '#fffacd', // 通常のノード色
-        borderWidth: 2,
-        borderWidthSelected: 2,
-        shapeProperties: {
-          borderDashes: [5, 5] // 点線のパターン [線の長さ, 間隔の長さ]
-        },
+        f_node_id: f_node.id || "default", // Forestから持ってきたことを示す
+        edited: 0, // Forestから持ってきたばかりなので0
         forest_origin: true // Forestから反映されたことを示すフラグ
-      });
+      };
+      
+      // スタイルを適用
+      this.applyNodeStyle(styledNode);
+      
+      // ノードを更新
+      this.nodes.update(styledNode);
       
       // 削除済みノードだった場合の追加処理
       if (wasDeleted && f_node.topic.length > 0) {
@@ -520,7 +582,8 @@ class LogicNetwork {
       const f_node_id = f_node.id || "default";
       console.log("applyForestToTriangle: update_f_to_LogicNodelabelを呼び出し, f_node_id =", f_node_id);
       
-      defaultRecordLogicNetwork.update_f_to_LogicNodelabel(LogicNodeId, f_node.topic, f_node_id);
+      // Forestから反映されたので edited = 1 を設定
+      defaultRecordLogicNetwork.update_f_to_LogicNodelabel(LogicNodeId, f_node.topic, f_node_id, 1);
       
     } catch (error) {
       console.error("applyForestToTriangle: エラーが発生しました:", error);
@@ -545,10 +608,10 @@ class LogicNetwork {
       return;
     }
   
-    // 基準ノードの座標とconceptID
+    // 基準ノードの座標とf_node_id
     const centerX = baseNode.x;
     const centerY = baseNode.y;
-    const conceptID = baseNode.concept_id || null; // 既存ノードのconceptIDを取得
+    const f_node_id = baseNode.f_node_id || null; // 既存ノードのf_node_idを取得
     const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
   
     // 三角形の他の2つの頂点の座標を計算（maketriangleと同じ計算式を使用）
@@ -565,16 +628,17 @@ class LogicNetwork {
     const fact_id = this.generateUniqueNumberText();
   
     // 新しいノードを追加
-    this.addNode(reason_id, "Reason", node2X, node2Y);
-    this.addNode(fact_id, "Fact", node3X, node3Y);
+    this.addNode(reason_id, "Reason", node2X, node2Y, null, "reason", 0);
+    this.addNode(fact_id, "Fact", node3X, node3Y, null, "fact", 0);
 
     // エッジを追加して三角形を形成
     this.addEdge(selectedNodeId, reason_id);
     this.addEdge(reason_id, fact_id);
     this.addEdge(fact_id, selectedNodeId);
 
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", node2X, node2Y);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", node3X, node3Y);
+    // 新規作成されたノードなので edited = 0 を設定
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", node2X, node2Y, null, 0);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", node3X, node3Y, null, 0);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id);
 
     console.log("三角形を作成しました - 基準ノードのconceptID:", conceptID);
@@ -624,10 +688,23 @@ class LogicNetwork {
           label: isDeleted ? "" : (node.label || "Node"),
           x: parseFloat(node.x) || 0,
           y: parseFloat(node.y) || 0,
-          color: isDeleted ? '#f0f0f0' : '#fffacd', // 削除済みは薄いグレー
           shape: 'box',
-          concept_id: node.concept_id || null
+          f_node_id: node.f_node_id || null,
+          edited: parseInt(node.edited) || 0
         };
+        
+        // スタイルを適用
+        if (isDeleted) {
+          restoredNode.color = {
+            background: '#f0f0f0',
+            border: '#cccccc'
+          };
+          restoredNode.borderWidth = 1;
+          restoredNode.borderDashes = false;
+        } else {
+          this.applyNodeStyle(restoredNode);
+        }
+        
         this.nodes.add(restoredNode);
       });
     }
@@ -637,7 +714,12 @@ class LogicNetwork {
       edgeData.forEach(edge => {
         const restoredEdge = {
           from: edge.edge_start,
-          to: edge.edge_end
+          to: edge.edge_end,
+          color: {
+            color: '#848484', // エッジの色（グレー）
+            highlight: '#848484',
+            hover: '#848484'
+          }
         };
         this.edges.add(restoredEdge);
       });
@@ -683,7 +765,7 @@ class RecordLogicNetwork{
     });
   }
 
-  record_LogicNode(node_id, label, node_x, node_y, f_node_id) {
+  record_LogicNode(node_id, label, node_x, node_y, f_node_id, edited = 0) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
@@ -693,6 +775,7 @@ class RecordLogicNetwork{
         x: node_x,
         y: node_y,
         f_node_id: f_node_id,
+        edited: edited,
         purpose: 'record',
         record_thing: 'node'
       },
@@ -711,13 +794,14 @@ class RecordLogicNetwork{
     });
   }
 
-  edit_LogicNode(node_id, new_label) {
+  edit_LogicNode(node_id, new_label, edited = 1) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
       data: {
         node_id: node_id,
         new_label: new_label,
+        edited: edited,
         purpose: 'update',
         update_thing: 'label'
       },
@@ -736,7 +820,7 @@ class RecordLogicNetwork{
     });
   }
 
-  update_f_to_LogicNodelabel(LogicNodeId, newlabel, f_node_id) {
+  update_f_to_LogicNodelabel(LogicNodeId, newlabel, f_node_id, edited = 1) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
@@ -744,6 +828,7 @@ class RecordLogicNetwork{
         updatedNodeId: LogicNodeId,
         label: newlabel,
         f_node_id: f_node_id,
+        edited: edited,
         purpose: 'update',
         update_thing: 'f_to_LogicNodelabel'
       },
@@ -762,12 +847,13 @@ class RecordLogicNetwork{
     });
   }
 
-  delete_LogicNode (node_id){
+  delete_LogicNode (node_id, edited = 0){
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
       data: {
         node_id : node_id,
+        edited: edited,
         purpose : 'delete',
         delete_thing : 'node'
       },
@@ -811,7 +897,20 @@ class RecordLogicNetwork{
       }
     })
   }
-  
+
+  // 新しいノードを追加する（ボタンクリック用）
+  addNewNode() {
+    const node_id = this.generateUniqueNumberText();
+    const label = "New Node";
+    const x = this.latest_selected_node_info.x;
+    const y = this.latest_selected_node_info.y;
+    
+    // 新規ノードなので edited = 0
+    this.addNode(node_id, label, x, y, null, null, 0);
+    
+    // データベースに記録
+    defaultRecordLogicNetwork.record_LogicNode(node_id, label, x, y, null, 0);
+  }
 
 }
 

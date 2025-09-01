@@ -1966,3 +1966,24 @@ select[name="mttime_list"] {
   transform: scale(1.02);
   transition: all 0.2s ease;
 }
+
+/* vis.jsノード用の点線スタイル */
+.vis-network .vis-manipulation {
+  border-top: 1px solid #d6d6d6;
+}
+
+.dashed-border-node {
+  border: 2px dashed #2B7CE9 !important;
+}
+
+.forest-dashed-border-node {
+  border: 2px dashed #00ff00 !important;
+}
+
+.solid-border-node {
+  border: 2px solid #2B7CE9 !important;
+}
+
+.forest-solid-border-node {
+  border: 2px solid #00ff00 !important;
+}
