@@ -52,6 +52,27 @@ if ($purpose === 'record') {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
     }
+    if ($record_thing === 'node_with_p_id') {
+        // presentation ID付きノード記録
+        $node_id = $_POST["node_id"];
+        $label = $_POST["label"];
+        $f_node_id = $_POST["f_node_id"];
+        $p_node_id = $_POST["p_node_id"]; // presentation要素ID
+        $x = $_POST["x"];
+        $y = $_POST["y"];
+        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 0; // edited パラメータを追加
+
+        $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+
+        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, p_node_id, x, y, edited, created_at, updated_at) 
+                VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', '$x', '$y', '$edited', '$timestamp', '$timestamp')";
+
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "presentation ID付きノードが記録されました", "node_id" => $node_id]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
+    }
 }
 
 else if ($purpose === 'update') {
@@ -82,6 +103,20 @@ else if ($purpose === 'update') {
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
+    } else if ($update_thing === 'p_to_LogicNodelabel') {
+        // PresentationからLogicノードへの更新（update_p_to_LogicNodelabel用）
+        $updatedNodeId = $_POST["updatedNodeId"];
+        $newlabel = $_POST["label"];
+        $p_node_id = $_POST["p_node_id"];
+        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
+
+        $sql = "UPDATE logic_node SET label = '$newlabel', p_node_id = '$p_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
+
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "Presentationノードからの更新が完了しました", "node_id" => $updatedNodeId]);
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
@@ -118,8 +153,8 @@ else if ($purpose === 'load') {
     $load_thing = $_POST['load_thing'];
     
     if ($load_thing === 'all') {
-        // ノードデータを取得
-        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, x, y, edited FROM logic_node ORDER BY created_at";
+        // ノードデータを取得（p_node_idも含める）
+        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, p_node_id, x, y, edited FROM logic_node ORDER BY created_at";
         $nodesResult = $mysqli->query($nodesSql);
         $nodes = [];
         if ($nodesResult) {

@@ -3334,7 +3334,7 @@
         return _jm;
     };
 
-    // logic_networkで選択されたノードをjsMindに追加する関数
+    // logic_networkで選択されたノードの内容をjsMindの選択ノードに反映する関数
     jm.createNodeFromLogic = function() {
         try {
             // デバッグ情報
@@ -3387,97 +3387,62 @@
                 cleanLabel = cleanLabel.split('\n')[0]; // 改行がある場合は最初の行のみ使用
             }
             
-            // 新しいノードIDを生成
-            const newNodeId = jm.util.uuid.newid();
-            
-            // jsMindに新しいノードを追加
+            // 選択されたjsMindノードの内容を更新
             if (window._jm) {
-                const result = window._jm.add_node(jmSelectedNode, newNodeId, cleanLabel);
-                if (result) {
-                    // データベースに記録（他のノード追加処理と同様）
-                    var jmnode = document.getElementsByTagName("jmnode");
-
-                    // 親ノードの情報を取得
-                    var p_type = null;
-                    var p_concept = null;
-                    for(var i=0; i<jmnode.length; i++){
-                        if(jmSelectedNode.id == jmnode[i].getAttribute("nodeid")){
-                            p_type = jmnode[i].getAttribute("type");
-                            p_concept = jmnode[i].getAttribute("concept_id");
-                            break;
-                        }
-                    }
-
-                    // ノードタイプは"answer"で固定
-                    var n_type = "answer";
+                // ノードの内容を更新
+                window._jm.update_node(jmSelectedNode.id, cleanLabel);
+                
+                // DOM要素を取得してスタイルと属性を更新
+                var jmnode = document.getElementsByTagName("jmnode");
+                
+                for(var i=0; i<jmnode.length; i++){
+                    if(jmSelectedNode.id == jmnode[i].getAttribute("nodeid")){
+                        // logic_networkから更新されたことを示すフラグを追加
+                        jmnode[i].setAttribute("logic_origin", "true");
+                        jmnode[i].setAttribute("logic_node_id", selectedNodeId);
                     
-                    // 答えノードなので親ノードのconcept_idを取得
-                    var n_concept = p_concept || "";
-
-                    // 新しく作成されたノードに属性を設定
-                    for(var j=0; j<jmnode.length; j++){
-                        if(newNodeId == jmnode[j].getAttribute("nodeid")){
-                            jmnode[j].setAttribute("concept_id", n_concept);
-                            jmnode[j].setAttribute("type", n_type);
-                            jmnode[j].setAttribute("parent_id", jmSelectedNode.id);
-                            jmnode[j].setAttribute("logic_origin", "true"); // logic_networkから作成されたことを示すフラグ
-                            
-                            // logic_networkから作成されたノードであることを視覚的に区別
-                            jmnode[j].classList.add("logic-origin-node");
-                            // 追加のスタイルで区別（破線の境界線を追加）
-                            jmnode[j].style.border = "2px dashed #4CAF50";
-                            jmnode[j].style.boxShadow = "0 0 5px rgba(76, 175, 80, 0.3)";
-
-                            // データベースに挿入
-                            $.ajax({
-                                url: "php/insert_node.php",
-                                type: "POST",
-                                data: { 
-                                    insert : "logic_node",
-                                    id : newNodeId,
-                                    parent_id : jmSelectedNode.id,
-                                    type : n_type,
-                                    concept_id : n_concept,
-                                    x : jmnode[j].style.left,
-                                    y : jmnode[j].style.top,
-                                    content : cleanLabel,
-                                    class : "logic-origin-node", // 特別なクラス名をデータベースにも保存
-                                    logic_node_id : selectedNodeId // 元のlogic_networkノードID
-                                },
-                                success: function(response) {
-                                    console.log('Logic node inserted successfully:', response);
-                                },
-                                error: function(xhr, status, error) {
-                                    console.error('Failed to insert logic node:', error);
-                                }
-                            });
-
-                            // 活動記録
-                            if (typeof Record_activities === 'function') {
-                                Record_activities(newNodeId,
-                                                jmSelectedNode.id,
-                                                "add_from_logic",
-                                                cleanLabel,
-                                                n_concept,
-                                                n_type,
-                                                jsMind.util.uuid.newid()
-                                               );
+                        
+                        // データベースを更新
+                        $.ajax({
+                            url: "php/update_node.php",
+                            type: "POST",
+                            data: { 
+                                update: "content_from_logic",
+                                id: jmSelectedNode.id,
+                                content: cleanLabel,
+                                logic_node_id: selectedNodeId
+                            },
+                            success: function(response) {
+                                console.log('Node content updated from logic successfully:', response);
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Failed to update node content from logic:', error);
                             }
-                            break;
+                        });
+
+                        // 活動記録
+                        if (typeof Record_activities === 'function') {
+                            Record_activities(jmSelectedNode.id,
+                                            jmSelectedNode.parent ? jmSelectedNode.parent.id : "",
+                                            "update_from_logic",
+                                            cleanLabel,
+                                            jmnode[i].getAttribute("concept_id") || "",
+                                            jmnode[i].getAttribute("type") || "",
+                                            jsMind.util.uuid.newid()
+                                           );
                         }
+                        break;
                     }
-
-                    // シートを更新
-                    $.ajax({
-                        url: "php/update_node.php",
-                        type: "POST",
-                        data: { update : "sheet" }
-                    });
-
-                    alert(`ノード "${cleanLabel}" をjsMindに追加しました`);
-                } else {
-                    alert("ノードの追加に失敗しました");
                 }
+
+                // シートを更新
+                $.ajax({
+                    url: "php/update_node.php",
+                    type: "POST",
+                    data: { update : "sheet" }
+                });
+
+                alert(`ノード "${cleanLabel}" の内容を更新しました`);
             } else {
                 alert("jsMindが初期化されていません");
             }

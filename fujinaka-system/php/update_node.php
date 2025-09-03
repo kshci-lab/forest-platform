@@ -65,6 +65,32 @@
 
 		}
 
+	}else if($_POST["update"] == "content_from_logic"){
+
+		// jm.createNodeFromLogic関数で論理ネットワークからの内容を既存ノードに反映
+		if(isset($_POST['id']) && isset($_POST['content'])){
+			
+			$node_id = $_POST['id'];
+			$new_content = $_POST['content'];
+			
+			// 既存ノードのコンテンツを更新
+			if($node_id != "root"){
+				$sql = "UPDATE nodes SET content = '".$new_content."', updated_at = '".$updated_at."' WHERE id = '".$node_id."'";
+			} else {
+				$sql = "UPDATE nodes SET content = '".$new_content."', updated_at = '".$updated_at."' WHERE type = 'root' AND sheet_id = ".$_SESSION['SHEETID'];
+			}
+			
+			$result = $mysqli->query($sql);
+			
+			if(!$result){
+				echo "error: failed to update node content from logic";
+			} else {
+				echo "success: node content updated from logic network";
+			}
+		} else {
+			echo "error: missing required parameters (id, content)";
+		}
+
 	}
 
 ?>

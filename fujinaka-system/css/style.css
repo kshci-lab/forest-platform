@@ -1932,6 +1932,27 @@ select[name="mttime_list"] {
   padding: 5px;
 }
 
+/* presentationの右クリックメニュー */
+#presentation_conmenu {
+  width: 160px;
+  background-color: #fff8f0;
+  border: 1px solid #E0B3A0;
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  text-align: center;
+}
+
+#presentation_conmenu.on {
+  display: block;
+}
+
+#presentation_conmenu ul {
+  list-style: none;
+  margin: 0px;
+  padding: 5px;
+}
+
 /* -------------------------------------------------------------- */
 
 /* logic_networkから作成されたノードのスタイル */

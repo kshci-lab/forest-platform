@@ -241,6 +241,13 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                 </ul>
               </div>
 
+              <div id="presentation_conmenu">
+                <ul>
+                  <li><a href="javascript:void(0);" onClick="createTriangleFromPresentation()">三角ロジックを作成</a></li>
+                  <li><a href="javascript:void(0);" onClick="applyPresentationToTriangle()">論文シナリオから反映</a></li>
+                </ul>
+              </div>
+
               <div id="mindmap_conmenu">
                 <ul>
                   <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.createTriangleFromForest()">三角ロジックを作成</a></li>

@@ -99,14 +99,14 @@ class LogicNetwork {
   }
 
   //ノードを追加する
-  addNode(node_id, label, node_x, node_y, f_node_id = null, node_type = null, edited = 0) {
+  addNode(node_id, label, node_x, node_y, f_node_id = null, node_type = null, edited = 0, p_node_id = null) {
     let node_color = '#fffacd';
     let node_shape = 'box';
     
     // ラベルが長い場合は自動で改行を挿入
     let formatted_label = this.formatLabelWithLineBreaks(label);
     
-    // editedとf_node_idに基づいてスタイルを設定
+    // editedとf_node_id、p_node_idに基づいてスタイルを設定
     let borderWidth = 0; // 枠無し
     let borderColor = '#fffacd'; // ノードと同じ
     let borderDashes = false;
@@ -115,6 +115,12 @@ class LogicNetwork {
     if (f_node_id !== null) {
       borderWidth = 2;
       borderColor = '#228B22'; // 緑色（フォレストグリーン）
+      borderDashes = false;
+    }
+    // Presentationから持ってきた場合（p_node_idがある場合）は赤色で常に実線
+    else if (p_node_id !== null) {
+      borderWidth = 2;
+      borderColor = '#DC143C'; // 赤色（クリムゾン）
       borderDashes = false;
     }
     // 通常のノードの場合は枠無し（何もしない）
@@ -135,6 +141,7 @@ class LogicNetwork {
       x: node_x,
       y: node_y,
       f_node_id: f_node_id,
+      p_node_id: p_node_id,
       node_type: node_type,
       edited: edited
     };
@@ -159,7 +166,7 @@ class LogicNetwork {
 
   // ノードにスタイルを適用するヘルパー関数
   applyNodeStyle(node) {
-    // editedとf_node_idに基づいてスタイルを設定
+    // editedとf_node_id、p_node_idに基づいてスタイルを設定
     let borderWidth = 0; // 枠無し
     let borderColor = '#fffacd'; // ノードと同じ
     let backgroundColor = '#fffacd'; // デフォルトの背景色
@@ -169,6 +176,12 @@ class LogicNetwork {
     if (node.f_node_id !== null && node.f_node_id !== undefined) {
       borderWidth = 2;
       borderColor = '#228B22'; // 緑色（フォレストグリーン）
+      borderDashes = false;
+    }
+    // Presentationから持ってきた場合（p_node_idがある場合）は赤色で常に実線
+    else if (node.p_node_id !== null && node.p_node_id !== undefined) {
+      borderWidth = 2;
+      borderColor = '#DC143C'; // 赤色（クリムゾン）
       borderDashes = false;
     }
     // 通常のノードの場合は枠無し（何もしない）
@@ -509,6 +522,58 @@ class LogicNetwork {
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
   }
 
+  // presentation ID付きで三角ロジックを作成
+  maketriangleWithPresentationId(topic, p_node_id) {
+    if (topic === undefined) {
+      topic = "New claim";
+    }
+    
+    const reason_content = "New reason";
+    const fact_content = "New fact";
+
+    // 独立した三角ロジック群の数に基づいて位置を決定
+    const independentGroups = this.countIndependentTriangleGroups();
+    const gridSpacing = 300; // 三角形群間の間隔を大きめに設定
+    
+    // 右に並べるレイアウト（横一列）
+    const centerX = independentGroups * gridSpacing;
+    const centerY = 0; // Y座標は固定
+    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
+
+    console.log(`新しい三角形グループ ${independentGroups + 1} を作成中 (位置: x=${centerX}, y=${centerY})`);
+
+    // 三角形の頂点の座標を計算
+    const node1X = centerX;
+    const node1Y = centerY - size / Math.sqrt(3); // 上の頂点
+    const node2X = centerX - size / 2;
+    const node2Y = centerY + size / (2 * Math.sqrt(3)); // 左下の頂点
+    const node3X = centerX + size / 2;
+    const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
+
+    // ノードを追加（ノードタイプを指定）
+    const triangle_id = this.generateUniqueNumberText();
+    const claim_id = this.generateUniqueNumberText();
+    const reason_id = this.generateUniqueNumberText();
+    const fact_id = this.generateUniqueNumberText();
+
+    this.addNode(claim_id, topic, node1X, node1Y, null, "claim", 0, p_node_id); // 主張ノード（presentation ID付き）
+    this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason", 0); // 理由ノード
+    this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact", 0); // 事実ノード
+
+    // エッジを追加して三角形を形成
+    this.addEdge(claim_id, reason_id);
+    this.addEdge(reason_id, fact_id);
+    this.addEdge(fact_id, claim_id);
+
+    console.log("presentation ID付き三角形を作成しました");
+
+    // presentation ID付きでデータベースに記録
+    defaultRecordLogicNetwork.record_LogicNode_with_PresentationId(claim_id, topic, node1X, node1Y, null, p_node_id, 0);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, node2X, node2Y, null, 0);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, node3X, node3Y, null, 0);
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
+  }
+
   // Forestのノードを起点に三角ロジックを作成する
   createTriangleFromForest() {
     // マインドマップ側から選択ノード情報を取得
@@ -525,6 +590,70 @@ class LogicNetwork {
     // maketriangleを呼び出し、ForestのノードIDを渡す
     this.maketriangle(selected_fnode.topic, forestNodeId);
   }
+
+  // presentation側から選択されたスライド要素を起点に三角ロジックを作成する関数
+  createTriangleFromPresentation() {
+    console.log("createTriangleFromPresentation: 開始");
+    
+    try {
+      // 現在選択されている要素を取得
+      const selectedElement = document.querySelector('.cspan[style*="border: 2px solid gray"], .tspan:focus, .text_border:focus');
+      
+      if (!selectedElement) {
+        alert("章、節、またはパラグラフを選択してください");
+        return;
+      }
+      
+      // 選択された要素のテキスト内容を取得
+      let elementText = "";
+      let elementType = "";
+      
+      if (selectedElement.classList.contains('cspan')) {
+        elementText = selectedElement.textContent || selectedElement.innerHTML;
+        elementType = "パラグラフ";
+      } else if (selectedElement.classList.contains('tspan')) {
+        elementText = selectedElement.textContent || selectedElement.innerHTML;
+        // 親要素を確認してタイプを判定
+        const parentElement = selectedElement.closest('.chapter, .section');
+        if (parentElement && parentElement.classList.contains('chapter')) {
+          elementType = "章";
+        } else if (parentElement && parentElement.classList.contains('section')) {
+          elementType = "節";
+        } else {
+          elementType = "要素";
+        }
+      } else {
+        elementText = selectedElement.value || "";
+        elementType = "テキスト";
+      }
+      
+      if (!elementText || elementText.trim() === "") {
+        alert("空の要素から三角ロジックを作成することはできません");
+        return;
+      }
+      
+      // 長すぎるテキストは切り詰め
+      if (elementText.length > 50) {
+        elementText = elementText.substring(0, 50) + "...";
+      }
+      
+      console.log(`createTriangleFromPresentation: ${elementType}「${elementText}」から三角ロジックを作成`);
+      
+      // 選択された要素の固有IDを生成（presentation要素用のID）
+      const presentationElementId = selectedElement.id || selectedElement.getAttribute('node_id') || this.generateUniqueNumberText();
+      
+      // 三角ロジックを作成（presentation要素のIDを渡す）
+      this.maketriangleWithPresentationId(elementText, presentationElementId);
+      
+      console.log("createTriangleFromPresentation: 三角ロジック作成完了");
+      alert(`${elementType}「${elementText}」を起点とした三角ロジックを作成しました`);
+      
+    } catch (error) {
+      console.error("createTriangleFromPresentation: エラーが発生しました:", error);
+      alert("三角ロジックの作成中にエラーが発生しました: " + error.message);
+    }
+  }
+
   // マインドマップの選択ノードの内容を論理ネットワークの選択ノードに反映する
   applyForestToTriangle() {
     console.log("applyForestToTriangle: 開始");
@@ -587,6 +716,103 @@ class LogicNetwork {
       
     } catch (error) {
       console.error("applyForestToTriangle: エラーが発生しました:", error);
+      alert("エラーが発生しました: " + error.message);
+    }
+  }
+
+  // 論理ネットワークの選択ノードの内容をpresentation側の選択された要素に反映する
+  applyPresentationToTriangle() {
+    console.log("applyPresentationToTriangle: 開始");
+    
+    try {
+      // presentation側で現在選択されている要素を取得
+      const selectedElement = document.querySelector('.cspan[style*="border: 2px solid gray"], .tspan:focus, .text_border:focus');
+      console.log("applyPresentationToTriangle: selectedElement =", selectedElement);
+      
+      if (!selectedElement) {
+        alert("presentation側で章、節、またはパラグラフを選択してください");
+        return;
+      }
+
+      // 選択された要素のテキスト内容を取得
+      let elementText = "";
+      let elementType = "";
+      
+      if (selectedElement.classList.contains('cspan')) {
+        elementText = selectedElement.textContent || selectedElement.innerHTML;
+        elementType = "パラグラフ";
+      } else if (selectedElement.classList.contains('tspan')) {
+        elementText = selectedElement.textContent || selectedElement.innerHTML;
+        // 親要素を確認してタイプを判定
+        const parentElement = selectedElement.closest('.chapter, .section');
+        if (parentElement && parentElement.classList.contains('chapter')) {
+          elementType = "章";
+        } else if (parentElement && parentElement.classList.contains('section')) {
+          elementType = "節";
+        } else {
+          elementType = "要素";
+        }
+      } else if (selectedElement.classList.contains('text_border') || selectedElement.classList.contains('title_slide')) {
+        elementText = selectedElement.value || "";
+        elementType = "テキスト";
+      }
+
+      if (!elementText || elementText.trim() === "") {
+        alert("選択された要素に内容がありません");
+        return;
+      }
+
+      console.log("applyPresentationToTriangle: elementText =", elementText);
+
+      // 論理ネットワーク側の選択ノードを取得
+      const selectedLogicNodeId = this.ownNetwork.getSelection().nodes[0];
+      console.log("applyPresentationToTriangle: selectedLogicNodeId =", selectedLogicNodeId);
+      
+      if (!selectedLogicNodeId) {
+        alert("論理ネットワーク側のノードを選択してください");
+        return;
+      }
+
+      // 論理ネットワークノードの現在の状態をチェック
+      const currentLogicNode = this.nodes.get(selectedLogicNodeId);
+      const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
+
+      // 論理ネットワークノードのラベルをpresentation要素の内容で更新
+      console.log("applyPresentationToTriangle: editNodeを呼び出し");
+      this.editNode(selectedLogicNodeId, elementText);
+      
+      // presentationから反映されたノードに特別なスタイルを適用
+      const updatedNode = this.nodes.get(selectedLogicNodeId);
+      const styledNode = {
+        ...updatedNode,
+        p_element_id: selectedElement.id || selectedElement.getAttribute('node_id') || "default", // presentationから持ってきたことを示す
+        edited: 1, // presentationから反映されたので1
+        presentation_origin: true // presentationから反映されたことを示すフラグ
+      };
+      
+      // スタイルを適用（必要に応じて色を変更）
+      this.applyNodeStyle(styledNode);
+      
+      // ノードを更新
+      this.nodes.update(styledNode);
+      
+      // 削除済みノードだった場合の追加処理
+      if (wasDeleted && elementText.length > 0) {
+        console.log("削除済みノードを復元しました");
+      }
+      
+      console.log("applyPresentationToTriangle: 内容更新完了");
+      alert(`論理ネットワークノードの内容を${elementType}「${elementText}」で更新しました`);
+      
+      // presentation要素のIDを取得
+      const p_element_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
+      console.log("applyPresentationToTriangle: update_p_to_LogicNodelabelを呼び出し, p_element_id =", p_element_id);
+      
+      // presentation ID付きでデータベースを更新
+      defaultRecordLogicNetwork.update_p_to_LogicNodelabel(selectedLogicNodeId, elementText, p_element_id, 1);
+      
+    } catch (error) {
+      console.error("applyPresentationToTriangle: エラーが発生しました:", error);
       alert("エラーが発生しました: " + error.message);
     }
   }
@@ -690,6 +916,7 @@ class LogicNetwork {
           y: parseFloat(node.y) || 0,
           shape: 'box',
           f_node_id: node.f_node_id || null,
+          p_node_id: node.p_node_id || null,
           edited: parseInt(node.edited) || 0
         };
         
@@ -912,6 +1139,65 @@ class RecordLogicNetwork{
     defaultRecordLogicNetwork.record_LogicNode(node_id, label, x, y, null, 0);
   }
 
+  // presentation ID付きでノードを記録
+  record_LogicNode_with_PresentationId(node_id, label, node_x, node_y, f_node_id, p_node_id, edited = 0) {
+    $.ajax({
+      url: "php/logic_maneger.php",
+      type: "POST",
+      data: {
+        node_id: node_id,
+        label: label,
+        x: node_x,
+        y: node_y,
+        f_node_id: f_node_id,
+        p_node_id: p_node_id,
+        edited: edited,
+        purpose: 'record',
+        record_thing: 'node_with_p_id'
+      },
+      dataType: "json",
+      success: function(response) {
+        console.log("presentation ID付きノード記録レスポンス:", response);
+        if (response.status === "success") {
+          console.log("presentation ID付きノード記録成功:", response.node_id);
+        } else {
+          console.error("presentation ID付きノード記録エラー:", response.message);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error("presentation ID付きノード記録通信エラー:", error);
+      }
+    });
+  }
+
+  // presentation IDと共にラベルを更新
+  update_p_to_LogicNodelabel(LogicNodeId, newlabel, p_node_id, edited = 1) {
+    $.ajax({
+      url: "php/logic_maneger.php",
+      type: "POST",
+      data: {
+        updatedNodeId: LogicNodeId,
+        label: newlabel,
+        p_node_id: p_node_id,
+        edited: edited,
+        purpose: 'update',
+        update_thing: 'p_to_LogicNodelabel'
+      },
+      dataType: "json",
+      success: function(response) {
+        console.log("presentation ID付きラベル更新レスポンス:", response);
+        if (response.status === "success") {
+          console.log("presentation ID付きラベル更新成功:", response.node_id);
+        } else {
+          console.error("presentation ID付きラベル更新エラー:", response.message);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error("presentation ID付きラベル更新通信エラー:", error);
+      }
+    });
+  }
+
 }
 
 window.addEventListener('load', async () => {
@@ -999,6 +1285,24 @@ window.addEventListener('load', async () => {
 async function refreshLogicNetwork() {
   if (window.defaultLogicNetwork && typeof defaultLogicNetwork.refreshNetwork === "function") {
     await defaultLogicNetwork.refreshNetwork();
+  } else {
+    alert("ロジックネットワークが初期化されていません");
+  }
+}
+
+// presentation側から三角ロジックを作成するグローバル関数
+function createTriangleFromPresentation() {
+  if (window.defaultLogicNetwork && typeof defaultLogicNetwork.createTriangleFromPresentation === "function") {
+    defaultLogicNetwork.createTriangleFromPresentation();
+  } else {
+    alert("ロジックネットワークが初期化されていません");
+  }
+}
+
+// presentationから論理ネットワークに反映するグローバル関数
+function applyPresentationToTriangle() {
+  if (window.defaultLogicNetwork && typeof defaultLogicNetwork.applyPresentationToTriangle === "function") {
+    defaultLogicNetwork.applyPresentationToTriangle();
   } else {
     alert("ロジックネットワークが初期化されていません");
   }

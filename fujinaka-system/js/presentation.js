@@ -2557,3 +2557,115 @@ const preview_update = (older_text, newer_text, older_html) => {
 
   return newer_html_span_list;
 } 
+
+// presentationエリアの右クリックイベントを設定
+document.addEventListener('DOMContentLoaded', function() {
+  // document_area（presentationエリア）に右クリックイベントを追加
+  const documentArea = document.getElementById('document_area');
+  
+  if (documentArea) {
+    documentArea.addEventListener('contextmenu', function(e) {
+      console.log('Presentation右クリックイベント発生'); // デバッグ用
+      e.preventDefault(); // デフォルトの右クリックメニューを無効化
+      
+      // コンテキストメニューの位置を設定
+      const menu = document.getElementById('presentation_conmenu');
+      if (menu) {
+        menu.style.left = e.pageX + 'px';
+        menu.style.top = e.pageY + 'px';
+        menu.className = 'on'; // メニューを表示
+        console.log('Presentationメニューを表示しました'); // デバッグ用
+      } else {
+        console.log('presentation_conmenuが見つかりません'); // デバッグ用
+      }
+    });
+    
+    console.log('Presentation右クリックイベントが設定されました');
+  } else {
+    console.log('document_areaが見つかりません');
+  }
+
+  // 画面のどこかをクリックしたらコンテキストメニューを非表示にする
+  document.addEventListener('click', function() {
+    const menu = document.getElementById('presentation_conmenu');
+    if (menu) {
+      menu.className = '';
+    }
+  });
+
+  // 初期化時に presentation_conmenu を確実に非表示にする
+  const presentationMenu = document.getElementById('presentation_conmenu');
+  if (presentationMenu) {
+    presentationMenu.className = '';
+  }
+});
+
+// createTriangleFromPresentation関数も追加（logic_network.jsから独立して動作するように）
+function createTriangleFromPresentation() {
+  console.log("createTriangleFromPresentation: 開始");
+  
+  try {
+    // defaultLogicNetworkが利用可能か確認
+    if (typeof window.defaultLogicNetwork === 'undefined' || !window.defaultLogicNetwork) {
+      console.error("createTriangleFromPresentation: defaultLogicNetworkが利用できません");
+      alert("論理ネットワークが初期化されていません");
+      return;
+    }
+    
+    // 現在選択されている要素を取得
+    const selectedElement = document.querySelector('.cspan[style*="border: 2px solid gray"], .tspan:focus, .text_border:focus');
+    
+    if (!selectedElement) {
+      alert("章、節、またはパラグラフを選択してください");
+      return;
+    }
+    
+    // 選択された要素のテキスト内容を取得
+    let elementText = "";
+    let elementType = "";
+    
+    if (selectedElement.classList.contains('cspan')) {
+      elementText = selectedElement.textContent || selectedElement.innerHTML;
+      elementType = "パラグラフ";
+    } else if (selectedElement.classList.contains('tspan')) {
+      elementText = selectedElement.textContent || selectedElement.innerHTML;
+      // 親要素を確認してタイプを判定
+      const parentElement = selectedElement.closest('.chapter, .section');
+      if (parentElement && parentElement.classList.contains('chapter')) {
+        elementType = "章";
+      } else if (parentElement && parentElement.classList.contains('section')) {
+        elementType = "節";
+      } else {
+        elementType = "要素";
+      }
+    } else {
+      elementText = selectedElement.value || "";
+      elementType = "テキスト";
+    }
+    
+    if (!elementText || elementText.trim() === "") {
+      alert("空の要素から三角ロジックを作成することはできません");
+      return;
+    }
+    
+    // 長すぎるテキストは切り詰め
+    if (elementText.length > 50) {
+      elementText = elementText.substring(0, 50) + "...";
+    }
+    
+    console.log(`createTriangleFromPresentation: ${elementType}「${elementText}」から三角ロジックを作成`);
+    
+    // 選択された要素の固有IDを生成（presentation要素用のID）
+    const presentationElementId = selectedElement.id || selectedElement.getAttribute('node_id') || getUniqueStr();
+    
+    // 三角ロジックを作成（presentation要素のIDを渡す）
+    window.defaultLogicNetwork.maketriangle(elementText, presentationElementId);
+    
+    console.log("createTriangleFromPresentation: 三角ロジック作成完了");
+    alert(`${elementType}「${elementText}」を起点とした三角ロジックを作成しました`);
+    
+  } catch (error) {
+    console.error("createTriangleFromPresentation: エラーが発生しました:", error);
+    alert("三角ロジックの作成中にエラーが発生しました: " + error.message);
+  }
+}
