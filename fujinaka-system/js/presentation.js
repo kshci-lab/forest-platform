@@ -649,6 +649,33 @@ function SetPurposeonChapter(){
    MakeChapter(selected_node.topic);
  }
 }
+
+function SetPurposeonChapterfromlogic(){
+
+  // 三角ロジックの選択されたノードを取得
+  let selected_logic_node = null;
+  if (defaultLogicNetwork && defaultLogicNetwork.ownNetwork) {
+    const selectedNodes = defaultLogicNetwork.ownNetwork.getSelection().nodes;
+    if (selectedNodes.length > 0) {
+      const selectedNodeId = selectedNodes[0];
+      const nodeData = defaultLogicNetwork.nodes.get(selectedNodeId);
+      if (nodeData) {
+        selected_logic_node = {
+          id: selectedNodeId,
+          topic: nodeData.label
+        };
+      }
+    }
+  }
+  
+  if(selected_logic_node == null || selected_logic_node.topic == undefined){
+   // (textareaのid名).value = "ノードを選択してください";
+   return;
+ }else{
+   MakeChapter(selected_logic_node.topic);
+ }
+}
+
 function SetPurposeonSection(){
 
   let selected_node = CheckSelectedNode();
@@ -657,6 +684,32 @@ function SetPurposeonSection(){
    return;
  }else{
    MakeSection(selected_node.topic);
+ }
+}
+
+function SetPurposeonSectionfromlogic(){
+
+  // 三角ロジックの選択されたノードを取得
+  let selected_logic_node = null;
+  if (defaultLogicNetwork && defaultLogicNetwork.ownNetwork) {
+    const selectedNodes = defaultLogicNetwork.ownNetwork.getSelection().nodes;
+    if (selectedNodes.length > 0) {
+      const selectedNodeId = selectedNodes[0];
+      const nodeData = defaultLogicNetwork.nodes.get(selectedNodeId);
+      if (nodeData) {
+        selected_logic_node = {
+          id: selectedNodeId,
+          topic: nodeData.label
+        };
+      }
+    }
+  }
+  
+  if(selected_logic_node == null || selected_logic_node.topic == undefined){
+   // (textareaのid名).value = "ノードを選択してください";
+   return;
+ }else{
+   MakeSection(selected_logic_node.topic);
  }
 }
 
@@ -842,6 +895,8 @@ function CreateThread(topic, id){
   return uuid; // 作成したID（スレッドのID)を返す
 }
 
+
+
 function Toggletext(textid){
   
   var toggleContainer = $('#container_'+textid+'');
@@ -862,6 +917,34 @@ function SetPurpose(){
  }else{
    $slide_topic.push(selected_node.topic);
    CreateThread(selected_node.topic, selected_node.id);
+ }
+}
+
+// 三角ロジック上のノードを選択した状態で右クリックすると文書に反映する関数
+function SetPurposefromLogic(){
+
+  // 三角ロジックの選択されたノードを取得
+  let selected_logic_node = null;
+  if (defaultLogicNetwork && defaultLogicNetwork.ownNetwork) {
+    const selectedNodes = defaultLogicNetwork.ownNetwork.getSelection().nodes;
+    if (selectedNodes.length > 0) {
+      const selectedNodeId = selectedNodes[0];
+      const nodeData = defaultLogicNetwork.nodes.get(selectedNodeId);
+      if (nodeData) {
+        selected_logic_node = {
+          id: selectedNodeId,
+          topic: nodeData.label
+        };
+      }
+    }
+  }
+  
+  if(selected_logic_node == null || selected_logic_node.topic == undefined){
+   // (textareaのid名).value = "ノードを選択してください";
+   return;
+ }else{
+   $slide_topic.push(selected_logic_node.topic);
+   CreateThread(selected_logic_node.topic, selected_logic_node.id);
  }
 }
 
@@ -1105,6 +1188,108 @@ function NodeAppend(){
 
   unconsidered_rationality_feedback(id, c_id);
 
+}
+
+// 三角ロジック上のノードを選択した状態でサブセンテンスとしてパラグラフに内容を追加する関数
+function NodeAppendfromLogic(){
+  
+  // 三角ロジックの選択されたノードを取得
+  let selected_logic_node = null;
+  if (defaultLogicNetwork && defaultLogicNetwork.ownNetwork) {
+    const selectedNodes = defaultLogicNetwork.ownNetwork.getSelection().nodes;
+    if (selectedNodes.length > 0) {
+      const selectedNodeId = selectedNodes[0];
+      const nodeData = defaultLogicNetwork.nodes.get(selectedNodeId);
+      if (nodeData) {
+        selected_logic_node = {
+          id: selectedNodeId,
+          topic: nodeData.label
+        };
+      }
+    }
+  }
+  
+  if(selected_logic_node == null || selected_logic_node.topic == undefined){
+   return;
+  }
+  
+  var id = selected_logic_node.id;  //logic nodeID
+  var content = selected_logic_node.topic;  //content
+  let c_id = null; // Logic Networkではconcept_idは使用しない
+
+  var arr = $('#'+target).data('node_id');
+  console.log(arr);
+  if(arr.length == 0){
+    console.log("OK");
+    arr = [];
+  }
+  arr.push(id);
+  console.log(arr);
+  $('#'+target).data('node_id', arr);
+
+  var setid = getUniqueStr();  //contentID
+  var quot_setid = "\"" + setid + "\"";
+
+  //内容テキストエリアにノード内容を挿入
+  let area = document.getElementById("target")
+  let label = "<div id='"+setid+"' class='scenario_content'>"+
+                "<span logic_node_id='"+id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_logic_node.topic+"</span>"+
+                "<textarea id='contents-"+setid+"' class='text_border' class='statement' onFocus='TextboxClick()' onblur='Edit_save(this,"+quot_setid+");' placeholder='内容' style='width:calc(100% - 25px)' onkeypress='Keypress(event.keyCode, this);'>"+selected_logic_node.topic+"</textarea>"+
+                "<input class='content_delete' type='button' value='×' onclick='RemoveAppendNode("+quot_setid+");Get_ContentRank();'>"+
+              "</div>";
+
+  const c_dom = document.getElementsByClassName("cspan");
+  var check=0;
+  for(var i=0; i<c_dom.length; i++){
+    if(c_dom[i].style.border == "2px solid gray"){
+      var stindent = c_dom[i].getAttribute("name");
+      var sttype = c_dom[i].getAttribute("type");
+      const tg_dom = c_dom[i].parentNode.id;
+      console.log(tg_dom);
+      $('#'+tg_dom).after(label);
+      check++;
+    }
+  }
+  if(check==0){
+    $('#'+target).children('.purpose').append(label);
+  }
+
+  $slide_topic.push(selected_logic_node.topic);
+  console.log($slide_topic);
+  
+  // Logic Networkの場合のRecord_content呼び出し（concept_idはnull）
+  var type = "logic_node"; // Logic Networkからの場合の識別用
+  Record_content(setid, id, null, content, target, type);
+
+  var dom_tmp = document.getElementById("contents-"+setid);
+  var dom_target = dom_tmp.previousElementSibling;
+  console.log(dom_target);
+  
+  // Logic Networkノードの場合は赤色系の背景色を設定
+  dom_target.style.backgroundColor = "#ffe6e6";
+  dom_target.style.border = "2px solid #ff9999";
+  dom_target.setAttribute("type","logic_origin");
+
+  //インデント情報の格納
+  console.log(stindent);
+  console.log(sttype);
+  if(!(typeof stindent === 'undefined')){
+    if(sttype == "toi"){
+      if(!(Number(stindent) == 3)){
+        const num = Number(stindent) + 1;
+        dom_target.setAttribute("name",num);
+      }else{
+        dom_target.setAttribute("name",stindent);
+      }
+    }else{
+      dom_target.setAttribute("name",stindent);
+    }
+  }
+  SetIndent();
+
+  Get_ContentRank();
+
+  console.log("NodeAppendfromLogic: Logic Networkノードから内容を追加しました");
 }
 
 
@@ -2669,3 +2854,4 @@ function createTriangleFromPresentation() {
     alert("三角ロジックの作成中にエラーが発生しました: " + error.message);
   }
 }
+

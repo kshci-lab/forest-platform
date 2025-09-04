@@ -909,9 +909,16 @@ class LogicNetwork {
         // ラベルがNULLまたは空の場合は削除済みノードとして扱う
         const isDeleted = !node.label || node.label === null || node.label === '';
         
+        // ラベルに改行処理を適用（削除済みでない場合）
+        let formattedLabel = "";
+        if (!isDeleted) {
+          const originalLabel = node.label || "Node";
+          formattedLabel = this.formatLabelWithLineBreaks(originalLabel);
+        }
+        
         const restoredNode = {
           id: node.node_id,
-          label: isDeleted ? "" : (node.label || "Node"),
+          label: isDeleted ? "" : formattedLabel,
           x: parseFloat(node.x) || 0,
           y: parseFloat(node.y) || 0,
           shape: 'box',

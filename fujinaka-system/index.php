@@ -238,6 +238,10 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
               <div id="logic_conmenu">
                 <ul>
                   <li><a href="javascript:void(0);" onClick="createNodeFromLogic()">Forestに反映</a></li>
+                  <li><a href="javascript:void(0);" onClick="SetPurposeonChapterfromlogic()">章を作成</a></li>
+                  <li><a href="javascript:void(0);" onClick="SetPurposeonSectionfromlogic()">節を作成</a></li>
+                  <li><a href="javascript:void(0);" onClick="SetPurposefromLogic()">パラグラフを作成</a></li>
+                  <li><a href="javascript:void(0);" onClick="NodeAppendfromLogic()">パラグラフに内容を追加</a></li>
                 </ul>
               </div>
 
