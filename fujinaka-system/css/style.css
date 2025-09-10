@@ -416,7 +416,7 @@ input:checked+label::after {
 
 /* マインドマップ上で右クリックしたときのメニュー */
 #mindmap_conmenu{
-  width:160px;
+  width:220px; /* 幅を160pxから220pxに拡張 */
   background-color:#f0f0f0;
   border:2px solid #999999;
 border-radius: 10px;
@@ -472,6 +472,7 @@ border-radius: 10px;
 	width: 100%;
 	height: 100%;
 	overflow: auto;
+	/* display: none; */
 }
 
 #logic_menu {
@@ -2007,4 +2008,51 @@ select[name="mttime_list"] {
 
 .forest-solid-border-node {
   border: 2px solid #00ff00 !important;
+}
+
+/* コンテキストメニューの入れ子構造スタイル */
+.category-header {
+  font-weight: bold;
+  background-color: #e9ecef;
+  padding: 6px 15px; /* パディングを少し小さく */
+  margin: 0; /* 行間のマージンを削除 */
+  border-left: 4px solid #007bff;
+  color: #495057;
+}
+
+.category-header:hover {
+  background-color: #dee2e6;
+}
+
+.subcategory {
+  margin: 0; /* 行間のマージンを削除 */
+  padding: 0;
+}
+
+.subcategory ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 20px; /* 左側のインデントのみ保持 */
+  border-left: 2px solid #dee2e6;
+}
+
+.subcategory ul li {
+  margin: 0; /* 行間のマージンを削除 */
+  padding: 0; /* パディングも削除 */
+}
+
+.subcategory ul li a {
+  color: #6c757d;
+  text-decoration: none;
+  display: block;
+  padding: 6px 8px; /* パディングを少し小さく */
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  white-space: nowrap; /* テキストの改行を防ぐ */
+}
+
+.subcategory ul li a:hover {
+  background-color: #f8f9fa;
+  color: #495057;
+  transform: translateX(3px);
 }

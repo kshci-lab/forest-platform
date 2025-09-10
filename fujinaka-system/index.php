@@ -237,29 +237,54 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
 
               <div id="logic_conmenu">
                 <ul>
-                  <li><a href="javascript:void(0);" onClick="createNodeFromLogic()">Forestに反映</a></li>
-                  <li><a href="javascript:void(0);" onClick="SetPurposeonChapterfromlogic()">章を作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="SetPurposeonSectionfromlogic()">節を作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="SetPurposefromLogic()">パラグラフを作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="NodeAppendfromLogic()">パラグラフに内容を追加</a></li>
+                  <li class="category-header">Forest</li>
+                  <li class="subcategory">
+                    <ul>
+                      <li><a href="javascript:void(0);" onClick="createNodeFromLogic()">Forestに反映</a></li>
+                    </ul>
+                  </li>
+                  <li class="category-header">論文シナリオ</li>
+                  <li class="subcategory">
+                    <ul>
+                      <li><a href="javascript:void(0);" onClick="SetPurposeonChapterfromlogic()">章を作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="SetPurposeonSectionfromlogic()">節を作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="SetPurposefromLogic()">パラグラフを作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="NodeAppendfromLogic()">パラグラフに追加</a></li>
+                    </ul>
+                  </li>
                 </ul>
               </div>
 
               <div id="presentation_conmenu">
                 <ul>
-                  <li><a href="javascript:void(0);" onClick="createTriangleFromPresentation()">三角ロジックを作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="applyPresentationToTriangle()">論文シナリオから反映</a></li>
+                  <li class="category-header">三角ロジック</li>
+                  <li class="subcategory">
+                    <ul>
+                      <li><a href="javascript:void(0);" onClick="createTriangleFromPresentation()">三角ロジックを作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="applyPresentationToTriangle()">三角ロジックに反映</a></li>
+                    </ul>
+                  </li>
                 </ul>
               </div>
 
               <div id="mindmap_conmenu">
                 <ul>
-                  <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.createTriangleFromForest()">三角ロジックを作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.applyForestToTriangle()">論理構造に反映</a></li>
-                  <li><a href="javascript:void(0);" onClick="SetPurposeonChapter()">章を作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="SetPurposeonSection()">節を作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="SetPurpose()">トピックセンテンスとしてパラグラフを作成</a></li>
-                  <li><a href="javascript:void(0);" onClick="NodeAppend()">サブセンテンスとしてパラグラフに内容を追加</a></li>
+                  <li class="category-header">三角ロジック</li>
+                  <li class="subcategory">
+                    <ul>
+                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.createTriangleFromForest()">三角ロジックを作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.applyForestToTriangle()">三角ロジックに反映</a></li>
+                    </ul>
+                  </li>
+                  <li class="category-header">論文シナリオ</li>
+                  <li class="subcategory">
+                    <ul>
+                      <li><a href="javascript:void(0);" onClick="SetPurposeonChapter()">章を作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="SetPurposeonSection()">節を作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="SetPurpose()">パラグラフを作成</a></li>
+                      <li><a href="javascript:void(0);" onClick="NodeAppend()">パラグラフに追加</a></li>
+                    </ul>
+                  </li>
                 </ul>
               </div>
 

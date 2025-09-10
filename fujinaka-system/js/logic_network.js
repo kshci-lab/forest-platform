@@ -111,17 +111,28 @@ class LogicNetwork {
     let borderColor = '#fffacd'; // ノードと同じ
     let borderDashes = false;
     
-    // Forestから持ってきた場合（f_node_idがある場合）は緑色で常に実線
+    // editedの値に基づいて点線/実線を決定
+    // edited=0の場合は点線、edited=1の場合は実線
+    if (edited === 0 || edited === '0') {
+      borderDashes = true; // 点線
+      // 通常のノードの場合、点線を見えるようにborderWidthとcolorを設定
+      if (f_node_id === null && p_node_id === null) {
+        borderWidth = 2;
+        borderColor = '#000000'; // 黒色
+      }
+    } else {
+      borderDashes = false; // 実線
+    }
+    
+    // Forestから持ってきた場合（f_node_idがある場合）は緑色
     if (f_node_id !== null) {
       borderWidth = 2;
       borderColor = '#228B22'; // 緑色（フォレストグリーン）
-      borderDashes = false;
     }
-    // Presentationから持ってきた場合（p_node_idがある場合）は赤色で常に実線
+    // Presentationから持ってきた場合（p_node_idがある場合）は赤色
     else if (p_node_id !== null) {
       borderWidth = 2;
       borderColor = '#DC143C'; // 赤色（クリムゾン）
-      borderDashes = false;
     }
     // 通常のノードの場合は枠無し（何もしない）
     
@@ -172,17 +183,29 @@ class LogicNetwork {
     let backgroundColor = '#fffacd'; // デフォルトの背景色
     let borderDashes = false;
     
-    // Forestから持ってきた場合（f_node_idがある場合）は緑色で常に実線
+    // editedの値に基づいて点線/実線を決定
+    // edited=0の場合は点線、edited=1の場合は実線
+    if (node.edited === 0 || node.edited === '0') {
+      borderDashes = true; // 点線
+      // 通常のノードの場合、点線を見えるようにborderWidthとcolorを設定
+      if ((node.f_node_id === null || node.f_node_id === undefined) && 
+          (node.p_node_id === null || node.p_node_id === undefined)) {
+        borderWidth = 2;
+        borderColor = '#000000'; // 黒色
+      }
+    } else {
+      borderDashes = false; // 実線
+    }
+    
+    // Forestから持ってきた場合（f_node_idがある場合）は緑色
     if (node.f_node_id !== null && node.f_node_id !== undefined) {
       borderWidth = 2;
       borderColor = '#228B22'; // 緑色（フォレストグリーン）
-      borderDashes = false;
     }
-    // Presentationから持ってきた場合（p_node_idがある場合）は赤色で常に実線
+    // Presentationから持ってきた場合（p_node_idがある場合）は赤色
     else if (node.p_node_id !== null && node.p_node_id !== undefined) {
       borderWidth = 2;
       borderColor = '#DC143C'; // 赤色（クリムゾン）
-      borderDashes = false;
     }
     // 通常のノードの場合は枠無し（何もしない）
     
@@ -504,7 +527,7 @@ class LogicNetwork {
     const reason_id = this.generateUniqueNumberText();
     const fact_id = this.generateUniqueNumberText();
 
-    this.addNode(claim_id, topic, node1X, node1Y, f_node_id, "claim", 0); // 主張ノード
+    this.addNode(claim_id, topic, node1X, node1Y, f_node_id, "claim", 1); // 主張ノード
     this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason", 0); // 理由ノード
     this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact", 0); // 事実ノード
 
@@ -515,8 +538,7 @@ class LogicNetwork {
 
     console.log("三角形を作成しました");
 
-    // 新規作成されたノードなので edited = 0 を設定
-    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic, node1X, node1Y, f_node_id, 0);
+    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic, node1X, node1Y, f_node_id, 1);
     defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, node2X, node2Y, null, 0);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, node3X, node3Y, null, 0);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
@@ -556,7 +578,7 @@ class LogicNetwork {
     const reason_id = this.generateUniqueNumberText();
     const fact_id = this.generateUniqueNumberText();
 
-    this.addNode(claim_id, topic, node1X, node1Y, null, "claim", 0, p_node_id); // 主張ノード（presentation ID付き）
+    this.addNode(claim_id, topic, node1X, node1Y, null, "claim", 1, p_node_id); // 主張ノード（presentation ID付き）
     this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason", 0); // 理由ノード
     this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact", 0); // 事実ノード
 
@@ -568,7 +590,7 @@ class LogicNetwork {
     console.log("presentation ID付き三角形を作成しました");
 
     // presentation ID付きでデータベースに記録
-    defaultRecordLogicNetwork.record_LogicNode_with_PresentationId(claim_id, topic, node1X, node1Y, null, p_node_id, 0);
+    defaultRecordLogicNetwork.record_LogicNode_with_PresentationId(claim_id, topic, node1X, node1Y, null, p_node_id, 1);
     defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, node2X, node2Y, null, 0);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, node3X, node3Y, null, 0);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
