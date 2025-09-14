@@ -695,7 +695,7 @@ h3 {
 
 #feedback_area{
 	background-color: #f0f0f0;
-	height: calc(100vh - 400px); /* 画面の一番下まで伸ばす（上部要素分を除く） */
+	height: calc(100vh - 500px); /* 画面の一番下まで伸ばす（上部要素分を除く） */
 	min-height: 200px; /* 最小高さを確保 */
 	padding: 10px;
 	overflow-y: scroll;

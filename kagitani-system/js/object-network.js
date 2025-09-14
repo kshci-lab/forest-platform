@@ -17,35 +17,32 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             idField: 'id'  // IDフィールドを明示的に指定
         });
         this.options = {
-	        physics: false,
-            nodes: {
-                margin: 15,  // マージンを増やしてホバー範囲を拡張
-                widthConstraint: {
-                    maximum: 150
-                },
-                // ホバー時の影効果設定
-                shadow: {
-                    enabled: false,  // デフォルトでは無効
-                    color: 'rgba(0,0,0,0.5)',
-                    size: 10,
-                    x: 2,
-                    y: 2
-                },
-                // 選択時の効果設定
-                chosen: {
-                    node: function(values, id, selected, hovering) {
-                        // ホバー時の影効果はイベントリスナーで処理
-                    }
-                },
-                // ホバー範囲を広げるための追加設定
-                scaling: {
-                    min: 10,
-                    max: 30
+        physics: false,
+        nodes: {
+            margin: 15,
+            widthConstraint: { maximum: 150 },
+            shadow: {
+                enabled: true,
+                color: 'rgba(0,0,0,0.18)',
+                size: 18,
+                x: 4,
+                y: 4
+            },
+            chosen: {
+                node: function(values, id, selected, hovering) {
+                    // 影は常に有効
+                    values.shadow = true;
+                    values.shadowColor = 'rgba(0,0,0,0.18)';
+                    values.shadowSize = 18;
+                    values.shadowX = 4;
+                    values.shadowY = 4;
                 }
             },
-	        edges: {
-		        arrows: 'to', // エッジに矢印を付けて有向グラフにする
-		        smooth: false // falseにするとエッジが直線になる
+            scaling: { min: 10, max: 30 }
+        },
+            edges: {
+                arrows: 'to', // エッジに矢印を付けて有向グラフにする
+                smooth: false // falseにするとエッジが直線になる
             },
             interaction: {
                 multiselect: false,
@@ -147,20 +144,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 // 現在のノードの状態を取得して保持
                 const currentNode = this.nodes.get(params.node);
                 if (currentNode) {
-                    // 既存のプロパティを保持しながら影のみを追加
-                    this.nodes.update({ 
-                        id: params.node,
-                        color: currentNode.color, // 既存の色を保持
-                        shadow: { 
-                            enabled: true, 
-                            size: 15, 
-                            color: 'rgba(0,0,0,0.5)',
-                            x: 3,
-                            y: 3
-                        }
-                    });
-
-                    // 手段ノード（step）またはversionノードの場合、追加ボタンを表示
+                    // 影は常に有効なので、ホバー時の影変更は不要
                     if (currentNode.group === "step" || currentNode.group === "versions" || currentNode.group === "versionsBro") {
                         this.showAddNodeButton(params.node, params);
                     }
@@ -172,16 +156,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 // 現在のノードの状態を取得して保持
                 const currentNode = this.nodes.get(params.node);
                 if (currentNode) {
-                    // 既存のプロパティを保持しながら影のみを無効化
-                    this.nodes.update({ 
-                        id: params.node,
-                        color: currentNode.color, // 既存の色を保持
-                        shadow: { 
-                            enabled: false 
-                        }
-                    });
+                    // 影は常に有効なので、ホバー解除時の影変更は不要
                 }
-
                 // ホバーが外れた時にボタンを非表示
                 this.hideAddNodeButton();
             });
@@ -250,6 +226,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     }
                 });
             }
+            
+            // キーボードイベントリスナーを追加（Deleteキーでノード・エッジ削除）
+            this.setupKeyboardListeners();
         }
         this.choose_input_xmlLoad();
     }
@@ -406,6 +385,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         $(`#t_p_time_select`).off('click',this.bindadd_time);
         $(`#t_p_time_cancel`).off('click',this.bindcancel_time_input);
         clearInterval(this.interval);
+        
+        // キーボードイベントリスナーを削除
+        this.removeKeyboardListeners();
     }
     /*
      * マップ編集ユーティリティ
@@ -1317,6 +1299,66 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         });
     }
 
+    // キーボードイベントリスナーの設定
+    setupKeyboardListeners() {
+        // キーボードイベントリスナーを削除する関数
+        this.removeKeyboardListener = (e) => {
+            // Deleteキーが押された場合
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                // 過去データ表示時は操作を無効化
+                if (this.isViewingPastData) {
+                    console.log('過去データ表示中のため、削除操作が無効化されています');
+                    return;
+                }
+
+                // テキスト入力中でないことを確認
+                const activeElement = document.activeElement;
+                if (activeElement && (
+                    activeElement.tagName === 'INPUT' || 
+                    activeElement.tagName === 'TEXTAREA' || 
+                    activeElement.contentEditable === 'true'
+                )) {
+                    // テキスト入力中の場合は何もしない
+                    return;
+                }
+
+                // 現在選択されているノードまたはエッジを取得
+                const selection = this.ownNetwork.getSelection();
+                
+                // ノードが選択されている場合はノードを削除
+                if (selection.nodes.length > 0) {
+                    e.preventDefault();
+                    console.log('Deleteキーでノード削除:', selection.nodes[0]);
+                    this.deleteNode();
+                }
+                // エッジが選択されている場合はエッジを削除
+                else if (selection.edges.length > 0) {
+                    e.preventDefault();
+                    console.log('Deleteキーでエッジ削除:', selection.edges[0]);
+                    this.deleteEdge();
+                }
+            }
+        };
+
+        // グローバルキーボードイベントリスナーを追加
+        document.addEventListener('keydown', this.removeKeyboardListener);
+        
+        // ネットワークコンテナにフォーカスが当たるようにする
+        const networkContainer = document.getElementById('myProcessnetwork');
+        if (networkContainer) {
+            networkContainer.setAttribute('tabindex', '0');
+            networkContainer.style.outline = 'none'; // フォーカス時の枠線を非表示
+        }
+    }
+
+    // キーボードイベントリスナーの削除
+    removeKeyboardListeners() {
+        if (this.removeKeyboardListener) {
+            document.removeEventListener('keydown', this.removeKeyboardListener);
+            this.removeKeyboardListener = null;
+        }
+    }
+
     //ラベルの選択（完了）
     show_select (){
         document.getElementById('t_Process_conmenu').style.display = "none";
@@ -2155,7 +2197,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
         
         //他のところクリックしたら色直す
-        document.getElementById("ontology_feedback").innerHTML = "";
+        const feedbackElem = document.getElementById("ontology_feedback");
+        if (feedbackElem) {
+            feedbackElem.innerHTML = "";
+        }
         const feedbackarea = document.getElementsByClassName("accordion-item");
         for(var i=0; i<feedbackarea.length; i++){
             feedbackarea[i].style.display = "none";
@@ -2179,7 +2224,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             
             if(this.OntologyConnectNodeId.indexOf(params.nodes[0]) !== -1){
                 const node_infomation = this.nodes.get(this.OntologyNodeId[this.OntologyConnectNodeId.indexOf(params.nodes[0])]);
-                document.getElementById("ontology_feedback").innerHTML = "<div class='feedback_message'>この発言は「"+node_infomation.label + "」と「" + this.output_input[node_infomation.label] + "」<br>との合理性を意識して発言されたのかもしれません</div>";
+                if (feedbackElem) {
+                    feedbackElem.innerHTML = "<div class='feedback_message'>この発言は「"+node_infomation.label + "」と「" + this.output_input[node_infomation.label] + "」<br>との合理性を意識して発言されたのかもしれません</div>";
+                }
             }
             // 理由が記述されたノードの場合、理由を表示
             if(this.ReasonConnectNodeId.indexOf(params.nodes[0]) !== -1){
@@ -4044,14 +4091,8 @@ window.addEventListener('load', () => {
     $(`#process_addNode`).on("click", e => {
         defaultThinkingProcess.addNewNode();
     });
-    $(`#process_removeNode`).on("click", e => {
-        defaultThinkingProcess.deleteNode();
-    });
     $(`#process_startEditEdge`).on("click", e => {
         defaultThinkingProcess.SelectEditEdge();
-    });
-    $(`#process_removeEdge`).on("click", e => {
-        defaultThinkingProcess.deleteEdge();
     });
     $(`#process_ZoomIn`).on("click", e => {
         defaultThinkingProcess.zoomIn();

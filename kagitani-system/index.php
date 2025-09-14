@@ -66,6 +66,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="css/jquery.cleditor.css">
         <link rel="stylesheet" type="text/css" href="css/ui.css">
         <link rel="stylesheet" type="text/css" href="css/style.css">
+        <link rel="stylesheet" type="text/css" href="css/smart-goals.css">
         <!-- <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" /> -->
         
         <style>
@@ -195,6 +196,22 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
             border-color: #405dca;
         }
         </style>
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+  var showBtn = document.getElementById('showQuestionsBtn');
+  var listDiv = document.getElementById('questionsList');
+  if (showBtn && listDiv) {
+    showBtn.addEventListener('click', function() {
+      if (listDiv.style.display === 'none' || listDiv.style.display === '') {
+        listDiv.style.display = 'block';
+        // TODO: 問い一覧の内容をここでセットする（例: listDiv.innerHTML = ...）
+      } else {
+        listDiv.style.display = 'none';
+      }
+    });
+  }
+});
+</script>
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
@@ -215,6 +232,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/object-network.js"></script>
         <link rel="stylesheet" type="text/css" href="css/object-network.css" />
         <script type="text/javascript" src="js/timeline_slider.js"></script>
+        <script type="text/javascript" src="js/goal_list.js"></script>
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         
@@ -575,6 +593,23 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     </div>
                 </div>
                 <span class="title_name">Forest</span>
+            </div>
+            <!-- Hamburger menu icon -->
+            <span id="hamburger_menu" style="display: inline-block; cursor: pointer; margin-right: 10px;">
+                <span style="font-size: 22px;">&#9776;</span>
+            </span>
+            <!-- Memo button icon -->
+            <button id="memo_button" title="メモ" style="background: none; border: none; padding: 0 6px; margin-left: 2px; font-size: 18px; cursor: pointer; color: #007cba; vertical-align: middle;" onclick="openMemoModal()">
+                <span style="font-size: 18px;">&#9998;</span>
+            </button>
+            <!-- Memo Modal -->
+            <div id="memo_modal" style="display:none; position:fixed; z-index:1001; background:white; border:2px solid #007cba; border-radius:8px; padding:16px; width:340px; box-shadow:0 6px 20px rgba(0,124,186,0.2); left:50%; top:50%; transform:translate(-50%,-50%);">
+                <div style="font-weight:bold; color:#007cba; margin-bottom:10px; text-align:center;">📝 メモ</div>
+                <textarea id="memo_textarea" rows="7" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; resize:vertical; box-sizing:border-box;" placeholder="ここにメモを入力..."></textarea>
+                <div style="display:flex; justify-content:space-between; gap:10px; margin-top:14px;">
+                    <button onclick="saveMemo()" style="flex:1; padding:8px; background-color:#28a745; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; font-size:13px;">💾 保存</button>
+                    <button onclick="closeMemoModal()" style="flex:1; padding:8px; background-color:#6c757d; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; font-size:13px;">❌ キャンセル</button>
+                </div>
             </div>
         </div>
         <!-- <form name="return" method="POST">
@@ -944,28 +979,16 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                 <span class="button-text">ノード追加</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_removeNode" title="ノード削除">
-                                                <span class="button-icon">－</span>
-                                                <span class="button-text">ノード削除</span>
-                                            </button>
-                                            <button type="button" class="thinkingProcess_network_button"
                                                     id="process_startEditEdge" title="エッジ追加">
                                                 <span class="button-icon">⟷</span>
                                                 <span class="button-text">エッジ追加</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_removeEdge" title="エッジ削除">
-                                                <span class="button-icon">✂</span>
-                                                <span class="button-text">エッジ削除</span>
-                                            </button>
-                                            <button type="button" class="thinkingProcess_network_button"
                                                     id="process_ZoomIn" title="拡大">
-                                                <span class="button-icon">🔍</span>
                                                 <span class="button-text">拡大</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_ZoomOut" title="縮小">
-                                                <span class="button-icon">🔎</span>
                                                 <span class="button-text">縮小</span>
                                             </button>
                                         </div>
@@ -1006,13 +1029,21 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                 </a>
                                             </li>
                                             <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
+                                            <!-- SMART目標設定メニューを追加 -->
                                             <li class="context-menu-item annotation-action" role="none">
                                                 <a href="javascript:void(0);" id="process_conmenu5" class="context-menu-link" role="menuitem"
-                                                   title="このノードに取り組む理由を記述します" aria-label="理由記述">
-                                                    <span class="context-menu-icon" aria-hidden="true">❓</span>
-                                                    <span class="context-menu-text">理由を記述する</span>
+                                                   title="このノードの理由を記述します" aria-label="理由を記述">
+                                                    <span class="context-menu-icon" aria-hidden="true">📝</span>
+                                                    <span class="context-menu-text">理由を記述</span>
                                                 </a>
                                             </li>
+                                            <!-- <li class="context-menu-item smart-goal-action" role="none">
+                                                <a href="javascript:void(0);" id="process_conmenu_smartgoal" class="context-menu-link" role="menuitem"
+                                                   title="SMART目標を設定します" aria-label="SMART目標設定">
+                                                    <span class="context-menu-icon" aria-hidden="true">🎯</span>
+                                                    <span class="context-menu-text">SMART目標設定</span>
+                                                </a>
+                                            </li> -->
                                             <li class="context-menu-item annotation-action" role="none">
                                                 <a href="javascript:void(0);" id="process_conmenu6" class="context-menu-link" role="menuitem"
                                                    title="このノードの完了予定日時を設定します" aria-label="完了予定設定">
@@ -1082,6 +1113,107 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         <input type="button" value="決定" id="t_p_time_select">
                                         <input type="button" value="キャンセル" id="t_p_time_cancel">
                                     </div>
+                                    
+                                    <!-- SMART目標設定フォーム -->
+                                    <div id="smart_goal_form" style="display:none; position:fixed; z-index:1000; background:white; border:2px solid #007bff; border-radius: 8px; padding: 16px; width: 480px; box-shadow: 0 6px 20px rgba(0,123,255,0.3); left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                                        <div id="smart_goal_header" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 12px; margin: -16px -16px 16px -16px; border-radius: 8px 8px 0 0; font-weight: bold; text-align: center; font-size: 16px; cursor: move; user-select: none;">
+                                            🎯 SMART目標設定
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: bold; color: #007bff; display: block; margin-bottom: 4px; font-size: 13px;">
+                                                📝 Specific（具体的）
+                                            </label>
+                                            <textarea id="smart_specific" rows="2" placeholder="何を、どのように達成するか具体的に記述してください（例：英語の論文を1日5ページずつ読み進める）" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: bold; color: #28a745; display: block; margin-bottom: 4px; font-size: 13px;">
+                                                📊 Measurable（測定可能）
+                                            </label>
+                                            <input type="text" id="smart_measurable" placeholder="例：80点以上、10個の単語、3時間、5ページなど" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; box-sizing: border-box;">
+                                        </div>
+                                        
+                                        <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                                            <div style="flex: 1;">
+                                                <label style="font-weight: bold; color: #17a2b8; display: block; margin-bottom: 4px; font-size: 13px;">
+                                                    ✅ Achievable（達成可能性）
+                                                </label>
+                                                <select id="smart_achievable" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                                    <option value="">選択してください</option>
+                                                    <option value="easy">簡単（80%以上の確率）</option>
+                                                    <option value="moderate">適度（60-80%の確率）</option>
+                                                    <option value="challenging">挑戦的（40-60%の確率）</option>
+                                                    <option value="stretch">ストレッチ（20-40%の確率）</option>
+                                                </select>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <label style="font-weight: bold; color: #6f42c1; display: block; margin-bottom: 4px; font-size: 13px;">
+                                                    🎯 Relevant（関連性）
+                                                </label>
+                                                <input type="text" id="smart_relevant" placeholder="最終目標との関連性" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                            </div>
+                                        </div>
+                                        
+                                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                                            <div style="flex: 1;">
+                                                <label style="font-weight: bold; color: #fd7e14; display: block; margin-bottom: 4px; font-size: 13px;">
+                                                    ⏰ Time-bound（期限）
+                                                </label>
+                                                <input type="datetime-local" id="smart_deadline" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <label style="font-weight: bold; color: #fd7e14; display: block; margin-bottom: 4px; font-size: 13px;">
+                                                    📈 進捗確認頻度
+                                                </label>
+                                                <select id="smart_check_frequency" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                                    <option value="">選択してください</option>
+                                                    <option value="daily">毎日</option>
+                                                    <option value="weekly">週1回</option>
+                                                    <option value="biweekly">2週間に1回</option>
+                                                    <option value="monthly">月1回</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 新しく追加：振り返り機能 -->
+                                        <div style="border-top: 2px solid #e9ecef; padding-top: 16px; margin-bottom: 16px;">
+                                            <div style="font-weight: bold; color: #dc3545; margin-bottom: 12px; font-size: 14px;">
+                                                🔍 振り返り・自己評価項目
+                                            </div>
+                                            
+                                            <div style="margin-bottom: 12px;">
+                                                <label style="font-weight: bold; color: #dc3545; display: block; margin-bottom: 4px; font-size: 12px;">
+                                                    📋 成果評価基準（手段実行≠成功の認識）
+                                                </label>
+                                                <textarea id="smart_success_criteria" rows="2" placeholder="「計画通りにやった」だけでなく「何が達成できたか」を評価する基準を設定（例：単語帳を3周した→実際にテストで何点取れたか、何個の単語を正確に覚えたか）" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; resize: vertical; box-sizing: border-box;"></textarea>
+                                            </div>
+                                            
+                                            <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                                                <div style="flex: 1;">
+                                                    <label style="font-weight: bold; color: #ffc107; display: block; margin-bottom: 4px; font-size: 12px;">
+                                                        🔔 中間確認ポイント
+                                                    </label>
+                                                    <textarea id="smart_monitoring_points" rows="2" placeholder="実行中に確認すべき点（例：集中が続かない、理解が進まない、予想より難しい等の違和感に気づく）" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; resize: vertical; box-sizing: border-box;"></textarea>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-weight: bold; color: #17a2b8; display: block; margin-bottom: 4px; font-size: 12px;">
+                                                        🔄 調整基準
+                                                    </label>
+                                                    <textarea id="smart_adjustment_criteria" rows="2" placeholder="どうなったら計画を変更するか（例：3日続けても理解度が向上しない、予定時間の2倍かかる等）" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; resize: vertical; box-sizing: border-box;"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div style="display: flex; justify-content: space-between; gap: 12px;">
+                                            <button id="smart_goal_save" style="flex: 1; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px; transition: background-color 0.2s;">
+                                                💾 SMART目標を設定
+                                            </button>
+                                            <button id="smart_goal_cancel" style="flex: 1; padding: 10px; background-color: #6c757d; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px; transition: background-color 0.2s;">
+                                                ❌ キャンセル
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div id="t_Process_reflectionselect" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ccc; padding:10px; width:400px;">
                                         <h4>内省を記述する</h4>
                                         <label for="t_Process_actionReason">行動意図：なぜこの手段を実行しましたか？</label><br>
@@ -1095,6 +1227,78 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         
                                         <input type="button" value="決定" id="t_p_reflection_select">
                                         <input type="button" value="キャンセル" id="t_p_reflection_cancel">
+                                    </div>
+                                    
+                                    <!-- 振り返りリマインダーモーダル -->
+                                    <div id="reflection_reminder_modal" style="display:none; position:fixed; z-index:1001; background:white; border:2px solid #dc3545; border-radius: 8px; padding: 16px; width: 500px; box-shadow: 0 6px 20px rgba(220,53,69,0.3); left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                                        <div style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 12px; margin: -16px -16px 16px -16px; border-radius: 8px 8px 0 0; font-weight: bold; text-align: center; font-size: 16px;">
+                                            🔍 振り返りリマインダー
+                                        </div>
+                                        
+                                        <div id="reflection_content" style="margin-bottom: 16px; font-size: 13px; line-height: 1.5;">
+                                            <!-- 動的にコンテンツが入る -->
+                                        </div>
+                                        
+                                        <div style="display: flex; justify-content: center; gap: 12px;">
+                                            <button onclick="closeReflectionReminder()" style="flex: 1; padding: 10px; background-color: #6c757d; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                                                閉じる
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 個別目標の振り返りモーダル -->
+                                    <div id="goal_reflection_modal" style="display:none; position:fixed; z-index:1001; background:white; border:2px solid #ffc107; border-radius: 8px; padding: 16px; width: 520px; box-shadow: 0 6px 20px rgba(255,193,7,0.3); left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                                        <div style="background: linear-gradient(135deg, #ffc107, #e0a800); color: #212529; padding: 12px; margin: -16px -16px 16px -16px; border-radius: 8px 8px 0 0; font-weight: bold; text-align: center; font-size: 16px;">
+                                            📊 目標振り返り
+                                        </div>
+                                        
+                                        <div id="goal_reflection_title" style="font-weight: bold; margin-bottom: 12px; color: #495057;">
+                                            <!-- 目標タイトルが入る -->
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: bold; color: #dc3545; display: block; margin-bottom: 4px; font-size: 12px;">
+                                                📋 実際の成果（数値・具体的結果）
+                                            </label>
+                                            <textarea id="reflection_actual_result" rows="2" placeholder="計画通りにやっただけでなく、実際に何が達成できたかを記録してください" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: bold; color: #ffc107; display: block; margin-bottom: 4px; font-size: 12px;">
+                                                🤔 気づいた違和感・課題
+                                            </label>
+                                            <textarea id="reflection_issues" rows="2" placeholder="実行中に感じた違和感、予想と異なった点、うまくいかなかった点など" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: bold; color: #17a2b8; display: block; margin-bottom: 4px; font-size: 12px;">
+                                                💡 次回への改善点
+                                            </label>
+                                            <textarea id="reflection_improvements" rows="2" placeholder="今回の経験から、次回はどのように改善しますか？" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 16px;">
+                                            <label style="font-weight: bold; color: #6f42c1; display: block; margin-bottom: 4px; font-size: 12px;">
+                                                ⭐ 目標達成度（自己評価）
+                                            </label>
+                                            <select id="reflection_achievement_level" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                                <option value="">選択してください</option>
+                                                <option value="excellent">優秀（予想以上の成果）</option>
+                                                <option value="good">良好（期待通りの成果）</option>
+                                                <option value="partial">部分的（一部達成）</option>
+                                                <option value="insufficient">不十分（見直しが必要）</option>
+                                                <option value="failed">失敗（根本的な変更が必要）</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div style="display: flex; justify-content: space-between; gap: 12px;">
+                                            <button onclick="saveGoalReflection()" style="flex: 1; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                                                💾 振り返りを保存
+                                            </button>
+                                            <button onclick="closeGoalReflection()" style="flex: 1; padding: 10px; background-color: #6c757d; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px;">
+                                                キャンセル
+                                            </button>
+                                        </div>
                                     </div>
                                     <!-- <div id="myProcessnetwork"></div> -->
                                 </div>
@@ -1156,10 +1360,10 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         
 
                         <div class="toi_list" style="text-align: center;">
-                            <div id="mind_all">
-                                <input class="button5" type="button" onclick="showGeneration();" value="問い一覧">
-                                <!-- <b>マインドマップモード</b> -->
-                            </div>
+    <!-- <div id="mind_all">
+        <input class="button5" type="button" onclick="showGeneration();" value="問い一覧">
+         <b>マインドマップモード</b> -->
+    <!-- </div> --> 
                             <!-- <div id="presen_all" hidden>
                                 <input class="button5" type="button" onclick="P_showGeneration();" value="問い一覧">
                                 <b>資料作成モード</b>
@@ -1168,12 +1372,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                         <div id="mind" class="side">
                             <div class="inquiry_area">
-                                <div style="background-color: #69a7ff; color: white; padding: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; border-radius: 4px;">【情報の表出化】</div>
+<button id="showQuestionsBtn" style="display: block; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; padding: 6px 0; margin-bottom: 8px; font-size: 13px; font-weight: bold; cursor: pointer;" onclick="showGeneration();">問い一覧</button>
+<!-- <div id="questionsList" style="display:none; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px; padding:8px; margin-bottom:8px; max-height:120px; overflow-y:auto;"></div> -->
+<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;">【情報の表出化】</div>
                                 <div id="testxml"></div>
                                 <div id="ont"></div>
-                                <div style="background-color: #69a7ff; color: white; padding: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; margin-top: 15px; border-radius: 4px;">【理由・目的】</div>
+                                <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">【理由・目的】</div>
                                 <div id="intention"></div>
-                                <div style="background-color: #69a7ff; color: white; padding: 8px; text-align: center; font-weight: bold; margin-bottom: 10px; margin-top: 15px; border-radius: 4px;">【合理性】</div>
+                                <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">【合理性】</div>
                                 <div id="rationality"></div>
                             </div>
 
@@ -1207,27 +1413,50 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 </div>
                             </div>
                             
-                            <!-- ✨ メモ機能エリア -->
-                            <div id="memo_section" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0;">
-                                <div style="font-weight: bold; color: #495057; font-size: 14px; margin-bottom: 8px;">
-                                    📝 メモ
-                                </div>
-                                
-                                <textarea id="memo-textarea" placeholder="ここにメモを入力してください..." style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; line-height: 1.4; resize: vertical; box-sizing: border-box; transition: all 0.2s ease;"></textarea>
-                                
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 8px;">
-                                    <div style="display: flex; gap: 6px;">
-                                        <button id="memo-save-btn" onclick="saveMemo()" style="padding: 4px 12px; background-color: #28a745; color: white; border: none; border-radius: 3px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;">保存</button>
-                                        <button id="memo-clear-btn" onclick="clearMemo()" style="padding: 4px 12px; background-color: #dc3545; color: white; border: none; border-radius: 3px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease;">クリア</button>
-                                    </div>
-                                    <div id="memo-status" style="font-size: 11px; color: #6c757d; font-weight: 500; opacity: 0.8;"></div>
-                                </div>
-                            </div>
+                            <!-- メモ機能エリア削除済み -->
                             
-                            <div id = "ontology_feedback"></div>
                             
+                            
+                            <!-- <div id = "ontology_feedback"></div> -->
                             <!-- <div id = "accordion_discussion"></div>
                             <input id = "feedbackrecord" type="button" value="記録"> -->
+                            <!-- 目標管理エリア（小・中・大目標） -->
+    <div id="simple_goals_area" style="background: none; border: none; border-radius: 0; padding: 0; margin: 0;">
+                                
+                                <!-- 小目標（大きく・使いやすく） -->
+                                <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
+                                    <div style="font-weight: bold; color: #28a745; font-size: 17px; margin-bottom: 10px;">🗓️ 小目標（次のMTの１週間の目標）</div>
+                                    <form id="weeklyGoalForm" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
+                                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                                            <label for="weeklyGoalStart" style="font-size: 15px; color: #28a745;">開始日</label>
+                                            <input type="date" id="weeklyGoalStart" style="font-size: 15px; padding: 8px; border-radius: 6px; border: 1.5px solid #28a745;">
+                                            <label for="weeklyGoalEnd" style="font-size: 15px; color: #28a745;">終了日</label>
+                                            <input type="date" id="weeklyGoalEnd" style="font-size: 15px; padding: 8px; border-radius: 6px; border: 1.5px solid #28a745;">
+                                        </div>
+                                        <button type="button" id="addWeeklyGoalBtn" style="background:#28a745;color:white;border:none;border-radius:6px;padding:12px 0;font-size:16px;font-weight:bold;cursor:pointer;">追加</button>
+                                    </form>
+                                    <div id="weeklyGoalsList" style="margin-top:8px;"></div>
+                                </div>
+                                <!-- 中・大目標（横並び・控えめ） -->
+                                <div id="midlong_goal_area" style="display: flex; gap: 18px; justify-content: flex-start;">
+                                    <div style="flex:1; background: #f4f4f4; border: 1.5px solid #6f42c1; border-radius: 7px; padding: 12px; min-width: 220px;">
+                                        <div style="font-weight: bold; color: #6f42c1; font-size: 14px; margin-bottom: 7px;">📅 中目標（半年〜1年目標）</div>
+                                        <form id="mediumGoalForm" style="display: flex; flex-direction: column; gap: 7px; margin-bottom: 7px;">
+                                            <input type="text" id="mediumGoalText" placeholder="中目標を入力" style="font-size: 13px; padding: 7px; border-radius: 5px; border: 1px solid #6f42c1;">
+                                            <button type="button" id="addMediumGoalBtn" style="background:#6f42c1;color:white;border:none;border-radius:5px;padding:7px 0;font-size:13px;font-weight:bold;cursor:pointer;">追加</button>
+                                        </form>
+                                        <div id="mediumGoalsList"></div>
+                                    </div>
+                                    <!-- <div style="flex:1; background: #f4f4f4; border: 1.5px solid #1976d2; border-radius: 7px; padding: 12px; min-width: 220px;">
+                                        <div style="font-weight: bold; color: #1976d2; font-size: 14px; margin-bottom: 7px;">🎓 大目標（卒業までの目標）</div>
+                                        <form id="largeGoalForm" style="display: flex; flex-direction: column; gap: 7px; margin-bottom: 7px;">
+                                            <input type="text" id="largeGoalText" placeholder="大目標を入力" style="font-size: 13px; padding: 7px; border-radius: 5px; border: 1px solid #1976d2;">
+                                            <button type="button" id="addLargeGoalBtn" style="background:#1976d2;color:white;border:none;border-radius:5px;padding:7px 0;font-size:13px;font-weight:bold;cursor:pointer;">追加</button>
+                                        </form>
+                                        <div id="largeGoalsList"></div>
+                                    </div> -->
+                                </div>
+                            </div>
                         </div>
                         <div id="xml_upload_area" style="display: none">
                             <!-- <form id="uploadForm" enctype="multipart/form-data"> -->
@@ -1401,6 +1630,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/second_advice.js"></script>
         <script type="text/javascript" src="js/mindmap.js"></script>
         <script type="text/javascript" src="js/add_node.js"></script>
+        <!-- <script type="text/javascript" src="js/smart-goals.js"></script> -->
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
         <!-- <script type="text/javascript" src="../js/thinking-process-network.js"></script> -->
@@ -1436,115 +1666,22 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         
         <!-- メモ機能のJavaScript -->
         <script type="text/javascript">
-        // メモを保存
+        // メモモーダル用のロジック
+        function openMemoModal() {
+            document.getElementById('memo_modal').style.display = 'block';
+            document.getElementById('memo_textarea').value = localStorage.getItem('user_memo') || '';
+        }
+        function closeMemoModal() {
+            document.getElementById('memo_modal').style.display = 'none';
+        }
         function saveMemo() {
-            const textarea = document.getElementById('memo-textarea');
-            const statusDiv = document.getElementById('memo-status');
-            const content = textarea.value.trim();
-            
-            if (content === '') {
-                showMemoStatus('メモが空です', '#ffc107');
-                return;
-            }
-            
-            // LocalStorageに保存
-            try {
-                const timestamp = new Date().toLocaleString('ja-JP');
-                const memoData = {
-                    content: content,
-                    savedAt: timestamp
-                };
-                localStorage.setItem('userMemo', JSON.stringify(memoData));
-                showMemoStatus('保存しました ✓', '#28a745');
-            } catch (error) {
-                console.error('メモの保存に失敗:', error);
-                showMemoStatus('保存に失敗しました', '#dc3545');
-            }
+            var memo = document.getElementById('memo_textarea').value;
+            localStorage.setItem('user_memo', memo);
+            closeMemoModal();
         }
-
-        // メモをクリア
-        function clearMemo() {
-            if (confirm('メモの内容をクリアしますか？この操作は元に戻せません。')) {
-                const textarea = document.getElementById('memo-textarea');
-                textarea.value = '';
-                
-                // LocalStorageからも削除
-                try {
-                    localStorage.removeItem('userMemo');
-                    showMemoStatus('クリアしました', '#17a2b8');
-                } catch (error) {
-                    console.error('メモのクリアに失敗:', error);
-                    showMemoStatus('クリアに失敗しました', '#dc3545');
-                }
-            }
-        }
-
-        // メモをロード
-        function loadMemo() {
-            const textarea = document.getElementById('memo-textarea');
-            
-            try {
-                const savedData = localStorage.getItem('userMemo');
-                if (savedData) {
-                    const memoData = JSON.parse(savedData);
-                    textarea.value = memoData.content;
-                    showMemoStatus('最終保存: ' + memoData.savedAt, '#6c757d');
-                } else {
-                    showMemoStatus('新しいメモ', '#6c757d');
-                }
-            } catch (error) {
-                console.error('メモの読み込みに失敗:', error);
-                showMemoStatus('読み込みに失敗しました', '#dc3545');
-            }
-        }
-
-        // ステータスメッセージを表示
-        function showMemoStatus(message, color) {
-            const statusDiv = document.getElementById('memo-status');
-            statusDiv.textContent = message;
-            statusDiv.style.color = color;
-            
-            // 3秒後にフェードアウト
-            setTimeout(() => {
-                if (statusDiv.textContent === message) {
-                    statusDiv.style.transition = 'opacity 0.5s ease';
-                    statusDiv.style.opacity = '0.5';
-                }
-            }, 3000);
-            
-            // 5秒後に通常の透明度に戻す
-            setTimeout(() => {
-                if (statusDiv.textContent === message) {
-                    statusDiv.style.opacity = '0.8';
-                }
-            }, 8000);
-        }
-
-        // ページ読み込み時にメモを自動ロード
-        document.addEventListener('DOMContentLoaded', function() {
-            // CSSアニメーションを動的に追加
-            const style = document.createElement('style');
-            style.textContent = `
-                #memo-save-btn:hover {
-                    background-color: #218838 !important;
-                    transform: translateY(-1px);
-                }
-                
-                #memo-clear-btn:hover {
-                    background-color: #c82333 !important;
-                    transform: translateY(-1px);
-                }
-                
-                #memo-textarea:focus {
-                    border-color: #007bff !important;
-                    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25) !important;
-                }
-            `;
-            document.head.appendChild(style);
-            
-            // メモを自動ロード
-            setTimeout(loadMemo, 100);
-        });
         </script>
+        <script type="text/javascript">
+
+</script>
     </body>
 </html>

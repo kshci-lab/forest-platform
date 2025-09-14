@@ -34,262 +34,262 @@
 
 /*ネットワーク*/
 #process_network_container{
-	/* width: calc(100vw - 350px); */
-	width: 100%;
-	min-width: 300px;
-	height: calc(100vh - 139px); /* 画面の一番下まで伸ばす */
-	min-height: 450px;
-	/* margin-bottom:2vh; */
-	/* border-bottom:solid 5px #B3E0D8; */
-	border-top:solid 5px var(--primary-color);
-	background: var(--background-white);
-	overflow: hidden;
-	float:left;
-	display: none;
-	resize: vertical;
-	flex-direction: row; /* 横並びレイアウト */
-	position: relative; /* control-panelの絶対位置の基準 */
+    /* width: calc(100vw - 350px); */
+    width: 100%;
+    min-width: 300px;
+    height: calc(100vh - 139px); /* 画面の一番下まで伸ばす */
+    min-height: 450px;
+    /* margin-bottom:2vh; */
+    /* border-bottom:solid 5px #B3E0D8; */
+    border-top:solid 5px var(--primary-color);
+    background: var(--background-white);
+    overflow: hidden;
+    float:left;
+    display: none;
+    resize: vertical;
+    flex-direction: row; /* 横並びレイアウト */
+    position: relative; /* control-panelの絶対位置の基準 */
 }
 #myProcessnetwork {
-	position: relative;
-	flex: 1; /* 残りのスペースを占有 */
-	width: 100%;
-	height: 100%;
-	min-width: 300px;
-	border-top:solid 1px var(--border-light);
-	background: var(--background-white);
-	overflow: hidden; /* autoからhiddenに変更 */
+    position: relative;
+    flex: 1; /* 残りのスペースを占有 */
+    width: 100%;
+    height: 100%;
+    min-width: 300px;
+    border-top:solid 1px var(--border-light);
+    background: var(--background-white);
+    overflow: hidden; /* autoからhiddenに変更 */
 }
 #myProcessnetwork2{
-	flex: 1; /* 残りのスペースを占有 */
-	width: 100%;
-	height: 100%; /* 親コンテナの100%を使用 */
-	min-width: 300px;
-	/* height:50%; */
-	min-height: 450px;
-	/* margin-bottom:2vh; */
-	/* border-top:solid 5px #B3E0D8; */
-	background: var(--background-white);
-	overflow: auto;
-	display: flex;
-	flex-direction: column;
-	/* control-panelが透過で上に浮いているため、全領域を使用 */
-	padding-top: 0;
+    flex: 1; /* 残りのスペースを占有 */
+    width: 100%;
+    height: 100%; /* 親コンテナの100%を使用 */
+    min-width: 300px;
+    /* height:50%; */
+    min-height: 450px;
+    /* margin-bottom:2vh; */
+    /* border-top:solid 5px #B3E0D8; */
+    background: var(--background-white);
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    /* control-panelが透過で上に浮いているため、全領域を使用 */
+    padding-top: 0;
 }
 
 /* triggerを表示するエリア関連の設定 */
 #trigger_area{
-	width: calc((100vw - 350px)*0.3);
-	min-width: 100px;
-	/* height:50%; */
-	min-height: 450px;
-	margin-bottom:1vh;
-	background: var(--background-accent);
-	overflow-y: scroll;
-	display: none; /* trigger_areaを非表示 */
+    width: calc((100vw - 350px)*0.3);
+    min-width: 100px;
+    /* height:50%; */
+    min-height: 450px;
+    margin-bottom:1vh;
+    background: var(--background-accent);
+    overflow-y: scroll;
+    display: none; /* trigger_areaを非表示 */
 }
 
 #trigger_area_display{
-	position: sticky;
-	top: 0;
-	/* width: calc((100vw - 350px)*0.35); */
-	height:100px;
-	background: var(--background-accent);
+    position: sticky;
+    top: 0;
+    /* width: calc((100vw - 350px)*0.35); */
+    height:100px;
+    background: var(--background-accent);
 }
 #conceptdisplay{
-	height: 25px;
-	color: #03200a;
-	padding-top: 5px;
-	margin-bottom: 5px;
-	text-align: center;
+    height: 25px;
+    color: #03200a;
+    padding-top: 5px;
+    margin-bottom: 5px;
+    text-align: center;
 }
 #trigger_area_add{
-	height: 20px;
-	/* width: 90%; */
-	min-width: 100px;
-	margin-bottom:1vh;
-	/* border:solid 3px #968d8d; */
-	/* background:#c2c3c2; */
-	line-height:20px;
-	cursor: pointer;
+    height: 20px;
+    /* width: 90%; */
+    min-width: 100px;
+    margin-bottom:1vh;
+    /* border:solid 3px #968d8d; */
+    /* background:#c2c3c2; */
+    line-height:20px;
+    cursor: pointer;
 }
 #trigger_area_list{
-	/* width: calc((100vw - 350px)*0.35); */
-	width: 98%;
-	/* margin-bottom:2vh; */
-	background: var(--background-accent);
-	/* overflow-y: scroll; */
-	float:left;
-	line-height:20px;
-	cursor: pointer;
+    /* width: calc((100vw - 350px)*0.35); */
+    width: 98%;
+    /* margin-bottom:2vh; */
+    background: var(--background-accent);
+    /* overflow-y: scroll; */
+    float:left;
+    line-height:20px;
+    cursor: pointer;
 }
 
 /* -------------------- ボタン類の設定 ---------------------- */
 
 
 #trigger_click{
-	height:30px;
+    height:30px;
 }
 #trigger_time{
-	width:70%;
-	margin-left:3%;
+    width:70%;
+    margin-left:3%;
     margin-top: 3px;
 }
 #trigger_activity{
-	width:70%;
-	margin-left:3%;
+    width:70%;
+    margin-left:3%;
     margin-top: 3px;
 }
 #trigger_content{
-	width: 95%;
-	margin-left:3%;
+    width: 95%;
+    margin-left:3%;
     margin-top: 3px;
-	margin-bottom: 3px;
-	resize: vertical;
+    margin-bottom: 3px;
+    resize: vertical;
 }
 #trigger_add{
-	height:0px;
-	width: 97%;
-	margin-left: 10px;
+    height:0px;
+    width: 97%;
+    margin-left: 10px;
     margin-bottom: 3px;
-	background: var(--background-subtle);
-	transition: 0.3s ease;
+    background: var(--background-subtle);
+    transition: 0.3s ease;
 }
 
 .checkbox_process {
-	display: flex;
-	width: 130px;
+    display: flex;
+    width: 130px;
     /* height: 40px; */
     font-size: 12px;
     margin-left: 5px;
     margin-top: 3px;
-	padding: 0.4em;
-	flex-direction: column;
-	float: right;
-	vertical-align: middle;
+    padding: 0.4em;
+    flex-direction: column;
+    float: right;
+    vertical-align: middle;
 }
 /* 通常のチェックボックスの削除 */
 input[type="checkbox"][name="check_process"]{
-	display: none;
+    display: none;
   }
  
  /* アニメーションの設定 */
  input+label,
  input+label::before,
  input+label::after {
-	 -webkit-transition: all .2s;
-	 transition: all .2s;
+     -webkit-transition: all .2s;
+     transition: all .2s;
  }
  /* 背景の図形の設定 */
  input+label {
-	 display: inline-block;
-	 position: relative;
-	 width: 50px;
-	 height: 20px;
-	 border-radius: 24px;
-	 cursor: pointer;
+     display: inline-block;
+     position: relative;
+     width: 50px;
+     height: 20px;
+     border-radius: 24px;
+     cursor: pointer;
  }
  /* On,Offの文字の設定 */
  input+label::before {
-	 display: block;
-	 content: attr(data-off-label);
-	 position: absolute;
-	 top: 2px;
-	 left: 23px;
-	 color: #fff;
-	 font-family: Arial, sans-serif;
-	 font-size: 15px;
+     display: block;
+     content: attr(data-off-label);
+     position: absolute;
+     top: 2px;
+     left: 23px;
+     color: #fff;
+     font-family: Arial, sans-serif;
+     font-size: 15px;
  }
  /* スライドする円の設定 */
  input+label::after {
-	 content: '';
-	 position: absolute;
-	 top: 1px;
-	 left: 3px;
-	 width: 18px;
-	 height: 18px;
-	 background: var(--background-white);
-	 border-radius: 50%;
+     content: '';
+     position: absolute;
+     top: 1px;
+     left: 3px;
+     width: 18px;
+     height: 18px;
+     background: var(--background-white);
+     border-radius: 50%;
  }
  /* Offの文字設定 */
  input:checked+label::before {
-	 content: attr(data-on-label);
-	 left: 3px;
-	 right: auto;
-	 color: var(--info-color);
+     content: attr(data-on-label);
+     left: 3px;
+     right: auto;
+     color: var(--info-color);
  }
  /* ONの文字設定 */
  input:checked+label::after {
-	 left: 29px;
-	 background: var(--background-white);
+     left: 29px;
+     background: var(--background-white);
  }
  
  .checkbox_process+label {
-	 background: var(--background-muted);
-	 margin: 0 auto;
+     background: var(--background-muted);
+     margin: 0 auto;
  }
  .checkbox_process+label::before {
-	 color: var(--info-color);
-	 margin: 0 auto;
+     color: var(--info-color);
+     margin: 0 auto;
  }
  .checkbox_process:checked+label {
-	 background: var(--info-color);
-	 margin: 0 auto;
+     background: var(--info-color);
+     margin: 0 auto;
  }
  .checkbox_process:checked+label::before {
-	 color: var(--background-white);
-	 margin: 0 auto;
+     color: var(--background-white);
+     margin: 0 auto;
  }
 
  /* チェックボックス横のテキスト設定 */
  .checkbox_process_text{
-	 font-size:12px;
-	 float:right;
-	 margin-bottom: 3px;
-	 margin: 0 auto;
+     font-size:12px;
+     float:right;
+     margin-bottom: 3px;
+     margin: 0 auto;
  }
 
 .trigger_title{
-	font-size: 12px;
-	padding: 2px;
+    font-size: 12px;
+    padding: 2px;
 }
 
 .trigger_in_list{
-	border: 2px var(--primary-color) solid;
-	margin-left: 5%;
+    border: 2px var(--primary-color) solid;
+    margin-left: 5%;
     margin-right: 3%;
-	margin-bottom: 5px; 
-	padding: 10px; 
-	padding-left: 5px; 
-	font-size: 13px; 
-	line-height: 15px;
-	transition: 0.1s ease;
+    margin-bottom: 5px; 
+    padding: 10px; 
+    padding-left: 5px; 
+    font-size: 13px; 
+    line-height: 15px;
+    transition: 0.1s ease;
     border-radius: var(--border-radius);
 }
 .trigger_in_list:hover {
-	box-shadow: 0 4px 8px var(--shadow-medium);
-	border: 3px var(--primary-color) solid;
+    box-shadow: 0 4px 8px var(--shadow-medium);
+    border: 3px var(--primary-color) solid;
 }
 .trigger_in_list:active {
-	box-shadow: none;
-	border: 4px var(--primary-color) solid;
+    box-shadow: none;
+    border: 4px var(--primary-color) solid;
 }
 .triggerbutton {
-	background: var(--background-white);
-	color: var(--text-primary);
-	width: 120px;
+    background: var(--background-white);
+    color: var(--text-primary);
+    width: 120px;
     height: 35px;
     font-size: 12px;
     margin-left: 5px;
     margin-top: 3px;
-	padding: 0.4em;
-	display: inline-block;
-	text-decoration: none;
-	text-align: center;
-	user-select: none;
-	border: 1px var(--border-light) solid;
-	border-radius: var(--border-radius);
-	transition: 0.4s ease;
+    padding: 0.4em;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    user-select: none;
+    border: 1px var(--border-light) solid;
+    border-radius: var(--border-radius);
+    transition: 0.4s ease;
 }
 .triggerbutton:hover {
   color: var(--background-white);
@@ -297,20 +297,20 @@ input[type="checkbox"][name="check_process"]{
 }
 
 #inputTriggerbutton {
-	width: 95%;
+    width: 95%;
     height: 30px;
     font-size: 12px;
-	border: 2px var(--border-light) solid;
-	color: var(--text-secondary);
-	background: var(--background-white);
-	border-radius: var(--border-radius);
-	margin:auto;
+    border: 2px var(--border-light) solid;
+    color: var(--text-secondary);
+    background: var(--background-white);
+    border-radius: var(--border-radius);
+    margin:auto;
     margin-top: 3px;
-	display: inline-block;
-	text-decoration: none;
-	text-align: center;
-	user-select: none;
-	transition: 0.3s ease;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    user-select: none;
+    transition: 0.3s ease;
 }
 #inputTriggerbutton:hover {
   color: var(--background-white);
@@ -355,22 +355,34 @@ input[type="checkbox"][name="check_process"]{
 .control-panel {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 16px;
+    gap: 6px;
+    padding: 4px 6px;
     background: var(--background-white);
-    border-radius: 12px;
+    border-radius: 5px;
     border: 1px solid var(--border-light);
-    box-shadow: 0 2px 8px var(--shadow-light);
-    /* 透過設定でマップを広く見せる - 絶対位置で浮かせる */
+    box-shadow: 0 1px 3px var(--shadow-light);
     opacity: 0.3;
     transition: opacity 0.3s ease;
     position: absolute;
-    top: 16px;
-    left: 16px;
-    right: 16px;
+    top: 8px;
+    left: 8px;
+    right: 8px;
     z-index: 10;
     pointer-events: auto; /* パネル自体はクリック可能 */
 }
+
+.node-count-info {
+    display: none;
+    background: #f8f9fa;
+    border: 1px solid #e1e8ed;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #333;
+    margin: 4px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+
 
 /* ホバー時は完全に表示 */
 .control-panel:hover {
@@ -786,15 +798,15 @@ input[type="checkbox"][name="check_process"]{
     }
 }
 #t_Process_labelselect{
-	width:200px;
-	background: var(--background-white);
-	border: 2px solid var(--border-light);
-	border-radius: var(--border-radius);
-	display:none;
-	position:fixed;
-	z-index: 1000;
-	text-align: center;
-	box-shadow: var(--shadow-medium);
+    width:200px;
+    background: var(--background-white);
+    border: 2px solid var(--border-light);
+    border-radius: var(--border-radius);
+    display:none;
+    position:fixed;
+    z-index: 1000;
+    text-align: center;
+    box-shadow: var(--shadow-medium);
 }
 #t_Process_recruitselect{
 width:200px;

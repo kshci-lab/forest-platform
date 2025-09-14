@@ -1,1 +1,2 @@
-ArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArray
+ArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayPOST: {"goal_type":"weekly","object_node_id":"","label":"","start_date":"2025-09-14","finish_date":"2025-09-15"}
+POST: {"goal_type":"weekly","object_node_id":"","label":"","start_date":"2025-09-14","finish_date":"2025-09-22"}

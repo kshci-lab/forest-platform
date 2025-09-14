@@ -1,0 +1,205 @@
+/* SMART目標設定システムのスタイル */
+
+/* SMART目標設定フォーム */
+#smart_goal_form {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    box-sizing: border-box;
+}
+
+#smart_goal_form * {
+    box-sizing: inherit;
+}
+
+#smart_goal_form input[type="text"],
+#smart_goal_form input[type="datetime-local"],
+#smart_goal_form textarea,
+#smart_goal_form select {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#smart_goal_form input[type="text"]:focus,
+#smart_goal_form input[type="datetime-local"]:focus,
+#smart_goal_form textarea:focus,
+#smart_goal_form select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+#smart_goal_form button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#smart_goal_save:hover {
+    background-color: #218838 !important;
+}
+
+#smart_goal_cancel:hover {
+    background-color: #545b62 !important;
+}
+
+/* SMART目標一覧のスタイル */
+#smart_goals_section {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+.smart-goal-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.smart-goal-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.smart-goal-item button {
+    transition: all 0.2s ease;
+}
+
+.smart-goal-item button:hover {
+    transform: scale(1.05);
+}
+
+/* コンテキストメニューのSMART目標設定項目 */
+.smart-action .context-menu-link {
+    color: #007bff;
+}
+
+.smart-action .context-menu-link:hover {
+    background-color: #e3f2fd;
+    color: #0056b3;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    #smart_goal_form {
+        width: 90% !important;
+        max-width: 400px !important;
+        padding: 12px !important;
+    }
+    
+    #smart_goal_form div[style*="display: flex"] {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    #smart_goals_list {
+        max-height: 150px !important;
+    }
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#smart_goal_form[style*="display: block"] {
+    animation: fadeIn 0.3s ease;
+}
+
+/* スクロールバーのカスタマイズ */
+#smart_goals_list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#smart_goals_list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#smart_goals_list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+#smart_goals_list::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* 期限切れ目標の強調表示 */
+.smart-goal-item[style*="border: 1px solid #dc3545"] {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+/* ツールチップ風のヘルプテキスト */
+.smart-help-tooltip {
+    position: relative;
+    display: inline-block;
+    margin-left: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    color: white;
+    font-size: 8px;
+    text-align: center;
+    line-height: 12px;
+    cursor: help;
+}
+
+.smart-help-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1001;
+}
+
+/* 成功・エラーメッセージのスタイル */
+.smart-message {
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 8px 0;
+    font-weight: 500;
+    animation: slideDown 0.3s ease;
+}
+
+.smart-message.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.smart-message.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
