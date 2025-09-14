@@ -16,7 +16,7 @@ try {
 
 
 
-$sql = "SELECT g.object_goal_id, g.goal_type, g.start_date, g.finish_date, n.node_id, nl.content FROM object_goals g LEFT JOIN object_goal_nodes n ON g.object_goal_id = n.object_goal_id LEFT JOIN node_latest nl ON n.node_id = nl.node_id WHERE g.goal_type='weekly' AND g.delete=0 ORDER BY g.appeared_at DESC LIMIT 20";
+$sql = "SELECT g.object_goal_id, g.goal_type, g.start_date, g.finish_date, n.node_id, nl.content FROM object_goals g LEFT JOIN object_goal_nodes n ON g.object_goal_id = n.object_goal_id AND (n.deleted IS NULL OR n.deleted = 0) LEFT JOIN node_latest nl ON n.node_id = nl.node_id WHERE g.goal_type='weekly' AND g.delete=0 ORDER BY g.appeared_at DESC LIMIT 20";
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
 $goals = $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -67,6 +67,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="css/ui.css">
         <link rel="stylesheet" type="text/css" href="css/style.css">
         <link rel="stylesheet" type="text/css" href="css/smart-goals.css">
+        <link rel="stylesheet" type="text/css" href="css/goal.css">
         <!-- <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" /> -->
         
         <style>
@@ -1389,7 +1390,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
 
                         <!--ここから大槻修正-->
-                        <div id = "feedback_area" style="display: none">
+                        <div id = "feedback_area" style="display: none; width: 100%; overflow: auto; box-sizing: border-box;">
                             <!-- ノード数表示エリア -->
                             <div id="node_count_display" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; margin-bottom: 10px; font-weight: bold; color: #495057;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1430,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 <!-- 小目標（大きく・使いやすく） -->
                                 <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
-                                    <div style="font-weight: bold; color: #28a745; font-size: 17px; margin-bottom: 10px;">🗓️ 小目標（次のMTの１週間の目標）</div>
+                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 小目標<span class="goal-tooltip-text">次のMTの１週間の目標</span></div>
                                     <form id="weeklyGoalForm" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
                                         <div style="display: flex; flex-direction: column; gap: 8px;">
                                             <label for="weeklyGoalStart" style="font-size: 15px; color: #28a745;">開始日</label>

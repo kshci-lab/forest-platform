@@ -1,0 +1,78 @@
+/* レポート出力アイコンボタン */
+.goal-report-btn {
+    background: none;
+    border: none;
+    padding: 2px;
+    border-radius: 50%;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.goal-report-btn:hover {
+    box-shadow: 0 0 0 2px #007bff;
+    background: #e3f2fd;
+}
+.goal-report-btn[title]:hover:after {
+    content: attr(title);
+    position: absolute;
+    left: 110%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #333;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
+}
+/* 削除ボタンデザイン */
+.goal-delete-btn {
+    background: none;
+    border: none;
+    padding: 2px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.goal-delete-btn:hover {
+    box-shadow: 0 0 0 2px #dc3545;
+    background: #f8d7da;
+}
+ /* 小目標タイトルのツールチップ表示 */
+        .goal-title-tooltip .goal-tooltip-text {
+            visibility: hidden;
+            min-width: 160px;
+            max-width: 220px;
+            background: #f8f9fa;
+            color: #333;
+            text-align: left;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            box-shadow: 0 1px 4px rgba(40,167,69,0.04);
+            padding: 4px 8px;
+            position: absolute;
+            z-index: 10;
+            left: 60%;
+            top: 120%;
+            transform: translateX(-40%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 13px;
+            pointer-events: none;
+        }
+        .goal-title-tooltip:hover .goal-tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
