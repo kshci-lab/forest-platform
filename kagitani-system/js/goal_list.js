@@ -9,15 +9,22 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function(res) {
                 console.log('get_latest_object_goal.php response:', res);
                 if (res.success && Array.isArray(res.goals)) {
-                    // DBから取得した小目標をlocalStorageに保存
-                    var goals = res.goals.map(function(goal) {
-                        return {
-                            start: goal.start_date,
-                            end: goal.finish_date,
-                            object_goal_id: goal.object_goal_id,
-                            createdAt: ''
-                        };
+                    // object_goal_idごとにnode_idをまとめる
+                    var goalMap = {};
+                    res.goals.forEach(function(row) {
+                        if (!goalMap[row.object_goal_id]) {
+                            goalMap[row.object_goal_id] = {
+                                start: row.start_date,
+                                end: row.finish_date,
+                                object_goal_id: row.object_goal_id,
+                                contents: []
+                            };
+                        }
+                        if (row.content) {
+                            goalMap[row.object_goal_id].contents.push(row.content);
+                        }
                     });
+                    var goals = Object.values(goalMap);
                     localStorage.setItem('weeklyGoals', JSON.stringify(goals));
                     renderWeeklyGoals();
                 }
@@ -88,13 +95,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var html = '';
         goals.forEach(function(goal, idx) {
+            var nodeHtml = '';
+            var jmnodeStyle = 'display:inline-block;margin:4px 6px 4px 0;padding:10px;background-color:#bee2f9;color:#333;border-radius:12px;box-shadow:1px 1px 1px #666;font:12px/1.125 Verdana,Arial,Helvetica,sans-serif;border:1.5px solid #7ec3e6;';
+            if (goal.contents && goal.contents.length) {
+                nodeHtml = goal.contents.map(function(content) {
+                    return '<div class="jmnode" style="' + jmnodeStyle + '">' +
+                        '<span>' + content + '</span>' +
+                        '</div>';
+                }).join('');
+            } else {
+                nodeHtml = '<div class="jmnode" style="' + jmnodeStyle + 'color:#888;">未リンク</div>';
+            }
             html += '<div style="background:#eafbe7;border:1.5px solid #28a745;border-radius:7px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:16px;">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-                + '<span>開始日: ' + goal.start + '　終了日: ' + goal.end + '</span>'
+                + '<span>開始日: ' + (goal.start || goal.start_date) + '　終了日: ' + (goal.end || goal.finish_date) + '</span>'
                 + '<div>'
                 + '<button onclick="deleteWeeklyGoal(' + idx + ')" style="background:#dc3545;color:white;border:none;border-radius:4px;padding:5px 12px;font-size:14px;cursor:pointer;">削除</button>'
                 + '</div>'
                 + '</div>'
+                + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
                 + '</div>';
         });
         weeklyListDiv.innerHTML = html;
@@ -235,3 +254,26 @@ document.addEventListener('DOMContentLoaded', function() {
     renderMediumGoals();
     renderLargeGoals();
 });
+
+addWeeklyGoal = function() {
+    // 選択中ノードIDを取得
+    var selected_node_id = _jm.get_selected_node().id;
+    if (!selected_node_id) {
+        alert('ノードが選択されていません');
+        return;
+    }
+    // PHPへAJAXリクエスト送信
+    $.ajax({
+        url: 'php/update_latest_goal_node.php',
+        type: 'POST',
+        data: { node_id: selected_node_id },
+        success: function(response) {
+            console.log('最新の小目標にnode_idを保存しました:', response);
+            alert('最新の小目標にノードIDを保存しました');
+        },
+        error: function(xhr, status, error) {
+            console.error('保存に失敗しました:', error);
+            alert('保存に失敗しました');
+        }
+    });
+}

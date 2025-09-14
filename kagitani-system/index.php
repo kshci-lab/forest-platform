@@ -816,6 +816,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 ノードを更新
                                             </button>
                                         </li> -->
+                                         <li>
+                                            <button class="button4" onclick="addWeeklyGoal();">
+                                                小目標に追加
+                                            </button>
+                                        </li>
                                         <li>
                                             <button class="button4" onclick="showThinkingProcessMap();">
                                                 目標手段階層マップ
