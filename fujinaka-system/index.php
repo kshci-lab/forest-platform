@@ -261,7 +261,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   <li class="subcategory">
                     <ul>
                       <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.createTriangleFromScenario()">三角ロジックを作成</a></li>
-                      <li><a href="javascript:void(0);" onClick="applyPresentationToTriangle()">三角ロジックに反映</a></li>
+                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.applyPresentationToTriangle()">三角ロジックに反映</a></li>
                     </ul>
                   </li>
                 </ul>

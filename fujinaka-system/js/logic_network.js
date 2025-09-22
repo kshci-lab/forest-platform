@@ -211,7 +211,7 @@ class LogicNetwork {
     }
   }
 
-    //ダブルクリックでラベル編集
+  //ダブルクリックでラベル編集
   doubleclick (params) {
     console.log('Double-click event triggered:', params); // デバッグ用
     params.event.preventDefault();
@@ -331,7 +331,6 @@ class LogicNetwork {
     const centerY = 0; // Y座標は固定
     const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
 
-    console.log(`新しい三角形グループ ${independentGroups + 1} を作成中 (位置: x=${centerX}, y=${centerY})`);
 
     // 三角形の頂点の座標を計算
     const node1X = centerX;
@@ -362,6 +361,59 @@ class LogicNetwork {
     defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, null, null, node2X, node2Y, 0);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, null, null, node3X, node3Y, 0);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
+  }
+
+  // 三角ロジックを追加する関数
+  createTriangleFromSelectedNode() {
+    // 選択されているノードを取得
+    const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
+    if (!selectedNodeId) {
+      console.error("ノードが選択されていません");
+      alert("ノードを選択してください");
+      return;
+    }
+  
+    // 選択されたノードの情報を取得
+    const baseNode = this.nodes.get(selectedNodeId);
+    if (!baseNode) {
+      console.error("選択されたノードが見つかりません");
+      return;
+    }
+  
+    // 基準ノードの座標とf_node_id
+    const centerX = baseNode.x;
+    const centerY = baseNode.y;
+    const f_node_id = baseNode.f_node_id || null; // 既存ノードのf_node_idを取得
+    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
+  
+    // 三角形の他の2つの頂点の座標を計算（maketriangleと同じ計算式を使用）
+    // 選択されたノードを上の頂点として扱い、残り2つのノードを下に配置
+    const node2X = centerX - size / 2;
+    const node2Y = centerY + size / Math.sqrt(3); // 左下の頂点
+    const node3X = centerX + size / 2;
+    const node3Y = centerY + size / Math.sqrt(3); // 右下の頂点
+    
+    // 新しい三角ロジックのIDを生成
+    const triangle_id = this.generateUniqueNumberText();
+    // 新しいノードのIDを生成
+    const reason_id = this.generateUniqueNumberText();
+    const fact_id = this.generateUniqueNumberText();
+  
+    // 新しいノードを追加
+    this.addNode(reason_id, "Reason", node2X, node2Y, null, "reason", 0);
+    this.addNode(fact_id, "Fact", node3X, node3Y, null, "fact", 0);
+
+    // エッジを追加して三角形を形成
+    this.addEdge(selectedNodeId, reason_id);
+    this.addEdge(reason_id, fact_id);
+    this.addEdge(fact_id, selectedNodeId);
+
+    // 新規作成されたノードなので edited = 0 を設定
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", node2X, node2Y, null, 0);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", node3X, node3Y, null, 0);
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id);
+
+    console.log("三角形を作成しました - 基準ノードのconceptID:", conceptID);
   }
 
   //Forestで選択しているノードのIDとラベルを取得する関数
@@ -425,7 +477,7 @@ class LogicNetwork {
     this.maketriangle(selected_fnode.topic, forestNodeId, null, 1);
   }
 
-  // シナリオ側から選択された要素の内容とIDを取得する関数（簡略化版）
+  // シナリオ側から選択された要素の内容とIDを取得する関数
   getSelectedScenarioContent() {
     console.log("getSelectedScenarioContent: 開始");
     
@@ -462,7 +514,7 @@ class LogicNetwork {
     }
   }
 
-  // 論文シナリオのノードを起点に三角ロジックを作成する
+  // 論文シナリオのノードを起点に三角ロジックを作成する関数
   createTriangleFromScenario() {
     // マインドマップ側から選択ノード情報を取得
     let selected_pnode = this.getSelectedScenarioContent();
@@ -474,220 +526,123 @@ class LogicNetwork {
     this.maketriangle(selected_pnode.text, null, selected_pnode.id, 1);
   }
 
-  // マインドマップの選択ノードの内容を論理ネットワークの選択ノードに反映する
+  // Forestのノードの内容を三角ロジックに反映する
   applyForestToTriangle() {
-    console.log("applyForestToTriangle: 開始");
+    // 左側（マインドマップ）の選択ノードを取得
+    const f_node = this.CheckSelectedNode();
+    console.log("applyForestToTriangle: f_node =", f_node);
     
-    try {
-      // 左側（マインドマップ）の選択ノードを取得
-      const f_node = this.CheckSelectedNode();
-      console.log("applyForestToTriangle: f_node =", f_node);
-      
-      if (!f_node || !f_node.topic) {
-        alert("左側のノードを選択してください");
-        return;
-      }
-
-      // 右側（論理ネットワーク）の選択ノードを取得
-      const LogicNodeId = this.ownNetwork.getSelection().nodes[0];
-      console.log("applyForestToTriangle: LogicNodeId =", LogicNodeId);
-      
-      if (!LogicNodeId) {
-        alert("右側のノードを選択してください");
-        return;
-      }
-
-      // 右側ノードの現在の状態をチェック
-      const currentLogicNode = this.nodes.get(LogicNodeId);
-      const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
-
-      // 右側ノードのラベルを左側ノードの内容で更新
-      console.log("applyForestToTriangle: editNodeを呼び出し");
-      this.editNode(LogicNodeId, f_node.topic);
-      
-      // Forestから反映されたノードに特別なスタイルを適用
-      const updatedNode = this.nodes.get(LogicNodeId);
-      const styledNode = {
-        ...updatedNode,
-        f_node_id: f_node.id || "default", // Forestから持ってきたことを示す
-        edited: 0, // Forestから持ってきたばかりなので0
-        forest_origin: true // Forestから反映されたことを示すフラグ
-      };
-      
-      // スタイルを適用
-      this.applyNodeStyle(styledNode);
-      
-      // ノードを更新
-      this.nodes.update(styledNode);
-      
-      // 削除済みノードだった場合の追加処理
-      if (wasDeleted && f_node.topic.length > 0) {
-        console.log("削除済みノードを復元しました");
-      }
-      
-      alert("右側ノードの内容を更新しました");
-      
-      // f_node_idは文字列として渡す（オブジェクト全体ではなくIDのみ）
-      const f_node_id = f_node.id || "default";
-      console.log("applyForestToTriangle: update_f_to_LogicNodelabelを呼び出し, f_node_id =", f_node_id);
-      
-      // Forestから反映されたので edited = 1 を設定
-      defaultRecordLogicNetwork.update_f_to_LogicNodelabel(LogicNodeId, f_node.topic, f_node_id, 1);
-      
-    } catch (error) {
-      console.error("applyForestToTriangle: エラーが発生しました:", error);
-      alert("エラーが発生しました: " + error.message);
+    if (!f_node || !f_node.topic) {
+      alert("左側のノードを選択してください");
+      return;
     }
+
+    // 右側（論理ネットワーク）の選択ノードを取得
+    const LogicNodeId = this.ownNetwork.getSelection().nodes[0];
+    console.log("applyForestToTriangle: LogicNodeId =", LogicNodeId);
+    
+    if (!LogicNodeId) {
+      alert("右側のノードを選択してください");
+      return;
+    }
+
+    // 右側ノードの現在の状態をチェック
+    const currentLogicNode = this.nodes.get(LogicNodeId);
+    const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
+
+    // 右側ノードのラベルを左側ノードの内容で更新
+    console.log("applyForestToTriangle: editNodeを呼び出し");
+    this.editNode(LogicNodeId, f_node.topic);
+    
+    // Forestから反映されたノードに特別なスタイルを適用
+    const updatedNode = this.nodes.get(LogicNodeId);
+    const styledNode = {
+      ...updatedNode,
+      f_node_id: f_node.id || "default", // Forestから持ってきたことを示す
+      edited: 1, // Forestから持ってきたばかりなので1
+    };
+    // スタイルを適用
+    this.applyNodeStyle(styledNode);
+    // ノードを更新
+    this.nodes.update(styledNode);
+    // 削除済みノードだった場合の追加処理
+    if (wasDeleted && f_node.topic.length > 0) {
+      console.log("削除済みノードを復元しました");
+    }
+    
+    alert("右側ノードの内容を更新しました");
+    
+    // f_node_idは文字列として渡す（オブジェクト全体ではなくIDのみ）
+    const f_node_id = f_node.id || "default";
+    console.log("applyForestToTriangle: update_f_to_LogicNodelabelを呼び出し, f_node_id =", f_node_id);
+    
+    // Forestから反映されたので edited = 1 を設定
+    defaultRecordLogicNetwork.update_f_to_LogicNodelabel(LogicNodeId, f_node.topic, f_node_id, 1);
   }
 
-  // 論理ネットワークの選択ノードの内容をpresentation側の選択された要素に反映する
+  // 三角ロジックのノードの内容を論文シナリオの内容に反映する
   applyPresentationToTriangle() {
-    console.log("applyPresentationToTriangle: 開始");
-    
-    try {
-      // presentation側で現在選択されている要素を取得
-      const selectedElement = document.querySelector('.cspan[style*="border: 2px solid gray"], .tspan:focus, .text_border:focus');
-      console.log("applyPresentationToTriangle: selectedElement =", selectedElement);
+    // presentation側で現在選択されている要素を取得
+    const selectedElement = document.querySelector('.cspan[style*="border: 2px solid gray"], .tspan:focus, .text_border:focus');
+    console.log("applyPresentationToTriangle: selectedElement =", selectedElement);
       
-      if (!selectedElement) {
-        alert("presentation側で章、節、またはパラグラフを選択してください");
-        return;
-      }
-
-      // 選択された要素のテキスト内容を取得
-      let elementText = "";
-      let elementType = "";
-      
-      if (selectedElement.classList.contains('cspan')) {
-        elementText = selectedElement.textContent || selectedElement.innerHTML;
-        elementType = "パラグラフ";
-      } else if (selectedElement.classList.contains('tspan')) {
-        elementText = selectedElement.textContent || selectedElement.innerHTML;
-        // 親要素を確認してタイプを判定
-        const parentElement = selectedElement.closest('.chapter, .section');
-        if (parentElement && parentElement.classList.contains('chapter')) {
-          elementType = "章";
-        } else if (parentElement && parentElement.classList.contains('section')) {
-          elementType = "節";
-        } else {
-          elementType = "要素";
-        }
-      } else if (selectedElement.classList.contains('text_border') || selectedElement.classList.contains('title_slide')) {
-        elementText = selectedElement.value || "";
-        elementType = "テキスト";
-      }
-
-      if (!elementText || elementText.trim() === "") {
-        alert("選択された要素に内容がありません");
-        return;
-      }
-
-      console.log("applyPresentationToTriangle: elementText =", elementText);
-
-      // 論理ネットワーク側の選択ノードを取得
-      const selectedLogicNodeId = this.ownNetwork.getSelection().nodes[0];
-      console.log("applyPresentationToTriangle: selectedLogicNodeId =", selectedLogicNodeId);
-      
-      if (!selectedLogicNodeId) {
-        alert("論理ネットワーク側のノードを選択してください");
-        return;
-      }
-
-      // 論理ネットワークノードの現在の状態をチェック
-      const currentLogicNode = this.nodes.get(selectedLogicNodeId);
-      const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
-
-      // 論理ネットワークノードのラベルをpresentation要素の内容で更新
-      console.log("applyPresentationToTriangle: editNodeを呼び出し");
-      this.editNode(selectedLogicNodeId, elementText);
-      
-      // presentationから反映されたノードに特別なスタイルを適用
-      const updatedNode = this.nodes.get(selectedLogicNodeId);
-      const styledNode = {
-        ...updatedNode,
-        p_element_id: selectedElement.id || selectedElement.getAttribute('node_id') || "default", // presentationから持ってきたことを示す
-        edited: 1, // presentationから反映されたので1
-        presentation_origin: true // presentationから反映されたことを示すフラグ
-      };
-      
-      // スタイルを適用（必要に応じて色を変更）
-      this.applyNodeStyle(styledNode);
-      
-      // ノードを更新
-      this.nodes.update(styledNode);
-      
-      // 削除済みノードだった場合の追加処理
-      if (wasDeleted && elementText.length > 0) {
-        console.log("削除済みノードを復元しました");
-      }
-      
-      console.log("applyPresentationToTriangle: 内容更新完了");
-      alert(`論理ネットワークノードの内容を${elementType}「${elementText}」で更新しました`);
-      
-      // presentation要素のIDを取得
-      const p_element_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
-      console.log("applyPresentationToTriangle: update_p_to_LogicNodelabelを呼び出し, p_element_id =", p_element_id);
-      
-      // presentation ID付きでデータベースを更新
-      defaultRecordLogicNetwork.update_p_to_LogicNodelabel(selectedLogicNodeId, elementText, p_element_id, 1);
-      
-    } catch (error) {
-      console.error("applyPresentationToTriangle: エラーが発生しました:", error);
-      alert("エラーが発生しました: " + error.message);
-    }
-  }
-
-  // 三角ロジックの事実や理由付けを主張として三角ロジックを作成
-  createTriangleFromSelectedNode() {
-    // 選択されているノードを取得
-    const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
-    if (!selectedNodeId) {
-      console.error("ノードが選択されていません");
-      alert("ノードを選択してください");
+    if (!selectedElement) {
+      alert("presentation側で章、節、またはパラグラフを選択してください");
       return;
     }
-  
-    // 選択されたノードの情報を取得
-    const baseNode = this.nodes.get(selectedNodeId);
-    if (!baseNode) {
-      console.error("選択されたノードが見つかりません");
+
+    // 選択された要素のテキスト内容を取得
+    const elementText = selectedElement.textContent || selectedElement.innerHTML || selectedElement.value || "";
+
+    if (!elementText || elementText.trim() === "") {
+      alert("選択された要素に内容がありません");
       return;
     }
-  
-    // 基準ノードの座標とf_node_id
-    const centerX = baseNode.x;
-    const centerY = baseNode.y;
-    const f_node_id = baseNode.f_node_id || null; // 既存ノードのf_node_idを取得
-    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
-  
-    // 三角形の他の2つの頂点の座標を計算（maketriangleと同じ計算式を使用）
-    // 選択されたノードを上の頂点として扱い、残り2つのノードを下に配置
-    const node2X = centerX - size / 2;
-    const node2Y = centerY + size / Math.sqrt(3); // 左下の頂点
-    const node3X = centerX + size / 2;
-    const node3Y = centerY + size / Math.sqrt(3); // 右下の頂点
+
+    console.log("applyPresentationToTriangle: elementText =", elementText);
+
+    // 論理ネットワーク側の選択ノードを取得
+    const selectedLogicNodeId = this.ownNetwork.getSelection().nodes[0];
+    console.log("applyPresentationToTriangle: selectedLogicNodeId =", selectedLogicNodeId);
     
-    // 新しい三角ロジックのIDを生成
-    const triangle_id = this.generateUniqueNumberText();
-    // 新しいノードのIDを生成
-    const reason_id = this.generateUniqueNumberText();
-    const fact_id = this.generateUniqueNumberText();
-  
-    // 新しいノードを追加
-    this.addNode(reason_id, "Reason", node2X, node2Y, null, "reason", 0);
-    this.addNode(fact_id, "Fact", node3X, node3Y, null, "fact", 0);
+    if (!selectedLogicNodeId) {
+      alert("論理ネットワーク側のノードを選択してください");
+      return;
+    }
 
-    // エッジを追加して三角形を形成
-    this.addEdge(selectedNodeId, reason_id);
-    this.addEdge(reason_id, fact_id);
-    this.addEdge(fact_id, selectedNodeId);
+    // 論理ネットワークノードの現在の状態をチェック
+    const currentLogicNode = this.nodes.get(selectedLogicNodeId);
+    const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
 
-    // 新規作成されたノードなので edited = 0 を設定
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", node2X, node2Y, null, 0);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", node3X, node3Y, null, 0);
-    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id);
-
-    console.log("三角形を作成しました - 基準ノードのconceptID:", conceptID);
+    // 論理ネットワークノードのラベルをpresentation要素の内容で更新（edited=1で実線に）
+    console.log("applyPresentationToTriangle: editNodeを呼び出し");
+    this.editNode(selectedLogicNodeId, elementText);
+    
+    // presentationから反映されたことを示すためにp_node_idを設定
+    const updatedNode = this.nodes.get(selectedLogicNodeId);
+    updatedNode.p_node_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
+    updatedNode.presentation_origin = true; // presentationから反映されたことを示すフラグ
+    
+    // 既存のapplyNodeStyleを使用してスタイルを再適用
+    this.applyNodeStyle(updatedNode);
+    
+    // ノードを更新
+    this.nodes.update(updatedNode);
+    
+    // 削除済みノードだった場合の追加処理
+    if (wasDeleted && elementText.length > 0) {
+      console.log("削除済みノードを復元しました");
+    }
+    
+    console.log("applyPresentationToTriangle: 内容更新完了");
+    alert(`論理ネットワークノードの内容を「${elementText}」で更新しました`);
+    
+    // presentation要素のIDを取得
+    const p_element_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
+    console.log("applyPresentationToTriangle: update_p_to_LogicNodelabelを呼び出し, p_element_id =", p_element_id);
+    
+    // presentation ID付きでデータベースを更新
+    defaultRecordLogicNetwork.update_p_to_LogicNodelabel(selectedLogicNodeId, elementText, p_element_id, 1);
   }
 
   // データベースからロジックネットワークをロードする
@@ -926,78 +881,6 @@ class RecordLogicNetwork{
       }
     })
   }
-
-
-  delete_LogicEdge (edge_start, edge_end){
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        edge_start: edge_start,
-        edge_end: edge_end,
-        purpose : 'delete',
-        delete_thing : 'edge'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log(response); // ← ここでレスポンス確認
-        if (response.status === "success") {
-          console.log("記録成功:", response.node_id);
-        } else {
-          console.error("エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("通信エラー:", error);
-      }
-    })
-  }
-
-  // 新しいノードを追加する（ボタンクリック用）
-  addNewNode() {
-    const node_id = this.generateUniqueNumberText();
-    const label = "New Node";
-    const x = this.latest_selected_node_info.x;
-    const y = this.latest_selected_node_info.y;
-    
-    // 新規ノードなので edited = 0
-    this.addNode(node_id, label, x, y, null, null, 0);
-    
-    // データベースに記録
-    defaultRecordLogicNetwork.record_LogicNode(node_id, label, x, y, null, 0);
-  }
-
-  // presentation ID付きでノードを記録
-  record_LogicNode_with_PresentationId(node_id, label, node_x, node_y, f_node_id, p_node_id, edited = 0) {
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        node_id: node_id,
-        label: label,
-        x: node_x,
-        y: node_y,
-        f_node_id: f_node_id,
-        p_node_id: p_node_id,
-        edited: edited,
-        purpose: 'record',
-        record_thing: 'node_with_p_id'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log("presentation ID付きノード記録レスポンス:", response);
-        if (response.status === "success") {
-          console.log("presentation ID付きノード記録成功:", response.node_id);
-        } else {
-          console.error("presentation ID付きノード記録エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("presentation ID付きノード記録通信エラー:", error);
-      }
-    });
-  }
-
   // presentation IDと共にラベルを更新
   update_p_to_LogicNodelabel(LogicNodeId, newlabel, p_node_id, edited = 1) {
     $.ajax({
@@ -1117,40 +1000,3 @@ async function refreshLogicNetwork() {
     alert("ロジックネットワークが初期化されていません");
   }
 }
-
-// presentation側から三角ロジックを作成するグローバル関数
-function createTriangleFromPresentation() {
-  if (window.defaultLogicNetwork && typeof defaultLogicNetwork.createTriangleFromPresentation === "function") {
-    defaultLogicNetwork.createTriangleFromPresentation();
-  } else {
-    alert("ロジックネットワークが初期化されていません");
-  }
-}
-
-// presentationから論理ネットワークに反映するグローバル関数
-function applyPresentationToTriangle() {
-  if (window.defaultLogicNetwork && typeof defaultLogicNetwork.applyPresentationToTriangle === "function") {
-    defaultLogicNetwork.applyPresentationToTriangle();
-  } else {
-    alert("ロジックネットワークが初期化されていません");
-  }
-}
-
-
-
-// document.getElementById("logic_btn").addEventListener("click", () => {
-//   document.getElementById("logic_area").style.display = "block";
-//   defaultLogicNetwork = new LogicNetwork("mynetwork", "load");
-//   $(`#ln_addNode`).on("click", e => {
-//     defaultLogicNetwork.addNode();
-//   });
-//   $(`#ln_deleteNode`).on("click", e => {
-//     defaultLogicNetwork.deleteNode();
-//   });
-//   $(`#ln_startEditEdge`).on("click", e => {
-//     defaultLogicNetwork.SelectEditEdge();
-//   });
-//   $(`#ln_deleteEdge`).on("click", e => {
-//     defaultLogicNetwork.deleteEdge();
-//   });
-// });
