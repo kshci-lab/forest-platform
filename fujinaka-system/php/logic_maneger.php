@@ -37,27 +37,7 @@ if ($purpose === 'record') {
         $node_id = $_POST["node_id"];
         $label = $_POST["label"];
         $f_node_id = $_POST["f_node_id"];
-        $x = $_POST["x"];
-        $y = $_POST["y"];
-        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 0; // edited パラメータを追加
-
-        $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
-
-        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, x, y, edited, created_at, updated_at) 
-                VALUES ('$node_id', '$label', '$f_node_id', '$x', '$y', '$edited', '$timestamp', '$timestamp')";
-
-        if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $node_id]);
-        } else {
-            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
-        }
-    }
-    if ($record_thing === 'node_with_p_id') {
-        // presentation ID付きノード記録
-        $node_id = $_POST["node_id"];
-        $label = $_POST["label"];
-        $f_node_id = $_POST["f_node_id"];
-        $p_node_id = $_POST["p_node_id"]; // presentation要素ID
+        $p_node_id = $_POST["p_node_id"];
         $x = $_POST["x"];
         $y = $_POST["y"];
         $edited = isset($_POST["edited"]) ? $_POST["edited"] : 0; // edited パラメータを追加
@@ -68,7 +48,7 @@ if ($purpose === 'record') {
                 VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', '$x', '$y', '$edited', '$timestamp', '$timestamp')";
 
         if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "presentation ID付きノードが記録されました", "node_id" => $node_id]);
+            echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $node_id]);
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }

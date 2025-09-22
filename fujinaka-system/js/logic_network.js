@@ -14,7 +14,7 @@ class LogicNetwork {
       physics: false, // ノードが物理演算で動かないようにする
       interaction: {
         multiselect: false,// 複数選択を無効化
-        dragNodes: false, // ノードのドラッグを無効化
+        // dragNodes: false, // ノードのドラッグを無効化
       },
       edges: {
         smooth: false, //エッジが直線になる
@@ -23,14 +23,7 @@ class LogicNetwork {
         },
         width: 1
       },
-      nodes: {
-        fixed: true, // ノードを固定位置に配置
-      }
     };
-    this.latest_selected_node_info = {
-      x: 0,
-      y: 35,
-    }
     this.network = null;
     this.edgeEditMode = false; //リンクの編集モード
     this.dragStartNodeId = null;  //ドラッグスタートしたノードのID
@@ -99,66 +92,26 @@ class LogicNetwork {
   }
 
   //ノードを追加する
-  addNode(node_id, label, node_x, node_y, f_node_id = null, node_type = null, edited = 0, p_node_id = null) {
-    let node_color = '#fffacd';
-    let node_shape = 'box';
-    
+  addNode(node_id, label, f_node_id = null, p_node_id = null,node_x, node_y, edited = 0) {
     // ラベルが長い場合は自動で改行を挿入
     let formatted_label = this.formatLabelWithLineBreaks(label);
-    
-    // editedとf_node_id、p_node_idに基づいてスタイルを設定
-    let borderWidth = 0; // 枠無し
-    let borderColor = '#fffacd'; // ノードと同じ
-    let borderDashes = false;
-    
-    // editedの値に基づいて点線/実線を決定
-    // edited=0の場合は点線、edited=1の場合は実線
-    if (edited === 0 || edited === '0') {
-      borderDashes = true; // 点線
-      // 通常のノードの場合、点線を見えるようにborderWidthとcolorを設定
-      if (f_node_id === null && p_node_id === null) {
-        borderWidth = 2;
-        borderColor = '#000000'; // 黒色
-      }
-    } else {
-      borderDashes = false; // 実線
-    }
-    
-    // Forestから持ってきた場合（f_node_idがある場合）は緑色
-    if (f_node_id !== null) {
-      borderWidth = 2;
-      borderColor = '#228B22'; // 緑色（フォレストグリーン）
-    }
-    // Presentationから持ってきた場合（p_node_idがある場合）は赤色
-    else if (p_node_id !== null) {
-      borderWidth = 2;
-      borderColor = '#DC143C'; // 赤色（クリムゾン）
-    }
-    // 通常のノードの場合は枠無し（何もしない）
     
     const newNode = {
       id: node_id,
       label: formatted_label,
-      color: {
-        background: node_color,
-        border: borderColor
-      },
-      shape: node_shape,
-      borderWidth: borderWidth,
-      borderWidthSelected: borderWidth,
-      shapeProperties: {
-        borderDashes: borderDashes
-      },
       x: node_x,
       y: node_y,
+      shape: 'box',
       f_node_id: f_node_id,
       p_node_id: p_node_id,
-      node_type: node_type,
       edited: edited
     };
+    
+    // スタイルを適用
+    this.applyNodeStyle(newNode);
+    
     this.nodes.add(newNode);
     console.log(f_node_id);
-    // defaultRecordLogicNetwork.record_LogicNode(node_id, label, node_x, node_y, f_node_id);
     return this.nodes;
   }
 
@@ -181,15 +134,15 @@ class LogicNetwork {
     let borderWidth = 0; // 枠無し
     let borderColor = '#fffacd'; // ノードと同じ
     let backgroundColor = '#fffacd'; // デフォルトの背景色
-    let borderDashes = false;
+    let borderDashes = false; //　点線はfalse（実線）
     
     // editedの値に基づいて点線/実線を決定
     // edited=0の場合は点線、edited=1の場合は実線
-    if (node.edited === 0 || node.edited === '0') {
+    if (node.edited == 0) {
       borderDashes = true; // 点線
       // 通常のノードの場合、点線を見えるようにborderWidthとcolorを設定
-      if ((node.f_node_id === null || node.f_node_id === undefined) && 
-          (node.p_node_id === null || node.p_node_id === undefined)) {
+      if ((node.f_node_id == null || node.f_node_id == undefined) && 
+          (node.p_node_id == null || node.p_node_id == undefined)) {
         borderWidth = 2;
         borderColor = '#000000'; // 黒色
       }
@@ -198,12 +151,12 @@ class LogicNetwork {
     }
     
     // Forestから持ってきた場合（f_node_idがある場合）は緑色
-    if (node.f_node_id !== null && node.f_node_id !== undefined) {
+    if (node.f_node_id !== null ) {
       borderWidth = 2;
       borderColor = '#228B22'; // 緑色（フォレストグリーン）
     }
     // Presentationから持ってきた場合（p_node_idがある場合）は赤色
-    else if (node.p_node_id !== null && node.p_node_id !== undefined) {
+    else if (node.p_node_id !== null) {
       borderWidth = 2;
       borderColor = '#DC143C'; // 赤色（クリムゾン）
     }
@@ -359,6 +312,59 @@ class LogicNetwork {
     }
   }
 
+  //三角形を作成する基本関数
+  maketriangle(topic, f_node_id, p_node_id, edited) {
+    //未編集ノードのためラベルは空白
+    if (topic === undefined) {
+      topic = "";
+    }
+
+    //未編集ノードのためラベルは空白
+    const reason_content = "";
+    const fact_content = "";
+
+    const gridSpacing = 300; // 三角形群間の間隔を大きめに設定
+    
+    // 右に並べるレイアウト（横一列）
+    // const centerX = independentGroups * gridSpacing;
+    const centerX = 0
+    const centerY = 0; // Y座標は固定
+    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
+
+    console.log(`新しい三角形グループ ${independentGroups + 1} を作成中 (位置: x=${centerX}, y=${centerY})`);
+
+    // 三角形の頂点の座標を計算
+    const node1X = centerX;
+    const node1Y = centerY - size / Math.sqrt(3); // 上の頂点
+    const node2X = centerX - size / 2;
+    const node2Y = centerY + size / (2 * Math.sqrt(3)); // 左下の頂点
+    const node3X = centerX + size / 2;
+    const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
+
+    // ノードを追加（ノードタイプを指定）
+    const triangle_id = this.generateUniqueNumberText();
+    const claim_id = this.generateUniqueNumberText();
+    const reason_id = this.generateUniqueNumberText();
+    const fact_id = this.generateUniqueNumberText();
+
+    this.addNode(claim_id, topic, f_node_id, p_node_id, node1X, node1Y, edited); // 主張ノード
+    this.addNode(reason_id, reason_content, null, null, node2X, node2Y, 0); // 理由ノード
+    this.addNode(fact_id, fact_content, null, null, node3X, node3Y, 0); // 事実ノード
+
+    // エッジを追加して三角形を形成
+    this.addEdge(claim_id, reason_id);
+    this.addEdge(reason_id, fact_id);
+    this.addEdge(fact_id, claim_id);
+
+    console.log("三角形を作成しました");
+
+    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic,  f_node_id, p_node_id, node1X, node1Y, edited);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, null, null, node2X, node2Y, 0);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, null, null, node3X, node3Y, 0);
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
+  }
+
+  //Forestで選択しているノードのIDとラベルを取得する関数
   CheckSelectedNode(){
     console.log("CheckSelectedNode: 開始");
     
@@ -402,200 +408,6 @@ class LogicNetwork {
     }
   }
 
-  // nodeIDを引数にしてf_node_idを取得する関数（presentation.jsと同様）
-  GetForestNodeId(nodeID){
-    var node_obj = document.getElementsByTagName("jmnode");
-    var forestNodeID = "default";
-
-    for(let k=0; k<node_obj.length; k++){
-      if(node_obj[k].getAttribute("nodeid") == nodeID){//回ってきたidが選択中ノードの時
-        forestNodeID = node_obj[k].getAttribute("f_node_id");//f_node_id
-        console.log("Logic Network - F_Node_ID:", forestNodeID);
-      }
-      if(forestNodeID != "default"){//同じf_node_idがいくつか存在するから
-        break;
-      }
-    }
-    return forestNodeID;
-  }
-
-  // 現在選択されているマインドマップノードのf_node_idを取得
-  getSelectedNodeForestId(){
-    const selected_node = this.CheckSelectedNode();
-    if(selected_node && selected_node.id){
-      return this.GetForestNodeId(selected_node.id);
-    }
-    return "default";
-  }
-
-  // 独立した三角ロジック群の数をカウントする補助関数
-  countIndependentTriangleGroups() {
-    const edges = this.edges.get();
-    const nodeConnections = new Map();
-    
-    // エッジからノードの接続情報を構築
-    edges.forEach(edge => {
-      if (!nodeConnections.has(edge.from)) {
-        nodeConnections.set(edge.from, new Set());
-      }
-      if (!nodeConnections.has(edge.to)) {
-        nodeConnections.set(edge.to, new Set());
-      }
-      nodeConnections.get(edge.from).add(edge.to);
-      nodeConnections.get(edge.to).add(edge.from);
-    });
-
-    // 三角形を検出し、グループ化
-    const triangleGroups = [];
-    const visitedNodes = new Set();
-    
-    for (const [nodeA, connectionsA] of nodeConnections) {
-      if (visitedNodes.has(nodeA)) continue;
-      
-      for (const nodeB of connectionsA) {
-        if (visitedNodes.has(nodeB)) continue;
-        
-        for (const nodeC of connectionsA) {
-          if (nodeC === nodeB || visitedNodes.has(nodeC)) continue;
-          
-          if (nodeConnections.get(nodeB).has(nodeC) && 
-              nodeConnections.get(nodeC).has(nodeB)) {
-            
-            // 三角形を発見 - この三角形と接続されている全ノードをグループとする
-            const group = new Set([nodeA, nodeB, nodeC]);
-            const toVisit = [nodeA, nodeB, nodeC];
-            
-            // 接続されている全ノードを探索（階層的な三角形も含む）
-            while (toVisit.length > 0) {
-              const currentNode = toVisit.pop();
-              if (nodeConnections.has(currentNode)) {
-                for (const connectedNode of nodeConnections.get(currentNode)) {
-                  if (!group.has(connectedNode)) {
-                    group.add(connectedNode);
-                    toVisit.push(connectedNode);
-                  }
-                }
-              }
-            }
-            
-            // グループに含まれる全ノードを訪問済みにマーク
-            for (const node of group) {
-              visitedNodes.add(node);
-            }
-            
-            triangleGroups.push(group);
-            break;
-          }
-        }
-        if (visitedNodes.has(nodeA)) break;
-      }
-    }
-    
-    return triangleGroups.length;
-  }
-
-  maketriangle(topic, f_node_id) {
-    if (topic === undefined) {
-      topic = "New claim";
-    }
-    
-    const reason_content = "New reason";
-    const fact_content = "New fact";
-
-    // 独立した三角ロジック群の数に基づいて位置を決定
-    const independentGroups = this.countIndependentTriangleGroups();
-    const gridSpacing = 300; // 三角形群間の間隔を大きめに設定
-    
-    // 右に並べるレイアウト（横一列）
-    const centerX = independentGroups * gridSpacing;
-    const centerY = 0; // Y座標は固定
-    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
-
-    console.log(`新しい三角形グループ ${independentGroups + 1} を作成中 (位置: x=${centerX}, y=${centerY})`);
-
-    // 三角形の頂点の座標を計算
-    const node1X = centerX;
-    const node1Y = centerY - size / Math.sqrt(3); // 上の頂点
-    const node2X = centerX - size / 2;
-    const node2Y = centerY + size / (2 * Math.sqrt(3)); // 左下の頂点
-    const node3X = centerX + size / 2;
-    const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
-
-    // ノードを追加（ノードタイプを指定）
-    const triangle_id = this.generateUniqueNumberText();
-    const claim_id = this.generateUniqueNumberText();
-    const reason_id = this.generateUniqueNumberText();
-    const fact_id = this.generateUniqueNumberText();
-
-    this.addNode(claim_id, topic, node1X, node1Y, f_node_id, "claim", 1); // 主張ノード
-    this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason", 0); // 理由ノード
-    this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact", 0); // 事実ノード
-
-    // エッジを追加して三角形を形成
-    this.addEdge(claim_id, reason_id);
-    this.addEdge(reason_id, fact_id);
-    this.addEdge(fact_id, claim_id);
-
-    console.log("三角形を作成しました");
-
-    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic, node1X, node1Y, f_node_id, 1);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, node2X, node2Y, null, 0);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, node3X, node3Y, null, 0);
-    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
-  }
-
-  // presentation ID付きで三角ロジックを作成
-  maketriangleWithPresentationId(topic, p_node_id) {
-    if (topic === undefined) {
-      topic = "New claim";
-    }
-    
-    const reason_content = "New reason";
-    const fact_content = "New fact";
-
-    // 独立した三角ロジック群の数に基づいて位置を決定
-    const independentGroups = this.countIndependentTriangleGroups();
-    const gridSpacing = 300; // 三角形群間の間隔を大きめに設定
-    
-    // 右に並べるレイアウト（横一列）
-    const centerX = independentGroups * gridSpacing;
-    const centerY = 0; // Y座標は固定
-    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
-
-    console.log(`新しい三角形グループ ${independentGroups + 1} を作成中 (位置: x=${centerX}, y=${centerY})`);
-
-    // 三角形の頂点の座標を計算
-    const node1X = centerX;
-    const node1Y = centerY - size / Math.sqrt(3); // 上の頂点
-    const node2X = centerX - size / 2;
-    const node2Y = centerY + size / (2 * Math.sqrt(3)); // 左下の頂点
-    const node3X = centerX + size / 2;
-    const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
-
-    // ノードを追加（ノードタイプを指定）
-    const triangle_id = this.generateUniqueNumberText();
-    const claim_id = this.generateUniqueNumberText();
-    const reason_id = this.generateUniqueNumberText();
-    const fact_id = this.generateUniqueNumberText();
-
-    this.addNode(claim_id, topic, node1X, node1Y, null, "claim", 1, p_node_id); // 主張ノード（presentation ID付き）
-    this.addNode(reason_id, reason_content, node2X, node2Y, null, "reason", 0); // 理由ノード
-    this.addNode(fact_id, fact_content, node3X, node3Y, null, "fact", 0); // 事実ノード
-
-    // エッジを追加して三角形を形成
-    this.addEdge(claim_id, reason_id);
-    this.addEdge(reason_id, fact_id);
-    this.addEdge(fact_id, claim_id);
-
-    console.log("presentation ID付き三角形を作成しました");
-
-    // presentation ID付きでデータベースに記録
-    defaultRecordLogicNetwork.record_LogicNode_with_PresentationId(claim_id, topic, node1X, node1Y, null, p_node_id, 1);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, node2X, node2Y, null, 0);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, node3X, node3Y, null, 0);
-    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
-  }
-
   // Forestのノードを起点に三角ロジックを作成する
   createTriangleFromForest() {
     // マインドマップ側から選択ノード情報を取得
@@ -610,70 +422,56 @@ class LogicNetwork {
     console.log("Selected Forest node ID:", forestNodeId);
 
     // maketriangleを呼び出し、ForestのノードIDを渡す
-    this.maketriangle(selected_fnode.topic, forestNodeId);
+    this.maketriangle(selected_fnode.topic, forestNodeId, null, 1);
   }
 
-  // presentation側から選択されたスライド要素を起点に三角ロジックを作成する関数
-  createTriangleFromPresentation() {
-    console.log("createTriangleFromPresentation: 開始");
+  // シナリオ側から選択された要素の内容とIDを取得する関数（簡略化版）
+  getSelectedScenarioContent() {
+    console.log("getSelectedScenarioContent: 開始");
     
     try {
       // 現在選択されている要素を取得
       const selectedElement = document.querySelector('.cspan[style*="border: 2px solid gray"], .tspan:focus, .text_border:focus');
       
       if (!selectedElement) {
-        alert("章、節、またはパラグラフを選択してください");
-        return;
+        console.log("選択された要素が見つかりません");
+        return null;
       }
       
-      // 選択された要素のテキスト内容を取得
-      let elementText = "";
-      let elementType = "";
-      
-      if (selectedElement.classList.contains('cspan')) {
-        elementText = selectedElement.textContent || selectedElement.innerHTML;
-        elementType = "パラグラフ";
-      } else if (selectedElement.classList.contains('tspan')) {
-        elementText = selectedElement.textContent || selectedElement.innerHTML;
-        // 親要素を確認してタイプを判定
-        const parentElement = selectedElement.closest('.chapter, .section');
-        if (parentElement && parentElement.classList.contains('chapter')) {
-          elementType = "章";
-        } else if (parentElement && parentElement.classList.contains('section')) {
-          elementType = "節";
-        } else {
-          elementType = "要素";
-        }
-      } else {
-        elementText = selectedElement.value || "";
-        elementType = "テキスト";
-      }
+      // 要素のテキスト内容を取得
+      const elementText = selectedElement.textContent || selectedElement.innerHTML || selectedElement.value || "";
       
       if (!elementText || elementText.trim() === "") {
-        alert("空の要素から三角ロジックを作成することはできません");
-        return;
+        console.log("選択された要素に内容がありません");
+        return null;
       }
       
-      // 長すぎるテキストは切り詰め
-      if (elementText.length > 50) {
-        elementText = elementText.substring(0, 50) + "...";
-      }
+      // 要素のIDを取得
+      const elementId = selectedElement.id || selectedElement.getAttribute('node_id') || this.generateUniqueNumberText();
       
-      console.log(`createTriangleFromPresentation: ${elementType}「${elementText}」から三角ロジックを作成`);
+      console.log("取得したシナリオ情報:", { text: elementText, id: elementId });
       
-      // 選択された要素の固有IDを生成（presentation要素用のID）
-      const presentationElementId = selectedElement.id || selectedElement.getAttribute('node_id') || this.generateUniqueNumberText();
-      
-      // 三角ロジックを作成（presentation要素のIDを渡す）
-      this.maketriangleWithPresentationId(elementText, presentationElementId);
-      
-      console.log("createTriangleFromPresentation: 三角ロジック作成完了");
-      alert(`${elementType}「${elementText}」を起点とした三角ロジックを作成しました`);
+      return {
+        text: elementText.trim(),
+        id: elementId
+      };
       
     } catch (error) {
-      console.error("createTriangleFromPresentation: エラーが発生しました:", error);
-      alert("三角ロジックの作成中にエラーが発生しました: " + error.message);
+      console.error("getSelectedScenarioContent: エラーが発生しました:", error);
+      return null;
     }
+  }
+
+  // 論文シナリオのノードを起点に三角ロジックを作成する
+  createTriangleFromScenario() {
+    // マインドマップ側から選択ノード情報を取得
+    let selected_pnode = this.getSelectedScenarioContent();
+    if (!selected_pnode || !selected_pnode.text) {
+      alert("ノードを選択してください");
+      return;
+    }
+    // maketriangleを呼び出し、ForestのノードIDを渡す
+    this.maketriangle(selected_pnode.text, null, selected_pnode.id, 1);
   }
 
   // マインドマップの選択ノードの内容を論理ネットワークの選択ノードに反映する
@@ -1021,16 +819,17 @@ class RecordLogicNetwork{
     });
   }
 
-  record_LogicNode(node_id, label, node_x, node_y, f_node_id, edited = 0) {
+  record_LogicNode(node_id, label, f_node_id, p_node_id, node_x, node_y, edited = 0) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
       data: {
         node_id: node_id,
         label: label,
+        f_node_id: f_node_id,
+        p_node_id: p_node_id,
         x: node_x,
         y: node_y,
-        f_node_id: f_node_id,
         edited: edited,
         purpose: 'record',
         record_thing: 'node'
