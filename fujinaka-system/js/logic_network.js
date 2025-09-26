@@ -16,6 +16,14 @@ class LogicNetwork {
         multiselect: false,// 複数選択を無効化
         // dragNodes: false, // ノードのドラッグを無効化
       },
+      layout: {
+        hierarchical: {
+          direction: "UD", // 上下方向
+          sortMethod: "none", // ノードのレベルによってソート
+          levelSeparation: 150, // レベル間の距離
+          nodeSpacing: 100, // ノード間の距離
+        },
+      },
       edges: {
         smooth: false, //エッジが直線になる
         color: {
@@ -92,7 +100,7 @@ class LogicNetwork {
   }
 
   //ノードを追加する
-  addNode(node_id, label, f_node_id = null, p_node_id = null,node_x, node_y, edited = 0) {
+  addNode(node_id, label, f_node_id = null, p_node_id = null,node_x, node_y, edited = 0, level) {
     // ラベルが長い場合は自動で改行を挿入
     let formatted_label = this.formatLabelWithLineBreaks(label);
     
@@ -104,7 +112,8 @@ class LogicNetwork {
       shape: 'box',
       f_node_id: f_node_id,
       p_node_id: p_node_id,
-      edited: edited
+      edited: edited,
+      level: level
     };
     
     // スタイルを適用
@@ -322,8 +331,6 @@ class LogicNetwork {
     //未編集ノードのためラベルは空白
     const reason_content = "";
     const fact_content = "";
-
-    const gridSpacing = 300; // 三角形群間の間隔を大きめに設定
     
     // 右に並べるレイアウト（横一列）
     // const centerX = independentGroups * gridSpacing;
@@ -339,6 +346,9 @@ class LogicNetwork {
     const node2Y = centerY + size / (2 * Math.sqrt(3)); // 左下の頂点
     const node3X = centerX + size / 2;
     const node3Y = centerY + size / (2 * Math.sqrt(3)); // 右下の頂点
+    const node1level = 0; // 上の頂点のレベル
+    const node2level = 1; // 左下の頂点のレベル
+    const node3level = 1; // 右下の頂点のレベル
 
     // ノードを追加（ノードタイプを指定）
     const triangle_id = this.generateUniqueNumberText();
@@ -346,9 +356,9 @@ class LogicNetwork {
     const reason_id = this.generateUniqueNumberText();
     const fact_id = this.generateUniqueNumberText();
 
-    this.addNode(claim_id, topic, f_node_id, p_node_id, node1X, node1Y, edited); // 主張ノード
-    this.addNode(reason_id, reason_content, null, null, node2X, node2Y, 0); // 理由ノード
-    this.addNode(fact_id, fact_content, null, null, node3X, node3Y, 0); // 事実ノード
+    this.addNode(claim_id, topic, f_node_id, p_node_id, node1X, node1Y, edited, node1level); // 主張ノード
+    this.addNode(reason_id, reason_content, null, null, node2X, node2Y, 0, node2level); // 理由ノード
+    this.addNode(fact_id, fact_content, null, null, node3X, node3Y, 0, node3level); // 事実ノード
 
     // エッジを追加して三角形を形成
     this.addEdge(claim_id, reason_id);
@@ -357,13 +367,13 @@ class LogicNetwork {
 
     console.log("三角形を作成しました");
 
-    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic,  f_node_id, p_node_id, node1X, node1Y, edited);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, null, null, node2X, node2Y, 0);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, null, null, node3X, node3Y, 0);
+    defaultRecordLogicNetwork.record_LogicNode(claim_id, topic,  f_node_id, p_node_id, node1X, node1Y, edited, node1level);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, null, null, node2X, node2Y, 0, node2level);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, null, null, node3X, node3Y, 0, node3level);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
   }
 
-  // 三角ロジックを追加する関数
+  // 三角ロジックを追加する関数（修正版）
   createTriangleFromSelectedNode() {
     // 選択されているノードを取得
     const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
@@ -372,14 +382,20 @@ class LogicNetwork {
       alert("ノードを選択してください");
       return;
     }
-  
+
     // 選択されたノードの情報を取得
     const baseNode = this.nodes.get(selectedNodeId);
     if (!baseNode) {
       console.error("選択されたノードが見つかりません");
       return;
     }
-  
+
+    // 選択ノードのレベルを取得
+    const baseLevel = baseNode.level || 0;
+    const newNodeLevel = baseLevel + 1; // 1つ下のレベル
+
+    console.log(`選択ノードのレベル: ${baseLevel}, 新ノードのレベル: ${newNodeLevel}`);
+
     // 基準ノードの座標とf_node_id
     const centerX = baseNode.x;
     const centerY = baseNode.y;
@@ -399,21 +415,21 @@ class LogicNetwork {
     const reason_id = this.generateUniqueNumberText();
     const fact_id = this.generateUniqueNumberText();
   
-    // 新しいノードを追加
-    this.addNode(reason_id, "Reason", node2X, node2Y, null, "reason", 0);
-    this.addNode(fact_id, "Fact", node3X, node3Y, null, "fact", 0);
+    // 新しいノードを追加（選択ノードの1つ下のレベルに配置）
+    this.addNode(reason_id, "", null, null, node2X, node2Y, 0, newNodeLevel);
+    this.addNode(fact_id, "", null, null, node3X, node3Y, 0, newNodeLevel);
 
     // エッジを追加して三角形を形成
     this.addEdge(selectedNodeId, reason_id);
     this.addEdge(reason_id, fact_id);
     this.addEdge(fact_id, selectedNodeId);
 
-    // 新規作成されたノードなので edited = 0 を設定
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", node2X, node2Y, null, 0);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", node3X, node3Y, null, 0);
+    // データベースに記録（新しいレベルで記録）
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", null, null, node2X, node2Y, 0, newNodeLevel);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", null, null, node3X, node3Y, 0, newNodeLevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id);
 
-    console.log("三角形を作成しました - 基準ノードのconceptID:", conceptID);
+    console.log(`三角形を作成しました - 基準ノード: ${selectedNodeId} (レベル${baseLevel}), 新ノード: レベル${newNodeLevel}`);
   }
 
   //Forestで選択しているノードのIDとラベルを取得する関数
@@ -774,7 +790,7 @@ class RecordLogicNetwork{
     });
   }
 
-  record_LogicNode(node_id, label, f_node_id, p_node_id, node_x, node_y, edited = 0) {
+  record_LogicNode(node_id, label, f_node_id, p_node_id, node_x, node_y, edited = 0, node_level) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
@@ -786,6 +802,7 @@ class RecordLogicNetwork{
         x: node_x,
         y: node_y,
         edited: edited,
+        level: node_level,
         purpose: 'record',
         record_thing: 'node'
       },
