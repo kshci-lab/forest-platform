@@ -370,7 +370,7 @@ class LogicNetwork {
     defaultRecordLogicNetwork.record_LogicNode(claim_id, topic,  f_node_id, p_node_id, node1X, node1Y, edited, node1level);
     defaultRecordLogicNetwork.record_LogicNode(reason_id, reason_content, null, null, node2X, node2Y, 0, node2level);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, fact_content, null, null, node3X, node3Y, 0, node3level);
-    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id)
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id, "", "");
   }
 
   // 三角ロジックを追加する関数（修正版）
@@ -427,7 +427,7 @@ class LogicNetwork {
     // データベースに記録（新しいレベルで記録）
     defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", null, null, node2X, node2Y, 0, newNodeLevel);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", null, null, node3X, node3Y, 0, newNodeLevel);
-    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id);
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id, "", "");
 
     console.log(`三角形を作成しました - 基準ノード: ${selectedNodeId} (レベル${baseLevel}), 新ノード: レベル${newNodeLevel}`);
   }
@@ -715,7 +715,8 @@ class LogicNetwork {
           shape: 'box',
           f_node_id: node.f_node_id || null,
           p_node_id: node.p_node_id || null,
-          edited: parseInt(node.edited) || 0
+          edited: parseInt(node.edited) || 0,
+          level: parseInt(node.level) || 0
         };
         
         // スタイルを適用
@@ -760,6 +761,365 @@ class LogicNetwork {
   async initializeFromDatabase() {
     await this.loadLogicNetworkFromDatabase();
   }
+
+  // 論理の説明を追加する関数
+  completeLogic() {
+    console.log("completeLogic: 開始");
+    
+    // 選択されているノードを取得
+    const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
+    
+    if (!selectedNodeId) {
+      alert("ノードを選択してください");
+      return;
+    }
+
+    // 選択されたノードの情報を取得
+    const selectedNode = this.nodes.get(selectedNodeId);
+    
+    if (!selectedNode) {
+      console.error("選択されたノードが見つかりません");
+      return;
+    }
+
+    // ノードのラベルが空の場合は説明を追加できない
+    if (!selectedNode.label || selectedNode.label.trim() === "") {
+      alert("まず、ノードに内容を入力してください");
+      return;
+    }
+
+    // 既存の説明を取得（ある場合）
+    const existingClaimReason = selectedNode.ClaimReason || "";
+
+    // モーダルボックスを表示
+    this.showLogicClaimReasonModal(selectedNodeId, selectedNode.label, existingClaimReason);
+  }
+
+  // 論理説明用のモーダルボックスを表示する関数
+  showLogicClaimReasonModal(nodeId, nodeLabel, existingClaimReason) {
+    console.log("showLogicClaimReasonModal: nodeId =", nodeId);
+    
+    // モーダルの表示
+    const modal = document.getElementById('logicClaimReasonModal');
+    const nodeTitle = document.getElementById('claimReasonNodeTitle');
+    const textarea = document.getElementById('claimReasonTextarea');
+    
+    if (modal && nodeTitle && textarea) {
+      // ノードのラベルを表示（改行文字を除去）
+      const cleanLabel = nodeLabel.replace(/\n/g, ' ').trim();
+      nodeTitle.textContent = `「${cleanLabel}」についての説明`;
+      
+      // 既存の説明があれば設定
+      textarea.value = existingClaimReason;
+      
+      // モーダルを表示
+      modal.style.display = 'block';
+      
+      // テキストエリアにフォーカス
+      textarea.focus();
+      
+      // 現在のノードIDを保存
+      modal.dataset.currentNodeId = nodeId;
+    } else {
+      console.error("モーダル要素が見つかりません");
+      alert("説明入力画面を表示できませんでした");
+    }
+  }
+
+  // 論理説明を保存する関数
+  saveLogicClaimReason() {
+    console.log("saveLogicClaimReason: 開始");
+
+    const modal = document.getElementById('logicClaimReasonModal');
+    const textarea = document.getElementById('claimReasonTextarea');
+
+    if (!modal || !textarea) {
+      console.error("モーダル要素が見つかりません");
+      return;
+    }
+
+    const nodeId = modal.dataset.currentNodeId;
+    const claimReason = textarea.value.trim();
+
+    if (!nodeId) {
+      console.error("ノードIDが取得できません");
+      return;
+    }
+
+    // 選択されたノードが主張となる三角形のIDを取得
+    this.getTriangleIdByClaimId(nodeId).then(triangleId => {
+      if (!triangleId) {
+        console.error("該当する三角形が見つかりません");
+        alert("この主張に対応する三角形が見つかりません");
+        return;
+      }
+
+    // ノードに説明を追加
+    const node = this.nodes.get(nodeId);
+    if (node) {
+      const updatedNode = {
+        ...node,
+        claimReason: claimReason,
+        hasClaimReason: claimReason.length > 0
+      };
+
+      // ノードを更新
+      this.nodes.update(updatedNode);
+
+      // データベースに保存
+      this.saveClaimReasonToDatabase(triangleId, claimReason);
+
+      console.log(`ノード ${nodeId} の説明を更新しました:`, claimReason);
+    }
+
+    // モーダルを閉じる
+    this.closeLogicClaimReasonModal();
+
+    alert(claimReason.length > 0 ? "説明を保存しました" : "説明を削除しました");
+  });
+}
+
+// 主張ノードIDから三角形IDを取得する関数
+  async getTriangleIdByClaimId(claimId) {
+    try {
+      const response = await $.ajax({
+        url: "php/logic_maneger.php",
+        type: "POST",
+        data: {
+          claim_id: claimId,
+          purpose: 'get',
+          get_thing: 'triangle_by_claim'
+        },
+        dataType: "json"
+      });
+
+      if (response.status === "success" && response.triangle_id) {
+        return response.triangle_id;
+      } else {
+        console.error("三角形ID取得エラー:", response.message);
+        return null;
+      }
+    } catch (error) {
+      console.error("三角形ID取得通信エラー:", error);
+      return null;
+    }
+  }
+
+  // 論理説明をデータベースに保存する関数
+  saveClaimReasonToDatabase(triangleId, claimReason) {
+    $.ajax({
+      url: "php/logic_maneger.php",
+      type: "POST",
+      data: {
+        triangle_id: triangleId,
+        claimReason: claimReason,
+        purpose: 'update',
+        update_thing: 'claimReason'
+      },
+      dataType: "json",
+      success: function(response) {
+        console.log("説明保存レスポンス:", response);
+        if (response.status === "success") {
+          console.log("説明保存成功:", response.node_id);
+        } else {
+          console.error("説明保存エラー:", response.message);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error("説明保存通信エラー:", error);
+      }
+    });
+  }
+
+  // モーダルを閉じる関数
+  closeLogicClaimReasonModal() {
+    const modal = document.getElementById('logicClaimReasonModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.dataset.currentNodeId = '';
+    }
+  }
+
+  // 論理の葛藤を追加する関数
+  conflictLogic() {
+    console.log("conflictLogic: 開始");
+    
+    // 選択されているノードを取得
+    const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
+    
+    if (!selectedNodeId) {
+      alert("ノードを選択してください");
+      return;
+    }
+
+    // 選択されたノードの情報を取得
+    const selectedNode = this.nodes.get(selectedNodeId);
+    
+    if (!selectedNode) {
+      console.error("選択されたノードが見つかりません");
+      return;
+    }
+
+    // ノードのラベルが空の場合は葛藤を追加できない
+    if (!selectedNode.label || selectedNode.label.trim() === "") {
+      alert("まず、ノードに内容を入力してください");
+      return;
+    }
+
+    // 既存の葛藤を取得（ある場合）
+    const existingConflict = selectedNode.conflict || "";
+
+    // モーダルボックスを表示
+    this.showLogicConflictModal(selectedNodeId, selectedNode.label, existingConflict);
+  }
+
+  // 論理葛藤用のモーダルボックスを表示する関数
+  showLogicConflictModal(nodeId, nodeLabel, existingConflict) {
+    console.log("showLogicConflictModal: nodeId =", nodeId);
+    
+    // モーダルの表示
+    const modal = document.getElementById('logicConflictModal');
+    const nodeTitle = document.getElementById('conflictNodeTitle');
+    const textarea = document.getElementById('conflictTextarea');
+    
+    if (modal && nodeTitle && textarea) {
+      // ノードのラベルを表示（改行文字を除去）
+      const cleanLabel = nodeLabel.replace(/\n/g, ' ').trim();
+      nodeTitle.textContent = `「${cleanLabel}」についての葛藤`;
+      
+      // 既存の葛藤があれば設定
+      textarea.value = existingConflict;
+      
+      // モーダルを表示
+      modal.style.display = 'block';
+      
+      // テキストエリアにフォーカス
+      textarea.focus();
+      
+      // 現在のノードIDを保存
+      modal.dataset.currentNodeId = nodeId;
+    } else {
+      console.error("モーダル要素が見つかりません");
+      alert("葛藤入力画面を表示できませんでした");
+    }
+  }
+
+  // 論理葛藤を保存する関数
+  saveLogicConflict() {
+    console.log("saveLogicConflict: 開始");
+    
+    const modal = document.getElementById('logicConflictModal');
+    const textarea = document.getElementById('conflictTextarea');
+    
+    if (!modal || !textarea) {
+      console.error("モーダル要素が見つかりません");
+      return;
+    }
+
+    const nodeId = modal.dataset.currentNodeId;
+    const conflict = textarea.value.trim();
+
+    if (!nodeId) {
+      console.error("ノードIDが取得できません");
+      return;
+    }
+
+    // 選択されたノードが主張となる三角形のIDを取得
+    this.getTriangleIdByClaimId(nodeId).then(triangleId => {
+      if (!triangleId) {
+        console.error("該当する三角形が見つかりません");
+        alert("この主張に対応する三角形が見つかりません");
+        return;
+      }
+
+      console.log("取得した三角形ID:", triangleId);
+
+      // ノードに葛藤を追加
+      const node = this.nodes.get(nodeId);
+      if (node) {
+        const updatedNode = {
+          ...node,
+          conflict: conflict,
+          hasConflict: conflict.length > 0
+        };
+
+        // ノードを更新
+        this.nodes.update(updatedNode);
+
+        // データベースに保存（三角形IDを使用）
+        this.saveConflictToDatabase(triangleId, conflict);
+
+        console.log(`ノード ${nodeId} の葛藤を更新しました:`, conflict);
+      }
+
+      // モーダルを閉じる
+      this.closeLogicConflictModal();
+      
+      alert(conflict.length > 0 ? "葛藤を保存しました" : "葛藤を削除しました");
+    });
+  }
+
+  // 主張ノードIDから三角形IDを取得する関数
+  async getTriangleIdByClaimId(claimId) {
+    try {
+      const response = await $.ajax({
+        url: "php/logic_maneger.php",
+        type: "POST",
+        data: {
+          claim_id: claimId,
+          purpose: 'get',
+          get_thing: 'triangle_by_claim'
+        },
+        dataType: "json"
+      });
+
+      if (response.status === "success" && response.triangle_id) {
+        return response.triangle_id;
+      } else {
+        console.error("三角形ID取得エラー:", response.message);
+        return null;
+      }
+    } catch (error) {
+      console.error("三角形ID取得通信エラー:", error);
+      return null;
+    }
+  }
+
+  // 論理葛藤をデータベースに保存する関数
+  saveConflictToDatabase(triangleId, conflict) {
+    $.ajax({
+      url: "php/logic_maneger.php",
+      type: "POST",
+      data: {
+        triangle_id: triangleId,
+        conflict: conflict,
+        purpose: 'update',
+        update_thing: 'conflict'
+      },
+      dataType: "json",
+      success: function(response) {
+        console.log("葛藤保存レスポンス:", response);
+        if (response.status === "success") {
+          console.log("葛藤保存成功:", response.node_id);
+        } else {
+          console.error("葛藤保存エラー:", response.message);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error("葛藤保存通信エラー:", error);
+      }
+    });
+  }
+
+  // 葛藤モーダルを閉じる関数
+  closeLogicConflictModal() {
+    const modal = document.getElementById('logicConflictModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.dataset.currentNodeId = '';
+    }
+  }
+
 }
 
 class RecordLogicNetwork{

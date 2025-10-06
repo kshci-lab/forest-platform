@@ -2056,3 +2056,336 @@ select[name="mttime_list"] {
   color: #495057;
   transform: translateX(3px);
 }
+
+/* 論理説明モーダルのスタイル */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 0;
+  border: 1px solid #888;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  background-color: #f1f1f1;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.close {
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.explanation-prompt {
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+#explanationTextarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+#explanationTextarea:focus {
+  border-color: #4CAF50;
+  outline: none;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+.modal-footer {
+  background-color: #f1f1f1;
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  border-radius: 0 0 8px 8px;
+  text-align: right;
+}
+
+.btn {
+  padding: 8px 16px;
+  margin-left: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #45a049;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* 説明があるノードのスタイル（オプション） */
+.has-explanation {
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+/* 論理葛藤モーダルのスタイル */
+#logicConflictModal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+#logicConflictModal .modal-content {
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 0;
+  border: 1px solid #888;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#logicConflictModal .modal-header {
+  background-color: #f8d7da; /* 葛藤用に薄い赤色 */
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#logicConflictModal .modal-header h3 {
+  margin: 0;
+  color: #721c24; /* 濃い赤色 */
+  font-size: 18px;
+}
+
+#logicConflictModal .close {
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#logicConflictModal .close:hover,
+#logicConflictModal .close:focus {
+  color: #721c24;
+  text-decoration: none;
+}
+
+#logicConflictModal .modal-body {
+  padding: 20px;
+}
+
+.conflict-prompt {
+  font-weight: bold;
+  color: #721c24; /* 濃い赤色 */
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+#conflictTextarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px;
+  border: 2px solid #f5c6cb; /* 薄い赤色の枠 */
+  border-radius: 4px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+#conflictTextarea:focus {
+  border-color: #dc3545; /* 赤色 */
+  outline: none;
+  box-shadow: 0 0 5px rgba(220, 53, 69, 0.3);
+}
+
+#logicConflictModal .modal-footer {
+  background-color: #f8d7da; /* 葛藤用に薄い赤色 */
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  border-radius: 0 0 8px 8px;
+  text-align: right;
+}
+
+#logicConflictModal .btn-primary {
+  background-color: #dc3545; /* 赤色 */
+  color: white;
+}
+
+#logicConflictModal .btn-primary:hover {
+  background-color: #c82333; /* 濃い赤色 */
+}
+
+/* 葛藤があるノードのスタイル（オプション） */
+.has-conflict {
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.5); /* 赤色の影 */
+}
+
+/* 論理説明モーダルのスタイル */
+#logicClaimReasonModal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+#logicClaimReasonModal .modal-content {
+  background-color: #fefefe;
+  margin: 5% auto;
+  padding: 0;
+  border: 1px solid #888;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#logicClaimReasonModal .modal-header {
+  background-color: #d4edda; /* 説明用に薄い緑色 */
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#logicClaimReasonModal .modal-header h3 {
+  margin: 0;
+  color: #155724; /* 濃い緑色 */
+  font-size: 18px;
+}
+
+#logicClaimReasonModal .close {
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#logicClaimReasonModal .close:hover,
+#logicClaimReasonModal .close:focus {
+  color: #155724;
+  text-decoration: none;
+}
+
+#logicClaimReasonModal .modal-body {
+  padding: 20px;
+}
+
+.claimReason-prompt {
+  font-weight: bold;
+  color: #155724; /* 濃い緑色 */
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+#claimReasonTextarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px;
+  border: 2px solid #c3e6cb; /* 薄い緑色の枠 */
+  border-radius: 4px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+#claimReasonTextarea:focus {
+  border-color: #28a745; /* 緑色 */
+  outline: none;
+  box-shadow: 0 0 5px rgba(40, 167, 69, 0.3);
+}
+
+#logicClaimReasonModal .modal-footer {
+  background-color: #d4edda; /* 説明用に薄い緑色 */
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  border-radius: 0 0 8px 8px;
+  text-align: right;
+}
+
+#logicClaimReasonModal .btn-primary {
+  background-color: #28a745; /* 緑色 */
+  color: white;
+}
+
+#logicClaimReasonModal .btn-primary:hover {
+  background-color: #218838; /* 濃い緑色 */
+}

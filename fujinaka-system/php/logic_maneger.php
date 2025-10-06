@@ -101,7 +101,64 @@ else if ($purpose === 'update') {
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
-    } 
+    } else if ($update_thing === 'conflict') {
+        // 三角形の葛藤を更新
+        $triangle_id = $_POST['triangle_id'];
+        $conflict = $_POST['conflict'];
+        
+        // SQLクエリを修正（プレースホルダーを使用）
+        $sql = "UPDATE logic_triangle SET conflict = ?, updated_at = ? WHERE triangle_id = ?";
+        $stmt = $mysqli->prepare($sql);
+        
+        if (!$stmt) {
+            echo json_encode([
+                "status" => "error", 
+                "message" => "SQLプリペア失敗: " . $mysqli->error,
+                "sql" => $sql
+            ]);
+            exit;
+        }
+        
+        // パラメータを正しい順序でバインド
+        $stmt->bind_param("sss", $conflict, $timestamp, $triangle_id);
+        
+        if ($stmt->execute()) {
+            echo json_encode([
+                "status" => "success", 
+                "message" => "三角形の葛藤が更新されました", 
+                "triangle_id" => $triangle_id
+            ]);
+        } else {
+            echo json_encode([
+                "status" => "error", 
+                "message" => "データベースエラー: " . $stmt->error
+            ]);
+        }
+        $stmt->close();
+        
+    } else if ($update_thing === 'claimReason') {
+        // 三角形の説明を更新
+        $triangle_id = $_POST['triangle_id'];
+        $claimReason = $_POST['claimReason'];
+
+        $sql = "UPDATE logic_triangle SET claimReason = ?, updated_at = ? WHERE triangle_id = ?";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param("sss", $claimReason, $timestamp, $triangle_id);
+
+        if ($stmt->execute()) {
+            echo json_encode([
+                "status" => "success", 
+                "message" => "三角形の説明が更新されました", 
+                "triangle_id" => $triangle_id
+            ]);
+        } else {
+            echo json_encode([
+                "status" => "error", 
+                "message" => "データベースエラー: " . $stmt->error
+            ]);
+        }
+        $stmt->close();
+    }
 }
 
 else if ($purpose === 'delete') {
@@ -135,7 +192,7 @@ else if ($purpose === 'load') {
     
     if ($load_thing === 'all') {
         // ノードデータを取得（p_node_idも含める）
-        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, p_node_id, x, y, edited FROM logic_node ORDER BY created_at";
+        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, p_node_id, x, y, edited, level FROM logic_node ORDER BY created_at";
         $nodesResult = $mysqli->query($nodesSql);
         $nodes = [];
         if ($nodesResult) {
@@ -163,6 +220,32 @@ else if ($purpose === 'load') {
             "nodes" => $nodes,
             "edges" => $edges
         ]);
+    }
+}
+else if ($purpose === 'get') {
+    $get_thing = $_POST['get_thing'] ?? null;
+    
+    if ($get_thing === 'triangle_by_claim') {
+        $claim_id = $_POST['claim_id'];
+        
+        $sql = "SELECT triangle_id FROM logic_triangle WHERE claim_id = ?";
+        $stmt = $mysqli->prepare($sql);
+        $stmt->bind_param("s", $claim_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($row = $result->fetch_assoc()) {
+            echo json_encode([
+                "status" => "success",
+                "triangle_id" => $row['triangle_id']
+            ]);
+        } else {
+            echo json_encode([
+                "status" => "error",
+                "message" => "該当する三角形が見つかりません"
+            ]);
+        }
+        $stmt->close();
     }
 }
 

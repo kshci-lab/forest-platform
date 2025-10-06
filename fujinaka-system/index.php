@@ -237,6 +237,13 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
 
               <div id="logic_conmenu">
                 <ul>
+                  <li class="category-header">三角ロジック</li>
+                  <li class="subcategory">
+                    <ul>
+                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.completeLogic()">完了</a></li>
+                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.conflictLogic()">途中</a></li>
+                    </ul>
+                  </li>
                   <li class="category-header">Forest</li>
                   <li class="subcategory">
                     <ul>
@@ -253,6 +260,42 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                     </ul>
                   </li>
                 </ul>
+              </div>
+
+              <!-- 論理説明用モーダル -->
+              <div id="logicClaimReasonModal" class="modal">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h3 id="claimReasonNodeTitle">論理の説明</h3>
+                    <span class="close" onclick="defaultLogicNetwork.closeLogicClaimReasonModal()">&times;</span>
+                  </div>
+                  <div class="modal-body">
+                    <p class="claimReason-prompt">なぜこの主張をしましたか？</p>
+                    <textarea id="claimReasonTextarea" placeholder="この主張をした理由や根拠を詳しく説明してください..." rows="8"></textarea>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="defaultLogicNetwork.saveLogicClaimReason()">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="defaultLogicNetwork.closeLogicClaimReasonModal()">キャンセル</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 論理葛藤用モーダル -->
+              <div id="logicConflictModal" class="modal">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h3 id="conflictNodeTitle">論理の葛藤</h3>
+                    <span class="close" onclick="defaultLogicNetwork.closeLogicConflictModal()">&times;</span>
+                  </div>
+                  <div class="modal-body">
+                    <p class="conflict-prompt">どのような葛藤がありますか？</p>
+                    <textarea id="conflictTextarea" placeholder="この主張をする際の葛藤や迷い、対立する意見などを詳しく記録してください..." rows="8"></textarea>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="defaultLogicNetwork.saveLogicConflict()">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="defaultLogicNetwork.closeLogicConflictModal()">キャンセル</button>
+                  </div>
+                </div>
               </div>
 
               <div id="presentation_conmenu">
