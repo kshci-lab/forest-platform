@@ -817,15 +817,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 ノードを更新
                                             </button>
                                         </li> -->
-                                         <li>
-                                            <button class="button4" onclick="addWeeklyGoal();">
-                                                小目標に追加
-                                            </button>
+                                        <li>
+                                            <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();">小目標に追加</button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="showThinkingProcessMap();">
-                                                目標手段階層マップ
-                                            </button>
+                                            <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();">目標手段階層マップ</button>
                                         </li>
                                        
                                         <!-- <li>

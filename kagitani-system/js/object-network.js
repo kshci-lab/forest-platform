@@ -767,13 +767,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
 
+    //ここで一番上のノードを作成
     addVersionNode(node_id, node_l, node_type, appeared_at, node_x, node_y){
         const existingNode = defaultThinkingProcess.nodes.get(node_id);
         if (existingNode) {
             console.log(`Node with ID ${node_id} already exists. Skipping addition.`);
             return; // 重複がある場合は追加せずにリターン
         }
-        let node_color = '#ffbaa1'; // ノードの背景色
+        let node_color = '#bee2f9'; // ノードの背景色
         let node_shape = 'box';     // ノードの形状
         let text_color = 'black';   // ノード内文字列の色
         var y_fixed = true;

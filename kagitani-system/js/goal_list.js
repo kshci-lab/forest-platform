@@ -89,8 +89,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('開始日と終了日を入力してください');
                 return;
             }
-            // object_node_id, goal_type, labelは仮で設定（必要に応じて取得・編集）
             var goal_type = 'weekly';
+            // object_node_idは送信しない（DBに存在しないため）
             $.ajax({
                 url: 'php/insert_object_goal.php',
                 type: 'POST',
@@ -151,14 +151,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
                 + '<span>' + startStr + '〜' + endStr + '</span>'
                 + '<button class="edit-weekly-date-btn" data-idx="' + idx + '" style="margin-left:8px;padding:4px 10px;background:#ffc107;color:#333;border:none;border-radius:5px;font-size:13px;cursor:pointer;">編集</button>'
-                + '<div>'
-                + '<button class="export-weekly-btn" data-idx="' + idx + '" style="margin-right:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">レポート出力</button>'
-                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn" title="削除">'
-                + '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>'
-                + '</button>'
-                + '</div>'
+                + '<button class="export-weekly-btn" data-idx="' + idx + '" style="margin-left:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">レポート出力</button>'
                 + '</div>'
                 + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
+                + '<div style="text-align:right;margin-top:8px;">'
+                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn" title="削除" style="padding:4px 10px;background:#dc3545;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">'
+                + '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>'
+                + ' ー' + '</button>'
+                + '</div>'
                 + '</div>';
         });
         weeklyListDiv.innerHTML = html;
@@ -648,7 +648,7 @@ addWeeklyGoal = function() {
         data: { node_id: selected_node_id },
         success: function(response) {
             console.log('最新の小目標にnode_idを保存しました:', response);
-            alert('最新の小目標にノードIDを保存しました');
+            // alert('最新の小目標にノードIDを保存しました');
             // DB反映後に再取得
             if (typeof fetchWeeklyGoalsFromDB === 'function') {
                 fetchWeeklyGoalsFromDB();

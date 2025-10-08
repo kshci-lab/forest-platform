@@ -18,8 +18,7 @@ try {
 // POSTで受け取る
 
 $goal_type = $_POST['goal_type'] ?? '';
-$object_node_id = $_POST['object_node_id'] ?? '';
-$label = $_POST['label'] ?? '';
+$label = $_POST['label'] ?? null;
 $start_date = $_POST['start_date'] ?? '';
 $finish_date = $_POST['finish_date'] ?? '';
 
@@ -30,14 +29,30 @@ $appeared_at = date('Y-m-d H:i:s');
 $update_at = $appeared_at;
 $delete = 0;
 
-$sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type,  :start_date, :finish_date, :appeared_at, :update_at, :delete)";
 
-$sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `object_node_id`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :object_node_id, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+// テーブルにlabelカラムがある場合はlabelを使う。なければlabelを除外。
+$hasLabel = false;
+try {
+    $result = $pdo->query("DESCRIBE object_goals");
+    foreach ($result as $row) {
+        if ($row['Field'] === 'label') {
+            $hasLabel = true;
+            break;
+        }
+    }
+} catch (Exception $e) {}
+
+if ($hasLabel) {
+    $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+} else {
+    $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+}
 $stmt = $pdo->prepare($sql);
 $stmt->bindValue(':object_goal_id', $object_goal_id, PDO::PARAM_STR);
 $stmt->bindValue(':goal_type', $goal_type, PDO::PARAM_STR);
-$stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
-$stmt->bindValue(':label', $label, PDO::PARAM_STR);
+if ($hasLabel) {
+    $stmt->bindValue(':label', $label, PDO::PARAM_STR);
+}
 $stmt->bindValue(':start_date', $start_date, PDO::PARAM_STR);
 $stmt->bindValue(':finish_date', $finish_date, PDO::PARAM_STR);
 $stmt->bindValue(':appeared_at', $appeared_at, PDO::PARAM_STR);
