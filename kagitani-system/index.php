@@ -556,6 +556,243 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </head>
     <body id="all">
+        <!-- 言語切替スライダー -->
+                <div id="language-toggle-container" style="position:fixed;top:10px;right:30px;z-index:9999;">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:15px;">
+                                <span id="lang-label-ja">日本語</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="language-toggle" />
+                                    <span class="slider round"></span>
+                                </label>
+                                <span id="lang-label-en">English</span>
+                        </label>
+                </div>
+                <style>
+                .switch {
+                    position: relative;
+                    display: inline-block;
+                    width: 46px;
+                    height: 24px;
+                }
+                .switch input {
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                }
+                .slider {
+                    position: absolute;
+                    cursor: pointer;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: #ccc;
+                    transition: .4s;
+                    border-radius: 24px;
+                }
+                .slider:before {
+                    position: absolute;
+                    content: "";
+                    height: 18px;
+                    width: 18px;
+                    left: 3px;
+                    bottom: 3px;
+                    background-color: white;
+                    transition: .4s;
+                    border-radius: 50%;
+                }
+                input:checked + .slider {
+                    background-color: #2196F3;
+                }
+                input:checked + .slider:before {
+                    transform: translateX(22px);
+                }
+                .slider.round {
+                    border-radius: 24px;
+                }
+                .slider.round:before {
+                    border-radius: 50%;
+                }
+                </style>
+        <div id="language-switching-message" style="display:none;position:fixed;top:50px;right:30px;background:#fff3cd;color:#856404;padding:8px 18px;border-radius:7px;box-shadow:0 2px 8px #ccc;z-index:9999;font-size:16px;">言語切り替え中・・・</div>
+        <script>
+        // 言語テキスト辞書（主要ボタン）
+        const langDict = {
+            ja: {
+                'lang-label-ja': '日本語',
+                'lang-label-en': 'English',
+                'addWeeklyGoalBtn': '小目標に追加',
+                'showThinkingProcessMapBtn': '目標手段階層マップ',
+                'sheetbtn': 'シート選択画面に戻る',
+                'logout': 'ログアウト',
+                'addQNodeText': '問いノード追加',
+                'addAnodeText': '答えノード追加',
+                'addLabelText': 'ラベル追加',
+                'removeNodeText': 'ノードの削除',
+                'zoomInText': '拡大',
+                'zoomOutText': '縮小',
+                'screenshotLabel': '【Screenshot】',
+                'screenshotText': 'screenshot',
+                'processCloseText': '閉じる',
+                'processAddNodeText': 'ノード追加',
+                'processStartEditEdgeText': 'エッジ追加',
+                'processZoomInText': '拡大',
+                'processZoomOutText': '縮小',
+                'returnToCurrentText': '現在に戻る',
+                'historyIndicatorText': '📅 過去の表示',
+                'nodeCountLabel': '📊 現在のノード数: ',
+                'nodeCountUnit': ' 個',
+                'refreshNodeCountIcon': '🔄',
+                'completedLabel': '完了',
+                'inProgressLabel': '実行中',
+                'pausedLabel': '中断',
+                'notStartedLabel': '未着手',
+                'navigatorGreetingHeader': 'こんにちは！',
+                'navigatorGreetingSub': '目標手段階層マップへようこそ',
+                'weeklyGoalTitle': '小目標',
+                'weeklyGoalTooltip': '次のMTの１週間の目標',
+                'weeklyGoalStartLabel': '開始日',
+                'weeklyGoalEndLabel': '終了日',
+                'addWeeklyGoalBtnText': '追加',
+            },
+            en: {
+                'lang-label-ja': 'Japanese',
+                'showQuestionsBtnText': '問い一覧',
+                'inquiryAreaTitle': '【情報の表出化】',
+                'mediumGoalTitle': '中目標（半年〜1年目標）',
+                'addMediumGoalBtnText': '追加',
+                'mediumGoalTextPlaceholder': '中目標を入力',
+                'showQuestionsBtnText': 'Inquiry List',
+                'inquiryAreaTitle': '[Information Expression]',
+                'editWeeklyGoalBtnText': '編集',
+                'exportWeeklyGoalBtnText': 'レポート出力',
+                'deleteWeeklyGoalBtnText': '削除',
+                'mediumGoalTitle': 'Medium Goal (6 months - 1 year)',
+                'addMediumGoalBtnText': 'Add',
+                'mediumGoalTextPlaceholder': 'Enter medium goal',
+                'lang-label-en': 'English',
+                'addWeeklyGoalBtn': 'Add Weekly Goal',
+                'showThinkingProcessMapBtn': 'Goal Hierarchy Map',
+                'editWeeklyGoalBtnText': 'Edit',
+                'exportWeeklyGoalBtnText': 'Export Report',
+                'deleteWeeklyGoalBtnText': 'Delete',
+                'sheetbtn': 'Back to Sheet Selection',
+                'logout': 'Logout',
+                'addQNodeText': 'Add Q Node',
+                'addAnodeText': 'Add A Node',
+                'addLabelText': 'Add Label',
+                'removeNodeText': 'Delete Node',
+                'zoomInText': 'Zoom +',
+                'zoomOutText': 'Zoom -',
+                'screenshotLabel': '[Screenshot]',
+                'screenshotText': 'Screenshot',
+                'processCloseText': 'Close',
+                'processAddNodeText': 'Add Node',
+                'processStartEditEdgeText': 'Add Edge',
+                'processZoomInText': 'Zoom+',
+                'processZoomOutText': 'Zoom-',
+                'returnToCurrentText': 'Return to Current',
+                'historyIndicatorText': '📅 History',
+                'nodeCountLabel': '📊 Node Count: ',
+                'nodeCountUnit': '',
+                'refreshNodeCountIcon': '🔄',
+                'completedLabel': 'Completed',
+                'inProgressLabel': 'In Progress',
+                'pausedLabel': 'Paused',
+                'notStartedLabel': 'Not Started',
+                'navigatorGreetingHeader': 'Hello!',
+                'navigatorGreetingSub': 'Welcome to the Goal Hierarchy Map',
+                'weeklyGoalTitle': 'Weekly Goal',
+                'weeklyGoalTooltip': 'Goal for the next week',
+                'weeklyGoalStartLabel': 'Start Date',
+                'weeklyGoalEndLabel': 'End Date',
+                'addWeeklyGoalBtnText': 'Add',
+            }
+        };
+        function setLanguage(lang) {
+                // 週目標日付範囲の表示も切り替え
+                const weeklyGoalsList = document.getElementById('weeklyGoalsList');
+                if (weeklyGoalsList) {
+                    const dateRanges = weeklyGoalsList.querySelectorAll('.weekly-goal-date-range');
+                    dateRanges.forEach(span => {
+                        const start = span.getAttribute('data-start');
+                        const end = span.getAttribute('data-end');
+                        if (lang === 'ja') {
+                            // 日本語: 10月3日〜10月9日
+                            span.textContent = start + '〜' + end;
+                        } else {
+                            // 英語: Oct 3 - Oct 9
+                            // 日本語日付を英語に変換
+                            function jaToEnDate(jp) {
+                                const m = jp.match(/(\d+)月(\d+)日/);
+                                if (!m) return jp;
+                                const month = parseInt(m[1], 10);
+                                const day = parseInt(m[2], 10);
+                                const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                return monthsEn[month-1] + ' ' + day;
+                            }
+                            span.textContent = jaToEnDate(start) + ' - ' + jaToEnDate(end);
+                        }
+                    });
+                }
+            document.getElementById('language-switching-message').style.display = 'block';
+            console.log('言語切り替え中・・・');
+            setTimeout(function() {
+                Object.keys(langDict[lang]).forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        if (el.tagName === 'INPUT' && el.type === 'submit') {
+                            el.value = langDict[lang][id];
+                        } else {
+                            el.textContent = langDict[lang][id];
+                        }
+                    }
+                });
+                // Medium goal input placeholder
+                var mediumGoalInput = document.getElementById('mediumGoalText');
+                if (mediumGoalInput) {
+                    mediumGoalInput.placeholder = langDict[lang]['mediumGoalTextPlaceholder'];
+                }
+                // 動的な週目標ボタンのテキストも切り替え
+                const weeklyGoalsList = document.getElementById('weeklyGoalsList');
+                if (weeklyGoalsList) {
+                    // 編集ボタン
+                    const editBtns = weeklyGoalsList.querySelectorAll('[id^="editWeeklyGoalBtnText"]');
+                    editBtns.forEach(btn => {
+                        btn.textContent = langDict[lang]['editWeeklyGoalBtnText'];
+                    });
+                    // レポート出力ボタン
+                    const exportBtns = weeklyGoalsList.querySelectorAll('[id^="exportWeeklyGoalBtnText"]');
+                    exportBtns.forEach(btn => {
+                        btn.textContent = langDict[lang]['exportWeeklyGoalBtnText'];
+                    });
+                    // 削除ボタン
+                    const deleteBtns = weeklyGoalsList.querySelectorAll('[id^="deleteWeeklyGoalBtnText"]');
+                    deleteBtns.forEach(btn => {
+                        btn.textContent = langDict[lang]['deleteWeeklyGoalBtnText'];
+                    });
+                }
+                document.getElementById('language-switching-message').style.display = 'none';
+                console.log('言語切替完了: ' + (lang === 'ja' ? '日本語' : 'English'));
+                // 問い一覧（testxml）も言語切替
+                if (window.setInquiryLang) {
+                    window.setInquiryLang(lang);
+                }
+            }, 700);
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            var toggle = document.getElementById('language-toggle');
+            setLanguage('ja');
+            toggle.checked = false;
+            toggle.addEventListener('change', function() {
+                if (toggle.checked) {
+                    setLanguage('en');
+                } else {
+                    setLanguage('ja');
+                }
+            });
+        });
+        </script>
         <!---        タイトルメニューStart                 -->
         <div id="main_title">
             <div class="header-container">
@@ -567,8 +804,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="dropdown-menu">
                         <form name="return" method="POST">
-                            <input class="dropdown-item" type="submit" name="sheetbtn" value="シート選択画面に戻る">
-                            <input class="dropdown-item logout-btn" type="submit" name="logout" value="ログアウト">
+                            <input class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="シート選択画面に戻る">
+                            <input class="dropdown-item logout-btn" type="submit" name="logout" id="logout" value="ログアウト">
                         </form>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-section">
@@ -655,39 +892,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div id="jsmind_nav">
                                 <div style="text-align: left">
                                     <!-- 【Edit】 -->
-                                    <button class="button4" onclick="add_Qnode();">
-                                        問いノード追加
-                                    </button>
-                                    <button class="button4" onclick="add_Anode();">
-                                        答えノード追加
-                                    </button>
-                                    <button class="button4" onclick="add_Label('primary_label');">
-                                        ラベル追加
-                                    </button>
+                                    <button class="button4" id="addQNodeBtn" onclick="add_Qnode();"><span id="addQNodeText">問いノード追加</span></button>
+                                    <button class="button4" id="addAnodeBtn" onclick="add_Anode();"><span id="addAnodeText">答えノード追加</span></button>
+                                    <button class="button4" id="addLabelBtn" onclick="add_Label('primary_label');"><span id="addLabelText">ラベル追加</span></button>
                                     <!-- <li><button onclick="horisage();">掘り下げる</button></li>
                                         horisage()関数は現在存在しない-->
-                                    <button class="button4" onclick="remove_node();">
-                                        ノードの削除
-                                    </button>
+                                    <button class="button4" id="removeNodeBtn" onclick="remove_node();"><span id="removeNodeText">ノードの削除</span></button>
                                     <!--1つ前に消したノードを復元-->
                                     <!-- <button class="button4" onclick="return_node();">
                                         1つ前に戻る
                                         </button> -->
                                     <!-- 【Zoom】 -->
-                                    <button class="button3" id="zoom-in-button" onclick="zoomIn();">
-                                        拡大
-                                    </button>
-                                    <button class="button3" id="zoom-out-button" onclick="zoomOut();">
-                                        縮小
-                                    </button>
+                                    <button class="button3" id="zoomInBtn" onclick="zoomIn();"><span id="zoomInText">拡大</span></button>
+                                    <button class="button3" id="zoomOutBtn" onclick="zoomOut();"><span id="zoomOutText">縮小</span></button>
                                     <!-- <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
                                         マップver更新 
                                     </button> -->
-                                    
-                                    【Screenshot】
-                                    <button class="button4" style="width:80px" onclick="screen_shot();">
-                                        screenshot
-                                    </button>
+                                    <span id="screenshotLabel">【Screenshot】</span>
+                                    <button class="button4" id="screenshotBtn" style="width:80px" onclick="screen_shot();"><span id="screenshotText">screenshot</span></button>
                                     <!-- 【Reason】
                                         <button class="button4" onclick="add_edit_reason();">
                                         修正理由の追加
@@ -818,10 +1040,61 @@ document.addEventListener('DOMContentLoaded', function() {
                                             </button>
                                         </li> -->
                                         <li>
-                                            <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();">小目標に追加</button>
+                                            <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();"><span id="addWeeklyGoalBtn">小目標に追加</span></button>
                                         </li>
                                         <li>
-                                            <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();">目標手段階層マップ</button>
+                                            <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();"><span id="showThinkingProcessMapBtn">目標手段階層マップ</span></button>
+        <script>
+        // 言語テキスト辞書（主要ボタン）
+        const langDict = {
+            ja: {
+                'lang-label-ja': '日本語',
+                'lang-label-en': 'English',
+                'addWeeklyGoalBtn': '小目標に追加',
+                'showThinkingProcessMapBtn': '目標手段階層マップ',
+                'sheetbtn': 'シート選択画面に戻る',
+                'logout': 'ログアウト',
+            },
+            en: {
+                'lang-label-ja': 'Japanese',
+                'lang-label-en': 'English',
+                'addWeeklyGoalBtn': 'Add Weekly Goal',
+                'showThinkingProcessMapBtn': 'Goal Hierarchy Map',
+                'sheetbtn': 'Back to Sheet Selection',
+                'logout': 'Logout',
+            }
+        };
+        function setLanguage(lang) {
+            document.getElementById('language-switching-message').style.display = 'block';
+            console.log('言語切り替え中・・・');
+            setTimeout(function() {
+                Object.keys(langDict[lang]).forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        if (el.tagName === 'INPUT' && el.type === 'submit') {
+                            el.value = langDict[lang][id];
+                        } else {
+                            el.textContent = langDict[lang][id];
+                        }
+                    }
+                });
+                document.getElementById('language-switching-message').style.display = 'none';
+                console.log('言語切替完了: ' + (lang === 'ja' ? '日本語' : 'English'));
+            }, 700);
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            var toggle = document.getElementById('language-toggle');
+            setLanguage('ja');
+            toggle.checked = false;
+            toggle.addEventListener('change', function() {
+                if (toggle.checked) {
+                    setLanguage('en');
+                } else {
+                    setLanguage('ja');
+                }
+            });
+        });
+        </script>
                                         </li>
                                        
                                         <!-- <li>
@@ -973,33 +1246,33 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <button type="button" class="process_close" onclick="closeThinkingProcessMap()"
                                                     id="process_close" title="閉じる">
                                                 <span class="button-icon">✕</span>
-                                                <span class="button-text">閉じる</span>
+                                                <span class="button-text" id="processCloseText">閉じる</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_addNode" title="ノード追加">
                                                 <span class="button-icon">＋</span>
-                                                <span class="button-text">ノード追加</span>
+                                                <span class="button-text" id="processAddNodeText">ノード追加</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_startEditEdge" title="エッジ追加">
                                                 <span class="button-icon">⟷</span>
-                                                <span class="button-text">エッジ追加</span>
+                                                <span class="button-text" id="processStartEditEdgeText">エッジ追加</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_ZoomIn" title="拡大">
-                                                <span class="button-text">拡大</span>
+                                                <span class="button-text" id="processZoomInText">拡大</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_ZoomOut" title="縮小">
-                                                <span class="button-text">縮小</span>
+                                                <span class="button-text" id="processZoomOutText">縮小</span>
                                             </button>
                                         </div>
                                         <!-- シークバーを隣に配置（横幅いっぱい使用） -->
                                         <div id="timeline_container">
                                             <input type="range" id="timeline_slider" min="0" max="0" value="0" step="1" />
                                             <span id="timeline_label">読み込み中...</span>
-                                            <button id="return_to_current" style="margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer;">現在に戻る</button>
-                                            <span id="history_indicator" style="display: none; margin-left: 10px; color: #ff6b6b; font-weight: bold; font-size: 12px;">📅 過去の表示</span>
+                                            <button id="return_to_current" style="margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer;"><span id="returnToCurrentText">現在に戻る</span></button>
+                                            <span id="history_indicator" style="display: none; margin-left: 10px; color: #ff6b6b; font-weight: bold; font-size: 12px;"><span id="historyIndicatorText">📅 過去の表示</span></span>
                                         </div>
                                     </div>
 
@@ -1374,9 +1647,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         <div id="mind" class="side">
                             <div class="inquiry_area">
-<button id="showQuestionsBtn" style="display: block; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; padding: 6px 0; margin-bottom: 8px; font-size: 13px; font-weight: bold; cursor: pointer;" onclick="showGeneration();">問い一覧</button>
+<button id="showQuestionsBtn" style="display: block; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; padding: 6px 0; margin-bottom: 8px; font-size: 13px; font-weight: bold; cursor: pointer;" onclick="showGeneration();"><span id="showQuestionsBtnText">問い一覧</span></button>
 <!-- <div id="questionsList" style="display:none; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px; padding:8px; margin-bottom:8px; max-height:120px; overflow-y:auto;"></div> -->
-<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;">【情報の表出化】</div>
+<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;"><span id="inquiryAreaTitle">【情報の表出化】</span></div>
                                 <div id="testxml"></div>
                                 <div id="ont"></div>
                                 <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">【理由・目的】</div>
@@ -1391,22 +1664,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div id="node_count_display" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; margin-bottom: 10px; font-weight: bold; color: #495057;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <div>
-                                        <span>📊 現在のノード数: </span>
+                                        <span id="nodeCountLabel">📊 現在のノード数: </span>
                                         <span id="current_node_count" style="color: #007bff; font-size: 16px;">0</span>
-                                        <span> 個</span>
+                                        <span id="nodeCountUnit"> 個</span>
                                     </div>
                                     <button onclick="refreshNodeCount()" style="background: #007bff; color: white; border: none; border-radius: 3px; padding: 4px 8px; font-size: 12px; cursor: pointer;" title="ノード数を更新">
-                                        🔄
+                                        <span id="refreshNodeCountIcon">🔄</span>
                                     </button>
                                 </div>
                                 
                                 <!-- ステータス別ノード数表示エリア -->
                                 <div id="status_stats_display" style="margin-top: 8px; font-size: 12px; border-top: 1px solid #dee2e6; padding-top: 6px;">
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px;">
-                                        <div style="color: #28a745;">✅ 完了: <span id="completed_count">0</span></div>
-                                        <div style="color: #17a2b8;">🔄 実行中: <span id="inProgress_count">0</span></div>
-                                        <div style="color: #ffc107;">⏸️ 中断: <span id="paused_count">0</span></div>
-                                        <div style="color: #6c757d;">📝 未着手: <span id="not_started_count">0</span></div>
+                                        <div style="color: #28a745;">✅ <span id="completedLabel">完了</span>: <span id="completed_count">0</span></div>
+                                        <div style="color: #17a2b8;">🔄 <span id="inProgressLabel">実行中</span>: <span id="inProgress_count">0</span></div>
+                                        <div style="color: #ffc107;">⏸️ <span id="pausedLabel">中断</span>: <span id="paused_count">0</span></div>
+                                        <div style="color: #6c757d;">📝 <span id="notStartedLabel">未着手</span>: <span id="not_started_count">0</span></div>
                                     </div>
                                 </div>
                                 
@@ -1427,25 +1700,25 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 <!-- 小目標（大きく・使いやすく） -->
                                 <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
-                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 小目標<span class="goal-tooltip-text">次のMTの１週間の目標</span></div>
+                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 <span id="weeklyGoalTitle">小目標</span><span class="goal-tooltip-text" id="weeklyGoalTooltip">次のMTの１週間の目標</span></div>
                                     <form id="weeklyGoalForm" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
                                         <div style="display: flex; flex-direction: column; gap: 8px;">
-                                            <label for="weeklyGoalStart" style="font-size: 15px; color: #28a745;">開始日</label>
+                                            <label for="weeklyGoalStart" style="font-size: 15px; color: #28a745;"><span id="weeklyGoalStartLabel">開始日</span></label>
                                             <input type="date" id="weeklyGoalStart" style="font-size: 15px; padding: 8px; border-radius: 6px; border: 1.5px solid #28a745;">
-                                            <label for="weeklyGoalEnd" style="font-size: 15px; color: #28a745;">終了日</label>
+                                            <label for="weeklyGoalEnd" style="font-size: 15px; color: #28a745;"><span id="weeklyGoalEndLabel">終了日</span></label>
                                             <input type="date" id="weeklyGoalEnd" style="font-size: 15px; padding: 8px; border-radius: 6px; border: 1.5px solid #28a745;">
                                         </div>
-                                        <button type="button" id="addWeeklyGoalBtn" style="background:#28a745;color:white;border:none;border-radius:6px;padding:12px 0;font-size:16px;font-weight:bold;cursor:pointer;">追加</button>
+                                        <button type="button" id="addWeeklyGoalBtn" style="background:#28a745;color:white;border:none;border-radius:6px;padding:12px 0;font-size:16px;font-weight:bold;cursor:pointer;"><span id="addWeeklyGoalBtnText">追加</span></button>
                                     </form>
                                     <div id="weeklyGoalsList" style="margin-top:8px;"></div>
                                 </div>
                                 <!-- 中・大目標（横並び・控えめ） -->
                                 <div id="midlong_goal_area" style="display: flex; gap: 18px; justify-content: flex-start;">
                                     <div style="flex:1; background: #f4f4f4; border: 1.5px solid #6f42c1; border-radius: 7px; padding: 12px; min-width: 220px;">
-                                        <div style="font-weight: bold; color: #6f42c1; font-size: 14px; margin-bottom: 7px;">📅 中目標（半年〜1年目標）</div>
+                                        <div style="font-weight: bold; color: #6f42c1; font-size: 14px; margin-bottom: 7px;">📅 <span id="mediumGoalTitle">中目標（半年〜1年目標）</span></div>
                                         <form id="mediumGoalForm" style="display: flex; flex-direction: column; gap: 7px; margin-bottom: 7px;">
                                             <input type="text" id="mediumGoalText" placeholder="中目標を入力" style="font-size: 13px; padding: 7px; border-radius: 5px; border: 1px solid #6f42c1;">
-                                            <button type="button" id="addMediumGoalBtn" style="background:#6f42c1;color:white;border:none;border-radius:5px;padding:7px 0;font-size:13px;font-weight:bold;cursor:pointer;">追加</button>
+                                            <button type="button" id="addMediumGoalBtn" style="background:#6f42c1;color:white;border:none;border-radius:5px;padding:7px 0;font-size:13px;font-weight:bold;cursor:pointer;"><span id="addMediumGoalBtnText">追加</span></button>
                                         </form>
                                         <div id="mediumGoalsList"></div>
                                     </div>

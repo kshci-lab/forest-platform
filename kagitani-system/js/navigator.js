@@ -378,10 +378,10 @@ class Navigator {
         message.className = 'navigator-message';
         message.innerHTML = `
             <div class="navigator-message-header">
-                <span>こんにちは！</span>
+                <span id="navigatorGreetingHeader">こんにちは！</span>
             </div>
             <div class="navigator-message-sub">
-                目標手段階層マップへようこそ
+                <span id="navigatorGreetingSub">目標手段階層マップへようこそ</span>
             </div>
         `;
         

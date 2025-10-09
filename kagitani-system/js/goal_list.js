@@ -149,15 +149,15 @@ document.addEventListener('DOMContentLoaded', function() {
             var endStr = (endDate.getMonth()+1) + '月' + endDate.getDate() + '日';
             html += '<div style="background:#eafbe7;border:1.5px solid #28a745;border-radius:7px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:16px;">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-                + '<span>' + startStr + '〜' + endStr + '</span>'
-                + '<button class="edit-weekly-date-btn" data-idx="' + idx + '" style="margin-left:8px;padding:4px 10px;background:#ffc107;color:#333;border:none;border-radius:5px;font-size:13px;cursor:pointer;">編集</button>'
-                + '<button class="export-weekly-btn" data-idx="' + idx + '" style="margin-left:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">レポート出力</button>'
+                + '<span class="weekly-goal-date-range" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
+                + '<button class="edit-weekly-date-btn" data-idx="' + idx + '" id="editWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#ffc107;color:#333;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="editWeeklyGoalBtnText' + idx + '">編集</span></button>'
+                + '<button class="export-weekly-btn" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="exportWeeklyGoalBtnText' + idx + '">レポート出力</span></button>'
                 + '</div>'
                 + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
                 + '<div style="text-align:right;margin-top:8px;">'
-                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn" title="削除" style="padding:4px 10px;background:#dc3545;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">'
+                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn" title="削除" id="deleteWeeklyGoalBtn' + idx + '" style="padding:4px 10px;background:#dc3545;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">'
                 + '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>'
-                + ' ー' + '</button>'
+                + ' <span id="deleteWeeklyGoalBtnText' + idx + '">ー</span></button>'
                 + '</div>'
                 + '</div>';
         });
