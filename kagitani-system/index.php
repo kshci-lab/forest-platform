@@ -619,6 +619,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // 言語テキスト辞書（主要ボタン）
         const langDict = {
             ja: {
+                'processMenuTitle': 'ノード操作',
+                'processMenuStart': '開始',
+                'processMenuComplete': '完了',
+                'processMenuPause': '中断',
+                'processMenuReason': '理由を記述',
+                'processMenuDeadline': '完了予定を設定',
+                'processMenuCancel': 'キャンセル',
+                'reasonPurposeTitle': '【理由・目的】',
+                'rationalityTitle': '【合理性】',
                 'lang-label-ja': '日本語',
                 'lang-label-en': 'English',
                 'addWeeklyGoalBtn': '小目標に追加',
@@ -656,6 +665,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 'addWeeklyGoalBtnText': '追加',
             },
             en: {
+                'processMenuTitle': 'Node Actions',
+                'processMenuStart': 'Start',
+                'processMenuComplete': 'Complete',
+                'processMenuPause': 'Pause',
+                'processMenuReason': 'Add Reason',
+                'processMenuDeadline': 'Set Deadline',
+                'processMenuCancel': 'Cancel',
+                'reasonPurposeTitle': '[Reason/Purpose]',
+                'rationalityTitle': '[Rationality]',
                 'lang-label-ja': 'Japanese',
                 'showQuestionsBtnText': '問い一覧',
                 'inquiryAreaTitle': '【情報の表出化】',
@@ -833,22 +851,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="title_name">Forest</span>
             </div>
             <!-- Hamburger menu icon -->
-            <span id="hamburger_menu" style="display: inline-block; cursor: pointer; margin-right: 10px;">
+            <!-- <span id="hamburger_menu" style="display: inline-block; cursor: pointer; margin-right: 10px;">
                 <span style="font-size: 22px;">&#9776;</span>
-            </span>
+            </span> -->
             <!-- Memo button icon -->
-            <button id="memo_button" title="メモ" style="background: none; border: none; padding: 0 6px; margin-left: 2px; font-size: 18px; cursor: pointer; color: #007cba; vertical-align: middle;" onclick="openMemoModal()">
+            <!-- <button id="memo_button" title="メモ" style="background: none; border: none; padding: 0 6px; margin-left: 2px; font-size: 18px; cursor: pointer; color: #007cba; vertical-align: middle;" onclick="openMemoModal()">
                 <span style="font-size: 18px;">&#9998;</span>
-            </button>
+            </button> -->
             <!-- Memo Modal -->
-            <div id="memo_modal" style="display:none; position:fixed; z-index:1001; background:white; border:2px solid #007cba; border-radius:8px; padding:16px; width:340px; box-shadow:0 6px 20px rgba(0,124,186,0.2); left:50%; top:50%; transform:translate(-50%,-50%);">
+            <!-- <div id="memo_modal" style="display:none; position:fixed; z-index:1001; background:white; border:2px solid #007cba; border-radius:8px; padding:16px; width:340px; box-shadow:0 6px 20px rgba(0,124,186,0.2); left:50%; top:50%; transform:translate(-50%,-50%);">
                 <div style="font-weight:bold; color:#007cba; margin-bottom:10px; text-align:center;">📝 メモ</div>
                 <textarea id="memo_textarea" rows="7" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; resize:vertical; box-sizing:border-box;" placeholder="ここにメモを入力..."></textarea>
                 <div style="display:flex; justify-content:space-between; gap:10px; margin-top:14px;">
                     <button onclick="saveMemo()" style="flex:1; padding:8px; background-color:#28a745; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; font-size:13px;">💾 保存</button>
                     <button onclick="closeMemoModal()" style="flex:1; padding:8px; background-color:#6c757d; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; font-size:13px;">❌ キャンセル</button>
                 </div>
-            </div>
+            </div> -->
         </div>
         <!-- <form name="return" method="POST">
              <div id="session">
@@ -908,7 +926,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <!-- <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
                                         マップver更新 
                                     </button> -->
-                                    <span id="screenshotLabel">【Screenshot】</span>
+                                    <!-- <span id="screenshotLabel">【Screenshot】</span> -->
                                     <button class="button4" id="screenshotBtn" style="width:80px" onclick="screen_shot();"><span id="screenshotText">screenshot</span></button>
                                     <!-- 【Reason】
                                         <button class="button4" onclick="add_edit_reason();">
@@ -1279,28 +1297,28 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <div id="myProcessnetwork"></div>
                                     <div id="t_Process_conmenu" class="context-menu" role="menu" aria-label="ノード操作メニュー">
                                         <div class="context-menu-header">
-                                            <span class="context-menu-title">ノード操作</span>
+                                            <span class="context-menu-title" id="processMenuTitle">ノード操作</span>
                                         </div>
                                         <ul class="context-menu-list" role="none">
                                             <li class="context-menu-item status-action" role="none">
                                                 <a href="javascript:void(0);" id="object_conmenu1" class="context-menu-link" role="menuitem" 
                                                    title="ノードの作業を開始状態にします" aria-label="作業開始">
                                                     <span class="context-menu-icon" aria-hidden="true">▶️</span>
-                                                    <span class="context-menu-text">開始</span>
+                                                    <span class="context-menu-text" id="processMenuStart">開始</span>
                                                 </a>
                                             </li>
                                             <li class="context-menu-item status-action" role="none">
                                                 <a href="javascript:void(0);" id="object_conmenu2" class="context-menu-link" role="menuitem"
                                                    title="ノードの作業を完了し、内省記録を入力します" aria-label="作業完了">
                                                     <span class="context-menu-icon" aria-hidden="true">✅</span>
-                                                    <span class="context-menu-text">完了</span>
+                                                    <span class="context-menu-text" id="processMenuComplete">完了</span>
                                                 </a>
                                             </li>
                                             <li class="context-menu-item status-action" role="none">
                                                 <a href="javascript:void(0);" id="object_conmenu3" class="context-menu-link" role="menuitem"
                                                    title="ノードの作業を一時中断状態にします" aria-label="作業中断">
                                                     <span class="context-menu-icon" aria-hidden="true">⏸️</span>
-                                                    <span class="context-menu-text">中断</span>
+                                                    <span class="context-menu-text" id="processMenuPause">中断</span>
                                                 </a>
                                             </li>
                                             <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
@@ -1309,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="javascript:void(0);" id="process_conmenu5" class="context-menu-link" role="menuitem"
                                                    title="このノードの理由を記述します" aria-label="理由を記述">
                                                     <span class="context-menu-icon" aria-hidden="true">📝</span>
-                                                    <span class="context-menu-text">理由を記述</span>
+                                                    <span class="context-menu-text" id="processMenuReason">理由を記述</span>
                                                 </a>
                                             </li>
                                             <!-- <li class="context-menu-item smart-goal-action" role="none">
@@ -1323,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="javascript:void(0);" id="process_conmenu6" class="context-menu-link" role="menuitem"
                                                    title="このノードの完了予定日時を設定します" aria-label="完了予定設定">
                                                     <span class="context-menu-icon" aria-hidden="true">⏰</span>
-                                                    <span class="context-menu-text">完了予定を設定</span>
+                                                    <span class="context-menu-text" id="processMenuDeadline">完了予定を設定</span>
                                                 </a>
                                             </li>
                                             <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
@@ -1331,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <a href="javascript:void(0);" id="process_conmenu4" class="context-menu-link" role="menuitem"
                                                    title="メニューを閉じます (ESCキーでも可能)" aria-label="キャンセル">
                                                     <span class="context-menu-icon" aria-hidden="true">❌</span>
-                                                    <span class="context-menu-text">キャンセル</span>
+                                                    <span class="context-menu-text" id="processMenuCancel">キャンセル</span>
                                                 </a>
                                             </li>
                                         </ul>
@@ -1650,12 +1668,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <button id="showQuestionsBtn" style="display: block; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; padding: 6px 0; margin-bottom: 8px; font-size: 13px; font-weight: bold; cursor: pointer;" onclick="showGeneration();"><span id="showQuestionsBtnText">問い一覧</span></button>
 <!-- <div id="questionsList" style="display:none; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px; padding:8px; margin-bottom:8px; max-height:120px; overflow-y:auto;"></div> -->
 <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;"><span id="inquiryAreaTitle">【情報の表出化】</span></div>
-                                <div id="testxml"></div>
-                                <div id="ont"></div>
-                                <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">【理由・目的】</div>
-                                <div id="intention"></div>
-                                <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">【合理性】</div>
-                                <div id="rationality"></div>
+<div id="testxml"></div>
+<div id="ont"></div>
+<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;"><span id="reasonPurposeTitle">【理由・目的】</span></div>
+<div id="intention"></div>
+<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;"><span id="rationalityTitle">【合理性】</span></div>
+<div id="rationality"></div>
                             </div>
 
                         <!--ここから大槻修正-->

@@ -1,3 +1,12 @@
+/* Weekly Goal Start/End label width adjustment */
+#weeklyGoalStartLabel, #weeklyGoalEndLabel {
+	display: inline-block;
+	min-width: 110px;
+}
+/* 言語切替スライダーのテキスト色を白に */
+#language-toggle-container, #language-toggle-container label, #language-toggle-container span {
+	color: #fff !important;
+}
 /* -------------------- 全体の設定 ---------------------- */
 html {
 	margin: 0;
@@ -266,28 +275,8 @@ input+label {
 	border-radius: 24px;
 	cursor: pointer;
 }
-/* On,Offの文字の設定 */
-input+label::before {
-	display: block;
-	content: attr(data-off-label);
-	position: absolute;
-	top: 10px;
-	right: 7px;
-	color: #fff;
-	font-family: Arial, sans-serif;
-	font-size: 18px;
-}
+
 /* スライドする円の設定 */
-input+label::after {
-	content: '';
-	position: absolute;
-	top: 3px;
-	left: 6px;
-	width: 33px;
-	height: 33px;
-	background-color: #fff;
-	border-radius: 50%;
-}
 /* Onの文字設定 */
 input:checked+label::before {
 	content: attr(data-on-label);
@@ -296,10 +285,6 @@ input:checked+label::before {
 	color: #fff;
 }
 /* Offの文字設定 */
-input:checked+label::after {
-	left: 60px;
-	background-color: #f7f7f7;
-}
 
 .checkbox+label {
 	background-color: #BBBBBB;
@@ -1498,7 +1483,7 @@ select[name="mttime_list"] {
 .button3 {
 	background-color: #999;
 	color: #fff;
-	width: 50px;
+	/* width: 50px; */
 	height: 25px;
 	font-size: 12px;
 	margin-left: 0;
