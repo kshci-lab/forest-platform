@@ -251,17 +251,17 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
      * 議論内省マップの表示・操作部分（Extend vis.js）
      */
     generateMeetingReflectionNetworkCanvas (canvas_dom_id, nodes, edges) {
-        // マップを表示
-
-        // this.setNodes(nodes);
-        // this.setEdges(edges);
-
+        // マップを表示（コンテナが存在しない場合や共有知モードでは生成しない）
+        const el = document.getElementById(canvas_dom_id);
+        // 共有知モードでは vis を生成しない
+        const isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
+        if (!el || isShared) {
+            // コンテナが無い、または共有知モード中は初期化を抑止
+            return null;
+        }
         return new vis.Network(
-            document.getElementById(canvas_dom_id),
-            {
-                nodes: nodes,
-                edges: edges,
-            },
+            el,
+            { nodes: nodes, edges: edges },
             this.options
         );
     }
@@ -1540,23 +1540,43 @@ const recordMeetingUtteranceNodes = (utterances) => {
   .fail((jqXHR, textStatus, errorThrown) => {
     console.error("Request failed:", textStatus, errorThrown);
     // 失敗時の処理を追加（例えば、エラーメッセージの表示など）
+
+
   });
 }
 
 // ロードした際の関数
 window.addEventListener('load', () => {
-
-    // 初期表示時点でいくつかのオブジェクトを非表示にする
-    document.getElementById("network_container").style.display="none";
-    defaultForestMRN = new ForestMRN("mynetwork", "load");
+    const networkContainerEl = document.getElementById("network_container");
+    if (networkContainerEl) networkContainerEl.style.display = "none";
+    const el = document.getElementById("mynetwork");
+    if (el) {
+        defaultForestMRN = new ForestMRN("mynetwork", "load");
+    }
     setUploadedXMLData("meetingUtteranceXmlFileUploader", "uploaded_meeting_utterance_xml_concent_display_area");
     $("#discussion_log_xml_file_upload_button").on("click", () => {
-        // ファイルアップロードボタンにアップロードイベントを付与
-        document.getElementById("mynetwork").innerHTML="";
-        defaultForestMRN.removeEventLister();
-        
-        defaultForestMRN = new ForestMRN("mynetwork", "load");
+        // 共有知モードでは vis の再初期化は行わず、アップロード処理のみ実行
+        if (!(typeof window !== 'undefined' && window.SharedModeActive === true)) {
+            const target = document.getElementById("mynetwork");
+            if (target) {
+                // 既存ネットワークのイベントを解除し、DOMをクリア
+                if (defaultForestMRN && typeof defaultForestMRN.removeEventLister === 'function') {
+                    defaultForestMRN.removeEventLister();
+                }
+                // 既存の vis インスタンスがあれば安全に破棄
+                try {
+                    if (defaultForestMRN && defaultForestMRN.ownNetwork && typeof defaultForestMRN.ownNetwork.destroy === 'function') {
+                        defaultForestMRN.ownNetwork.destroy();
+                    }
+                } catch (e) { /* no-op */ }
+                target.innerHTML = "";
+                // 必要なら再初期化
+                defaultForestMRN = new ForestMRN("mynetwork", "load");
+            }
+        }
+        // XMLのアップロード・保存処理は常に実行
         uploadMeetingUtteranceXML();
+        // 以降、ボタンのイベント再バインド
         $('#mrnb_addNode').off('click');
         $('#mrnb_removeNode').off('click');
         $('#mrnb_startEditEdge').off('click');

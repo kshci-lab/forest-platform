@@ -1486,6 +1486,13 @@ function ModeChangeButtonClick() {
     BeforeSelectModeNumber = 2;
     MoveAndExpensionImageArea();
   }else if(num == 3){
+    // 議論内省マップモード
+    // 共有知モードから戻ってきた場合に vis ネットワークが破棄されている可能性があるため必要なら再初期化
+    try{
+      if((!defaultForestMRN || !defaultForestMRN.ownNetwork) && document.getElementById('mynetwork')){
+        defaultForestMRN = new ForestMRN('mynetwork', 'load');
+      }
+    }catch(e){ console.log('reinit vis network failed', e); }
     document.getElementById('feedback_area').style.display = "block";
     document.getElementById('xml_upload_area').style.display = "block";
     $('#network_container').toggle('fast');
@@ -1513,10 +1520,20 @@ function ModeChangeButtonClick() {
     BeforeSelectModeNumber = 3;
   }
   else if(num == 4){
-    // 共有知（組織知）モードは現状議論内省マップモードと同じ表示にする
+    // 共有知（組織知）モード：vis-network は不要なので完全に破棄し DOM を空にする
   SharedModeActive = true;
   // グローバル同期
   window.SharedModeActive = SharedModeActive;
+    // 既存 vis ネットワークの破棄と DOM クリア
+    try{
+      if(defaultForestMRN && defaultForestMRN.ownNetwork && typeof defaultForestMRN.ownNetwork.destroy === 'function'){
+        defaultForestMRN.ownNetwork.destroy();
+      }
+    }catch(e){ console.log('destroy vis network error', e); }
+    try{
+      var mn = document.getElementById('mynetwork');
+      if(mn){ mn.innerHTML = ''; }
+    }catch(e){}
     // 表出化フォームを可視領域（mynetwork2）に移動して表示
     try{
       var $ext = $('#externalization_form_section');

@@ -72,7 +72,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="js/jsmind.js"></script>
         <script type="text/javascript" src="js/jsmind.draggable.js"></script>
-        <script type="text/javascript" src="../js/vis-network.min.js"></script>
+    <script type="text/javascript" src="js/vis-network.min.js"></script>
 
         <script src="js/jquery.autosize.js"></script>
         <script src="js/jquery.autosize.min.js"></script>
@@ -80,8 +80,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/version_update.js"></script>
         <script type="text/javascript" src="js/get_thinking.js"></script>
         <script type="text/javascript" src="js/jsmind.screenshot.js"></script>
-        <script type="text/javascript" src="js/change_tab.js"></script>
-        <script type="text/javascript" src="../js/meeting-reflection-network.js"></script>
+    <script type="text/javascript" src="js/change_tab.js"></script>
+    <script type="text/javascript" src="js/meeting-reflection-network.js"></script>
         <link rel="stylesheet" type="text/css" href="../css/meeting-reflection-network.css" />
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
@@ -805,8 +805,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                 <!--サイドメニュー　finish-->
             </div>
             <!--tab01 fin-->
-
-            <!--  tab04メニュー　　hatakeyama　　-->
+            
             <div id="tab04">
                 <div id="layout">
                     <div id="jsmind_nav2">
@@ -818,7 +817,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 </select>
                                 <input id="past_time_select_button" type="button" value="選択完了">
                             </div>
-                                    <!-- 表出化フォーム（mynetwork 内） -->
+                            <div id="externalization_form">
+                                    <!-- 表出化フォーム -->
                                     <div id="externalization_form_section" style="display:none; margin-top:10px;">
                                         <div class="externalization-card">
                                             <h3 class="externalization-title">選択された発言についての思考整理</h3>
@@ -844,6 +844,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                                             <div class="externalization-actions" style="margin-top:10px;">
                                                 <input id="externalization_register" type="button" class="button3" value="登録" onclick="handleExternalizationRegister();" />
+                                                <!-- <input id="externalization_upload" type="button" class="button3" value="アップロード" onclick="uploadMeetingUtteranceXML();" /> -->
                                             </div>
 
                                             <!-- <div class="externalization-footer">
@@ -855,7 +856,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             </div> -->
                                         </div>
                                     </div>
-                            
+                            </div>
                             <!-- <form id ="reco_peri" class="ref_peri" method="post" acion="">
                                 <input id="od" name="start_date" type="datetime-local"/>
                                 <span><input id="pastmap_btn" type="button" onclick="GetPastMap($('#reco_period').val());" value="過去のマップを表示" /></span>

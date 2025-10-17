@@ -1467,6 +1467,20 @@ select[name="user_list"] {
 	/* resize: auto; */
 }
 
+#externalization_form{
+	position: relative;
+	width: 100%;
+	min-width: 300px;
+	/* height:70vh; */
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	border-left: solid 0.5px #a8cde0;
+    border-top: solid 0.5px #a8cde0;
+	background:#fff;
+	overflow: auto;
+	/* resize: auto; */
+}
+
 /* 表出化メイン入力セクション */
 .externalization-main-section{
 	display:block;
