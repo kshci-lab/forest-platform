@@ -1444,7 +1444,7 @@ select[name="user_list"] {
 }
 #utterance_area2{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 100px;
+	min-width: 250px;
 	margin-bottom:2vh;
 	/* border-top:solid 2px #9bb7ba; */
 	background:#e6edf8;

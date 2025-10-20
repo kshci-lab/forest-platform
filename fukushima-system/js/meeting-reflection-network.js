@@ -1132,7 +1132,7 @@ const makeUtteranceNodeInList = (utter_id, utter_content, speaker, JPNtime, netw
         backColor = "gray";
     }
     return $(`(<div id="${utter_id}"
-                 style='border: solid 2px #000; font-size: 10px; line-height: 10px; background: ${backColor}; margin-bottom: 5px;'
+                 style='border: solid 2px #000; font-size: 11px; line-height: 11px; background: ${backColor}; margin-bottom: 5px;'
                  class='utter_node_in_list'
                  speaker='${speaker}'
                  utterance='${utter_content}'
@@ -1403,7 +1403,7 @@ const getXMLTagInfo = () => {
         const utter_list = Array.prototype.slice.call(meeting_utterances.getElementsByTagName("messagedata")).map(u => {
         return {
             message_id: getTaggedInfo(u, "id"),
-            content: getTaggedInfo(u, "type"),
+            content: getTaggedInfo(u, "content"),
             sender: getTaggedInfo(u, "sender_id"),
             time: getTaggedInfo(u, "time"),
             JPNtime: getTaggedInfo(u, "jpntime")
