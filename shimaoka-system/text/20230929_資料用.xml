@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Records xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <MessageData>
+    <id>1</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099803165</time>
+    <JPNtime>2023年12月09日14時30分03秒165</JPNtime>
+    <type>議論のプロセスの振り返りを伴わないでアイデアだけ振り返るってことはあるのか？それは理想的な振り返りではなく，最低限</type>
+  </MessageData>
+  <MessageData>
+    <id>2</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099805520</time>
+    <JPNtime>2023年12月09日14時30分05秒520</JPNtime>
+    <type>議論時に理解できていて後で振り返りの意識に上がらないっていうことは覚えてないだけ</type>
+  </MessageData>
+  <MessageData>
+    <id>3</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099806995</time>
+    <JPNtime>2023年12月09日14時30分06秒995</JPNtime>
+    <type>研究目標にあるズレっていうのと正反対の話</type>
+  </MessageData>
+  <MessageData>
+    <id>4</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099808286</time>
+    <JPNtime>2023年12月09日14時30分08秒286</JPNtime>
+    <type>「自分でわかったつもりになって，それが暗黙のまま忘れされれること」と「その場で理解できたけど，振り返りの意識に上らなかった」忘れたって現象は同じやけど，プロセスが違う</type>
+  </MessageData>
+  <MessageData>
+    <id>5</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099811216</time>
+    <JPNtime>2023年12月09日14時30分11秒216</JPNtime>
+    <type>研究目標にあるズレっていうのは相手がいて初めて成り立つ</type>
+  </MessageData>
+  <MessageData>
+    <id>6</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099812752</time>
+    <JPNtime>2023年12月09日14時30分12秒752</JPNtime>
+    <type>ズレと称しているものは．「わかってないけどわかってると思ってるもの」「わかってないことに気づいてる」の２つわざわざズレって言葉も出さなくていいのでは？</type>
+  </MessageData>
+  <MessageData>
+    <id>7</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099814455</time>
+    <JPNtime>2023年12月09日14時30分14秒455</JPNtime>
+    <type>議論のときに気づいてたことをもう一度振り返る 」っていうことと「よくわかってなかったから振り返る」っていうことは頭の中にしかないから支援の方法がない</type>
+  </MessageData>
+  <MessageData>
+    <id>8</id>
+    <sender_id>presenter</sender_id>
+    <time>1702099818743</time>
+    <JPNtime>2023年12月09日14時30分18秒743</JPNtime>
+    <type>棄却された支援機能と採用された支援機能があったとしたらその場で議論されてなくともなぜその支援機能が良かったかとか困難性と対応してるとか残すべきことを残すようにプロンプトするのは どうか？</type>
+  </MessageData>
+</Records>

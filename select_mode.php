@@ -63,6 +63,7 @@ if (isset($_POST["logout"])) {
                   <input type="radio" name="selectmode" value=1 checked>自己内対話モード<br>
                   <input type="radio" name="selectmode" value=2>論文読解モード<br>
                   <input type="radio" name="selectmode" value=3>論文添削モード<br>
+                  <input type="radio" name="selectmode" value=4>議論内省モード<br>
                 </form>
               </div>
     		      <div align="center">

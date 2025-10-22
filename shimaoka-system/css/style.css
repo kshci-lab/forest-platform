@@ -1,0 +1,2083 @@
+/* -------------------- 全体の設定 ---------------------- */
+html {
+	margin: 0;
+	/* height: 100%; */
+	/* background-color: #ffffff; */
+	background-color: #F0F0F0;
+	-webkit-user-select: none;
+	overflow-x : hidden;
+	overflow-y : auto;
+}
+
+/* 表示画面全体の大きさ */
+/* vw,vhでビューポートに対する割合にしている */
+body{
+	/* width: 100%;
+	height:90%; */
+
+	height:100vh;
+	/* overflow: auto; */
+	min-width: 765px;
+	background-color: #F0F0F0;
+	overflow-x : hidden;
+	overflow-y : auto;
+}
+body::-webkit-scrollbar{
+	display: none;
+}
+
+/*ノードのスタイル設定*/
+table[type] {
+	position:absolute;
+	padding: 10px 10px;
+	border: 1px solid #c0c0c0;
+	border-radius: 3px;
+	width: 160px;
+	height: 70px;
+	text-align: center;
+	overflow-wrap:  break-word;
+}
+
+/* -------------------- タイトルの設定 ---------------------- */
+/* 画面上部のタイトル全体の設定 */
+#main_title {
+	width: 99vw;
+	min-width: 765px;
+	height: 80px;
+	color: #fff;
+	background-color: #1B4383; /* forestgreen */
+
+	margin-right: 10px;
+	margin-left: 0;
+	overflow: hidden;
+}
+
+/* タイトル文字の設定 */
+#main_title .title_name {
+	height:60px;
+	text-align: left;
+	font-style: oblique; /* 斜体に */
+	font-family:cursive; /* フォント変更 */
+	font-size: 50px;
+	margin-left:10px;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding: 0;
+	color: #EFE7C3;
+
+}
+
+.popup {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: .6s;
+}
+.popup.is-show {
+  opacity: 1;
+  visibility: visible;
+}
+.popup-inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  width: 80%;
+  max-width: 600px;
+  padding: 50px;
+  background-color: #fff;
+  z-index: 2;
+}
+.popup-inner img {
+  width: 100%;
+}
+.close-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  cursor: pointer;
+}
+.close-btn i {
+  font-size: 20px;
+  color: #333;
+}
+.black-background {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,.8);
+  z-index: 1;
+  cursor: pointer;
+}
+
+
+/* ログインユーザ名と表示中のシート名を表示する */
+#session {
+	width: 99vw;
+	min-width: 765px;
+	height: 60px;
+	background: #8fbc8f;
+	float: left;
+	margin-right: 10px;
+	overflow:auto;
+}
+
+#session .session_php {
+	/* font-family:fantasy; */ /* フォントの設定　ブラウザによってはだいぶヤバくなる */
+	font-family: Arial, sans-serif;
+	font-size: 40px;
+	padding-left: 0.3em;
+}
+
+/* -------------------- メインの設定 ---------------------- */
+/* タブメニュー */
+.tabnav {
+		width: calc(30vw + 200px);
+		min-width: 280px;
+		height: 44px;
+    padding: 0;
+		float: left;
+		margin-top: 10px;
+		margin-bottom:0;
+}
+
+.tabnav li{
+    display: inline;
+}
+
+.tabnav li a{
+    display: inline-block;
+    background: #ddd;
+		color: #333;
+    padding: 10px;
+    border-radius: 5px 5px 0 0;
+    text-decoration: none;
+}
+
+.tabnav li a:hover {
+	background-color: #ff8c00;
+}
+
+.tabnav li a.active{
+		background: #405dca;
+    color: #fff;
+}
+
+/* Menu見出し */
+.Menu {
+	width: 280px;
+	height:40px;
+	/* font-size 1em=16pxなら25.6px */
+	font-size: 1.6em; 
+	text-align: center;
+	/* padding 25.6✖️0.3＝7.68px */
+	padding: 0.3em 0;
+	background: #ffffff;
+	background-color: #69a7ff;
+	color: rgb(0, 0, 0);
+	float:right;
+	/* margin-right: 1vw; */
+
+}
+
+/* タブので切り替わる要素 */
+/* 親はvh,子は親を参照する％ */
+.tabcontent{
+	width:100vw;
+	/* min-width: 765px; */
+	height:calc(100vh - 200px);
+	/* (タイトルメニューの高さの分引く)　*/
+
+}
+
+/* 思考整理支援システム */
+#tab01 {
+	width:100%;
+	height: 100%;
+}
+
+/* #layout{
+	height:100%;
+} */
+
+/* 「問いノード追加」等のボタンがある箇所 */
+#jsmind_nav {
+	width: calc(100vw - 350px);
+	min-width: 450px;
+	height:37px;
+	display: inline;
+	font-size: 1em;
+	border:solid 5px #ccc;
+	margin: 0;
+	overflow-x: auto;
+	overflow-y: visible;
+	float:left;
+}
+
+/* 文書化モードのチェックボックス */
+.checkbox {
+	float: right;
+	width: 280px;
+	font-size: 20px;
+	vertical-align: middle;
+	margin-right: 0px;
+	margin-top:15px;
+	margin-bottom:0px;
+}
+
+
+
+
+
+/* 通常のチェックボックスの削除 */
+input[type="checkbox"][name="check"]{
+   display: none;
+ }
+
+/* アニメーションの設定 */
+input+label,
+input+label::before,
+input+label::after {
+	-webkit-transition: all .2s;
+	transition: all .2s;
+}
+/* 背景の図形の設定 */
+input+label {
+	display: inline-block;
+	position: relative;
+	width: 100px;
+	height: 40px;
+	border-radius: 24px;
+	cursor: pointer;
+}
+/* On,Offの文字の設定 */
+input+label::before {
+	display: block;
+	content: attr(data-off-label);
+	position: absolute;
+	top: 10px;
+	right: 7px;
+	color: #fff;
+	font-family: Arial, sans-serif;
+	font-size: 18px;
+}
+/* スライドする円の設定 */
+input+label::after {
+	content: '';
+	position: absolute;
+	top: 3px;
+	left: 6px;
+	width: 33px;
+	height: 33px;
+	background-color: #fff;
+	border-radius: 50%;
+}
+/* Onの文字設定 */
+input:checked+label::before {
+	content: attr(data-on-label);
+	left: 7px;
+	right: auto;
+	color: #fff;
+}
+/* Offの文字設定 */
+input:checked+label::after {
+	left: 60px;
+	background-color: #f7f7f7;
+}
+
+.checkbox+label {
+	background-color: #BBBBBB;
+}
+.checkbox+label::before {
+	color: #000000;
+}
+.checkbox:checked+label {
+	background-color: #3498db;
+}
+.checkbox:checked+label::before {
+	color: #fff;
+}
+
+/* チェックボックス横のテキスト設定 */
+.checkbox_text{
+	font-size:23px;
+	text-align:center;
+	float:right;
+}
+
+/* マインドマップモードとドキュメントモードを切り替えるボタン */
+.changemode_button{
+	display:none;
+}
+
+#documentation_mode_button{
+    display: inline-block;
+		width:135px;
+    padding: 0.5em 1em;
+		text-decoration: none;
+    color: #ffffff;
+		border-radius: 4px;
+		background-image: -webkit-linear-gradient(45deg, #FFC107 0%, #ff8b5f 100%);
+    background-image: linear-gradient(45deg, #FFC107 0%, #ff8b5f 100%);
+		box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.29);
+		border-bottom: solid 3px #c58668;
+		float:right;
+		margin-right: 1vw;
+		cursor:pointer;
+  }
+#documentation_mode_button:active{
+		-ms-transform: translateY(4px);
+    -webkit-transform: translateY(4px);
+    transform: translateY(4px);
+    box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.2);
+    border-bottom: none;
+}
+
+#mindmap_mode_button{
+    display: inline-block;
+		width:135px;
+    padding: 0.5em 1em;
+    text-decoration: none;
+		color: #ffffff;
+    border-radius: 4px;
+    background-image: -webkit-linear-gradient(#6795fd 0%, #67ceff 100%);
+    background-image: linear-gradient(#6795fd 0%, #67ceff 100%);
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.29);
+    border-bottom: solid 3px #5e7fca;
+		float:right;
+		cursor:pointer;
+  }
+#mindmap_mode_button:active{
+    -ms-transform: translateY(4px);
+    -webkit-transform: translateY(4px);
+    transform: translateY(4px);
+    box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.2);
+    border-bottom: none;
+}
+
+/* マインドマップを表示する枠の設定 */
+#jsmind_container{
+	width: calc(100vw - 350px);
+	min-width: 300px;
+	/* height:75vh; */
+	height:100%;
+	/* 元は75 */
+	min-height: 450px;
+	margin-bottom:2vh;
+	border:solid 5px #ccc;
+	background:#F0F0F0;
+	overflow: scroll;
+	float:left;
+}
+
+/* マインドマップ上で右クリックしたときのメニュー */
+#mindmap_conmenu{
+  width:350px;
+  background-color:#f0f0f0;
+  border:2px solid #999999;
+	border-radius: 10px;
+  display:none;
+  position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#mindmap_conmenu.on{
+  display:block;
+}
+#mindmap_conmenu ul{
+  list-style:none;
+  margin:0px;
+  padding:7px;
+}
+#mindmap_conmenu li:hover{
+  background-color: #CCFFFF;
+}
+
+/*ここから大槻修正*/
+/*ネットワーク右クリック*/
+#network_conmenu{
+	width:350px;
+	background-color:#f0f0f0;
+	border:2px solid #999999;
+	  border-radius: 10px;
+	display:none;
+	position:fixed;
+	  z-index: 1000;
+	  text-align: center;
+  }
+  #network_conmenu ul{
+	list-style:none;
+	margin:0px;
+	padding:7px;
+  }
+  #network_conmenu li:hover{
+	background-color: #CCFFFF;
+  }
+#labelselect{
+	width:200px;
+	background-color:#f0f0f0;
+	border:2px solid #999999;
+	border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+  }
+  #recruitselect{
+	width:200px;
+	background-color:#f0f0f0;
+	border:2px solid #999999;
+	border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+  }
+  #recruit_reason{
+	display: none;
+  }
+/*ここまで大槻修正*/
+
+/* 文書を作成するエリア */
+#document_area {
+	/*（全体）ー（サイドメニュー */
+	width:calc(60vw - 450px); /* ここで設定しても意味がない */
+	/* チェックボックスが押されるたびにCSSを上書きしている  */
+	min-width: 140px;
+	height:84vh;
+	/* height: auto; */
+	min-height: 80vh;
+	margin-bottom:2vh;
+	font-size:25px;
+	display: none;
+	float:left;
+	padding-left: 0px;
+	padding-top: 0px;
+	padding-bottom: 1px;
+	padding-right: 0px;
+	background-color:	#ffffff;
+
+  	border: 2px double #ccc;
+	/* overflow: auto; */
+	/* overflow: scroll; */
+}
+.thread {
+	height: auto !important;
+
+}
+
+/* ドラッグの際に見える枠線 */
+.ghostClass {
+	border: 1px dashed red;
+	height:auto;
+	background-color: pink;
+	margin-top:10px;
+	padding-bottom:15px;
+}
+/* テンプレートの設定 */
+#document_area .thread{
+	/* overflow: visible; */
+	overflow: scroll;
+	border: solid 0.7px #000000;
+}
+/* テンプレートにマウスをのせたとき */
+#document_area .thread:hover{
+	cursor: pointer;
+}
+#document_area .thread::-webkit-scrollbar{
+	display: none;
+}
+/* 議論目的にマウスをのせたとき */
+/* #document_area .purpose:hover{
+	background-color: #FF6666;
+} */
+
+/* スライドのコンテンツを入れ替え可能にする */
+.scenario_content:hover{
+	/* cursor: pointer; */
+}
+
+#document_area .thread-contents:hover{
+	background-color: #CCFFFF;
+	cursor: grabbing;
+}
+
+/* 議論目的の部分 */
+#document_title{
+	/* overflow: scroll; */
+	scrollbar-width: none;
+	
+	background-color: #ffffff;
+	padding:1px;
+}
+#document_title::-webkit-scrollbar{
+	display:none;
+}
+h3 {
+	margin:0;
+	padding-left: 10px;
+}
+/* テンプレートにマウスをのせたとき */
+#document_title .document_purpose{
+	cursor: pointer;
+}
+#document_title .document_title_area{
+	width:400px;
+	height:50px;
+	font-size:20px;
+	padding-top:0px;
+	padding-bottom:0px;
+	margin-left:15px;
+	text-align:center;
+	border: solid 1px #7f8080;
+}
+
+
+/* ドキュメントエリア内で右クリックしたときのメニュー */
+#document_area_conmenu{
+	width:160px;
+	background-color:#ffffff;
+	border:2px solid #999999;
+	border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#document_area_conmenu.on{
+  display:block;
+}
+#document_area_conmenu ul{
+  list-style:none;
+  margin:0px;
+  padding:5px;
+}
+#document_area_conmenu li:hover{
+	background-color: #CCFFFF;
+}
+/* ドキュメントエリア内で右クリックしたとき[ノード2個選択時]のメニュー */
+#document_area_conmenu2{
+	width:auto;
+	min-width: 350px;
+	padding: 5px;
+	background-color:#f0f0f0;
+	border:2px solid #999999;
+	  border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#document_area_conmenu2.on{
+  display:block;
+}
+#document_area_conmenu2 ul{
+  list-style:none;
+  margin:0px;
+  padding:5px;
+}
+#document_area_conmenu2 li:hover{
+	background-color: #CCFFFF;
+}
+
+/* スライドに関係性を設定するためのメニュー */
+#document_area_conmenu3{
+	width:auto;
+	min-width: 350px;
+	padding: 5px;
+	background-color:#f0f0f0;
+	border:2px solid #999999;
+	  border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#document_area_conmenu3.on{
+  display:block;
+}
+#document_area_conmenu3 ul{
+  list-style:none;
+  margin:0px;
+  padding:5px;
+}
+#document_area_conmenu3 li:hover{
+	background-color: #CCFFFF;
+}
+
+/* スライドに関係性を設定するためのメニュー */
+#document_area_conmenu4{
+	width:auto;
+	min-width: 350px;
+	padding: 5px;
+	background-color:#f0f0f0;
+	border:2px solid #999999;
+	  border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#document_area_conmenu4.on{
+  display:block;
+}
+#document_area_conmenu4 ul{
+  list-style:none;
+  margin:0px;
+  padding:5px;
+}
+#document_area_conmenu4 li:hover{
+	background-color: #CCFFFF;
+}
+/* -------------------- サイドメニューの設定 ---------------------- */
+/*　サイドメニュー全体の設定　*/
+#side_menu{
+	width: 280px;
+	/* height: 75vh; */
+	height: 100%;
+	min-height: 450px;
+	float:right;
+  background: #F0F0F0;
+	z-index: 1000;
+	/* margin-right: 1vw; */
+}
+
+/* 修正理由の見出し */
+#side_menu .correct_reason {
+	background-color: #9acd32;
+	color: #fff;
+	padding: 0.7em 0;
+	margin: 0;
+	text-transform: capitalize;
+	text-align: center;
+	margin-bottom: 10px;
+	font-size: 20px;
+	/* float: right; */
+}
+
+/*ここから大槻修正*/
+#side_menu .correct_reason2 {
+	background-color: #1289f8;
+	color: #fff;
+	padding: 0.7em 0;
+	margin: 0;
+	text-transform: capitalize;
+	text-align: center;
+	margin-bottom: 10px;
+	font-size: 20px;
+}
+#side_menu .correct_reason3 {
+	background-color: #f8247c;
+	color: #fff;
+	padding: 0.7em 0;
+	margin: 0;
+	text-transform: capitalize;
+	text-align: center;
+	margin-bottom: 10px;
+	font-size: 20px;
+}
+
+#feedback_area{
+	background-color: #f0f0f0;
+	height: 200px;
+	padding: 10px;
+	overflow-y: scroll;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+  /* アコーディオンメニューのスタイル */
+  #accordion_discussion {
+    background-color: #f0f0f0;
+	height: 150px;
+	padding: 10px;
+	overflow-y: scroll;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+  }
+  #accordion_discussion .accordion-item {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 5px;
+  }
+  #accordion_discussion .accordion-item:last-child {
+    border-bottom: none;
+  }
+  #accordion_discussion .accordion-item .accordion-header {
+    cursor: pointer;
+    padding: 10px;
+    background-color: #ddd;
+    font-weight: bold;
+  }
+  #accordion_discussion .accordion-item .accordion-content {
+    display: none;
+    padding: 10px;
+  }
+  #accordion_discussion .accordion-item.active .accordion-content {
+    display: block;
+  }
+  #accordion_discussion .accordion-item.active .accordion-input{
+	width: 100%; /* 要素の幅を親要素に合わせる */
+	height: 50px;
+	word-wrap: break-word; /* 幅が埋まったら自動的に改行する */
+    box-sizing: border-box; /* 幅の計算にborderやpaddingを含める */
+  }
+
+  /* ネットワークを点滅させる */
+  @keyframes blink1 {
+	0% {
+	  border-color: red;
+	}
+	50% {
+	  border-color: transparent;
+	}
+	100% {
+	  border-color: red;
+	}
+  }
+
+  @keyframes blink2 {
+	0% {
+	  border-color: green;
+	}
+	50% {
+	  border-color: transparent;
+	}
+	100% {
+	  border-color: green;
+	}
+  }
+  
+  .vis-network-node.blinking1 {
+	animation: blink1 1s infinite;
+  }
+
+  .vis-network-node.blinking2 {
+	animation: blink2 1s infinite;
+  }
+  
+  #ontology_feedback{
+	width: 100%;
+	height: 50px;
+	overflow: scroll;
+	text-align: center;
+	
+  }
+  .feedback_message{
+	width: fit-content;
+    background-color: lightgray;
+    padding: 0.5rem;
+    text-align: left;
+    font-size: 0.3em;
+  }
+/*ここまで大槻修正*/
+
+/* 問い一覧の見出し */
+#side_menu .toi_menu {
+	background-color: #9acd32;
+	color: #fff;
+	padding: 0.7em 0;
+	margin: 0;
+	text-transform: capitalize;
+	text-align: center;
+}
+/* 問い一覧のallボタンと横の文字の設定 */
+#side_menu .toi_list {
+	font-size: 14px;
+	align: left;
+	margin-bottom: 5px;
+}
+/* 問い一覧の全体 */
+#side_menu .inquiry_area {
+	height: 47vw;
+	overflow-y: auto;
+	border:solid 5px #ccc;
+	margin-bottom: 30px;
+	font-size: 14px;
+	text-align: left;
+	resize:vertical;
+}
+/* 問い一覧 */
+#testxml{
+	font-size: 14px;
+	margin: auto;
+}
+
+/* 文書化モードの要素につけるID */
+/* 初期は隠しておき，モード切り替えでみれるようになる */
+#document{
+	display:none;
+}
+/* 助言Menu */
+#now_logic_relation{
+	font-size: 14px;
+	margin: auto;
+}
+/* 全体の枠 */
+/* searchFrameってクラス名にしないとボーダーが消える？ */
+#document .searchFrame{
+	/* width: 280px; */
+	/* height: 60vh; */
+	height: 40%;
+	border: solid 5px #008080;
+	font-size:1.2em;
+	align-content: center;
+	overflow: auto;
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+/* 説明文の設定 */
+#document .document_description{
+	font-size: 20px;
+	text-align: center;
+}
+/* 行動の選択ボタンの設定 */
+.action_select {
+	overflow: hidden;
+	width: 90%;
+	margin: 2em auto;
+	text-align: center;
+}
+.action_select select {
+	width: 100%;
+	padding-right: 1em;
+	cursor: pointer;
+	text-indent: 0.01px;
+	text-overflow: ellipsis;
+	border: none;
+	outline: none;
+	background: transparent;
+	background-image: none;
+	box-shadow: none;
+	-webkit-appearance: none;
+	appearance: none;
+}
+.action_select select::-ms-expand {
+    display: none;
+}
+/* 拾いものなのでクラス名が変ですがゆるして */
+.action_select.cp_sl05 {
+	position: relative;
+	border-radius: 2px;
+  border-radius: 50px;
+	background: #da3c41;
+	margin-top:20px;
+	margin-bottom:20px;
+}
+.action_select.cp_sl05::before {
+	position: absolute;
+	top: 1em;
+	right: 0.8em;
+	width: 0;
+	height: 0;
+	padding: 0;
+	content: '';
+	border-left: 6px solid transparent;
+	border-right: 6px solid transparent;
+	border-top: 6px solid #ffffff;
+	pointer-events: none;
+}
+.action_select.cp_sl05 select {
+	padding: 8px 38px 8px 20px;
+	color: #ffffff;
+	font-size:20px;
+}
+
+/* 【選択中のノード】の部分乗せ亭 */
+#selected_node_area{
+	width:250px;
+	height:100px;
+	margin-left: 15px;
+	resize: none;
+	cursor: default;
+	font-size: 15px;
+	border:solid 5px #ccc;
+}
+/* 記述推奨の表示ボタン */
+/* 最初は見えないが，法造と結びついて表示させる */
+#documentation_support_button{
+	float:left;
+	margin: 0;
+	padding:0;
+}
+
+/* 「マインドマップを表示」ボタン */
+#show_mindmap_button{
+	background-color: #98fb98;
+  width:140px;
+	height:20px;
+	cursor: pointer;
+}
+#show_mindmap_button:hover{
+	background-color: #ffd700;
+}
+/* 「マインドマップを隠す」ボタン */
+#hide_mindmap_button{
+	background-color: #7fffd4;
+  width:140px;
+	height:20px;
+	cursor: pointer;
+	float:right;
+}
+#hide_mindmap_button:hover{
+	background-color: #ffd700;
+}
+/* 「テキストファイルで出力」ボタン */
+#output_button{
+	background-color: #f5deb3;
+  width:280px;
+	height: 30px;
+	font-size:20px;
+	cursor: pointer;
+}
+/* 「ファイルを選択」ボタン */
+#input_file {
+	width:100px;
+	height: 20px;
+	font-size:5px;
+	cursor: pointer;
+	display: none;
+}
+
+.deco-file label{
+    display: inline-block;
+    border: 2px solid #1E88E5;
+    color: #1E88E5;
+    text-align: center;
+    padding: 10px 15px;
+}
+.deco-file label:hover{
+    cursor: pointer;
+}
+.deco-file input[type="file"]{
+    display: none;
+}
+
+.file-names{
+	font-size: 10px;
+}
+/* 20222-12-16 shimizu */
+
+
+
+#set_audience{
+	font-size:15px;
+}
+
+#set_model{
+	display: none;
+	font-size:15px;
+}
+
+#set_final{
+	display: none;
+	font-size:15px;
+}
+
+#edit_model{
+	display: none;
+	font-size:15px;
+	font-family: 'Noto Sans JP', sans-serif;
+}
+
+/* -------------------- 過去のマインドマップ表示の設定 ---------------------- */
+#jsmind_nav2 {
+	width: calc(100vw - 350px);
+	min-width: 450px;
+	height:37px;
+	display: inline;
+	font-size: 1em;
+	border:solid 5px #ccc;
+	margin: 0;
+	overflow-x: auto;
+	overflow-y: visible;
+	float:left;
+}
+
+
+/* 過去のMT時間一覧のリストの設定 */
+select[name="mttime_list"] {
+  width: 20vw;
+	min-width: 300px;
+  height: 35px;
+  line-height: 30px;
+	font-size:1.5em;
+}
+
+/* ここから畠山さんver */
+/* 過去のマインドマップを表示するエリア */
+/* #jsmind_container2{
+		width: calc(100vw - 350px);
+		min-width: 300px;
+		height:70vh;
+		min-height: 450px;
+		margin-bottom:2vh;
+		border:solid 5px #ccc;
+		background:#fff;
+		overflow: scroll;
+		float:left;
+	} */
+
+/* 過去のマインドマップを表示するエリア */
+/* #jsmind_container3{
+		display: none;
+		width: 30vw;
+		min-width: 300px;
+		height:70vh;
+		min-height: 450px;
+		margin-bottom:2vh;
+		border:solid 5px #ccc;
+		background:#fff;
+		overflow: scroll;
+		float:left;
+	} */
+/* ここまで畠山さんver *
+
+/*ここから大槻修正*/
+/* 過去のマインドマップを表示するエリア */
+#jsmind_container4{
+	width: calc((100vw - 350px)*0.5);
+	min-width: 300px;
+	height:70vh;
+	min-height: 450px;
+	margin-bottom:2vh;
+	border:solid 5px #ccc;
+	background:#fff;
+	overflow: scroll;
+	float:left;
+}
+
+/* 過去のマインドマップ（上）を表示するエリア */
+#jsmind_container2{
+	width: calc((100vw - 350px)*0.5);
+	min-width: 300px;
+	height:35vh;
+	min-height: 225px;
+	margin-bottom:2vh;
+	border:solid 5px #ccc;
+	background:#fff;
+	overflow: scroll;
+	float:left;
+}
+
+/* 過去のマインドマップ（下）を表示するエリア */
+#jsmind_container3{
+	width: calc((100vw - 350px)*0.5);
+	min-width: 300px;
+	height:35vh;
+	min-height: 225px;
+	margin-bottom:2vh;
+	border:solid 5px #ccc;
+	background:#fff;
+	overflow: scroll;
+	float:left;
+}
+/*議事録マップ表示*/
+#mynetwork_show{
+	width: calc((100vw - 350px)*0.5);
+	min-width: 300px;
+	height:70vh;
+	min-height: 450px;
+	margin-bottom:2vh;
+	border:solid 5px #c5c3c3;
+	background:#fff;
+	overflow: auto;
+	float:left;
+}
+
+/*ネットワーク*/
+#network_container{
+	width: calc((100vw - 350px)*0.6);
+	min-width: 300px;
+	height:70vh;
+	min-height: 450px;
+	margin-bottom:2vh;
+	border:solid 5px #c5c3c3;
+	background:#fff;
+	overflow: hidden;
+	float:left;
+	display: none;
+}
+#mynetwork2{
+	width: calc((100vw - 350px)*0.45);
+	min-width: 300px;
+	height:70vh;
+	min-height: 450px;
+	margin-bottom:2vh;
+	border:solid 5px #c5c3c3;
+	background:#fff;
+	overflow: auto;
+}
+#timedisplay{
+	height:50px;
+}
+#rclick2{
+	position: sticky;
+	top: 0;
+	width: calc((100vw - 350px)*0.15);
+	height:80px;
+	background:#e6edf8;
+}
+#utterance_area{
+	width: calc((100vw - 350px)*0.15);
+	min-width: 100px;
+	height:70vh;
+	min-height: 450px;
+	margin-bottom:2vh;
+	background:#e6edf8;
+	overflow-y: scroll;
+}
+#utterance_area2{
+	width: calc((100vw - 350px)*0.15);
+	min-width: 100px;
+	margin-bottom:2vh;
+	border:solid 5px #cccccc00;
+	background:#e6edf8;
+	overflow-y: scroll;
+	float:left;
+	line-height:20px;
+	cursor: pointer;
+}
+#mynetwork {
+	position: relative;
+	width: calc((100vw - 350px)*0.45);
+	min-width: 300px;
+	height:70vh;
+	min-height: 450px;
+	margin-bottom:2vh;
+	border:solid 0.5px #000000;
+	background:#fff;
+	overflow: auto;
+}
+
+/*ここまで大槻修正*/
+
+/********************* リフレクションタブ関係 **********************/
+/*リフレクション関係　yoshioka*/
+#tab03 {
+	width:100%;
+	height: 100%;
+}
+
+#reflection_container{
+    float:left;
+		width: calc(100vw - 350px);
+		height:85%;
+    border:solid 5px #ccc;
+    background:#ccc;
+		overflow: scroll;
+		text-align:center;
+}
+
+#reflection_btn {
+	background-color: #ff6347;
+	color: #fff;
+	width: 200px;
+	height: 40px;
+	font-size: 20px;
+	border-radius: 10px;
+}
+#reflection_btn:hover {
+	background-color: #ff4500;
+}
+
+
+#ref_spam{
+		text-align:center;
+		margin-left:auto;
+		margin-right: auto;
+}
+
+.ref_item{
+	position:relative;
+	/* background-color: #f0f8ff; */
+	width: 98%;
+	/* height:250px; */
+	border-radius: 10px;
+	text-align:center;
+	margin-top: 30px;
+	margin-left:auto;
+	margin-right: auto;
+}
+
+.ref_return_btn{
+	background-color: #a0522d;
+	color: #fff;
+	width: 150px;
+	height: 45px;
+	font-size: 30px;
+	border-radius: 10px;
+	bottom:5px;
+	margin-top: 20px;
+}
+
+
+.ref_form{
+	width:100%;
+	height: 100%;
+	margin-left:auto;
+	margin-right: auto;
+	text-align:center;
+}
+
+.ref_txt{
+	font-size: 20px;
+	margin-top: 30px;
+	width:95%;
+	margin-left:auto;
+	margin-right: auto;
+	text-align:center;
+
+}
+
+.think{
+	font-size: 20px;
+	/* margin-top: 30px; */
+	width:400px;
+	margin-left:auto;
+	margin-right: auto;
+	text-align:center;
+
+}
+
+.will_radio_think{
+	position:absolute;
+	left: 55%;
+	bottom:19.5%;
+
+
+}
+
+.will_radio_not{
+	position:absolute;
+	left: 55%;
+	bottom:9%;
+}
+
+
+.not_think{
+	/* position:relative; */
+	font-size: 20px;
+	/* margin-top: 30px; */
+	width:400px;
+	margin-left:auto;
+	margin-right: auto;
+}
+
+.will_think{
+	position:absolute;
+	font-size: 20px;
+	/* margin-top: 30px; */
+	/* width:95%; */
+	/* margin-left:auto; */
+	/* top:   20px; */
+	left:  calc(55% + 18px);
+	/* width: 250px; */
+	/* margin-top: 1px;  */
+	text-align:center;
+
+}
+
+.will_think_not{
+	position:absolute;
+	font-size: 20px;
+	/* margin-top: 30px; */
+	/* width:95%; */
+	/* margin-left:auto; */
+	/* top:   20px; */
+	left:  calc(55% + 18px);
+	/* width: 250px; */
+	/* margin-top: 1px;  */
+	text-align:center;
+
+}
+
+.ref_radio{
+	font-size: 20px;
+	margin-left:auto;
+	margin-right: auto;
+	text-align:center;
+}
+
+.sub_btn{
+	/* position:absolute; */
+	background-color: #66cdaa;
+	color: #fff;
+	width: 150px;
+	height: 90px;
+	font-size: 30px;
+	border-radius: 10px;
+	bottom:5px;
+	margin-top: 20px;
+
+}
+
+/*リフレクション関係　yoshioka*/
+
+
+/*履歴関係　yoshioka*/
+#record_tab {
+	width:100%;
+	height: 100%;
+}
+
+#record_container{
+    float:left;
+		width: calc(100vw - 350px);
+		height:85%;
+    border:solid 5px #ccc;
+		background-color: #fffafa;
+		overflow: scroll;
+		text-align:center;
+}
+
+#reflection_btn {
+	background-color: #ff6347;
+	color: #fff;
+	width: 300px;
+	height: 40px;
+	font-size: 20px;
+	border-radius: 10px;
+}
+#reflection_btn:hover {
+	background-color: #ff4500;
+}
+
+#record_table{
+	text-align: center;
+
+}
+
+#record_table_sets {
+	border-collapse: collapse;
+	width:100%;
+	text-align: center;
+	background-color: white;
+}
+
+#record_timestamp_title{
+	background-color: #ffdead;
+	border: solid 1px #ccc;
+	width: 10%;
+	/* color: white; */
+
+}
+
+#record_ref_textp_title{
+	background-color: #ffdead;
+	border: solid 1px #ccc;
+	width: 40%;
+
+}
+
+#record_activity_title{
+	background-color: #ffdead;
+	border: solid 1px #ccc;
+	width: 8%;
+
+}
+
+#record_late_act_title{
+	background-color: #ffdead;
+	border: solid 1px #ccc;
+	width: 8%;
+
+}
+
+#record_reason_title{
+	background-color: #ffdead;
+	border: solid 1px #ccc;
+
+}
+
+.record_table_cells{
+	border: solid 1px #ccc;
+	font-size: 12px;
+	background-color: #fffff0;
+}
+
+/* .record_table_cells:nth-child(even){
+	background-color: #fffff0;
+}
+
+.record_table_cells:nth-child(odd){
+	background-color: #f5fffa;
+} */
+
+/*履歴関係　yoshioka*/
+
+
+
+/* -------------------- 細かいボタン等の設定 ---------------------- */
+/*recommendとallボタン*/
+.btn {
+	background-color: #808080;
+	padding: 0.7em 0;
+	color: #fff;
+}
+.btn:hover {
+	background-color: #F57DA7;
+}
+
+/*OK，目的選択ボタン*/
+.button {
+	background-color: #66330e;
+	color: #fff;
+	width: 30%;
+	height: 30px;
+}
+.button:hover {
+	background-color: #ff8c00;
+}
+
+.button0 {
+	background-color: #009656;
+	color: #fff;
+	width: 60%;
+	height: 30px;
+}
+.button0:hover {
+	background-color: #ff8c00;
+}
+
+/* シート選択画面に戻るボタン */
+.button1 {
+	width:140px;
+	height: 80px;
+	font-size: 0.5vw;
+	color: #fff;
+	background-color: #800000;
+	float: right;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding:0;
+}
+
+.button1:hover {
+	background-color: #ff8c00;
+}
+
+/* ログアウトボタン */
+.button2 {
+	width:140px;
+	height: 80px;
+	font-size: 0.6vw;
+	color: #fff;
+	background-color: #a9a9a9;
+	float: right;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding:0;
+}
+
+.button2:hover {
+	background-color: #ff8c00;
+}
+
+.button3 {
+	background-color: #999;
+	color: #fff;
+	width: 50px;
+	height: 25px;
+	font-size: 12px;
+	margin-left: 0;
+}
+.button3:hover {
+	background-color: #ff8c00;
+}
+
+.button4 {
+	background-color: #999;
+	color: #fff;
+	width: 100px;
+	height: 25px;
+	font-size: 12px;
+	margin-left: 5px;
+	margin-top: 5px;
+	overflow: auto;
+	text-align: center;
+	
+}
+.button4:hover {
+	background-color: #ff8c00;
+}
+
+.button5 {
+	background-color: #999;
+	color: #fff;
+	width: 70px;
+	height: 25px;
+	font-size: 14px;
+	margin-top: 5px;
+}
+.button5:hover {
+	background-color: #ff8c00;
+}
+
+.button6 {
+	background-color: #009656;
+	color: #fff;
+	width: 60%;
+	height: 30px;
+}
+.button6:hover {
+	background-color: #ff8c00;
+}
+
+
+/* DBの接続確認ボタン */
+.button7 {
+	width:15vw;
+	height: 60px;
+	font-size: 1.5vw;
+	color: #fff;
+	background-color: #6495ed;
+	float: right;
+	margin-top: 0;
+	margin-bottom: 0;
+	/* margin-right:15vw; */
+	padding:0;
+}
+.button7:hover {
+	background-color: #ff8c00;
+}
+
+.button8 {
+	background-color: #ff8c00;
+	color: #fff;
+	width: 30%;
+	height: 30px;
+}
+.button8:hover {
+	background-color: #ff8c00;
+}
+
+/* 操作確認ボタン */
+.button9 {
+	width:15vw;
+	height: 60px;
+	font-size: 1.5vw;
+	color: #fff;
+	background-color: #deb887;
+	float: right;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding:0;
+}
+.button9:hover {
+	background-color: #ff8c00;
+}
+
+.button10 {
+	background-color: #999;
+	color: #fff;
+	width: 170px;
+	height: 25px;
+	font-size: 12px;
+	margin-left: 10px;
+	margin-top: 5px;
+	overflow: auto;
+}
+.button10:hover {
+	background-color: #ff8c00;
+}
+
+/* 修正理由記入テキストエリア */
+#edit_reason_area {
+    width: 85%;
+    height: 80px;
+}
+
+/* #question{
+	height: 400px;
+	overflow-y: auto;
+	margin: auto;
+} */
+
+
+
+
+/*presentation*/
+
+.slide_detail:after {
+    content: none;
+}
+.slide_detail:before {
+    content: none;
+}
+#node_slide{
+	display: none;
+	text-align: center;
+}
+#ImageAddContent{
+	display: none;
+	text-align: center;
+}
+#document_slide{
+	display: none;
+	text-align: center;
+}
+#clear_run{
+	text-align: center;
+}
+
+
+.micro_text{
+	width: 600px;
+	height: 70px;
+}
+
+.box2 {
+    font-weight: bold;
+    color: #6091d3;/*文字色*/
+    background: #FFF;
+    border: solid 3px #6091d3;/*線*/
+    border-radius: 10px;/*角の丸み*/
+}
+
+.slideTag {
+	background-color: red;
+	width: 100px;
+	float: left;
+}
+
+.select-box {
+  background: #FFFDF4;
+  border: 2px solid #D2BA85;
+  border-radius: 5px;
+  color: #0C2245;
+  font-size: 14px;
+  height: 30px;
+  line-height: 30px;
+  text-align: left;
+  text-indent: 5px;
+  vertical-align: middle;
+  width: 150px;
+}
+
+#gouri{
+	width:250px;
+	height:100px;
+	margin-left: 15px;
+	resize: none;
+	cursor: default;
+	font-size: 15px;
+	border:solid 5px #ccc;
+}
+
+#sinario{
+	width:250px;
+	height:100px;
+	margin-left: 15px;
+	resize: none;
+	cursor: default;
+	font-size: 15px;
+	border:solid 5px #ccc;
+}
+
+
+#macro_feedback_area{
+	/* width: 100vw; */
+	width: 35%;
+	height: auto;
+	/* height:calc(100% - 200px); */
+	text-align: left;
+	font-size:14px;
+	background-color: #F0F0F0;
+	margin-left: 10px;
+	padding-top: 200px;
+}
+
+#presen_menu{
+	display : none;
+	text-align:right;
+	float:right;
+	margin-right:15px;
+}
+
+/* 聴衆の観点追加フォーム */
+#input_plural {
+    margin: 1px;
+}
+
+#input_plural input.form-control {
+    display: inline-block;
+    width: 80%;
+    height: 34px;
+    padding: 6px 12px;
+    font-size: 14px;
+    color: #555;
+}
+
+#input_plural input.pluralBtn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 5px;
+    padding: 0;
+    margin: 0;
+}
+/* -ーーーーーーーーーースライド関連ーーーーーーーーーーーー */
+
+.cspan{
+	font-size:15px;
+	background-color:#ffffff;
+	border-radius:10px;
+	margin-bottom:5px;
+	/* margin-left: 20px; */
+	display:inline-block;
+	text-indent: 0.5em;
+	/* height:25px; */
+	white-space: pre-wrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.text_border{
+	border: solid 1px #008080;
+	/* font-size:15px; */
+	margin-bottom:3px;
+	/* resize:none; */
+	/* min-height: 30px; */
+	border-radius: 0.67em;
+	display:none;
+	/* height:auto; */
+}
+
+.tspan{
+	font-size:20px;
+	background-color:transparent;
+	width:90%;
+	margin-bottom:0px;
+	display:inline-block;
+	height:35px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: #010F29;
+	font-weight:  bold;
+}
+
+
+.title_slide{
+	font-size:20px;
+	width:90%;
+	margin-bottom:10px;
+	resize:none;
+	height:35px;
+	display:none;
+}
+.content_delete{
+	/* width:25px;
+	height:25px; */
+	font-size:15px;
+	float:right;
+	background-color:transparent;
+	border:none;
+	outline:none;
+	/* position: absolute; */
+	/* right: 10px; */
+}
+
+.scenario_content{
+	/* position: relative; */
+}
+
+.under_line {
+	font-size: 15px;
+  border-bottom: solid 3px #87CEFA;
+	margin-bottom: 10px;
+	font-family: 'Noto Sans JP', sans-serif;
+}
+
+.ad_font{
+	font-family: 'Noto Sans JP', sans-serif;
+	font-size: 15px;
+	font-weight: 500;
+	background: linear-gradient(transparent 70%, #CCCCCC 90%);
+}
+
+.nor_font{
+	font-family: 'Noto Sans JP', sans-serif;
+	font-size: 15px;
+}
+
+.presen-btn {
+  display: inline-block;
+  padding: 0.5em 1em;
+  text-decoration: none;
+  background: #999999;/*ボタン色*/
+  color: #FFF;
+  border-bottom: solid 4px gray;
+  border-radius: 3px;
+	cursor: pointer;
+}
+
+.presen-btn:active {
+  /*ボタンを押したとき*/
+  -webkit-transform: translateY(4px);
+  transform: translateY(4px);/*下に動く*/
+  border-bottom: none;/*線を消す*/
+}
+
+
+
+.simple_btn{
+	box-shadow: 0.5px 0.5px 1px gray;
+	margin: 0.2px;
+}
+
+.cspan:focus {
+  outline: none;
+}
+
+.tspan:focus {
+  outline: none;
+}
+
+/* 2022-12 shimizu バッジ表現 */
+
+.badge {
+    display: inline-block;
+    color: #fff;
+    padding: 0.125rem 0.3rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* 合理性 */
+.bg-blue {
+    background-color: #3998DB;
+}
+/* 妥当性 */
+.bg-red {
+    background-color: #E74C3C;
+}
+/* 推測関係 */
+.bg-green {
+    background-color: #5CBD9D;
+}
+/* 議論目的 */
+.bg-yellow {
+    background-color: #F29C33;
+}
+
+/* 2022 12-20 shimizu */
+/* .DecideLogicRelationButton{
+	text-align: center;
+} */
+
+/* 2022/12/23 shimizu セレクトボックスのデザイン */
+/* モード管理 */
+.cp_ipselect2 {
+	overflow: hidden;
+	font-size: 20;
+	width: 78%;
+	margin: 0;
+	text-align: center;
+}
+.cp_ipselect2 select {
+	width: 65%;
+	padding-right: 1em;
+	cursor: pointer;
+	text-indent: 0.01px;
+	text-overflow: ellipsis;
+	border: none;
+	outline: none;
+	background: transparent;
+	background-image: none;
+	box-shadow: none;
+	-webkit-appearance: none;
+	appearance: none;
+}
+.cp_ipselect2 select::-ms-expand {
+    display: none;
+}
+.cp_ipselect2.cp_sl02 {
+	position: relative;
+	border: 1px solid #bbbbbb;
+	border-radius: 2px;
+	background: #ffffff;
+}
+.cp_ipselect2.cp_sl02::before {
+	position: absolute;
+	top: 0.8em;
+	right: 0.9em;
+	width: 0;
+	height: 0;
+	padding: 0;
+	content: '';
+	border-left: 6px solid transparent;
+	border-right: 6px solid transparent;
+	border-top: 6px solid #666666;
+	pointer-events: none;
+}
+.cp_ipselect2.cp_sl02:after {
+	position: absolute;
+	top: 0;
+	right: 2.5em;
+	bottom: 0;
+	width: 1px;
+	content: '';
+	border-left: 1px solid #bbbbbb;
+}
+.cp_ipselect2.cp_sl02 select {
+	padding: 8px 38px 8px 8px;
+	color: #666666;
+}
+
+/* スライド */
+.cp_ipselect {
+	overflow: hidden;
+	width: 15%;
+	margin: 0;
+	text-align: center;
+}
+.cp_ipselect select {
+	width: 25%;
+	padding-right: 1em;
+	cursor: pointer;
+	text-indent: 0.01px;
+	text-overflow: ellipsis;
+	border: none;
+	outline: none;
+	background: transparent;
+	background-image: none;
+	box-shadow: none;
+	-webkit-appearance: none;
+	appearance: none;
+}
+.cp_ipselect select::-ms-expand {
+    display: none;
+}
+.cp_ipselect.cp_sl04 {
+	position: relative;
+	border-radius: 2px;
+	border: 2px solid #da3c41;
+  	border-radius: 50px;
+	background: #ffffff;
+}
+.cp_ipselect.cp_sl04::before {
+	position: absolute;
+	top: 0.8em;
+	right: 0.8em;
+	width: 0;
+	height: 0;
+	padding: 0;
+	content: '';
+	border-left: 6px solid transparent;
+	border-right: 6px solid transparent;
+	border-top: 6px solid #da3c41;
+	pointer-events: none;
+}
+.cp_ipselect.cp_sl04 select {
+	padding: 8px 38px 8px 8px;
+	color: #da3c41;
+}
+/* ノード */
+.cp_ipselect.cp_sl05 {
+	position: relative;
+	border-radius: 2px;
+	border: 2px solid #3790cc;
+  	border-radius: 50px;
+	background: #ffffff;
+}
+.cp_ipselect.cp_sl05::before {
+	position: absolute;
+	top: 0.8em;
+	right: 0.8em;
+	width: 0;
+	height: 0;
+	padding: 0;
+	content: '';
+	border-left: 6px solid transparent;
+	border-right: 6px solid transparent;
+	border-top: 6px solid #3790cc;
+	pointer-events: none;
+}
+.cp_ipselect.cp_sl05 select {
+	padding: 8px 38px 8px 8px;
+	color: #3790cc;
+}
+/* -------------------------------------------------------------- */
+
+/*  ------- hatakeyama ------  */
+
+.version_reason{
+	position:relative
+	/* position: sticky; */
+}
+/* バージョン更新理由記述の誘導 */
+.comment {
+	background: rgba(0, 0, 0, 0.75);
+	border-radius: 5px;
+	color: rgb(215, 215, 215);
+	padding-right: 10px;
+	padding-left: 15px;
+	padding-top: 1px;
+	padding-bottom: 1px;
+	position: absolute;
+    top: -55px;
+	margin:30px;
+	font-size: 15px;
+}
+.balloon-under::after {
+	border-left: solid 7px transparent;
+	border-right: solid 7px transparent;
+	border-top: solid 10px rgb(0, 0, 0,.75);
+	bottom: -10px;
+	content:"";
+	display:block;
+	height:0;
+	left:50%;
+	margin-left:-5px;
+	position: absolute;
+	width:0;
+}
+.node_version_log {
+	font-size:12px;
+	text-align:left;
+}
+/* -------------------------------------------------------------- */
+
+/* 論理関係の設定用 */
+#second_choice{
+	display: none;
+
+}
+
+#logic_intention1{
+	visibility: hidden;
+}
+
+#logic_intention2{
+	visibility: hidden;
+}
+
+/* --------------- */
+
+.highlightedTempRectangle {
+	position: absolute;
+	background-color: rgba(0, 255, 0, 0.3); /* 薄緑色のハイライト */
+	border: 1px solid green;
+}
+
+.highlightedDecideRectangle {
+	position: absolute;
+	background-color: rgba(0, 140, 255, 0.3); /* 薄青色のハイライト */
+	border: 1px solid blue;
+}
