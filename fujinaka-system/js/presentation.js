@@ -2246,7 +2246,6 @@ async function Rebuild_chapter(){
               id: parse[i].id,
               title: parse[i].title,
             });
-            delete newchapter;
             }
           }
         console.log("章OK");
@@ -2290,7 +2289,6 @@ async function Rebuild_section(){
               chapter_id: parse[i].chapter_id,
               title: parse[i].title,
             });
-            delete newSection;
             }
           }
         console.log("節OK");
@@ -2335,7 +2333,6 @@ async function Rebuild_paragraph(){
               paragraph_title: parse[i].title,
               paragraph_content: parse[i].content,
             });
-            delete newslide;
             }
           }
         console.log("パラグラフOK");
@@ -2388,7 +2385,6 @@ async function Rebuild_content(){
                   console.log(dom_target);
                   dom_target.setAttribute("concept_id",concept_id);
                 }
-                delete newcontent;
                 console.log("コンテント再現完了");
               }
             }
