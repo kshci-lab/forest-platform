@@ -19,7 +19,6 @@ class LogicNetwork {
       layout: {
         hierarchical: {
           direction: "UD", // 上下方向
-          sortMethod: "none", // ノードのレベルによってソート
           levelSeparation: 150, // レベル間の距離
           nodeSpacing: 100, // ノード間の距離
         },
@@ -101,12 +100,10 @@ class LogicNetwork {
 
   //ノードを追加する
   addNode(node_id, label, f_node_id = null, p_node_id = null,node_x, node_y, edited = 0, level) {
-    // ラベルが長い場合は自動で改行を挿入
-    let formatted_label = this.formatLabelWithLineBreaks(label);
     
     const newNode = {
       id: node_id,
-      label: formatted_label,
+      label: label,
       x: node_x,
       y: node_y,
       shape: 'box',
