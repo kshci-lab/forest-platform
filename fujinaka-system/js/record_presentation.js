@@ -3,15 +3,13 @@ function Record_slide(slideID){
 
   $.ajax({
 
-      url: "php/slide_create.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : slideID,},
-      success: function () {
-        console.log("登録成功：　" +slideID );
-      },
-      error: function () {
-      console.log("登録失敗");},
-
+      data: {
+        purpose: "record",
+        type: "slide",
+        id : slideID,
+      }
   });
 
 }
@@ -276,17 +274,22 @@ function Insert_Chapter(chapterID, Rank){
 
   $.ajax({
 
-    url: "php/chapter_insert.php",
+    url: "php/scenario_manager.php",
     type: "POST",
     data: {
+      purpose: "record",
+      type: "chapter",
       id : chapterID,
       rank : Rank
     },
+    dataType: "json",
     success: function () {
       console.log("章作成成功：　" +chapterID );
     },
-    error: function () {
-    console.log("章作成失敗");},
+    error: function (xhr, textStatus, errorThrown) {
+      console.error("章作成失敗:", "status:", xhr.status, "textStatus:", textStatus, "error:", errorThrown);
+      console.error("レスポンス本文:", xhr.responseText);
+    },
   });
 
 }

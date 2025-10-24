@@ -26,25 +26,6 @@ if($_POST["type"] == "insert"){
     VALUES ('$user_id', '$sheet_id', '$timestamp', '$rationality_id ', '$node_id', '$concept_id', '$nodetype')";
     $result = $mysqli->query($sql);
 
-    //php($sql)のエラー処理
-    if($sql == TRUE){
-        
-        error_log('$sql:fujinaka_rationality_insert成功', 0);
-    }else if($sql == FALSE){
-        error_log($sql.'$sql:fujinaka_rationality_insert失敗', 0);
-    }else{
-        error_log('$sql:fujinaka_rationality_insert不明なエラー', 0);
-    }
-    
-    //php($result)のエラー処理
-    if($result == TRUE){
-        
-        error_log('$result:fujinaka_rationality_insert成功', 0);
-    }else if($result == FALSE){
-        error_log($result.'$result:fujinaka_rationality_insert失敗'.$mysqli->error, 0);
-    }else{
-        error_log('$result:fujinaka_rationality_insert不明なエラー', 0);
-    }
 
 } else if ($_POST["type"] == "insert_answer") {
 
@@ -58,25 +39,6 @@ if($_POST["type"] == "insert"){
 
     $result = $mysqli->query($sql);
 
-    //php($sql)のエラー処理
-    if($sql == TRUE){
-        
-        error_log('$sql:fujinaka_rationality_insert_answer成功', 0);
-    }else if($sql == FALSE){
-        error_log($sql.'$sql:fujinaka_rationality_insert_answer失敗', 0);
-    }else{
-        error_log('$sql:fujinaka_rationality_insert_answer不明なエラー', 0);
-    }
-    
-    //php($result)のエラー処理
-    if($result == TRUE){
-        
-        error_log('$result:fujinaka_rationality_insert_answer成功', 0);
-    }else if($result == FALSE){
-        error_log($result.'$result:fujinaka_rationality_insert_answer失敗'.$mysqli->error, 0);
-    }else{
-        error_log('$result:fujinaka_rationality_insert_answer不明なエラー', 0);
-    }
 
 } else if ($_POST["type"] == "get_nodeid") {
 
@@ -94,28 +56,6 @@ if($_POST["type"] == "insert"){
             );
         }
     }
-
-    //php($sql)のエラー処理
-    if($sql == TRUE){
-        
-        error_log('$sql:fujinaka_rationality_get_nodeid成功', 0);
-    }else if($sql == FALSE){
-        error_log($sql.'$sql:fujinaka_rationality_get_nodeid失敗', 0);
-    }else{
-        error_log('$sql:fujinaka_rationality_get_nodeid不明なエラー', 0);
-    }
-    
-    //php($result)のエラー処理
-    if($result == TRUE){
-        
-        error_log('$result:fujinaka_rationality_get_nodeid成功', 0);
-    }else if($result == FALSE){
-        error_log($result.'$result:fujinaka_rationality_get_nodeid失敗'.$mysqli->error, 0);
-    }else{
-        error_log('$result:fujinaka_rationality_get_nodeid不明なエラー', 0);
-    }
-
-    echo json_encode($data);
 
 
 } else if ($_POST["type"] == "delete"){
@@ -138,23 +78,6 @@ if($_POST["type"] == "insert"){
 
     }
 
-	//php($sql)のエラー処理
-	if($sql == TRUE){
-		error_log('$sql:fujinaka_rationality_delete成功', 0);
-	}else if($sql == FALSE){
-		error_log($sql.'$sql:fujinaka_rationality_delete失敗', 0);
-	}else{
-		error_log('$sql:fujinaka_rationality_delete不明なエラー', 0);
-	}
-	
-	//php($result)のエラー処理
-	if($result == TRUE){
-		error_log('$result:fujinaka_rationality_delete成功', 0);
-	}else if($result == FALSE){
-		error_log($result.'$result:fujinaka_rationality_delete失敗'.$mysqli->error, 0);
-	}else{
-		error_log('$result:fujinaka_rationality_delete不明なエラー', 0);
-	}
 
 } else if($_POST["type"] == "concept"){
 
@@ -172,26 +95,6 @@ if($_POST["type"] == "insert"){
             );
         }
     }
-
-    //php($sql)のエラー処理
-    if($sql == TRUE){
-        error_log('$sql:fujinaka_rationality_get_concept成功', 0);
-    }else if($sql == FALSE){
-        error_log($sql.'$sql:fujinaka_rationality_get_concept失敗', 0);
-    }else{
-        error_log('$sql:fujinaka_rationality_get_concept不明なエラー', 0);
-    }
-    
-    //php($result)のエラー処理
-    if($result == TRUE){
-        error_log('$result:fujinaka_rationality_get_concept成功', 0);
-    }else if($result == FALSE){
-        error_log($result.'$result:fujinaka_rationality_get_concept失敗'.$mysqli->error, 0);
-    }else{
-        error_log('$result:fujinaka_rationality_get_concept不明なエラー', 0);
-    }
-
-    echo json_encode($condata);
 
 }else if ($_POST["type"] == "id"){
 
