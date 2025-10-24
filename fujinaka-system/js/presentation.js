@@ -1336,7 +1336,7 @@ function NodeAppendfromLogic(){
 //
 // }
 
-//コンテンツの新規作成
+//コンテンツ(パラグラフの中身)の新規作成
 function NewContent_Append(type){ //fujinaka追加
   var nodeid = getUniqueStr();  //nodeID fujinaka追加 labelにも追加　Recordにも追加
   var setid = getUniqueStr();  //contentID
@@ -1400,10 +1400,11 @@ function NewContent_Append(type){ //fujinaka追加
     if (setconcept == "1519483811401_n426"){
 
       $.ajax({
-        url: "php/fujinaka_rationality.php",
+        url: "php/scenario_manager.php",
         type: "POST",
         data: { 
-          type : "insert_answer",
+          purpose : "record",
+          type : "content",
           node_id : nodeid,
           parent_id : parent_id,
           nodetype : "answer"
@@ -1521,9 +1522,10 @@ function Toi_Append(){ //fujinaka追加
 
           if(concept_id  !== null ||  concept_id  !== undefined){ //concept_idがあるならprepared_question
             $.ajax({
-              url: "php/fujinaka_rationality.php",
+              url: "php/scenario_manager.php",
               type: "POST",
               data: { 
+                purpose: "record",
                 type : "insert",
                 rationality_id : nodeid,
                 node_id : node_id,
@@ -1532,9 +1534,10 @@ function Toi_Append(){ //fujinaka追加
               }});
           }else{
             $.ajax({
-              url: "php/fujinaka_rationality.php",
+              url: "php/scenario_manager.php",
               type: "POST",
               data: { 
+                purpose: "record",
                 type : "insert",
                 rationality_id : nodeid,
                 node_id : node_id,
@@ -1632,26 +1635,26 @@ function InputFile(){
 }
 
 
+//20251024 yamashita これはまさかどさんのやつだから論文シナリオではいらないのでは
+// function Create_pptx(slideID){
+//   $.ajax({
 
-function Create_pptx(slideID){
-  $.ajax({
+//       url: "plugins/phppresentation/create_pptx.php",
+//       type: "POST",
+//       // data: {id : slideID,},
+//       success: function () {
+//         console.log("登録成功：　" +slideID );
+//       },
+//       error: function () {
+//       console.log("登録失敗");},
 
-      url: "plugins/phppresentation/create_pptx.php",
-      type: "POST",
-      // data: {id : slideID,},
-      success: function () {
-        console.log("登録成功：　" +slideID );
-      },
-      error: function () {
-      console.log("登録失敗");},
+//   });
+// }
 
-  });
-}
-
-function FinishAlert(){
-	window.alert('ブラウザを閉じずに，「アンケート用紙1」にお答えください．回答し終えたら，下にスクロールして，システムからの助言を見てみましょう．');
-  window.open('https://1drv.ms/u/s!Am39JzOgDfpjhhShlfb6a_vYMWZL?e=BreCAo', '_blank');
-}
+// function FinishAlert(){
+// 	window.alert('ブラウザを閉じずに，「アンケート用紙1」にお答えください．回答し終えたら，下にスクロールして，システムからの助言を見てみましょう．');
+//   window.open('https://1drv.ms/u/s!Am39JzOgDfpjhhShlfb6a_vYMWZL?e=BreCAo', '_blank');
+// }
 
 
 function Get_SlideTitle(){
@@ -1948,54 +1951,54 @@ function OutputTxtFile(){
     }
   });
 }
+//20251024 yamashita これはまさかどさんのやつだから論文シナリオではいらないのでは
+// var scenario_file = "";
 
-var scenario_file = "";
+// function OutputScenario(){
+//   var tmp = document.getElementsByClassName("document_title_area");
+//   var title = tmp[0].value;
+//   scenario_file += title+"\n\n\n";
 
-function OutputScenario(){
-  var tmp = document.getElementsByClassName("document_title_area");
-  var title = tmp[0].value;
-  scenario_file += title+"\n\n\n";
+//   var scenario = document.getElementsByClassName("thread");
+//   for(var i=0; i<scenario.length; i++){
+//     scenario_file += "=====================================\n";
+//     var slide_title = scenario[i].firstElementChild.innerText;
+//     scenario_file += slide_title+"\n\n";
+//     var thread_id = scenario[i].id;
+//     var content = $('#'+thread_id).find('.cspan');
+//     for(var j=0; j<content.length; j++){
+//       var csp = content[j].innerText;
+//       var name = content[j].getAttribute('name');
+//       let txt_indent = "";
+//       if(name == 1){
+//         txt_indent = " ";
+//       }else if(name == 2){
+//         txt_indent = "  ";
+//       }else if(name == 3){
+//         txt_indent = "   ";
+//       }
+//       if(content[j].getAttribute("type") == "toi"){
+//         scenario_file += txt_indent+"*"+csp+"\n";
+//       }else{
+//         scenario_file += txt_indent+"･"+csp+"\n";
+//       }
+//     }
+//   }
 
-  var scenario = document.getElementsByClassName("thread");
-  for(var i=0; i<scenario.length; i++){
-    scenario_file += "=====================================\n";
-    var slide_title = scenario[i].firstElementChild.innerText;
-    scenario_file += slide_title+"\n\n";
-    var thread_id = scenario[i].id;
-    var content = $('#'+thread_id).find('.cspan');
-    for(var j=0; j<content.length; j++){
-      var csp = content[j].innerText;
-      var name = content[j].getAttribute('name');
-      let txt_indent = "";
-      if(name == 1){
-        txt_indent = " ";
-      }else if(name == 2){
-        txt_indent = "  ";
-      }else if(name == 3){
-        txt_indent = "   ";
-      }
-      if(content[j].getAttribute("type") == "toi"){
-        scenario_file += txt_indent+"*"+csp+"\n";
-      }else{
-        scenario_file += txt_indent+"･"+csp+"\n";
-      }
-    }
-  }
+//   const dbid = getUniqueStr();
+//   $.ajax({
+//     url: "php/create_scenario.php", // ファイル名をつける
+//     type: "POST",
+//     success:function(data){
+//       // ダウンロードリンクを作成
+//       var link = document.createElement( 'a' );
+//     	link.href = window.URL.createObjectURL( new Blob( [scenario_file] ) );
+//     	link.download = data; // ファイル名
+//     	link.click();
+//     }
+//   });
 
-  const dbid = getUniqueStr();
-  $.ajax({
-    url: "php/create_scenario.php", // ファイル名をつける
-    type: "POST",
-    success:function(data){
-      // ダウンロードリンクを作成
-      var link = document.createElement( 'a' );
-    	link.href = window.URL.createObjectURL( new Blob( [scenario_file] ) );
-    	link.download = data; // ファイル名
-    	link.click();
-    }
-  });
-
-}
+// }
 
 class Chapter{
   constructor(obj){
