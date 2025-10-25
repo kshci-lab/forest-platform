@@ -134,10 +134,14 @@ function Edit_slide(obj, slideID){
 
   $.ajax({
 
-      url: "php/slide_edit.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : slideID,
-             content : slidetitle,},
+      data: {
+        purpose: "update",
+        update_thing: "slide",
+        id : slideID,
+        content : slidetitle
+      },
       success: function () {
         console.log("登録成功");
       },
@@ -164,9 +168,13 @@ function Edit_title(obj){  //シナリオタイトルから論文タイトルに
 
   $.ajax({
 
-      url: "php/title_update.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {title : scenario_title,},
+      data: {
+        purpose: "update",
+        update_thing: "scenario_title",
+        title : scenario_title,
+      },
       success: function () {
         console.log("登録成功");
       },
@@ -184,7 +192,7 @@ function Edit_title(obj){  //シナリオタイトルから論文タイトルに
     }
 }
 
-
+//20251025　山下これ謎
 async function Update_slide_rank(){
 
   await $.ajax({
@@ -315,9 +323,11 @@ function Update_Chapter_Title(obj, chapterID){
   var chapterTitle = obj.value;
 
   $.ajax({
-    url: "php/chapter_update.php",
+    url: "php/scenario_manager.php",
     type: "POST",
     data: {
+      purpose: "update",
+      update_thing: "chapter",
       id : chapterID,
       title : chapterTitle
     },
@@ -344,9 +354,13 @@ function Delete_Chapter(chapterID){
 
   $.ajax({
 
-    url: "php/chapter_delete.php",
+    url: "php/scenario_manager.php",
     type: "POST",
-    data: {id : chapterID,},
+    data: {
+      purpose: "delete",
+      delete_thing: "chapter",
+      id : chapterID,
+    },
     success: function () {
       console.log("章削除成功：　" +chapterID );
     },
@@ -384,6 +398,8 @@ function Insert_section(sectionID, chapterID, Rank){
       url: "php/section_insert.php",
       type: "POST",
       data: {
+        purpose: "record",
+        record_thing: "section",
         id : sectionID,
         chapter_id : chapterID,
         rank : Rank
@@ -404,9 +420,11 @@ function Update_section_Title(obj, sectionID){
 
   $.ajax({
 
-      url: "php/section_update.php",
+      url: "php/scenario_manager.php",
       type: "POST",
       data: {
+        purpose: "update",
+        update_thing: "section",
         update : "title",
         id : sectionID,
         title : sectionTitle
@@ -434,9 +452,13 @@ function Delete_section(sectionID){
 
   $.ajax({
 
-      url: "php/section_delete.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : sectionID,},
+      data: {
+        purpose: "delete",
+        delete_thing: "section",
+        id : sectionID
+      },
       success: function () {
         console.log("節削除成功：　" +sectionID );
       },
@@ -470,9 +492,11 @@ function Insert_paragraph(paragraphID, sectionID, Rank){
 
   $.ajax({
 
-      url: "php/paragraph_insert.php",
+      url: "php/scenario_manager.php",
       type: "POST",
       data: {
+        purpose: "record",
+        record_thing: "paragraph",
         id : paragraphID,
         section_id : sectionID,
         rank : Rank
@@ -493,9 +517,11 @@ function Update_paragraph_Title(obj, paragraphID){
 
   $.ajax({
 
-      url: "php/paragraph_update.php",
+      url: "php/scenario_manager.php",
       type: "POST",
       data: {
+        purpose: "update",
+        update_thing: "paragraph",
         update : "title",
         id : paragraphID,
         title : paragraphTitle
@@ -529,9 +555,11 @@ function Update_paragraph_Content(paragraphID, quill_obj){
 
   $.ajax({
 
-      url: "php/paragraph_update.php",
+      url: "php/scenario_manager.php",
       type: "POST",
       data: {
+        purpose: "update",
+        update_thing: "paragraph",
         update : "content",
         id : paragraphID,
         content : paragraphContent
@@ -550,9 +578,13 @@ function Delete_paragraph(paragraphID){
 
   $.ajax({
 
-      url: "php/paragraph_delete.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : paragraphID,},
+      data: {
+        purpose: "delete",
+        delete_thing: "paragraph",
+        id : paragraphID
+      },
       success: function () {
         console.log("パラグラフ削除成功：　" +paragraphID );
       },

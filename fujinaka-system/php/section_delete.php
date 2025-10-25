@@ -5,7 +5,7 @@
 	/*ノード情報をDBに格納する際に使用*/
 	require("connect_db.php");
 
-  $section_id = $_POST["id"]; //章ID
+  $section_id = $_POST["id"]; //節ID
   
   $sql = "UPDATE section SET deleted = 1 WHERE section_id='$section_id'";
 	

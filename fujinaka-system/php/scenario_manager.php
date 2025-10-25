@@ -187,16 +187,37 @@ if($purpose === 'record'){
         VALUES ('$chapter_id', '$user_id', '$sheet_id', '$rank', '$timestamp')";
 
         if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "段落の内容が記録されました"]);
+            echo json_encode(["status" => "success", "message" => "章が記録されました"]);
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
     }
     else if($record_thing == "section"){
         //節挿入処理
+        $section_id = $_POST["id"];				//節ID
+        $chapter_id = $_POST["chapter_id"];	    //章ID
+	    $rank = $_POST["rank"];					//章順番
+        $sql = "INSERT INTO section (section_id, user_id, sheet_id, chapter_id, rank, created_at)
+	    VALUES ('$section_id', '$user_id', '$sheet_id','$chapter_id', '$rank', '$timestamp')";
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "節が記録されました"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
     }
     else if($record_thing == "paragraph"){
         //段落挿入処理
+        $section_id = $_POST["section_id"];	//節ID
+        $paragraph_id = $_POST["id"];       //パラグラフID
+	    $rank = $_POST["rank"]; 		    //パラグラフ順番
+        $sql = "INSERT INTO paragraph (paragraph_id, user_id, sheet_id, section_id, rank, created_at)
+	    VALUES ('$paragraph_id', '$user_id', '$sheet_id', '$section_id', '$rank', '$timestamp')";
+
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "段落が記録されました"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
     }
     else if($record_thing == "content"){
         //段落内容挿入処理
@@ -219,16 +240,129 @@ if($purpose === 'record'){
 else if($purpose === "update"){
     $update_thing = $_POST['update_thing'];
     if ($update_thing == "slide"){
+        $slide_id = $_POST["id"]; //スライドID
+        $slide_title = $_POST["content"]; //スライドタイトル
+        $sql = "SELECT slide_title FROM slide WHERE id = '$slide_id'";
+        if($result = $mysqli->query($sql)) {
+        while($row = mysqli_fetch_assoc($result)){
+            $pre_title = $row['slide_title'];
+        }
+        }
+        if($slide_title != $pre_title){
 
-    } 
+        $sql = "UPDATE slide SET updated_at='$timestamp', slide_title='$slide_title' WHERE id='$slide_id'";
+        } 
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "スライドが更新されました"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
+    }
+    else if( $update_thing == "scenario_title"){
+        //タイトル更新処理
+        $title = $_POST["title"]; //論文タイトル
+        $sql = "SELECT scenario_title FROM sheets WHERE id='$sheet_id'";
+
+        if($result = $mysqli->query($sql)) {
+            while($row = mysqli_fetch_assoc($result)){
+                $pre_title = $row['scenario_title'];
+            }
+        }
+
+        if($title != $pre_title){	//変更があれば更新
+
+            $sql = "UPDATE sheets SET updated_at='$timestamp', scenario_title='$title' WHERE id='$sheet_id'";
+        }
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "タイトルが更新されました"]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
+    }
     else if ($update_thing == "chapter"){
         //章更新処理
+        $chapter_id = $_POST["id"]; //章ID
+
+        $sql = "SELECT title FROM chapter WHERE chapter_id = '$chapter_id'";
+
+        if($result = $mysqli->query($sql)) {
+            while($row = mysqli_fetch_assoc($result)){
+            $pre_title = $row['title'];
+            }
+        }
+
+        $title = $_POST["title"]; //章タイトル
+
+        if($title != $pre_title){	//変更があれば更新
+
+            $sql = "UPDATE chapter SET title='$title' WHERE chapter_id='$chapter_id'";
+            if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "章が更新されました"]);
+            } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+            }                    
+        }
     }
     else if ($update_thing == "section"){
         //節更新処理
+        $section_id = $_POST["id"]; //章ID
+
+        $sql = "SELECT title FROM section WHERE section_id = '$section_id'";
+
+        if($result = $mysqli->query($sql)) {
+            while($row = mysqli_fetch_assoc($result)){
+            $pre_title = $row['title'];
+            }
+        }
+
+        $title = $_POST["title"]; //章タイトル
+
+        if($title != $pre_title){	//変更があれば更新
+
+            $sql = "UPDATE section SET title='$title' WHERE section_id='$section_id'"
+            if ($mysqli->query($sql)) {
+                echo json_encode(["status" => "success", "message" => "節が更新されました"]);
+                } else {
+                echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+            }
+        }
     }
     else if ($update_thing == "paragraph"){
         //段落更新処理
+        $paragraph_id = $_POST["id"]; //パラグラフID
+        if($_POST["update"] == "title"){
+
+            $sql = "SELECT title FROM paragraph WHERE paragraph_id = '$paragraph_id'";
+
+            if($result = $mysqli->query($sql)) {
+                while($row = mysqli_fetch_assoc($result)){
+                    $pre_title = $row['title'];
+                }
+            }
+
+            $title = $_POST["title"];
+
+            if($title != $pre_title){
+
+                $sql = "UPDATE paragraph SET title='$title' WHERE paragraph_id = '$paragraph_id'";
+                if ($mysqli->query($sql)) {
+                    echo json_encode(["status" => "success", "message" => "節が更新されました"]);
+                    } else {
+                    echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+                }
+            }
+        }
+        else if($_POST["update"] == "content"){
+
+		$content = $_POST["content"];
+		
+		$sql = "UPDATE paragraph SET content = '$content' WHERE paragraph_id = '$paragraph_id'";
+		if ($mysqli->query($sql)) {
+                echo json_encode(["status" => "success", "message" => "節が更新されました"]);
+                } else {
+                echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+            }
+	    }
     }
     else if ($update_thing == "content"){
         //段落内容更新処理
@@ -254,26 +388,92 @@ else if($purpose === "update"){
         }
     }
 }
-else if(purpose === "delete"){
+else if($purpose === "delete"){
     $delete_thing = $_POST['delete_thing'];
     if ($delete_thing == "slide"){
         $slide_id = $_POST["id"];  
         $sql = "UPDATE slide SET updated_at='$timestamp', deleted=1 WHERE id='$slide_id'";
 
 		if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "段落の内容が記録されました"]);
+            echo json_encode(["status" => "success", "message" => "スライドが削除されました"]);
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }      
     }
     else if ($delete_thing == "chapter"){
         //章削除処理
+        $chapter_id = $mysqli->real_escape_string($_POST["id"]); // エスケープ
+
+        // トランザクション開始
+        $mysqli->begin_transaction();
+
+        try {
+            $q1 = "UPDATE chapter SET deleted = 1 WHERE chapter_id='$chapter_id'";
+            $q2 = "UPDATE section SET deleted = 1 WHERE chapter_id='$chapter_id'";
+            $q3 = "UPDATE paragraph SET deleted = 1 WHERE chapter_id='$chapter_id'";
+            $q4 = "UPDATE content SET deleted = 1 WHERE chapter_id='$chapter_id'";
+
+            if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
+            if (!$mysqli->query($q2)) throw new Exception($mysqli->error);
+            if (!$mysqli->query($q3)) throw new Exception($mysqli->error);
+            if (!$mysqli->query($q4)) throw new Exception($mysqli->error);
+
+            $mysqli->commit();
+            echo json_encode(["status" => "success", "message" => "章が削除されました"]);
+        } catch (Exception $e) {
+            $mysqli->rollback();
+            error_log('chapter delete failed: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $e->getMessage()]);
+        }
     }
     else if ($delete_thing == "section"){
         //節削除処理
+        $section_id = $mysqli->real_escape_string($_POST["id"]); // エスケープ
+
+        // トランザクション開始
+        $mysqli->begin_transaction();
+
+        try {
+            $q1 = "UPDATE section SET deleted = 1 WHERE section_id='$section_id'";
+            $q2 = "UPDATE paragraph SET deleted = 1 WHERE section_id='$section_id'";
+            $q3 = "UPDATE content SET deleted = 1 WHERE section_id='$section_id'";
+
+            if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
+            if (!$mysqli->query($q2)) throw new Exception($mysqli->error);
+            if (!$mysqli->query($q3)) throw new Exception($mysqli->error);
+
+            $mysqli->commit();
+            echo json_encode(["status" => "success", "message" => "節が削除されました"]);
+        } catch (Exception $e) {
+            $mysqli->rollback();
+            error_log('section delete failed: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $e->getMessage()]);
+        }
     }
     else if ($delete_thing == "paragraph"){
         //段落削除処理
+        $paragraph_id = $mysqli->real_escape_string($_POST["id"]); // エスケープ
+
+        // トランザクション開始
+        $mysqli->begin_transaction();
+
+        try {
+            $q1 = "UPDATE paragraph SET deleted = 1 WHERE paragraph_id='$paragraph_id'";
+            $q2 = "UPDATE content SET deleted = 1 WHERE paragraph_id='$paragraph_id'";
+
+            if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
+            if (!$mysqli->query($q2)) throw new Exception($mysqli->error);
+
+            $mysqli->commit();
+            echo json_encode(["status" => "success", "message" => "段落が削除されました"]);
+        } catch (Exception $e) {
+            $mysqli->rollback();
+            error_log('paragraph delete failed: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $e->getMessage()]);
+        }
     }
     else if ($delete_thing == "content"){
         //段落内容削除処理
@@ -281,7 +481,7 @@ else if(purpose === "delete"){
         $sql = "UPDATE slide_content SET updated_at='$timestamp', deleted=1 WHERE id='$content_id'";
 
 		if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "段落の内容が記録されました"]);
+            echo json_encode(["status" => "success", "message" => "段落の内容が削除されました"]);
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
