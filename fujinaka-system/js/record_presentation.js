@@ -7,7 +7,7 @@ function Record_slide(slideID){
       type: "POST",
       data: {
         purpose: "record",
-        type: "slide",
+        record_thing: "slide",
         id : slideID,
       }
   });
@@ -20,9 +20,13 @@ function Delete_slide(slideID){
 
   $.ajax({
 
-      url: "php/slide_delete.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : slideID,},
+      data: {
+        purpose: "delete",
+        delete_thing: "slide",
+        id : slideID,
+      },
       success: function () {
         console.log("登録成功：　" +slideID );
       },
@@ -39,14 +43,17 @@ function Record_content(contentID, nodeID, conceptID, content, slideID, type){
 
   $.ajax({
 
-      url: "php/content_create.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : contentID,
-             node_id : nodeID,
-             concept_id : conceptID,
-             content : content,
-             slide_id : slideID,
-             type : type,
+      data: {
+        purpose: "record",
+        record_thing: "content",
+        id : contentID,
+        node_id : nodeID,
+        concept_id : conceptID,
+        content : content,
+        slide_id : slideID,
+        node_type : type,
              },
       success: function () {
         console.log("登録成功：　" +slideID );
@@ -65,7 +72,11 @@ function Delete_content(contentID){
 
       url: "php/content_delete.php",
       type: "POST",
-      data: {id : contentID},
+      data: {
+        purpose: "delete",
+        delete_thing: "content",
+        id : contentID
+      },
       success: function () {
         console.log("登録成功：　" +contentID );
       },
@@ -83,10 +94,14 @@ function Edit_save(obj,id){
 
   $.ajax({
 
-      url: "php/content_edit.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : id,
-             content : content,},
+      data: {
+        id : id,
+        purpose: "update",
+        update_thing: "content",
+        content : content,
+      },
       success: function () {
         console.log("登録成功");
       },
