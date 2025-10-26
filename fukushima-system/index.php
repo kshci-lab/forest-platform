@@ -531,6 +531,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <div id="mynetwork"></div>
                                 </div>
                             </div>
+                            <!-- White overlay to cover jsmind_container, utterance_area, mynetwork2 when in Combination tab -->
+                            <div id="shared_combination_overlay"></div>
                             <!-- Placeholder containers for shared/共有知モード (hidden by default) -->
                             <div id="jsmind_container_shared" style="display:none;" oncontextmenu="return false;"></div>
                             <div id="network_container_shared" style="display:none;" oncontextmenu="return false;"></div>

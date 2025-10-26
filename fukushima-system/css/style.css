@@ -1200,6 +1200,20 @@ select[name="mttime_list"] {
 	overflow: auto;
 }
 
+/* --- Shared/Combination overlay --- */
+#shared_combination_overlay {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background: #ffffff;
+	opacity: 1;
+	pointer-events: auto;
+	z-index: 9999; /* above menus and canvases */
+	display: none; /* hidden by default */
+}
+
 /*ここまで大槻修正*/
 
 /********************* リフレクションタブ関係 **********************/

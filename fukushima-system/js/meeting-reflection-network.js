@@ -1239,8 +1239,24 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             document.getElementById("rclick").innerHTML="";
             const clicked_node = e.target;
+            // 外部化フォームへの反映（.externalization-main or #externalization-main）
+            var $extMain = $('#externalization-main');
+            if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
+            if($extMain && $extMain.length){
+                var addText = clicked_node.getAttribute('utterance') || '';
+                if(addText){
+                    var current = $extMain.val();
+                    // 複数選択対応: 修飾キー（Ctrl/Shift/Alt/Cmd）押下なら追記、そうでなければ置換
+                    var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
+                    if(appendMode && current){
+                        $extMain.val(current + "\n" + addText);
+                    } else {
+                        $extMain.val(addText);
+                    }
+                }
+            }
             if(clicked_node.getAttribute('network_on') === '0'){
-                document.getElementById("rclick").innerHTML="<input type='button' id='utteranceNodebutton' value='ノードに追加'>";
+                document.getElementById("rclick").innerHTML="<input type='button' id='utteranceNodebutton' value='この発言を選択'>";
                 $(`#utteranceNodebutton`).on("click", () => {
                     defaultForestMRN.addutteranceNode(clicked_node.getAttribute('utterance'));
                     document.getElementById("rclick").innerHTML="";
@@ -1360,8 +1376,24 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             document.getElementById("rclick").innerHTML="";
             const clicked_node = e.target;
+            // 外部化フォームへの反映（.externalization-main or #externalization-main）
+            var $extMain = $('#externalization-main');
+            if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
+            if($extMain && $extMain.length){
+                var addText = clicked_node.getAttribute('utterance') || '';
+                if(addText){
+                    var current = $extMain.val();
+                    // 複数選択対応: 修飾キー（Ctrl/Shift/Alt/Cmd）押下なら追記、そうでなければ置換
+                    var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
+                    if(appendMode && current){
+                        $extMain.val(current + "\n" + addText);
+                    } else {
+                        $extMain.val(addText);
+                    }
+                }
+            }
             if(clicked_node.getAttribute('network_on') === '0'){
-                document.getElementById("rclick").innerHTML="<input type='button' id='utteranceNodebutton' value='ノードに追加'>";
+                document.getElementById("rclick").innerHTML="<input type='button' id='utteranceNodebutton' value='この発言を選択'>";
                 $(`#utteranceNodebutton`).on("click", () => {
                     defaultForestMRN.addutteranceNode(clicked_node.getAttribute('utterance'));
                     document.getElementById("rclick").innerHTML="";
@@ -1383,82 +1415,78 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
 /*
 * XMLファイルのアップロードとデータ取得処理
 */
-const getXMLTagInfo = () => {
+const getXMLTagInfo = function() {
     try {
-        // アップロードされたXMLファイルの中身をJSONデータとして取得
-        const parser = new DOMParser();
-        const meeting_utterances = parser.parseFromString($("#meeting_utterance_xml").html(), "text/xml");
-        
-        // XMLが正常に解析されなかった場合のエラーチェック
-        const parseError = meeting_utterances.querySelector('parsererror');
-        if (parseError) {
-        console.error("XML Parsing Error: ", parseError);
-        return []; // エラーの場合は空の配列を返す
+        // アップロードされたXMLの文字列を取得
+        var raw = $("#meeting_utterance_xml").html();
+        if (!raw) {
+            console.warn('getXMLTagInfo: no #meeting_utterance_xml content');
+            return [];
         }
+        // jQueryのXMLパーサーを使用（jQuery 1.8.2 互換）
+        var xmlDoc = $.parseXML(raw);
+        var $xml = $(xmlDoc);
 
-        const getTaggedInfo = (utter, tag) => {
-        return $(utter).find(tag).html();
-        }
-
-        const utter_list = Array.prototype.slice.call(meeting_utterances.getElementsByTagName("messagedata")).map(u => {
-        return {
-            message_id: getTaggedInfo(u, "id"),
-            content: getTaggedInfo(u, "content"),
-            sender: getTaggedInfo(u, "sender_id"),
-            time: getTaggedInfo(u, "time"),
-            JPNtime: getTaggedInfo(u, "jpntime")
+        var getTaggedInfo = function(utter, tag) {
+            var $el = $(utter).find(tag).first();
+            return $el.length ? ($el.text() || '').trim() : '';
         };
+
+        var nodes = $xml.find('messagedata');
+        var utter_list = [];
+        nodes.each(function(_, u){
+            // content が空なら旧仕様の type をフォールバック
+            var content = getTaggedInfo(u, 'content') || getTaggedInfo(u, 'type') || '';
+            utter_list.push({
+                message_id: getTaggedInfo(u, 'id'),
+                content: content,
+                sender: getTaggedInfo(u, 'sender_id'),
+                time: getTaggedInfo(u, 'time'),
+                JPNtime: getTaggedInfo(u, 'jpntime')
+            });
         });
 
         return utter_list;
     } catch (error) {
-        console.error("Error in getXMLTagInfo: ", error);
-        return []; // エラーが発生した場合、空の配列を返す
+        console.error('Error in getXMLTagInfo: ', error);
+        return [];
     }
 };
   
 
 // アップロードされたXMLを一旦別の場所においておく
-const setUploadedXMLData = (file_input_btn_id, xml_area_id) => {
+const setUploadedXMLData = function(file_input_btn_id, xml_area_id) {
     // file_input_btn_id は input[type=file] の id
-    const input = document.getElementById(file_input_btn_id);
-    if(!input) return;
+    var $input = $('#' + file_input_btn_id);
+    if(!$input.length) return;
 
-    // 以前の実装は click の中で change を登録しておりタイミング依存で読み込みが発生しない
-    // ここでは input の change に直接ハンドラを登録する
-    input.addEventListener('change', (evt) => {
-        const files = evt.target.files;
-        if(!files || files.length === 0) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            // 既に #meeting_utterance_xml がある場合は上書き、なければ作成
-            let span = document.getElementById('meeting_utterance_xml');
+    // 既存の jQuery change を解除してからバインド
+    try { $input.off('change'); } catch(e) {}
+    $input.on('change', function(evt){
+        var files = this.files || (evt && evt.target && evt.target.files);
+        if(!files || !files.length) return;
+        var reader = new FileReader();
+        reader.onload = function(){
+            var span = document.getElementById('meeting_utterance_xml');
             if(!span){
                 span = document.createElement('span');
                 span.id = 'meeting_utterance_xml';
             }
-            // 生のXMLを格納（getXMLTagInfo が .html()/innerHTML を読む実装を想定）
             span.innerHTML = reader.result;
-
-            const area = document.getElementById(xml_area_id);
+            var area = document.getElementById(xml_area_id);
             if(area){
-                // 既存表示をクリアしてから追加
                 area.innerHTML = '';
                 area.appendChild(span);
             } else {
-                // フォールバック：jQuery を使って書き込む
                 $('#' + xml_area_id).html(span.outerHTML);
             }
         };
         reader.readAsText(files[0], 'UTF-8');
-    }, false);
-
-    // もし既存で jQuery のイベントがバインドされていれば解除（安全対策）
-    try{ $('#' + file_input_btn_id).off('change'); }catch(e){}
+    });
 }
 
 // 発言をアップロードする関数
-const uploadMeetingUtteranceXML = () => {
+const uploadMeetingUtteranceXML = function() {
   // フォームデータを作成
   console.log(getXMLTagInfo());
   recordMeetingUtteranceNodes(getXMLTagInfo())
@@ -1524,7 +1552,7 @@ const select_time = () => {
 }
 
 // 議論時の発言を記録する関数
-const recordMeetingUtteranceNodes = (utterances) => {
+const recordMeetingUtteranceNodes = function(utterances) {
   $.ajax({
     url: "php/discussion_map_manager.php",
     type: "POST",
@@ -1532,21 +1560,18 @@ const recordMeetingUtteranceNodes = (utterances) => {
       purpose: "record_meeting_utterance",
       utters: JSON.stringify(utterances),
     }
-  }).done((r) => {
-    console.log("Request succeeded:", utterances);
-    console.log("Server response:", r);
-    displayUtteranceNodeInList("utterance_area2", null);
-  })
-  .fail((jqXHR, textStatus, errorThrown) => {
-    console.error("Request failed:", textStatus, errorThrown);
-    // 失敗時の処理を追加（例えば、エラーメッセージの表示など）
-
-
-  });
+    }).done(function(r){
+        console.log("Request succeeded:", utterances);
+        console.log("Server response:", r);
+        displayUtteranceNodeInList("utterance_area2", null);
+    })
+    .fail(function(jqXHR, textStatus, errorThrown){
+        console.error("Request failed:", textStatus, errorThrown, jqXHR && jqXHR.responseText);
+    });
 }
 
 // ロードした際の関数
-window.addEventListener('load', () => {
+window.addEventListener('load', function() {
     const networkContainerEl = document.getElementById("network_container");
     if (networkContainerEl) networkContainerEl.style.display = "none";
     const el = document.getElementById("mynetwork");
@@ -1554,7 +1579,7 @@ window.addEventListener('load', () => {
         defaultForestMRN = new ForestMRN("mynetwork", "load");
     }
     setUploadedXMLData("meetingUtteranceXmlFileUploader", "uploaded_meeting_utterance_xml_concent_display_area");
-    $("#discussion_log_xml_file_upload_button").on("click", () => {
+    $("#discussion_log_xml_file_upload_button").on("click", function() {
         // 共有知モードでは vis の再初期化は行わず、アップロード処理のみ実行
         if (!(typeof window !== 'undefined' && window.SharedModeActive === true)) {
             const target = document.getElementById("mynetwork");
@@ -1583,55 +1608,55 @@ window.addEventListener('load', () => {
         $('#mrnb_removeEdge').off('click');
         $('#mrnb_ZoomIn').off('click');
         $('#mrnb_ZoomOut').off('click');
-        $(`#mrnb_addNode`).on("click", e => {
+        $('#mrnb_addNode').on("click", function(e){
             defaultForestMRN.addNewNode();
         });
-        $(`#mrnb_removeNode`).on("click", e => {
+        $('#mrnb_removeNode').on("click", function(e){
             defaultForestMRN.deleteNode();
         });
-        $(`#mrnb_startEditEdge`).on("click", e => {
+        $('#mrnb_startEditEdge').on("click", function(e){
             defaultForestMRN.SelectEditEdge();
         });
-        $(`#mrnb_removeEdge`).on("click", e => {
+        $('#mrnb_removeEdge').on("click", function(e){
             defaultForestMRN.deleteEdge();
         });
-        $(`#mrnb_ZoomIn`).on("click", e => {
+        $('#mrnb_ZoomIn').on("click", function(e){
             defaultForestMRN.zoomIn();
         });
-        $(`#mrnb_ZoomOut`).on("click", e => {
+        $('#mrnb_ZoomOut').on("click", function(e){
             defaultForestMRN.zoomOut();
         });
     });
     displayDiscussionMapData("utterance_area2", null); // 最新の議論内省マップの発話リストを表示
     // 内省マップ編集ボタンにイベント付与
-    $(`#mrnb_addNode`).on("click", e => {
+    $('#mrnb_addNode').on("click", function(e){
         defaultForestMRN.addNewNode();
     });
-    $(`#mrnb_removeNode`).on("click", e => {
+    $('#mrnb_removeNode').on("click", function(e){
         defaultForestMRN.deleteNode();
     });
-    $(`#mrnb_startEditEdge`).on("click", e => {
+    $('#mrnb_startEditEdge').on("click", function(e){
         defaultForestMRN.SelectEditEdge();
     });
-    $(`#mrnb_removeEdge`).on("click", e => {
+    $('#mrnb_removeEdge').on("click", function(e){
         defaultForestMRN.deleteEdge();
     });
-    $(`#mrnb_ZoomIn`).on("click", e => {
+    $('#mrnb_ZoomIn').on("click", function(e){
         defaultForestMRN.zoomIn();
     });
-    $(`#mrnb_ZoomOut`).on("click", e => {
+    $('#mrnb_ZoomOut').on("click", function(e){
         defaultForestMRN.zoomOut();
     });
 
-    $("#past_time_select_button").on("click", () => {
+    $("#past_time_select_button").on("click", function(){
         // ファイルアップロードボタンにアップロードイベントを付与
         select_time();
     });
     const accordionHeaders = document.querySelectorAll('#accordion_discussion .accordion-header');
     console.log(accordionHeaders)
-    accordionHeaders.forEach(header => {
+    accordionHeaders.forEach(function(header){
       header.addEventListener('click', function () {
-        const accordionItem = this.parentElement;
+        var accordionItem = this.parentElement;
         accordionItem.classList.toggle('active');
       });
     });

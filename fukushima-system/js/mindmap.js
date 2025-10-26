@@ -1642,16 +1642,82 @@ function activateSharedTab(tabId){
       extForm.style.display = 'none';
     }
   }
+
+  // 連結化タブ時は白いオーバーレイを全面に表示
+  var overlay = document.getElementById('shared_combination_overlay');
+  if(overlay){
+    if(tabId === 'tab-combination'){
+      // 表示してから位置とサイズを計算
+      overlay.style.display = 'block';
+      updateCombinationOverlayBounds();
+      // 画面変化に追随
+      attachOverlayAutoResize();
+    } else {
+      overlay.style.display = 'none';
+      detachOverlayAutoResize();
+    }
+  }
+}
+
+// オーバーレイの矩形を、対象3エリア(jsmind_container, utterance_area, mynetwork2)を覆うように計算
+function updateCombinationOverlayBounds(){
+  var overlay = document.getElementById('shared_combination_overlay');
+  if(!overlay) return;
+  var ids = ['jsmind_container','utterance_area','mynetwork2'];
+  var rects = ids
+    .map(function(id){ var el = document.getElementById(id); return el ? el.getBoundingClientRect() : null; })
+    .filter(Boolean);
+  if(rects.length === 0){
+    // 何もなければ全画面にしておく
+    overlay.style.position = 'fixed';
+    overlay.style.left = '0px';
+    overlay.style.top = '0px';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    return;
+  }
+  var left = Math.min.apply(null, rects.map(function(r){ return r.left; }));
+  var top = Math.min.apply(null, rects.map(function(r){ return r.top; }));
+  var right = Math.max.apply(null, rects.map(function(r){ return r.right; }));
+  var bottom = Math.max.apply(null, rects.map(function(r){ return r.bottom; }));
+  var width = Math.max(0, right - left);
+  var height = Math.max(0, bottom - top);
+  overlay.style.position = 'fixed';
+  overlay.style.left = left + 'px';
+  overlay.style.top = top + 'px';
+  overlay.style.width = width + 'px';
+  overlay.style.height = height + 'px';
+}
+
+function attachOverlayAutoResize(){
+  // 保存しておいて解除に使う
+  if(window._combOverlayHandler) return; // 既にバインド済み
+  window._combOverlayHandler = function(){
+    updateCombinationOverlayBounds();
+  };
+  window.addEventListener('resize', window._combOverlayHandler);
+  window.addEventListener('scroll', window._combOverlayHandler, true);
+}
+
+function detachOverlayAutoResize(){
+  if(!window._combOverlayHandler) return;
+  window.removeEventListener('resize', window._combOverlayHandler);
+  window.removeEventListener('scroll', window._combOverlayHandler, true);
+  window._combOverlayHandler = null;
 }
 
 // 初期化：DOMが使えるようになったらイベントをバインド
 document.addEventListener('DOMContentLoaded', function(){
   var tabIds = ['tab-externalization','tab-combination','tab-internalization'];
   tabIds.forEach(function(id){
-    var el = document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('click', function(e){
-      activateSharedTab(id);
+    // 同一IDが複数存在するレガシー構造に対応（すべてにハンドラを付与）
+    // CSS.escape 互換のため、ここでは素直に '#' + id を使用（ハイフンはそのままでOK）
+    var els = document.querySelectorAll('#' + id);
+    if(!els || els.length === 0) return;
+    els.forEach(function(el){
+      el.addEventListener('click', function(e){
+        activateSharedTab(id);
+      });
     });
   });
   // 初期表示は 表出化
