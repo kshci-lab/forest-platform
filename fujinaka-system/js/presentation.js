@@ -6,6 +6,16 @@ var obj;
 var target;
 var thread_concept_id = [];
 
+// 章の選択状態管理用を追加
+var chapter_color_count = 0;
+var chapter_obj;
+var chapter_target;
+
+// 節の選択状態管理用を追加
+var section_color_count = 0;
+var section_obj;
+var section_target;
+
 var preview_dom = "";
 var preview_text = "";
 
@@ -143,6 +153,9 @@ function GetConceptId(nodeID){
 
 
 $(document).on('click', '.thread', function(){
+    // 他の選択(章・節)を解除して排他にする
+    resetSectionSelection();
+    resetChapterSelection();
     // マインドマップの選択状況をリセット
     var jmnode = document.getElementsByTagName("jmnode");
     // for(var i=0; i<jmnode.length; i++){
@@ -203,33 +216,76 @@ $(document).on('click', '.thread', function(){
 
 });
 
-//別のスライドをクリックした時には，ノードの選択を外す
-$(document).on('click', '.thread', function(){
-  // const thread = this;
-  // var dom_all = document.getElementsByClassName("cspan");
-  // for(var i=0; i<dom_all.length; i++){
-  //   dom_all[i].style.border = "";
-  // }
+// 別のスライドをクリックした時には，ノードの選択を外す
+$(document).on('click', '.thread', function(e){
+  // 共通処理で章・節・パラグラフの切替を判定して選択解除
+  clearCspanSelectionOnContainerSwitch(e);
+});
 
-  const thread = this;
-  var dom_all = document.getElementsByClassName("cspan");
-  for(var i=0; i<dom_all.length; i++){
-    //選択中のノードを確認
-    if(dom_all[i].style.border == "2px solid gray"){
-      var c_dom = dom_all[i];
-    }
+// 章をクリックした時の選択処理（threadと同様の装飾。ただしthread/sectionクリック時はスキップ）
+$(document).on('click', '.chapter', function(e){
+  // 子のthread/section要素内をクリックした場合は、この章処理をスキップ（既存処理を優先）
+  if ($(e.target).closest('.thread, .section').length) return;
+
+  // 他の選択(節・スライド)を解除して排他にする
+  resetSectionSelection();
+  resetThreadSelection();
+
+  // 以前選択していた章をリセット
+  if (chapter_color_count > 0 && chapter_obj) {
+    chapter_obj.style.backgroundColor = 'white';
+    chapter_obj.style.border = "solid 0.7px black";
+    chapter_obj.style.boxShadow = "";
   }
-  if(c_dom){
-    const th_dom = c_dom.closest(".thread");
-    console.log("選択中の子ノードがあるスライド："+th_dom.id);
-    //console.log("クリックしたスライド："+thread.id);
-    if(th_dom.id != thread.id){
-      const dom_tmp = document.getElementsByClassName("cspan");
-      for(var i=0; i<dom_tmp.length; i++){
-        dom_tmp[i].style.border = "";
-      }
-    }
+
+  // 今回選択した章に装飾付与
+  chapter_target = this.id;
+  chapter_obj = document.getElementById(chapter_target);
+  chapter_obj.style.border = "outset 2.3px black";
+  chapter_obj.style.boxShadow = "3px 3px 3px gray";
+  chapter_color_count += 1;
+
+  // 章クリック時はjmnodeのハイライトは行わない（threadのようなdata-node_idが無いため）
+});
+
+// 別の章・節・パラグラフをクリックした時には，子ノード(.cspan)の選択を外す（共通処理）
+$(document).on('click', '.chapter', function(e){
+  // 子のthread/section要素内をクリックした場合は、この章処理をスキップ
+  if ($(e.target).closest('.thread, .section').length) return;
+  clearCspanSelectionOnContainerSwitch(e);
+});
+
+// 節をクリックした時の選択処理（threadと同様の装飾。ただしthreadクリック時はスキップ）
+$(document).on('click', '.section', function(e){
+  // 子のthread要素内をクリックした場合は、この節処理をスキップ
+  if ($(e.target).closest('.thread').length) return;
+
+  // 他の選択(章・スライド)を解除して排他にする
+  resetThreadSelection();
+  resetChapterSelection();
+
+  // 以前選択していた節をリセット
+  if (section_color_count > 0 && section_obj) {
+    section_obj.style.backgroundColor = 'white';
+    section_obj.style.border = "solid 0.7px black";
+    section_obj.style.boxShadow = "";
   }
+
+  // 今回選択した節に装飾付与
+  section_target = this.id;
+  section_obj = document.getElementById(section_target);
+  section_obj.style.border = "outset 2.3px black";
+  section_obj.style.boxShadow = "3px 3px 3px gray";
+  section_color_count += 1;
+
+  // 節クリック時はjmnodeのハイライトは行わない
+});
+
+// 別の章・節・パラグラフをクリックした時には，子ノード(.cspan)の選択を外す（共通処理）
+$(document).on('click', '.section', function(e){
+  // 子のthread要素内をクリックした場合は、この節処理をスキップ
+  if ($(e.target).closest('.thread').length) return;
+  clearCspanSelectionOnContainerSwitch(e);
 });
 
 $(document).on('click', '.cspan', function(){
@@ -333,8 +389,6 @@ $(document).on('click', '.tspan', function(){
 //      }
 //    }
 // });
-
-
 $(document).on('dblclick', '.cspan', function(){
   var dom = this;
   var dom_text = dom.nextElementSibling;
@@ -570,22 +624,23 @@ function MakeSection(topic){
   var uuid = getUniqueStr(); // Threadのidをランダム生成
   var quot_uuid = "\"" + uuid + "\""; // quotationをつけたuuid　labelを書く時に欲しかった
 
-  const chapter_dom = document.querySelector("#chapter_area .chapter");
-  if (chapter_dom) {
-    const dataElement = document.getElementById(chapter_dom.id);
-    const section_dom = dataElement.getElementsByClassName("section");
-
-    if (section_dom && section_dom.length > 0) {
-      var section_rank = section_dom.length + 1;
-      Insert_section(uuid, chapter_dom.id, section_rank);
-    } else {
-      Insert_section(uuid, chapter_dom.id, 1);
-    }
+  // 追加先の章を決定：選択中の章があればその下、なければ一番上（既存の挙動）
+  var targetChapter = null;
+  if (chapter_obj && document.getElementById(chapter_obj.id)) {
+    targetChapter = document.getElementById(chapter_obj.id);
   } else {
+    targetChapter = document.querySelector("#chapter_area .chapter");
+  }
+
+  if (!targetChapter) {
     window.alert("章を追加してください");
     return;
   }
-  
+
+  const section_dom = targetChapter.getElementsByClassName("section");
+  var section_rank = (section_dom && section_dom.length > 0) ? section_dom.length + 1 : 1;
+  Insert_section(uuid, targetChapter.id, section_rank);
+
   let label = "<div class='section' id='"+uuid+"' value='節' style='background-color:white; padding:10px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
                 "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_section_Title(this,"+quot_uuid+");' placeholder='節タイトル' onkeypress='Keypress(event.keyCode, this);'>"+topic+"</textarea>"+
@@ -596,14 +651,15 @@ function MakeSection(topic){
                 "<br>"+
               "</div>";
 
-  let area = $('.section_area', "#" + chapter_dom.id + "");
+  // 追加先の章配下に追加
+  let area = $('#' + targetChapter.id + " .section_area");
   area.append(label);
 
   // 追加された section に Sortable 適用
   var newsection = area.find('.section').last();
   new Sortable(newsection.parent()[0], {
-    handle: '.section', // ソートハンドルとなる要素を指定
-    group: 'sections', // グループ名を共有
+    handle: '.section',
+    group: 'sections',
     animation: 150,
     onEnd: function (evt) {
         var log = evt.from.children;
@@ -612,31 +668,20 @@ function MakeSection(topic){
     }
   });
 
-    // 追加された paragraph(threadのarea) に Sortable 適用
-    var newParagraph_area = newsection.find('.paragraph').get(0);
-    new Sortable(newParagraph_area, {
-      handle: '.thread', // ソートハンドルとなる要素を指定
-      group: 'paragraphs', // グループ名を共有
-      animation: 150,
-      onEnd: function (evt) {
-        var log = evt.from.children;
-        console.log(log);
-        Record_paragraphRank();
-      }
-    });
-
-
- /*$('#chapter_area').sortable({
-   update: function(){
-       var log = $(this).sortable("toArray");
-       console.log(log);
-       setTimeout( () =>
-       {
-        Record_ChapterRank();
-      }, 3000 ); 
-   }
- });*/
+  // 追加された paragraph(threadのarea) に Sortable 適用
+  var newParagraph_area = newsection.find('.paragraph').get(0);
+  new Sortable(newParagraph_area, {
+    handle: '.thread',
+    group: 'paragraphs',
+    animation: 150,
+    onEnd: function (evt) {
+      var log = evt.from.children;
+      console.log(log);
+      Record_paragraphRank();
+    }
+  });
 }
+
 
 // マインドマップ上のノードを選択した状態で右クリックすると文書に反映する関数
 function SetPurposeonChapter(){
@@ -745,21 +790,22 @@ function CreateThread(topic, id){
   console.log(uuid);
   console.log(quot_uuid);
 
-  const section_dom = document.querySelector(".section");
-  if (section_dom) {
-    const dataElement = document.getElementById(section_dom.id);
-    const paragraph_dom = dataElement.getElementsByClassName("thread");
-
-    if (paragraph_dom && paragraph_dom.length > 0) {
-      var paragraph_rank = paragraph_dom.length + 1;
-      Insert_paragraph(uuid, section_dom.id, paragraph_rank);
-    } else {
-      Insert_paragraph(uuid, section_dom.id, 1);
-    }
+  // 追加先の節を決定：選択中の節があればその下、なければ一番上（既存の挙動）
+  var targetSection = null;
+  if (section_obj && document.getElementById(section_obj.id)) {
+    targetSection = document.getElementById(section_obj.id);
   } else {
+    targetSection = document.querySelector(".section");
+  }
+
+  if (!targetSection) {
     window.alert("節を追加してください");
     return;
   }
+
+  const paragraph_dom = targetSection.getElementsByClassName("thread");
+  var paragraph_rank = (paragraph_dom && paragraph_dom.length > 0) ? paragraph_dom.length + 1 : 1;
+  Insert_paragraph(uuid, targetSection.id, paragraph_rank);
 
   let label = "<div class='thread' id='"+uuid+"' value='パラグラフ' data-node_id='"+node_id+"' style='background-color:white; padding:10px; margin-top:10px; margin-bottom:10px; margin-right:10px; margin-left:5px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
@@ -782,7 +828,8 @@ function CreateThread(topic, id){
                 "</div>"+
               "</div>";
 
-  let area = $('.paragraph', "#" + section_dom.id + "");
+  // 追加先の節配下に追加
+  let area = $('.paragraph', "#" + targetSection.id + "");
   area.append(label);
 
   // 追加された thread に Sortable 適用
@@ -819,7 +866,6 @@ function CreateThread(topic, id){
    update: function(){
        var log = $(this).sortable("toArray");
        console.log(log);
-       // console.log("OK");
        setTimeout( () =>
        {
         Record_paragraphRank();
@@ -954,27 +1000,28 @@ function MakeSlide(){
     var node_id = [];
     var uuid = getUniqueStr(); // Threadのidをランダム生成
     var setid = getUniqueStr();
-    var quot_uuid = "\"" + uuid + "\""; // quotationをつけたuuid　labelを書く時に欲しかった
+    var quot_uuid = "\"" + uuid + "\"";
     var quot_setid = "\"" + setid + "\"";
     console.log(uuid);
     console.log(quot_uuid);
 
-    const section_dom = document.querySelector(".section");
-    if (section_dom) {
-      const dataElement = document.getElementById(section_dom.id);
-      const paragraph_dom = dataElement.getElementsByClassName("thread");
-  
-      if (paragraph_dom && paragraph_dom.length > 0) {
-        var paragraph_rank = paragraph_dom.length + 1;
-        Insert_paragraph(uuid, section_dom.id, paragraph_rank);
-      } else {
-        Insert_paragraph(uuid, section_dom.id, 1);
-      }
+    // 追加先の節を決定：選択中の節があればその下、なければ一番上（既存の挙動）
+    var targetSection = null;
+    if (section_obj && document.getElementById(section_obj.id)) {
+      targetSection = document.getElementById(section_obj.id);
     } else {
+      targetSection = document.querySelector(".section");
+    }
+
+    if (!targetSection) {
       window.alert("節を追加してください");
       return;
     }
-    
+
+    const paragraph_dom = targetSection.getElementsByClassName("thread");
+    var paragraph_rank = (paragraph_dom && paragraph_dom.length > 0) ? paragraph_dom.length + 1 : 1;
+    Insert_paragraph(uuid, targetSection.id, paragraph_rank);
+
     let label = "<div class='thread' id='"+uuid+"' value='パラグラフ' data-node_id='"+node_id+"' style='background-color:white; padding:10px; margin-top:10px; margin-bottom:10px; margin-right:10px; margin-left:5px;'>"+
                   "<span class = 'tspan' tabindex='0'>パラグラフタイトル</span>"+
                   "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_paragraph_Title(this,"+quot_uuid+");' placeholder='パラグラフタイトル' onkeypress='Keypress(event.keyCode, this);'></textarea>"+
@@ -990,7 +1037,8 @@ function MakeSlide(){
                   "</div>"+
                 "</div>";
 
-    let area = $( ".paragraph", "#" + section_dom.id + "");
+    // 追加先の節配下に追加
+    let area = $( ".paragraph", "#" + targetSection.id + "");
     area.append(label);
 
     // 追加された thread に Sortable 適用
@@ -1016,7 +1064,6 @@ function MakeSlide(){
       }
     });
   
-
 
    /*$('.paragraph').sortable({
      update: function(){
@@ -1159,11 +1206,11 @@ function NodeAppend(){
   console.log(dom_target);
   if(type=="toi"){
     dom_target.style.backgroundColor = "#cce5ff";
-    // dom_target.style.border = "0.3px solid #b8daff";
+    dom_target.style.border = "0.3px solid #b8daff";
     dom_target.setAttribute("type","toi");
   } else{
     dom_target.style.backgroundColor = "#fff3cd";
-    // dom_target.style.border = "0.3px solid #ffeeba";
+    dom_target.style.border = "0.3px solid #ffeeba";
     dom_target.setAttribute("type","answer");
   }
 
@@ -1242,8 +1289,8 @@ function NodeAppendfromLogic(){
   var check=0;
   for(var i=0; i<c_dom.length; i++){
     if(c_dom[i].style.border == "2px solid gray"){
-      var stindent = c_dom[i].getAttribute("name");
-      var sttype = c_dom[i].getAttribute("type");
+      var setindent = c_dom[i].getAttribute("name");
+      var settype = c_dom[i].getAttribute("type");
       const tg_dom = c_dom[i].parentNode.id;
       console.log(tg_dom);
       $('#'+tg_dom).after(label);
@@ -1271,18 +1318,18 @@ function NodeAppendfromLogic(){
   dom_target.setAttribute("type","logic_origin");
 
   //インデント情報の格納
-  console.log(stindent);
-  console.log(sttype);
-  if(!(typeof stindent === 'undefined')){
-    if(sttype == "toi"){
-      if(!(Number(stindent) == 3)){
-        const num = Number(stindent) + 1;
+  console.log(setindent);
+  console.log(settype);
+  if(!(typeof setindent === 'undefined')){
+    if(settype == "toi"){
+      if(!(Number(setindent) == 3)){
+        const num = Number(setindent) + 1;
         dom_target.setAttribute("name",num);
       }else{
-        dom_target.setAttribute("name",stindent);
+        dom_target.setAttribute("name",setindent);
       }
     }else{
-      dom_target.setAttribute("name",stindent);
+      dom_target.setAttribute("name",setindent);
     }
   }
   SetIndent();
@@ -1434,122 +1481,6 @@ function NewContent_Append(type){ //fujinaka追加
   Get_ContentRank();
 }
 
-//問いエリアからシナリオに埋め込む関数
-function Toi_Append(){ //fujinaka追加
-  console.log("OK");
-  console.log(this.innerHTML);
-  const content = this.innerHTML;
-  console.log(content);
-  console.log(this.getAttribute("concept_id"));
-  const conceptid = this.getAttribute("concept_id");
-  const thread_dom = document.getElementsByClassName("thread");
-  for(var i=0; i<thread_dom.length; i++){
-    if(thread_dom[i].style.border == "2.3px outset black"){
-      console.log(thread_dom[i]);
-      var area = thread_dom[i];
-      var tid = thread_dom[i].id;
-    }
-  }
-
-  var nodeid = getUniqueStr();  //nodeID fujinaka追加
-  var setid = getUniqueStr();  //contentID
-  var quot_setid = "\"" + setid + "\"";
-
-  //内容テキストエリアにノード内容を挿入
-  console.log(tid);
-  console.log(area);
-  let label = "<div id='"+setid+"' class='scenario_content'>"+
-                "<span node_id='"+nodeid+"' class='cspan' name = '0' concept_id = '"+conceptid+"' style = 'width:calc(100% - 25px)' tabindex='0'>"+content+"</span>"+
-                "<textarea id='contents-"+setid+"' class='text_border' class='statement' onFocus='TextboxClick()' onblur='Edit_save(this,"+quot_setid+");' placeholder='内容' style='width:calc(100% - 25px)' onkeypress='Keypress(event.keyCode, this);'>"+content+"</textarea>"+
-                "<input class='content_delete' type='button' value='×' onclick='RemoveAppendNode("+quot_setid+");Get_ContentRank();'>"+
-              "</div>";
-
-  const c_dom = document.getElementsByClassName("cspan");
-  var check=0;
-  for(var i=0; i<c_dom.length; i++){
-    if(c_dom[i].style.border == "2px solid gray"){
-      var set_indent = c_dom[i].getAttribute("name");
-      var set_type = c_dom[i].getAttribute("type");
-      const tg_dom = c_dom[i].parentNode.id;
-      console.log(tg_dom);
-      $('#'+tg_dom).after(label);
-      check++;
-    }
-  }
-  if(check==0){
-    $('#'+tid).children('.purpose').append(label);
-  }
-
-
-  var dom = $('#'+setid).find('.cspan');
-  console.log(dom[0]);
-  var dom_target = dom[0];
-
-  dom_target.style.backgroundColor = "#cce5ff";
-  // dom_target.style.border = "0.3px solid #b8daff";
-  dom_target.setAttribute("type","toi");
-  Record_content(setid,  nodeid ,conceptid, content, tid,'toi');
-
-  //インデント情報の格納
-  console.log(set_indent);
-  console.log(set_type);
-  if(!(typeof set_indent === 'undefined')){
-    if(set_type == "toi"){
-      if(!(Number(set_indent) == 3)){
-        const num = Number(set_indent) + 1;
-        dom_target.setAttribute("name",num);
-      }else{
-        dom_target.setAttribute("name",set_indent);
-      }
-    }else{
-      dom_target.setAttribute("name",set_indent);
-    }
-  }
-  SetIndent();
-  Get_ContentRank();
-
-  var dom_all = document.getElementsByClassName("cspan");
-
-  if(conceptid == "1519483811401_n426"){
-
-    for(var j=0; j<dom_all.length; j++){
-
-        if(dom_all[j].style.backgroundColor == "rgb(255, 105, 180)"){
-
-          const node_id = dom_all[j].getAttribute("node_id");
-          const concept_id = dom_all[j].getAttribute("concept_id");
-          
-
-          if(concept_id  !== null ||  concept_id  !== undefined){ //concept_idがあるならprepared_question
-            $.ajax({
-              url: "php/scenario_manager.php",
-              type: "POST",
-              data: { 
-                purpose: "record",
-                type : "insert",
-                rationality_id : nodeid,
-                node_id : node_id,
-                concept_id : concept_id,
-                nodetype : "toi"
-              }});
-          }else{
-            $.ajax({
-              url: "php/scenario_manager.php",
-              type: "POST",
-              data: { 
-                purpose: "record",
-                type : "insert",
-                rationality_id : nodeid,
-                node_id : node_id,
-                concept_id : "original",
-                nodetype : "toi"
-              }});
-          }
-        }
-      }
-    }
-}
-
 
 // textareaの内容をテキストファイルを出力する
 // 拡張子はtxt，中身はHTML形式で，クライアント側に保存
@@ -1625,7 +1556,7 @@ function InputFile(){
       for (var i = 0; i < nestedSortables.length; i++) {
       	new Sortable(nestedSortables[i], {
       		group: 'contents',
-      		animation: 150,
+      		      		animation: 150,
           ghostClass: "sortable-ghost",
       	});
       }
@@ -1651,10 +1582,10 @@ function InputFile(){
 //   });
 // }
 
-// function FinishAlert(){
-// 	window.alert('ブラウザを閉じずに，「アンケート用紙1」にお答えください．回答し終えたら，下にスクロールして，システムからの助言を見てみましょう．');
-//   window.open('https://1drv.ms/u/s!Am39JzOgDfpjhhShlfb6a_vYMWZL?e=BreCAo', '_blank');
-// }
+function FinishAlert(){
+	window.alert('ブラウザを閉じずに，「アンケート用紙1」にお答えください．回答し終えたら，下にスクロールして，システムからの助言を見てみましょう．');
+  window.open('https://1drv.ms/u/s!Am39JzOgDfpjhhShlfb6a_vYMWZL?e=BreCAo', '_blank');
+}
 
 
 function Get_SlideTitle(){
@@ -1711,8 +1642,47 @@ function Record_sectionRank(){ //節順番保存
   }
 }
 
+function resetThreadSelection(){
+  if (obj) {
+    obj.style.backgroundColor = 'white';
+    obj.style.border = "solid 0.7px black";
+    obj.style.boxShadow = "";
+  }
+  // thread選択時に付けたjmnodeの枠線も解除
+  var jmnode = document.getElementsByTagName("jmnode");
+  for (var i = 0; i < jmnode.length; i++) {
+    jmnode[i].style.border = "";
+  }
+  obj = null;
+  target = null;
+  color_count = 0;
+}
+
+function resetSectionSelection(){
+  if (section_obj) {
+    section_obj.style.backgroundColor = 'white';
+    section_obj.style.border = "solid 0.7px black";
+    section_obj.style.boxShadow = "";
+  }
+  section_obj = null;
+  section_target = null;
+  section_color_count = 0;
+}
+
+function resetChapterSelection(){
+  if (chapter_obj) {
+    chapter_obj.style.backgroundColor = 'white';
+    chapter_obj.style.border = "solid 0.7px black";
+    chapter_obj.style.boxShadow = "";
+  }
+  chapter_obj = null;
+  chapter_target = null;
+  chapter_color_count = 0;
+}
+
 function Record_paragraphRank(){ //パラグラフ順番保存
   var section_dom = document.getElementsByClassName("section");
+
 
   
   if (section_dom && section_dom.length > 0) {
@@ -1892,7 +1862,7 @@ function NotNeed_check(dom){
 
 function re_check(dom){
 
-  var area = dom.parentNode.parentNode;
+  var area = dom.parentNode.parentNode.parentNode;
   var refer = area.lastElementChild.previousElementSibling;
   var ref = area.lastElementChild;
   console.log(refer);
@@ -2106,9 +2076,9 @@ class paragraph{
           var log = $(this).sortable("toArray");
           console.log(log);
           setTimeout( () =>
-          {
-           Record_paragraphRank();
-         }, 3000 ); 
+         {
+          Record_paragraphRank();
+        }, 3000 ); 
       }
     });
 
@@ -2206,11 +2176,11 @@ class Content{
     console.log(dom_target);
     if(type=="toi"){
       dom_target.style.backgroundColor = "#cce5ff";
-      // dom_target.style.border = "0.3px solid #b8daff";
+      dom_target.style.border = "0.3px solid #b8daff";
       dom_target.setAttribute("type","toi");
     } else{
       dom_target.style.backgroundColor = "#fff3cd";
-      // dom_target.style.border = "0.3px solid #ffeeba";
+      dom_target.style.border = "0.3px solid #ffeeba";
       dom_target.setAttribute("type","answer");
     }
 
@@ -2502,14 +2472,18 @@ function Create_preview(){ //プレビューを表示する関数
     
     mix_text += document.getElementById("scenario_title").value
    
+
+
     var chapter_dom = document.getElementsByClassName("chapter");
       for (i=0;i<chapter_dom.length;i++){
       mix_text += chapter_dom[i].children[1].value
       
+
       var section_dom = chapter_dom[i].getElementsByClassName("section");
       for (j=0;j<section_dom.length;j++){
         mix_text += section_dom[j].children[1].value;
        
+
         var paragraph_dom = section_dom[j].getElementsByClassName("thread");
         for (k=0;k<paragraph_dom.length;k++){
           mix_text += paragraph_dom[k].children[1].value;
@@ -2837,7 +2811,7 @@ function createTriangleFromPresentation() {
       elementText = elementText.substring(0, 50) + "...";
     }
     
-    console.log(`createTriangleFromPresentation: ${elementType}「${elementText}」から三角ロジックを作成`);
+    console.log(`createTriangleFromPresentation: ${elementType}「${elementText}」から三角ロジックを作成`); 
     
     // 選択された要素の固有IDを生成（presentation要素用のID）
     const presentationElementId = selectedElement.id || selectedElement.getAttribute('node_id') || getUniqueStr();
@@ -2851,6 +2825,38 @@ function createTriangleFromPresentation() {
   } catch (error) {
     console.error("createTriangleFromPresentation: エラーが発生しました:", error);
     alert("三角ロジックの作成中にエラーが発生しました: " + error.message);
+  }
+}
+
+// 共通：クリック先の章/節/パラグラフが、選択中.cspanが属する章/節/パラグラフと異なる場合に選択解除
+function clearCspanSelectionOnContainerSwitch(e){
+  var dom_all = document.getElementsByClassName("cspan");
+  var selected = null;
+  for (var i = 0; i < dom_all.length; i++) {
+    if (dom_all[i].style.border == "2px solid gray") {
+      selected = dom_all[i];
+      break;
+    }
+  }
+  if (!selected) return;
+
+  var selThread = selected.closest(".thread");
+  var selSection = selected.closest(".section");
+  var selChapter = selected.closest(".chapter");
+
+  var clickedThread = e.target.closest(".thread");
+  var clickedSection = e.target.closest(".section");
+  var clickedChapter = e.target.closest(".chapter");
+
+  var shouldClear = false;
+  if (clickedThread && selThread && clickedThread.id !== selThread.id) shouldClear = true;
+  if (!shouldClear && clickedSection && selSection && clickedSection.id !== selSection.id) shouldClear = true;
+  if (!shouldClear && clickedChapter && selChapter && clickedChapter.id !== selChapter.id) shouldClear = true;
+
+  if (shouldClear) {
+    for (var j = 0; j < dom_all.length; j++) {
+      dom_all[j].style.border = "";
+    }
   }
 }
 

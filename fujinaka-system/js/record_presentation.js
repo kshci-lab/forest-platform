@@ -54,7 +54,6 @@ function Record_content(contentID, nodeID, conceptID, content, slideID, type, pa
         content : content,
         slide_id : slideID,
         node_type : type,
-        paragraph_id: paragraphID,
              },
       success: function () {
         console.log("登録成功：　" +slideID );
@@ -70,20 +69,25 @@ function Record_content(contentID, nodeID, conceptID, content, slideID, type, pa
 function Delete_content(contentID){
 
   $.ajax({
-
-      url: "php/content_delete.php",
+      url: "php/scenario_manager.php",
       type: "POST",
+      dataType: "json",
       data: {
         purpose: "delete",
         delete_thing: "content",
         id : contentID
       },
-      success: function () {
-        console.log("登録成功：　" +contentID );
+      success: function (res) {
+        if (res && res.status === "success") {
+          console.log("登録成功：　" + contentID);
+        } else {
+          console.error("削除失敗: サーバ応答", res);
+        }
       },
-      error: function () {
-      console.log("登録失敗");},
-
+      error: function (xhr, textStatus, errorThrown) {
+        console.error("削除失敗:", "status:", xhr.status, "textStatus:", textStatus, "error:", errorThrown);
+        console.error("レスポンス本文:", xhr.responseText);
+      },
   });
 }
 
@@ -94,21 +98,26 @@ function Edit_save(obj,id){
   console.log(id);
 
   $.ajax({
-
       url: "php/scenario_manager.php",
       type: "POST",
+      dataType: "json",
       data: {
         id : id,
         purpose: "update",
         update_thing: "content",
         content : content,
       },
-      success: function () {
-        console.log("登録成功");
+      success: function (res) {
+        if (res && res.status === "success") {
+          console.log("登録成功");
+        } else {
+          console.error("更新失敗: サーバ応答", res);
+        }
       },
-      error: function () {
-      console.log("登録失敗");},
-
+      error: function (xhr, textStatus, errorThrown) {
+        console.error("更新失敗:", "status:", xhr.status, "textStatus:", textStatus, "error:", errorThrown);
+        console.error("レスポンス本文:", xhr.responseText);
+      },
   });
 
   // ---------以下，ラベルへの変更結果を反映---------------
@@ -119,7 +128,7 @@ function Edit_save(obj,id){
   }else if(content == "" && dom_label.getAttribute("type") == "answer"){
     $(dom_label).html("新規答えノード");
   }else{
-  $(dom_label).html(content);
+    $(dom_label).html(content);
   }
 
   if(!!(version_id)){
@@ -254,17 +263,21 @@ function Record_content_rank(contentID, rank, slideID, content, nodeID, type, in
 
   $.ajax({
 
-      url: "php/content_rank.php",
+      url: "php/scenario_manager.php",
       type: "POST",
-      data: {id : id,
-            content_id : contentID,
-            rank : rank,
-            slide_id : slideID,
-            content : content,
-            node_id : nodeID,
-            type : type,
-            indent : indent,
-            concept_id : concept_id},
+      data: {
+        purpose: "record",
+        record_thing: "content",
+        id : id,
+        content_id : contentID,
+        rank : rank,
+        slide_id : slideID,
+        content : content,
+        node_id : nodeID,
+        type : type,
+        indent : indent,
+        concept_id : concept_id
+          },
       success: function () {
         console.log("登録成功");
       },

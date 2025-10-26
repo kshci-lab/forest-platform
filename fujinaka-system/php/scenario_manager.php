@@ -221,16 +221,19 @@ if($purpose === 'record'){
     }
     else if($record_thing == "content"){
         //段落内容挿入処理
-        $content_id = $_POST["id"];             //コンテントID
-        $node_id = $_POST["node_id"];           //ノードID
-        $concept_id = $_POST["concept_id"];     //コンセプトID
-        $content = $_POST["content"];           //コンテント
-        $paragraph_id = $_POST["paragraph_id"]; // パラグラフID（必須）
-        $slide_id = $_POST["slide_id"];         // スライドID（既存定義をそのまま使用）
-		$type = $_POST["node_type"];            //ノードのタイプ
+        $id = $_POST["id"];                     //ID
+        $content_id = $_POST["content_id"];     //コンテントID
+        $rank = $_POST["rank"];                 //順番
+        $slide_id = $_POST["slide_id"];         //スライドID
+		$content = $_POST["content"];           //コンテンツの中身
+		$node_id = $_POST["node_id"];           //ノードID
+		$type = $_POST["type"];                 //タイプ
+		$indent = $_POST["indent"];             //インデント情報
+		$concept_id = $_POST["concept_id"];     //コンセプトID
 
-        $sql = "INSERT INTO slide_content (id, sheet_id, node_id, concept_id, content, type, user_id, slide_id, created_at, updated_at, deleted, from_slide_content)
-		VALUES ('$content_id', '$sheet_id', '$node_id', '$concept_id','$content', '$type', '$user_id', '$slide_id', '$timestamp', '$timestamp', 0, NULL)";
+        $sql = "INSERT INTO slide_content_rank (id, content_id, node_id, concept_id, rank, content, slide_id, type, indent, created_at, updated_at, user_id, sheet_id, deleted)
+		VALUES ('$id', '$content_id', '$node_id', '$concept_id', '$rank', '$content', '$slide_id', '$type', '$indent', '$timestamp', '$timestamp', '$user_id','$sheet_id', 0)";
+		$result = $mysqli->query($sql);
         if ($mysqli->query($sql)) {
             echo json_encode([
                 "status" => "success",
@@ -375,7 +378,7 @@ else if($purpose === "update"){
         //段落内容更新処理
         $content_id = $_POST["id"];       //contentID
         $content = $_POST["content"];     //content
-        $sql = "SELECT * FROM slide_content WHERE id = '$content_id'";
+        $sql = "SELECT * FROM slide_content WHERE content_id = '$content_id'";
         if($result = $mysqli->query($sql)) {
         while($row = mysqli_fetch_assoc($result)){
             $node_id = $row['node_id'];
@@ -386,7 +389,7 @@ else if($purpose === "update"){
         }
 
         if($content != $pre_content){
-        $sql = "UPDATE slide_content SET updated_at='$timestamp', content='$content' WHERE id='$content_id'";
+        $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', content='$content' WHERE content_id='$content_id'";
             if ($mysqli->query($sql)) {
                 echo json_encode(["status" => "success", "message" => "段落の内容が更新されました"]);
             } else {
@@ -408,40 +411,60 @@ else if($purpose === "delete"){
         }      
     }
     else if ($delete_thing == "chapter"){
-        //章削除処理
+        // 章削除処理（章→節→パラグラフ→コンテントの順に論理削除）
         $chapter_id = $mysqli->real_escape_string($_POST["id"]); // エスケープ
 
         // トランザクション開始
         $mysqli->begin_transaction();
 
         try {
-            // 更新前に今回対象となる section_id を取得（未削除のみをロック）
+            // 1) この章に属し未削除の節IDをロック取得
             $sectionIds = [];
-            $sqlSel = "SELECT section_id FROM section WHERE chapter_id='$chapter_id' AND deleted = 0 FOR UPDATE";
-            if ($res = $mysqli->query($sqlSel)) {
-                while ($row = $res->fetch_assoc()) {
+            $sqlSec = "SELECT section_id FROM section WHERE chapter_id='$chapter_id' AND deleted = 0 FOR UPDATE";
+            if ($resSec = $mysqli->query($sqlSec)) {
+                while ($row = $resSec->fetch_assoc()) {
                     $sectionIds[] = $row['section_id'];
                 }
-                $res->close();
+                $resSec->close();
             } else {
                 throw new Exception($mysqli->error);
             }
-            // IN 句用にエスケープ済みで整形
-            $inClause = '';
+
+            // IN句生成
+            $inSection = '';
             if (!empty($sectionIds)) {
                 $escaped = array_map([$mysqli, 'real_escape_string'], $sectionIds);
-                $inClause = "'" . implode("','", $escaped) . "'";
+                $inSection = "'" . implode("','", $escaped) . "'";
             }
 
+            // 2) 上記節に属し未削除のパラグラフIDをロック取得
+            $paragraphIds = [];
+            if (!empty($inSection)) {
+                $sqlPar = "SELECT paragraph_id FROM paragraph WHERE section_id IN ($inSection) AND deleted = 0 FOR UPDATE";
+                if ($resPar = $mysqli->query($sqlPar)) {
+                    while ($row = $resPar->fetch_assoc()) {
+                        $paragraphIds[] = $row['paragraph_id'];
+                    }
+                    $resPar->close();
+                } else {
+                    throw new Exception($mysqli->error);
+                }
+            }
+            $inPara = '';
+            if (!empty($paragraphIds)) {
+                $escapedPara = array_map([$mysqli, 'real_escape_string'], $paragraphIds);
+                $inPara = "'" . implode("','", $escapedPara) . "'";
+            }
+
+            // 3) 論理削除（章→節→パラグラフ→コンテント）
             $q1 = "UPDATE chapter SET deleted = 1 WHERE chapter_id='$chapter_id'";
             $q2 = "UPDATE section SET deleted = 1 WHERE chapter_id='$chapter_id'";
-            // paragraph は section_id を参照
-            $q3 = !empty($inClause)
-                ? "UPDATE paragraph SET deleted = 1 WHERE section_id IN ($inClause)"
+            $q3 = !empty($inSection)
+                ? "UPDATE paragraph SET deleted = 1 WHERE section_id IN ($inSection)"
                 : null;
-            // content も section_id を参照（スキーマに準拠）
-            $q4 = !empty($inClause)
-                ? "UPDATE content SET deleted = 1 WHERE section_id IN ($inClause)"
+            // slide_content_rank は slide_id を参照
+            $q4 = !empty($inPara)
+                ? "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id IN ($inPara)"
                 : null;
 
             if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
@@ -449,9 +472,16 @@ else if($purpose === "delete"){
             if ($q3 && !$mysqli->query($q3)) throw new Exception($mysqli->error);
             if ($q4 && !$mysqli->query($q4)) throw new Exception($mysqli->error);
 
+            // コミット
             $mysqli->commit();
-            echo json_encode(["status" => "success", "message" => "章が削除されました", "section_ids_deleted" => $sectionIds]);
+            echo json_encode([
+                "status" => "success",
+                "message" => "章が削除されました",
+                "section_ids_deleted" => $sectionIds,
+                "paragraph_ids_deleted" => $paragraphIds
+            ]);
         } catch (Exception $e) {
+            // ロールバック
             $mysqli->rollback();
             error_log('chapter delete failed: ' . $e->getMessage());
             http_response_code(500);
@@ -466,16 +496,36 @@ else if($purpose === "delete"){
         $mysqli->begin_transaction();
 
         try {
+            // 対象節配下の段落IDを取得（未削除のみをロック）
+            $paragraphIds = [];
+            $sqlPar = "SELECT paragraph_id FROM paragraph WHERE section_id='$section_id' AND deleted = 0 FOR UPDATE";
+            if ($resPar = $mysqli->query($sqlPar)) {
+                while ($row = $resPar->fetch_assoc()) {
+                    $paragraphIds[] = $row['paragraph_id'];
+                }
+                $resPar->close();
+            } else {
+                throw new Exception($mysqli->error);
+            }
+            $inPara = '';
+            if (!empty($paragraphIds)) {
+                $escapedPara = array_map([$mysqli, 'real_escape_string'], $paragraphIds);
+                $inPara = "'" . implode("','", $escapedPara) . "'";
+            }
+
             $q1 = "UPDATE section SET deleted = 1 WHERE section_id='$section_id'";
             $q2 = "UPDATE paragraph SET deleted = 1 WHERE section_id='$section_id'";
-            $q3 = "UPDATE content SET deleted = 1 WHERE section_id='$section_id'";
+            // slide_content_rank の外部キーは slide_id
+            $q3 = !empty($inPara)
+                ? "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id IN ($inPara)"
+                : null;
 
             if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
             if (!$mysqli->query($q2)) throw new Exception($mysqli->error);
-            if (!$mysqli->query($q3)) throw new Exception($mysqli->error);
+            if ($q3 && !$mysqli->query($q3)) throw new Exception($mysqli->error);
 
             $mysqli->commit();
-            echo json_encode(["status" => "success", "message" => "節が削除されました"]);
+            echo json_encode(["status" => "success", "message" => "節が削除されました", "paragraph_ids_deleted" => $paragraphIds]);
         } catch (Exception $e) {
             $mysqli->rollback();
             error_log('section delete failed: ' . $e->getMessage());
@@ -492,7 +542,8 @@ else if($purpose === "delete"){
 
         try {
             $q1 = "UPDATE paragraph SET deleted = 1 WHERE paragraph_id='$paragraph_id'";
-            $q2 = "UPDATE content SET deleted = 1 WHERE paragraph_id='$paragraph_id'";
+            // slide_content_rank は slide_id を参照
+            $q2 = "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id='$paragraph_id'";
 
             if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
             if (!$mysqli->query($q2)) throw new Exception($mysqli->error);
@@ -507,9 +558,9 @@ else if($purpose === "delete"){
         }
     }
     else if ($delete_thing == "content"){
-        //段落内容削除処理
+        // 段落内容削除処理（slide_content_rankに合わせる）
         $content_id = $_POST["id"]; //コンテントID
-        $sql = "UPDATE slide_content SET updated_at='$timestamp', deleted=1 WHERE id='$content_id'";
+        $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', deleted=1 WHERE id='$content_id'";
 
 		if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "段落の内容が削除されました"]);
