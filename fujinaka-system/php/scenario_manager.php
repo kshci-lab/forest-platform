@@ -225,13 +225,20 @@ if($purpose === 'record'){
         $node_id = $_POST["node_id"];           //ノードID
         $concept_id = $_POST["concept_id"];     //コンセプトID
         $content = $_POST["content"];           //コンテント
-        $slide_id = $_POST["slide_id"];         //スライドID
+        $paragraph_id = $_POST["paragraph_id"]; // パラグラフID（必須）
+        $slide_id = $_POST["slide_id"];         // スライドID（既存定義をそのまま使用）
 		$type = $_POST["node_type"];            //ノードのタイプ
 
         $sql = "INSERT INTO slide_content (id, sheet_id, node_id, concept_id, content, type, user_id, slide_id, created_at, updated_at, deleted, from_slide_content)
 		VALUES ('$content_id', '$sheet_id', '$node_id', '$concept_id','$content', '$type', '$user_id', '$slide_id', '$timestamp', '$timestamp', 0, NULL)";
         if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "段落の内容が記録されました"]);
+            echo json_encode([
+                "status" => "success",
+                "message" => "段落の内容が記録されました",
+                "content_id" => $content_id,
+                "paragraph_id" => $paragraph_id,
+                "slide_id" => $slide_id
+            ]);
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
@@ -319,7 +326,7 @@ else if($purpose === "update"){
 
         if($title != $pre_title){	//変更があれば更新
 
-            $sql = "UPDATE section SET title='$title' WHERE section_id='$section_id'"
+            $sql = "UPDATE section SET title='$title' WHERE section_id='$section_id'";
             if ($mysqli->query($sql)) {
                 echo json_encode(["status" => "success", "message" => "節が更新されました"]);
                 } else {
@@ -408,18 +415,42 @@ else if($purpose === "delete"){
         $mysqli->begin_transaction();
 
         try {
+            // 更新前に今回対象となる section_id を取得（未削除のみをロック）
+            $sectionIds = [];
+            $sqlSel = "SELECT section_id FROM section WHERE chapter_id='$chapter_id' AND deleted = 0 FOR UPDATE";
+            if ($res = $mysqli->query($sqlSel)) {
+                while ($row = $res->fetch_assoc()) {
+                    $sectionIds[] = $row['section_id'];
+                }
+                $res->close();
+            } else {
+                throw new Exception($mysqli->error);
+            }
+            // IN 句用にエスケープ済みで整形
+            $inClause = '';
+            if (!empty($sectionIds)) {
+                $escaped = array_map([$mysqli, 'real_escape_string'], $sectionIds);
+                $inClause = "'" . implode("','", $escaped) . "'";
+            }
+
             $q1 = "UPDATE chapter SET deleted = 1 WHERE chapter_id='$chapter_id'";
             $q2 = "UPDATE section SET deleted = 1 WHERE chapter_id='$chapter_id'";
-            $q3 = "UPDATE paragraph SET deleted = 1 WHERE chapter_id='$chapter_id'";
-            $q4 = "UPDATE content SET deleted = 1 WHERE chapter_id='$chapter_id'";
+            // paragraph は section_id を参照
+            $q3 = !empty($inClause)
+                ? "UPDATE paragraph SET deleted = 1 WHERE section_id IN ($inClause)"
+                : null;
+            // content も section_id を参照（スキーマに準拠）
+            $q4 = !empty($inClause)
+                ? "UPDATE content SET deleted = 1 WHERE section_id IN ($inClause)"
+                : null;
 
             if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
             if (!$mysqli->query($q2)) throw new Exception($mysqli->error);
-            if (!$mysqli->query($q3)) throw new Exception($mysqli->error);
-            if (!$mysqli->query($q4)) throw new Exception($mysqli->error);
+            if ($q3 && !$mysqli->query($q3)) throw new Exception($mysqli->error);
+            if ($q4 && !$mysqli->query($q4)) throw new Exception($mysqli->error);
 
             $mysqli->commit();
-            echo json_encode(["status" => "success", "message" => "章が削除されました"]);
+            echo json_encode(["status" => "success", "message" => "章が削除されました", "section_ids_deleted" => $sectionIds]);
         } catch (Exception $e) {
             $mysqli->rollback();
             error_log('chapter delete failed: ' . $e->getMessage());

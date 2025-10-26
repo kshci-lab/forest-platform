@@ -2239,29 +2239,29 @@ async function unconsidered_rationality_feedback(nodeid, node_c_id){ //マップ
 
   var considered_rationality_concept = "";
   
-  await $.ajax({
+  // await $.ajax({
 
-    url: "php/fujinaka_rationality.php",
-    type: "POST",
-    data: { 
-      type : "concept",
-      id : nodeid,
-     },
-      success: function(arr){
-        if(arr == "[]"){
-          console.log(arr);
+  //   url: "php/fujinaka_rationality.php",
+  //   type: "POST",
+  //   data: { 
+  //     type : "concept",
+  //     id : nodeid,
+  //    },
+  //     success: function(arr){
+  //       if(arr == "[]"){
+  //         console.log(arr);
 
-        }else{
-          console.log(arr);
-          considered_rationality_concept = JSON.parse(arr);
-          console.log(considered_rationality_concept);
+  //       }else{
+  //         console.log(arr);
+  //         considered_rationality_concept = JSON.parse(arr);
+  //         console.log(considered_rationality_concept);
 
-        }
-	    },
-      error:function(){
-        console.log("エラーです");
-      }
-  });   
+  //       }
+	//     },
+  //     error:function(){
+  //       console.log("エラーです");
+  //     }
+  // });   
   
   $.ajax({
     url: 'js/hozo.xml',

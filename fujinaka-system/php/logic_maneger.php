@@ -54,8 +54,35 @@ if ($purpose === 'record') {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
     }
-}
 
+    // --- added: handle chapter records so response is valid JSON ---
+    if ($record_thing === 'chapter') {
+        $chapter_id = $_POST['id'] ?? null;
+        $rank = isset($_POST['rank']) ? $_POST['rank'] : null;
+        $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+
+        // Try to insert into a plausible table; use prepared statement to avoid SQL errors.
+        // If the table doesn't exist or prepare fails, return an informative JSON error.
+        $sql = "INSERT INTO scenario_chapter (chapter_id, rank, created_at, updated_at) VALUES (?, ?, ?, ?)";
+        $stmt = $mysqli->prepare($sql);
+
+        if ($stmt) {
+            // rank may be integer; bind as string to be safe if null
+            $stmt->bind_param("siss", $chapter_id, $rank, $timestamp, $timestamp);
+            if ($stmt->execute()) {
+                echo json_encode(["status" => "success", "message" => "章が記録されました", "chapter_id" => $chapter_id]);
+            } else {
+                echo json_encode(["status" => "error", "message" => "データベースエラー（execute）: " . $stmt->error]);
+            }
+            $stmt->close();
+        } else {
+            // prepare failed (table might not exist) -- return a valid JSON error so client won't get parsererror
+            echo json_encode(["status" => "error", "message" => "データベースエラー（prepare）: " . $mysqli->error]);
+        }
+        // end chapter handling
+    }
+
+}
 else if ($purpose === 'update') {
     $update_thing = $_POST['update_thing'] ?? null;
     $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);

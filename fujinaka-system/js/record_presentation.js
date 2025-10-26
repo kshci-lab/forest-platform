@@ -39,7 +39,7 @@ function Delete_slide(slideID){
 
 
 //コンテンツ追加を記録する関数
-function Record_content(contentID, nodeID, conceptID, content, slideID, type){
+function Record_content(contentID, nodeID, conceptID, content, slideID, type, paragraphID){
 
   $.ajax({
 
@@ -54,6 +54,7 @@ function Record_content(contentID, nodeID, conceptID, content, slideID, type){
         content : content,
         slide_id : slideID,
         node_type : type,
+        paragraph_id: paragraphID,
              },
       success: function () {
         console.log("登録成功：　" +slideID );
@@ -301,7 +302,7 @@ function Insert_Chapter(chapterID, Rank){
     type: "POST",
     data: {
       purpose: "record",
-      type: "chapter",
+      record_thing: "chapter",
       id : chapterID,
       rank : Rank
     },
