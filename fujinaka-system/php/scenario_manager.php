@@ -375,21 +375,17 @@ else if($purpose === "update"){
 	    }
     }
     else if ($update_thing == "content"){
-        //段落内容更新処理
+        // 段落内容更新処理（slide_content_rankに統一）
         $content_id = $_POST["id"];       //contentID
         $content = $_POST["content"];     //content
-        $sql = "SELECT * FROM slide_content WHERE content_id = '$content_id'";
+        $sql = "SELECT content FROM slide_content_rank WHERE content_id = '$content_id' AND sheet_id='$sheet_id'";
         if($result = $mysqli->query($sql)) {
-        while($row = mysqli_fetch_assoc($result)){
-            $node_id = $row['node_id'];
-            $concept_id = $row['concept_id'];
-            $slide_id = $row['slide_id'];
-            $pre_content = $row['content'];
+            while($row = mysqli_fetch_assoc($result)){
+                $pre_content = $row['content'];
+            }
         }
-        }
-
         if($content != $pre_content){
-        $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', content='$content' WHERE content_id='$content_id'";
+            $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', content='$content' WHERE content_id='$content_id' AND sheet_id='$sheet_id'";
             if ($mysqli->query($sql)) {
                 echo json_encode(["status" => "success", "message" => "段落の内容が更新されました"]);
             } else {
@@ -517,7 +513,7 @@ else if($purpose === "delete"){
             $q2 = "UPDATE paragraph SET deleted = 1 WHERE section_id='$section_id'";
             // slide_content_rank の外部キーは slide_id
             $q3 = !empty($inPara)
-                ? "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id IN ($inPara)"
+                ? "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id IN ($inPara) AND sheet_id='$sheet_id'"
                 : null;
 
             if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
@@ -543,7 +539,7 @@ else if($purpose === "delete"){
         try {
             $q1 = "UPDATE paragraph SET deleted = 1 WHERE paragraph_id='$paragraph_id'";
             // slide_content_rank は slide_id を参照
-            $q2 = "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id='$paragraph_id'";
+            $q2 = "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id='$paragraph_id' AND sheet_id='$sheet_id'";
 
             if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
             if (!$mysqli->query($q2)) throw new Exception($mysqli->error);
@@ -560,7 +556,7 @@ else if($purpose === "delete"){
     else if ($delete_thing == "content"){
         // 段落内容削除処理（slide_content_rankに合わせる）
         $content_id = $_POST["id"]; //コンテントID
-        $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', deleted=1 WHERE id='$content_id'";
+        $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', deleted=1 WHERE id='$content_id' AND sheet_id='$sheet_id'";
 
 		if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "段落の内容が削除されました"]);
