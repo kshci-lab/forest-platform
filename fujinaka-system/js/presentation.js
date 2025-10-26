@@ -576,7 +576,7 @@ function MakeChapter(topic){
   let label = "<div class='chapter' id='"+uuid+"' value='章' style='background-color:white; padding:10px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
                 "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_Chapter_Title(this,"+quot_uuid+");' placeholder='章タイトル' onkeypress='Keypress(event.keyCode, this);'>"+topic+"</textarea>"+
-                "<input class='simple_btn' type='button' value='×' onclick='Remove_Chapter("+quot_uuid+");Record_ChapterRank();Get_ContentRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
+                "<input class='simple_btn' type='button' value='×' onclick='Remove_Chapter("+quot_uuid+");Record_ChapterRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
                 "<br>"+
                 "<div class='section_area'>"+
                 "</div>"+
@@ -644,7 +644,7 @@ function MakeSection(topic){
   let label = "<div class='section' id='"+uuid+"' value='節' style='background-color:white; padding:10px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
                 "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_section_Title(this,"+quot_uuid+");' placeholder='節タイトル' onkeypress='Keypress(event.keyCode, this);'>"+topic+"</textarea>"+
-                "<input class='simple_btn' type='button' value='×' onclick='Remove_section("+quot_uuid+", false);Record_sectionRank();Get_ContentRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
+                "<input class='simple_btn' type='button' value='×' onclick='Remove_section("+quot_uuid+", false);Record_sectionRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
                 "<br>"+
                 "<div class='paragraph'>"+
                 "</div>"+
@@ -810,7 +810,7 @@ function CreateThread(topic, id){
   let label = "<div class='thread' id='"+uuid+"' value='パラグラフ' data-node_id='"+node_id+"' style='background-color:white; padding:10px; margin-top:10px; margin-bottom:10px; margin-right:10px; margin-left:5px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
                 "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_paragraph_Title(this,"+quot_uuid+");'  placeholder='節タイトル' onkeypress='Keypress(event.keyCode, this);'>"+topic+"</textarea>"+
-                "<input class='simple_btn' type='button' value='×' onclick='Removeparagraph("+quot_uuid+", false);Record_paragraphRank();Get_ContentRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
+                "<input class='simple_btn' type='button' value='×' onclick='Removeparagraph("+quot_uuid+", false);Record_paragraphRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
                 "<br>"+
                 "<div class='purpose'>"+
                   "<div id='"+setid+"' class='scenario_content'>"+
@@ -858,7 +858,8 @@ function CreateThread(topic, id){
   var conceptID = GetConceptId(id);
   var type = GetType(id);
   console.log(type);
-  Record_content(setid, id, conceptID, statement, uuid, type);
+  // 重複INSERT防止: 即時INSERTを止め、Get_ContentRank内のRecord_content_rankに統一
+  // Record_content(setid, id, conceptID, statement, uuid, type);
 
 
   
@@ -1025,7 +1026,7 @@ function MakeSlide(){
     let label = "<div class='thread' id='"+uuid+"' value='パラグラフ' data-node_id='"+node_id+"' style='background-color:white; padding:10px; margin-top:10px; margin-bottom:10px; margin-right:10px; margin-left:5px;'>"+
                   "<span class = 'tspan' tabindex='0'>パラグラフタイトル</span>"+
                   "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_paragraph_Title(this,"+quot_uuid+");' placeholder='パラグラフタイトル' onkeypress='Keypress(event.keyCode, this);'></textarea>"+
-                  "<input class='simple_btn' type='button' value='×' onclick='Removeparagraph("+quot_uuid+", false);Record_paragraphRank();Get_ContentRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
+                  "<input class='simple_btn' type='button' value='×' onclick='Removeparagraph("+quot_uuid+", false);Record_paragraphRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
                   "<br>"+
                   "<div class='purpose'>"+
                   "</div>"+
@@ -1071,7 +1072,7 @@ function MakeSlide(){
          console.log(log);
          setTimeout( () =>
          {
-          Record_paragraphRank();
+          Record_ChapterRank();
         }, 3000 ); 
      }
    });
@@ -1199,7 +1200,8 @@ function NodeAppend(){
   // console.log(content);  //content
   // console.log(target);  //slideID
   var type = GetType(id);
-  Record_content(setid, id, concept_id, content, target, type);
+  // 重複INSERT防止
+  // Record_content(setid, id, conceptID, content, target, type);
 
   var dom_tmp = document.getElementById("contents-"+setid);
   var dom_target = dom_tmp.previousElementSibling;
@@ -1306,7 +1308,8 @@ function NodeAppendfromLogic(){
   
   // Logic Networkの場合のRecord_content呼び出し（concept_idはnull）
   var type = "logic_node"; // Logic Networkからの場合の識別用
-  Record_content(setid, id, null, content, target, type);
+  // 重複INSERT防止
+  // Record_content(setid, id, null, content, target, type);
 
   var dom_tmp = document.getElementById("contents-"+setid);
   var dom_target = dom_tmp.previousElementSibling;
@@ -1383,7 +1386,8 @@ function NodeAppendfromLogic(){
 //
 // }
 
-//コンテンツ(パラグラフの中身)の新規作成
+
+// コンテンツ(パラグラフの中身)の新規作成
 function NewContent_Append(type){ //fujinaka追加
   var nodeid = getUniqueStr();  //nodeID fujinaka追加 labelにも追加　Recordにも追加
   var setid = getUniqueStr();  //contentID
@@ -1434,7 +1438,8 @@ function NewContent_Append(type){ //fujinaka追加
     dom_target.style.backgroundColor = "#cce5ff";
     // dom_target.style.border = "0.3px solid #b8daff";
     dom_target.setAttribute("type","toi");
-    Record_content(setid, nodeid, '', '', data,'toi');
+    // 重複INSERT防止
+    // Record_content(setid, nodeid, '', '', data,'toi');
   } else{
     dom_target.innerHTML = "新規答えノード";
     dom_target.style.backgroundColor = "#fff3cd";
@@ -1443,7 +1448,8 @@ function NewContent_Append(type){ //fujinaka追加
     if(settype === "toi" && setconcept !== null || setconcept !== undefined) {
       dom_target.setAttribute("concept_id", setconcept);
     }
-    Record_content(setid, nodeid, setconcept, '', data, 'answer');
+    // 重複INSERT防止
+    // Record_content(setid, nodeid, setconcept, '', data, 'answer');
     if (setconcept == "1519483811401_n426"){
 
       $.ajax({
@@ -1980,7 +1986,7 @@ class Chapter{
     let label = "<div class='chapter' id='"+id+"' value='章' style='background-color:white; padding:10px;'>"+
                   "<span class = 'tspan' tabindex='0'>"+title+"</span>"+
                   "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_Chapter_Title(this,"+quot_id+");' placeholder='章タイトル' onkeypress='Keypress(event.keyCode, this);'>"+title+"</textarea>"+
-                  "<input class='simple_btn' type='button' value='×' onclick='Remove_Chapter("+quot_id+");Record_ChapterRank();Get_ContentRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
+                  "<input class='simple_btn' type='button' value='×' onclick='Remove_Chapter("+quot_id+");Record_ChapterRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
                   "<br>"+
                   "<div class='section_area'>"+
                   "</div>"+
@@ -2016,7 +2022,7 @@ class Section{
     let label = "<div class='section' id='"+id+"' value='節' style='background-color:white; padding:10px;'>"+
                   "<span class = 'tspan' tabindex='0'>"+title+"</span>"+
                   "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_section_Title(this,"+quot_id+");' placeholder='節タイトル' onkeypress='Keypress(event.keyCode, this);'>"+title+"</textarea>"+
-                  "<input class='simple_btn' type='button' value='×' onclick='Remove_section("+quot_id+", false);Record_sectionRank();Get_ContentRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
+                  "<input class='simple_btn' type='button' value='×' onclick='Remove_section("+quot_id+", false);Record_sectionRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
                   "<br>"+
                   "<div class='paragraph'>"+
                   "</div>"+
@@ -2056,7 +2062,7 @@ class paragraph{
     let label = "<div class='thread' id='"+paragraph_id+"' value='パラグラフ' data-node_id='"+node_id+"' style='background-color:white; padding:10px; margin-top:10px; margin-bottom:10px; margin-right:10px; margin-left:5px;'>"+
                   "<span class = 'tspan' tabindex='0'>"+paragraph_title+"</span>"+
                   "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_paragraph_Title(this,"+quot_paragraph_id+");' placeholder='パラグラフタイトル' onkeypress='Keypress(event.keyCode, this);'>"+paragraph_title+"</textarea>"+
-                  "<input class='simple_btn' type='button' value='×' onclick='Removeparagraph("+quot_paragraph_id+", false);Record_paragraphRank();Get_ContentRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
+                  "<input class='simple_btn' type='button' value='×' onclick='Removeparagraph("+quot_paragraph_id+", false);Record_paragraphRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
                   "<br>"+
                   "<div class='purpose'>"+
                   "</div>"+
@@ -2479,10 +2485,12 @@ function Create_preview(){ //プレビューを表示する関数
       mix_text += chapter_dom[i].children[1].value
       
 
+
       var section_dom = chapter_dom[i].getElementsByClassName("section");
       for (j=0;j<section_dom.length;j++){
         mix_text += section_dom[j].children[1].value;
        
+
 
         var paragraph_dom = section_dom[j].getElementsByClassName("thread");
         for (k=0;k<paragraph_dom.length;k++){

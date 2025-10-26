@@ -220,26 +220,47 @@ if($purpose === 'record'){
         }
     }
     else if($record_thing == "content"){
-        //段落内容挿入処理
-        $id = $_POST["id"];                     //ID
-        $content_id = $_POST["content_id"];     //コンテントID
-        $rank = $_POST["rank"];                 //順番
-        $slide_id = $_POST["slide_id"];         //スライドID
-		$content = $_POST["content"];           //コンテンツの中身
-		$node_id = $_POST["node_id"];           //ノードID
-		$type = $_POST["type"];                 //タイプ
-		$indent = $_POST["indent"];             //インデント情報
-		$concept_id = $_POST["concept_id"];     //コンセプトID
+        // 段落内容 UPSERT（content_id + sheet_id で一意にする）
+        $id = $_POST["id"];
+        $content_id = $_POST["content_id"];
+        $rank = $_POST["rank"];
+        $slide_id = $_POST["slide_id"];
+        $content = $_POST["content"];
+        $node_id = $_POST["node_id"];
+        $type = $_POST["type"];
+        $indent = $_POST["indent"];
+        $concept_id = $_POST["concept_id"];
 
-        $sql = "INSERT INTO slide_content_rank (id, content_id, node_id, concept_id, rank, content, slide_id, type, indent, created_at, updated_at, user_id, sheet_id, deleted)
-		VALUES ('$id', '$content_id', '$node_id', '$concept_id', '$rank', '$content', '$slide_id', '$type', '$indent', '$timestamp', '$timestamp', '$user_id','$sheet_id', 0)";
-		$result = $mysqli->query($sql);
-        if ($mysqli->query($sql)) {
+        $chk = "SELECT id FROM slide_content_rank WHERE content_id='$content_id' AND sheet_id='$sheet_id' LIMIT 1";
+        if ($res = $mysqli->query($chk)) {
+            if ($res->num_rows > 0) {
+                // 既存→UPDATE（deletedは復活させる）
+                $upd = "UPDATE slide_content_rank
+                        SET node_id='$node_id', concept_id='$concept_id', rank='$rank', content='$content',
+                            slide_id='$slide_id', type='$type', indent='$indent',
+                            updated_at='$timestamp', user_id='$user_id', deleted=0
+                        WHERE content_id='$content_id' AND sheet_id='$sheet_id'";
+                $ok = $mysqli->query($upd);
+            } else {
+                // 新規→INSERT
+                $ins = "INSERT INTO slide_content_rank
+                        (id, content_id, node_id, concept_id, rank, content, slide_id, type, indent,
+                         created_at, updated_at, user_id, sheet_id, deleted)
+                        VALUES
+                        ('$id', '$content_id', '$node_id', '$concept_id', '$rank', '$content', '$slide_id', '$type', '$indent',
+                         '$timestamp', '$timestamp', '$user_id', '$sheet_id', 0)";
+                $ok = $mysqli->query($ins);
+            }
+            $res->close();
+        } else {
+            $ok = false;
+        }
+
+        if ($ok) {
             echo json_encode([
                 "status" => "success",
                 "message" => "段落の内容が記録されました",
                 "content_id" => $content_id,
-                "paragraph_id" => $paragraph_id,
                 "slide_id" => $slide_id
             ]);
         } else {
@@ -375,22 +396,29 @@ else if($purpose === "update"){
 	    }
     }
     else if ($update_thing == "content"){
-        // 段落内容更新処理（slide_content_rankに統一）
-        $content_id = $_POST["id"];       //contentID
-        $content = $_POST["content"];     //content
-        $sql = "SELECT content FROM slide_content_rank WHERE content_id = '$content_id' AND sheet_id='$sheet_id'";
+        // 段落内容更新（slide_content_rankを参照）
+        $content_id = $_POST["id"];
+        $content = $_POST["content"];
+
+        $sql = "SELECT content FROM slide_content_rank WHERE content_id = '$content_id' AND sheet_id='$sheet_id' AND deleted=0";
+        $pre_content = null;
         if($result = $mysqli->query($sql)) {
-            while($row = mysqli_fetch_assoc($result)){
+            if ($row = $result->fetch_assoc()){
                 $pre_content = $row['content'];
             }
+            $result->close();
         }
-        if($content != $pre_content){
-            $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', content='$content' WHERE content_id='$content_id' AND sheet_id='$sheet_id'";
+
+        if($pre_content === null || $content != $pre_content){
+            $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', content='$content'
+                    WHERE content_id='$content_id' AND sheet_id='$sheet_id'";
             if ($mysqli->query($sql)) {
                 echo json_encode(["status" => "success", "message" => "段落の内容が更新されました"]);
             } else {
                 echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
             }
+        } else {
+            echo json_encode(["status" => "success", "message" => "変更なし"]);
         }
     }
 }
@@ -460,7 +488,7 @@ else if($purpose === "delete"){
                 : null;
             // slide_content_rank は slide_id を参照
             $q4 = !empty($inPara)
-                ? "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id IN ($inPara)"
+                ? "UPDATE slide_content_rank SET deleted = 1, updated_at='$timestamp' WHERE slide_id IN ($inPara) AND sheet_id='$sheet_id'"
                 : null;
 
             if (!$mysqli->query($q1)) throw new Exception($mysqli->error);
@@ -554,11 +582,12 @@ else if($purpose === "delete"){
         }
     }
     else if ($delete_thing == "content"){
-        // 段落内容削除処理（slide_content_rankに合わせる）
-        $content_id = $_POST["id"]; //コンテントID
-        $sql = "UPDATE slide_content_rank SET updated_at='$timestamp', deleted=1 WHERE id='$content_id' AND sheet_id='$sheet_id'";
-
-		if ($mysqli->query($sql)) {
+        // id でも content_id でも対応し、sheet_id でスコープ
+        $content_id = $_POST["id"];
+        $sql = "UPDATE slide_content_rank
+                SET updated_at='$timestamp', deleted=1
+                WHERE sheet_id='$sheet_id' AND (id='$content_id' OR content_id='$content_id')";
+        if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "段落の内容が削除されました"]);
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
