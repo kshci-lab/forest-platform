@@ -240,6 +240,8 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
             data: {
                 purpose: "record_meeting_utterance",
                 utters: JSON.stringify(utterances),
+                session_start_time: (typeof window !== 'undefined' && window.MeetingSessionStartTime) ? window.MeetingSessionStartTime : '',
+                session_end_time: (typeof window !== 'undefined' && window.MeetingSessionEndTime) ? window.MeetingSessionEndTime : ''
             }
         }).success((r) => {
             alert("議論データアップロードに成功しました")
@@ -1095,7 +1097,7 @@ class RecordForestMRN{
 let utterance_list;
 const getDiscussionMapDataFromDB = (target_time, end_time, callback) => {
     let data;
-    // データベースから発話ノードリストにあるノードデータ一覧を取得
+        // データベースから発話ノードリストにあるノードデータ一覧を取得
     if(target_time === null){
         data =  {
                 purpose: "select_meeting_utterance",
@@ -1194,7 +1196,7 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
     getDiscussionMapDataFromDB(target_reflection_time, null, (utterance_list_info) => {
         // データの取得と挿入
         utterance_list_info.utterance.map(u => {
-            const utter_dom = makeUtteranceNodeInList(u.network_text_id, u.content, u.sender, u.JPNtime, u.network_on);
+            const utter_dom = makeUtteranceNodeInList(u.utterance_id, u.content, u.sender, u.utter_time, u.network_on);
             target_area.append(utter_dom); // 挿入            
         });
         for(var i=0; i<utterance_list_info.document.length; i++){
@@ -1288,7 +1290,7 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
         // console.log(utterance_list_info);
         // データの取得と挿入
         utterance_list_info.utterance.map(u => {
-            const utter_dom = makeUtteranceNodeInList(u.network_text_id, u.content, u.sender, u.JPNtime, u.network_on);
+            const utter_dom = makeUtteranceNodeInList(u.utterance_id, u.content, u.sender, u.utter_time, u.network_on);
             target_area.append(utter_dom); // 挿入            
         });
         utterance_list_info.dnode.map((n) => {
@@ -1435,6 +1437,17 @@ const getXMLTagInfo = function() {
             var $el = $(utter).find(tag).first();
             return $el.length ? ($el.text() || '').trim() : '';
         };
+
+        // セッション開始・終了時刻（XML直下にあると想定）。見つからなければ空文字。
+        var stEl = $xml.find('start_time').first();
+        var etEl = $xml.find('end_time').first();
+        var sessionStart = stEl.length ? (stEl.text() || '').trim() : '';
+        var sessionEnd = etEl.length ? (etEl.text() || '').trim() : '';
+        // グローバルに保持し、アップロードPOST時に一緒に送る
+        try {
+            window.MeetingSessionStartTime = sessionStart;
+            window.MeetingSessionEndTime = sessionEnd;
+        } catch(e) { /* no-op */ }
 
         var nodes = $xml.find('messagedata');
         var utter_list = [];
@@ -1610,7 +1623,9 @@ const recordMeetingUtteranceNodes = function(utterances) {
     type: "POST",
     data: {
       purpose: "record_meeting_utterance",
-      utters: JSON.stringify(utterances),
+            utters: JSON.stringify(utterances),
+            session_start_time: (typeof window !== 'undefined' && window.MeetingSessionStartTime) ? window.MeetingSessionStartTime : '',
+            session_end_time: (typeof window !== 'undefined' && window.MeetingSessionEndTime) ? window.MeetingSessionEndTime : ''
     }
     }).done(function(r){
         console.log("Request succeeded:", utterances);

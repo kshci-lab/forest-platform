@@ -150,27 +150,76 @@ if($purpose === "record_meeting_utterance") {
     // ここまでで $map_id（network_texts でも使っているマップID）と
     // $jsonDataArray = json_decode($_POST['utters'], true); が用意されている前提
 
-    // discussion_utterances への保存（discussion_id は $map_id と同一）
-    $du_sql = "INSERT INTO discussion_utterances
-               (discussion_id, user_id, content, network_on, utter_time, utter_epoc_time)
-               VALUES (?, ?, ?, ?, ?, ?)";
-    if ($du_stmt = $mysqli->prepare($du_sql)) {
-        foreach ($jsonDataArray as $x) {
-            $content    = isset($x['content']) ? $x['content'] : '';
-            $network_on = 0; // 新規は 0（NULLでも良ければ null を渡す実装に変更可）
-            $utter_time = isset($x['JPNtime']) ? $x['JPNtime'] : (isset($x['time']) ? (string)$x['time'] : '');
-            $epoc       = (isset($x['time']) && is_numeric($x['time'])) ? (float)$x['time'] : 0.0;
+    // 本アップロード（1リクエスト）ごとの discussion_id を採番（初期 22222、以降 +1）。
+    // まず discussion_sessions の最大を参照、なければ discussion_utterances、そのどちらも無ければ 22222。
+    $this_discussion_id = 22222;
+    $max1 = 0; $max2 = 0;
+    if ($resMax1 = $mysqli->query("SELECT MAX(discussion_id) AS max_id FROM discussion_sessions")) {
+        $rowMax1 = $resMax1->fetch_assoc();
+        if ($rowMax1 && isset($rowMax1['max_id']) && $rowMax1['max_id'] !== null) {
+            $max1 = intval($rowMax1['max_id'], 10);
+        }
+    }
+    if ($resMax2 = $mysqli->query("SELECT MAX(discussion_id) AS max_id FROM discussion_utterances")) {
+        $rowMax2 = $resMax2->fetch_assoc();
+        if ($rowMax2 && isset($rowMax2['max_id']) && $rowMax2['max_id'] !== null) {
+            $max2 = intval($rowMax2['max_id'], 10);
+        }
+    }
+    $currentMaxDid = max($max1, $max2);
+    if ($currentMaxDid >= 22222) {
+        $this_discussion_id = $currentMaxDid + 1;
+    }
 
-            // 型: i(discussion_id) i(user_id) s(content) i(network_on) s(utter_time) d(utter_epoc_time)
-            $du_stmt->bind_param('iisisd', $map_id, $user_id, $content, $network_on, $utter_time, $epoc);
-            if (!$du_stmt->execute()) {
-                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " du execute error: " . $du_stmt->error . "\n", FILE_APPEND);
+    // セッション情報（discussion_sessions）を保存（XMLに含まれる start_time / end_time を利用）
+    $session_start = isset($_POST['session_start_time']) ? trim($_POST['session_start_time']) : '';
+    $session_end = isset($_POST['session_end_time']) ? trim($_POST['session_end_time']) : '';
+    // フォールバック: XML側の時間が無い場合は、network_mapsの開始時刻($map_renewal_time_tmp)を使う
+    if ($session_start === '' && $map_renewal_time_tmp !== null) {
+        $session_start = $map_renewal_time_tmp;
+    }
+    if ($session_end === '' && $map_renewal_time_tmp !== null) {
+        $session_end = $map_renewal_time_tmp;
+    }
+    if ($session_start !== '' || $session_end !== '') {
+        $ds_stmt = $mysqli->prepare("INSERT INTO discussion_sessions (discussion_id, start_time, end_time) VALUES (?, ?, ?)");
+        if ($ds_stmt) {
+            $ds_stmt->bind_param('iss', $this_discussion_id, $session_start, $session_end);
+            if (!$ds_stmt->execute()) {
+                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_sessions execute error: " . $ds_stmt->error . "\n", FILE_APPEND);
+            }
+            $ds_stmt->close();
+        } else {
+            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_sessions prepare error: " . $mysqli->error . "\n", FILE_APPEND);
+        }
+    }
+
+    // 参加者情報（discussion_participants）の保存
+    // utters(JSON)の各要素の sender を user_id として解釈し、重複を除いて1カラムにカンマ区切りで保存する
+    $participants_payload = isset($_POST['utters']) ? $_POST['utters'] : '[]';
+    $participantsArray = json_decode($participants_payload, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($participantsArray) && !empty($participantsArray)) {
+        $uniqueUserIds = [];
+        foreach ($participantsArray as $p) {
+            $sid = isset($p['sender']) ? trim($p['sender']) : '';
+            if ($sid === '' || !is_numeric($sid)) { continue; }
+            // 数値文字列としてユニーク化（DBはvarcharを想定）
+            $uniqueUserIds[$sid] = true;
+        }
+        if (!empty($uniqueUserIds)) {
+            $csvUserIds = implode(',', array_keys($uniqueUserIds));
+            $dp_stmt = $mysqli->prepare("INSERT INTO discussion_participants (discussion_id, user_id) VALUES (?, ?)");
+            if ($dp_stmt) {
+                // discussion_id: int, user_id: varchar (csv)
+                $dp_stmt->bind_param('is', $this_discussion_id, $csvUserIds);
+                if (!$dp_stmt->execute()) {
+                    @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_participants execute error: " . $dp_stmt->error . "\n", FILE_APPEND);
+                }
+                $dp_stmt->close();
+            } else {
+                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_participants prepare error: " . $mysqli->error . "\n", FILE_APPEND);
             }
         }
-        $du_stmt->close();
-        echo "discussion_utterancesテーブルにデータを保存しました\n";
-    } else {
-        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " du prepare error: " . $mysqli->error . "\n", FILE_APPEND);
     }
 
     /*
@@ -184,14 +233,15 @@ if($purpose === "record_meeting_utterance") {
 
     if (!empty($jsonDataArray)) {
 
-        $nt_record_query = "INSERT INTO network_texts (network_text_id, network_map_id, sender, content, network_on, time, JPNtime, ST_Time) VALUES ";
+    /* network_texts への一括INSERTは廃止（discussion_utterances に移行）
+    $nt_record_query = "INSERT INTO network_texts (network_text_id, network_map_id, sender, content, network_on, time, JPNtime, ST_Time) VALUES ";
+    */
         // discussion_utterances への保存（プリペアドステートメント）
-        $du_stmt = $mysqli->prepare("INSERT INTO discussion_utterances (discussion_id, user_id, content, network_on, utter_time, utter_epoc_time) VALUES (?, ?, ?, ?, ?, ?)");
+    $du_stmt = $mysqli->prepare("INSERT INTO discussion_utterances (discussion_id, user_id, content, network_on, utter_time, utter_epoc_time) VALUES (?, ?, ?, ?, ?, ?)");
         if(!$du_stmt){
             @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances prepare error: " . $mysqli->error . "\n", FILE_APPEND);
         }
-        $du_discussion_id = is_numeric($map_id) ? intval($map_id, 10) : 0;
-        $du_user_id = is_numeric($user_id) ? intval($user_id, 10) : 0;
+        $du_discussion_id = $this_discussion_id;
 
         foreach ($jsonDataArray as $jsonData) {
             $id = $mysqli->real_escape_string($jsonData['message_id'] ?? uniqid());
@@ -200,7 +250,7 @@ if($purpose === "record_meeting_utterance") {
             $time = $mysqli->real_escape_string($jsonData['time']);
             $JPNtime = $mysqli->real_escape_string($jsonData['JPNtime'] ?? $jsonData['time']);
             
-            $nt_record_query .= "('$id', '$network_map_id', '$sender', '$content', 0, '$time', '$JPNtime', $map_renewal_time), ";
+            /* $nt_record_query .= "('$id', '$network_map_id', '$sender', '$content', 0, '$time', '$JPNtime', $map_renewal_time), "; */
 
             // discussion_utterances へも登録
             if($du_stmt){
@@ -210,6 +260,11 @@ if($purpose === "record_meeting_utterance") {
                 $du_utter_epoch = 0.0;
                 if(isset($jsonData['time'])){
                     $du_utter_epoch = is_numeric($jsonData['time']) ? (float)$jsonData['time'] : 0.0;
+                }
+                // senderが数値IDならそれを使う。そうでない場合は0（後でJOINできないが最低限保存）
+                $du_user_id = 0;
+                if (isset($jsonData['sender']) && is_numeric($jsonData['sender'])) {
+                    $du_user_id = intval($jsonData['sender'], 10);
                 }
                 // 型: i i s i s d
                 $du_stmt->bind_param("iisisd", $du_discussion_id, $du_user_id, $du_content, $du_network_on, $du_utter_time, $du_utter_epoch);
@@ -247,15 +302,16 @@ if($purpose === "record_meeting_utterance") {
             }
             
         }
-        $nt_record_query = rtrim($nt_record_query,", ");
-        echo $nt_record_query;
-        $mysqli->query($nt_record_query);
-        if($mysqli->error){
-            echo "Error network_text insert: ".$mysqli->error;
-        }
+    /* $nt_record_query = rtrim($nt_record_query,", "); */
+        // network_texts への挿入は任意。後からコメントアウトしても他処理は動くように、この先の依存を作らない。
+        // echo $nt_record_query;
+        // $mysqli->query($nt_record_query);
+        // if($mysqli->error){
+        //     echo "Error network_text insert: ".$mysqli->error;
+        // }
         if(isset($du_stmt) && $du_stmt){
             $du_stmt->close();
-            echo "\nDiscussion: discussion_utterancesテーブルにデータを保存しました";
+            // echo "\nDiscussion: discussion_utterancesテーブルにデータを保存しました";
         }
 
     } else {
@@ -457,9 +513,34 @@ if($purpose === "select_meeting_utterance") {
     /*
      * 議論における発話パーツ一覧
      */
-    $result_utterance = $mysqli->query("SELECT * FROM network_texts
-              WHERE  network_map_id IN (SELECT network_map_id FROm network_maps WHERE map_id = '$map_id' AND situation = 'start') AND ST_Time = '$target_map_created_start_times'
-              ORDER BY time ASC");
+        // 発話一覧（sender は users.name を優先表示。数値IDが保存されている場合は users と結合して名前に置換し、
+        // すでに名前が入っている場合はそのまま表示する）
+        // 対応する discussion_id を推定: セッション開始時刻と一致するものを優先、無ければ最新
+        $target_discussion_id = null;
+        $resDid = $mysqli->query("SELECT discussion_id FROM discussion_sessions WHERE start_time = '$target_map_created_start_times' ORDER BY discussion_id DESC LIMIT 1");
+        if ($resDid && $resDid->num_rows > 0) {
+            $target_discussion_id = intval($resDid->fetch_assoc()['discussion_id'], 10);
+        } else {
+            $resLatestDid = $mysqli->query("SELECT MAX(discussion_id) AS max_id FROM discussion_utterances");
+            if ($resLatestDid) {
+                $rowL = $resLatestDid->fetch_assoc();
+                if ($rowL && isset($rowL['max_id']) && $rowL['max_id'] !== null) {
+                    $target_discussion_id = intval($rowL['max_id'], 10);
+                }
+            }
+        }
+        $result_utterance = $mysqli->query("SELECT 
+                                    du.utterance_id,
+                                    du.discussion_id,
+                                    COALESCE(u.name, du.user_id) AS sender,
+                                    du.content,
+                                    du.network_on,
+                                    du.utter_epoc_time AS time,
+                                    du.utter_time
+                            FROM discussion_utterances du
+                            LEFT JOIN users u ON u.user_id = du.user_id
+                            " . ($target_discussion_id !== null ? ("WHERE du.discussion_id = " . $target_discussion_id) : "") . "
+                            ORDER BY du.utter_epoc_time ASC, du.utterance_id ASC");
     $utterance = [];
     while ($row = $result_utterance->fetch_assoc()) {
         array_push($utterance, $row);

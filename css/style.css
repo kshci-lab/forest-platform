@@ -1960,7 +1960,7 @@ select[name="user_list"] {
 /* アクティブなタブのスタイル */
 .button5.active {
     background-color: #99cccc; /* アクティブ時の背景色を少し薄く */
-	transform: scale(1.15);     /* 1.15倍に拡大 */ 
+	/* transform: scale(1.15);     1.15倍に拡大  */
 	transform-origin: center bottom;
     transition: transform 0.15s ease;
 }
