@@ -1239,6 +1239,8 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             document.getElementById("rclick").innerHTML="";
             const clicked_node = e.target;
+            // 直近で選択した発話IDを保持（DB登録用）
+            try { window.lastRemarkedUtteranceId = clicked_node.getAttribute('id'); } catch(err) {}
             // 外部化フォームへの反映（.externalization-main or #externalization-main）
             var $extMain = $('#externalization-main');
             if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
@@ -1376,6 +1378,8 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             document.getElementById("rclick").innerHTML="";
             const clicked_node = e.target;
+            // 直近で選択した発話IDを保持（DB登録用）
+            try { window.lastRemarkedUtteranceId = clicked_node.getAttribute('id'); } catch(err) {}
             // 外部化フォームへの反映（.externalization-main or #externalization-main）
             var $extMain = $('#externalization-main');
             if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
@@ -1484,6 +1488,54 @@ const setUploadedXMLData = function(file_input_btn_id, xml_area_id) {
         reader.readAsText(files[0], 'UTF-8');
     });
 }
+
+// 外部化フォームの登録ボタン押下時の処理
+// index.php の onclick="handleExternalizationRegister();" から呼ばれる
+window.handleExternalizationRegister = function() {
+    try {
+        var remarkedId = (typeof window.lastRemarkedUtteranceId !== 'undefined' && window.lastRemarkedUtteranceId) ? window.lastRemarkedUtteranceId : '';
+        var $extMain = $('#externalization-main');
+        if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
+        var selectedContents = $extMain.length ? ($extMain.val() || '') : '';
+        var stage1 = $('.qa-answer1').first().val() || '';
+        var stage2 = $('.qa-answer2').first().val() || '';
+        var stage3 = $('.qa-answer3').first().val() || '';
+
+        // 簡易バリデーション
+        if(!selectedContents){
+            if(window.alert){ alert('発言内容（テキストエリア）が空です。'); }
+            return;
+        }
+
+        $.ajax({
+            url: 'php/discussion_map_manager.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                purpose: 'save_externalized_content',
+                remarked_utterance_id: remarkedId,
+                selected_contents: selectedContents,
+                stage1: stage1,
+                stage2: stage2,
+                stage3: stage3
+            }
+        }).done(function(res){
+            if(res && res.status === 'ok'){
+                try { console.log('externalized_contents: 保存に成功しました'); } catch(err){}
+                if(window.alert){ alert('登録しました。'); }
+            } else {
+                try { console.error('externalized_contents: 保存に失敗しました', res); } catch(err){}
+                if(window.alert){ alert('登録に失敗しました。'); }
+            }
+        }).fail(function(xhr, status, err){
+            try { console.error('externalized_contents 保存エラー', status, err, xhr && xhr.responseText); } catch(e){}
+            if(window.alert){ alert('通信エラーにより登録に失敗しました。'); }
+        });
+    } catch(ex) {
+        try { console.error('handleExternalizationRegister 実行エラー', ex); } catch(e){}
+        if(window.alert){ alert('登録処理でエラーが発生しました。'); }
+    }
+};
 
 // 発言をアップロードする関数
 const uploadMeetingUtteranceXML = function() {

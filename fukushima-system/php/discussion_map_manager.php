@@ -5,13 +5,98 @@ session_start();
 require("connect_db.php");
 
 // POSTデータの受け取り
-$user_id = $_SESSION['USERID'];      //ユーザID
-$map_id = $_SESSION['MAPID'];    //シートID
+$user_id = isset($_SESSION['USERID']) ? $_SESSION['USERID'] : null;      //ユーザID
+$map_id = isset($_SESSION['MAPID']) ? $_SESSION['MAPID'] : null;    //シートID
 
-$purpose = $_POST["purpose"]; // どんなデータを取得したり保存したりするのか（内容．例：発話ノードのXMLからの保存orマップノードの取得）
+$purpose = isset($_POST["purpose"]) ? $_POST["purpose"] : null; // どんなデータを取得したり保存したりするのか（内容．例：発話ノードのXMLからの保存orマップノードの取得）
 
 $target_map_created_start_times = null;  // リフレクションの開始時間
 $first_load_flag = isset($_POST["first_load_flag"]) ? $_POST["first_load_flag"] : null;// どんなデータがほしいというリクエストなのかを判定
+
+// 外部化フォームの保存処理（プリペアドステートメント使用）: 最優先で実行して他のSELECTを回避
+if($purpose === "save_externalized_content") {
+    header('Content-Type: application/json; charset=utf-8');
+    // 必要な値を受け取る
+    $remarked_utterance_id = isset($_POST['remarked_utterance_id']) ? $_POST['remarked_utterance_id'] : '';
+    $selected_contents = isset($_POST['selected_contents']) ? $_POST['selected_contents'] : '';
+    $stage1 = isset($_POST['stage1']) ? $_POST['stage1'] : '';
+    $stage2 = isset($_POST['stage2']) ? $_POST['stage2'] : '';
+    $stage3 = isset($_POST['stage3']) ? $_POST['stage3'] : '';
+
+    // バリデーション
+    if ($selected_contents === '') {
+        echo json_encode(["status" => "error", "error" => "selected_contents が空です"]);
+        return;
+    }
+
+    // まずは外部キー（PK）を指定せずにINSERT（AUTO_INCREMENTを期待）
+    $deleted = 0;
+    $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
+    if(!$stmt){
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (no pk): " . $mysqli->error . "\n", FILE_APPEND);
+        echo json_encode(["status" => "error", "error" => $mysqli->error]);
+        return;
+    }
+
+    // remarked_utterance_id は数値に寄せる（空ならNULL）
+    $remark_numeric = (is_numeric($remarked_utterance_id) && $remarked_utterance_id !== '') ? intval($remarked_utterance_id, 10) : null;
+    // bind_param は NULL を許容するが、型は i を使う
+    $stmt->bind_param("issssi", $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+
+    try {
+        $ok = $stmt->execute();
+        if ($ok) {
+            $newId = $stmt->insert_id;
+            $stmt->close();
+            echo json_encode(["status" => "ok", "id" => $newId]);
+            return;
+        }
+    } catch (mysqli_sql_exception $e) {
+        // ここで AUTO_INCREMENT が無い等のエラーを検出
+        $msg = $e->getMessage();
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content execute exception (no pk insert): " . $msg . "\n", FILE_APPEND);
+        // フォールバック条件: 外部キー(主キー)にデフォルトが無い旨のエラー
+        $needFallback = (strpos($msg, "externalized_contents_id") !== false && strpos($msg, "doesn't have a default value") !== false);
+        if (!$needFallback) {
+            $stmt->close();
+            echo json_encode(["status" => "error", "error" => $msg]);
+            return;
+        }
+    }
+
+    // フォールバック: システムでIDを採番してINSERT
+    $stmt->close();
+    // externalized_contents_id: 初期11111から+1
+    $res = $mysqli->query("SELECT MAX(externalized_contents_id) AS max_id FROM externalized_contents");
+    $row = $res ? $res->fetch_assoc() : null;
+    $currentMax = ($row && isset($row['max_id']) && $row['max_id'] !== null) ? intval($row['max_id'], 10) : 11110;
+    $nextExtId = $currentMax + 1; // 11111 スタート
+
+    // remarked_utterance_id: 初期00001(=1)から+1（POSTが不正・空のときのみ採番）
+    if (!is_int($remark_numeric)) {
+        $res2 = $mysqli->query("SELECT MAX(remarked_utterance_id) AS max_rid FROM externalized_contents");
+        $row2 = $res2 ? $res2->fetch_assoc() : null;
+        $currentRemarkMax = ($row2 && isset($row2['max_rid']) && $row2['max_rid'] !== null) ? intval($row2['max_rid'], 10) : 0;
+        $remark_numeric = $currentRemarkMax + 1; // 1スタート（00001相当）
+    }
+
+    $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    if(!$stmt2){
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (pk fallback): " . $mysqli->error . "\n", FILE_APPEND);
+        echo json_encode(["status" => "error", "error" => $mysqli->error]);
+        return;
+    }
+    $stmt2->bind_param("iissssi", $nextExtId, $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+    if(!$stmt2->execute()){
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content execute error (pk fallback): " . $stmt2->error . "\n", FILE_APPEND);
+        echo json_encode(["status" => "error", "error" => $stmt2->error]);
+        $stmt2->close();
+        return;
+    }
+    $stmt2->close();
+    echo json_encode(["status" => "ok", "id" => $nextExtId]);
+    return;
+}
 
 $return_data = []; // DBアクセスの結果として返すキー・バリューのペア
 
@@ -35,6 +120,8 @@ if(!empty($first_load_flag)) {
 }
 
 $return_data = array_merge($return_data, ["map_create_start_and_end" => $map_create_start_and_end]);
+
+// （以降、他purposeの処理）
 
 
 if($purpose === "record_meeting_utterance") {
@@ -60,7 +147,33 @@ if($purpose === "record_meeting_utterance") {
                                               ('$network_map_id', '$map_id', $map_renewal_time, $map_renewal_time, 'start')";
     $res = $mysqli->query($st_record_query);
 
-        /*
+    // ここまでで $map_id（network_texts でも使っているマップID）と
+    // $jsonDataArray = json_decode($_POST['utters'], true); が用意されている前提
+
+    // discussion_utterances への保存（discussion_id は $map_id と同一）
+    $du_sql = "INSERT INTO discussion_utterances
+               (discussion_id, user_id, content, network_on, utter_time, utter_epoc_time)
+               VALUES (?, ?, ?, ?, ?, ?)";
+    if ($du_stmt = $mysqli->prepare($du_sql)) {
+        foreach ($jsonDataArray as $x) {
+            $content    = isset($x['content']) ? $x['content'] : '';
+            $network_on = 0; // 新規は 0（NULLでも良ければ null を渡す実装に変更可）
+            $utter_time = isset($x['JPNtime']) ? $x['JPNtime'] : (isset($x['time']) ? (string)$x['time'] : '');
+            $epoc       = (isset($x['time']) && is_numeric($x['time'])) ? (float)$x['time'] : 0.0;
+
+            // 型: i(discussion_id) i(user_id) s(content) i(network_on) s(utter_time) d(utter_epoc_time)
+            $du_stmt->bind_param('iisisd', $map_id, $user_id, $content, $network_on, $utter_time, $epoc);
+            if (!$du_stmt->execute()) {
+                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " du execute error: " . $du_stmt->error . "\n", FILE_APPEND);
+            }
+        }
+        $du_stmt->close();
+        echo "discussion_utterancesテーブルにデータを保存しました\n";
+    } else {
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " du prepare error: " . $mysqli->error . "\n", FILE_APPEND);
+    }
+
+    /*
     * 発話ノードの記録（network_textsへのデータ挿入）
     */
     $jsonDataArray = json_decode($_POST['utters'], true);
@@ -70,8 +183,16 @@ if($purpose === "record_meeting_utterance") {
     }
 
     if (!empty($jsonDataArray)) {
- 
+
         $nt_record_query = "INSERT INTO network_texts (network_text_id, network_map_id, sender, content, network_on, time, JPNtime, ST_Time) VALUES ";
+        // discussion_utterances への保存（プリペアドステートメント）
+        $du_stmt = $mysqli->prepare("INSERT INTO discussion_utterances (discussion_id, user_id, content, network_on, utter_time, utter_epoc_time) VALUES (?, ?, ?, ?, ?, ?)");
+        if(!$du_stmt){
+            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances prepare error: " . $mysqli->error . "\n", FILE_APPEND);
+        }
+        $du_discussion_id = is_numeric($map_id) ? intval($map_id, 10) : 0;
+        $du_user_id = is_numeric($user_id) ? intval($user_id, 10) : 0;
+
         foreach ($jsonDataArray as $jsonData) {
             $id = $mysqli->real_escape_string($jsonData['message_id'] ?? uniqid());
             $content = $mysqli->real_escape_string($jsonData['content']);
@@ -80,6 +201,50 @@ if($purpose === "record_meeting_utterance") {
             $JPNtime = $mysqli->real_escape_string($jsonData['JPNtime'] ?? $jsonData['time']);
             
             $nt_record_query .= "('$id', '$network_map_id', '$sender', '$content', 0, '$time', '$JPNtime', $map_renewal_time), ";
+
+            // discussion_utterances へも登録
+            if($du_stmt){
+                $du_content = isset($jsonData['content']) ? $jsonData['content'] : '';
+                $du_network_on = 0; // 新規は0
+                $du_utter_time = isset($jsonData['JPNtime']) ? $jsonData['JPNtime'] : (isset($jsonData['time']) ? $jsonData['time'] : '');
+                $du_utter_epoch = 0.0;
+                if(isset($jsonData['time'])){
+                    $du_utter_epoch = is_numeric($jsonData['time']) ? (float)$jsonData['time'] : 0.0;
+                }
+                // 型: i i s i s d
+                $du_stmt->bind_param("iisisd", $du_discussion_id, $du_user_id, $du_content, $du_network_on, $du_utter_time, $du_utter_epoch);
+                try {
+                    $ok_du = $du_stmt->execute();
+                    if(!$ok_du){
+                        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute error: " . $du_stmt->error . "\n", FILE_APPEND);
+                    }
+                } catch (mysqli_sql_exception $e_du) {
+                    $msg_du = $e_du->getMessage();
+                    @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute exception: " . $msg_du . "\n", FILE_APPEND);
+                    $needsPkFallback = (strpos($msg_du, "utterance_id") !== false && strpos($msg_du, "doesn't have a default value") !== false);
+                    if ($needsPkFallback) {
+                        // フォールバック: PK を自前採番
+                        $res3 = $mysqli->query("SELECT MAX(utterance_id) AS max_uid FROM discussion_utterances");
+                        $row3 = $res3 ? $res3->fetch_assoc() : null;
+                        $currentMaxUid = ($row3 && isset($row3['max_uid']) && $row3['max_uid'] !== null) ? intval($row3['max_uid'], 10) : 0;
+                        $nextUid = $currentMaxUid + 1; // 1スタート
+
+                        $du_stmt2 = $mysqli->prepare("INSERT INTO discussion_utterances (utterance_id, discussion_id, user_id, content, network_on, utter_time, utter_epoc_time) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        if($du_stmt2){
+                            // 型: i i i s i s d
+                            $du_stmt2->bind_param("iiisisd", $nextUid, $du_discussion_id, $du_user_id, $du_content, $du_network_on, $du_utter_time, $du_utter_epoch);
+                            $ok_du2 = $du_stmt2->execute();
+                            if(!$ok_du2){
+                                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute error (pk fallback): " . $du_stmt2->error . "\n", FILE_APPEND);
+                            }
+                            $du_stmt2->close();
+                        } else {
+                            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances prepare error (pk fallback): " . $mysqli->error . "\n", FILE_APPEND);
+                        }
+                    }
+                    // その他の例外はログのみ（処理は継続）
+                }
+            }
             
         }
         $nt_record_query = rtrim($nt_record_query,", ");
@@ -87,6 +252,10 @@ if($purpose === "record_meeting_utterance") {
         $mysqli->query($nt_record_query);
         if($mysqli->error){
             echo "Error network_text insert: ".$mysqli->error;
+        }
+        if(isset($du_stmt) && $du_stmt){
+            $du_stmt->close();
+            echo "\nDiscussion: discussion_utterancesテーブルにデータを保存しました";
         }
 
     } else {

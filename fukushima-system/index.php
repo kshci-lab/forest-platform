@@ -832,15 +832,15 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             <div class="qa-pairs">
                                                 <div class="qa">
                                                     <div class="qa-question">なぜこの発言が印象に残りましたか？</div>
-                                                    <textarea class="qa-answer" placeholder="ここに記入"></textarea>
+                                                    <textarea class="qa-answer1" placeholder="ここに記入"></textarea>
                                                 </div>
                                                 <div class="qa">
                                                     <div class="qa-question">その発言には、どんな前提や背景がありますか？</div>
-                                                    <textarea class="qa-answer" placeholder="ここに記入"></textarea>
+                                                    <textarea class="qa-answer2" placeholder="ここに記入"></textarea>
                                                 </div>
                                                 <div class="qa">
                                                     <div class="qa-question">この発言には、他の場面でも使える考え方の指針はありますか？</div>
-                                                    <textarea class="qa-answer" placeholder="ここに記入"></textarea>
+                                                    <textarea class="qa-answer3" placeholder="ここに記入"></textarea>
                                                 </div>
                                             </div>
 
