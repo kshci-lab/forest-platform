@@ -14,10 +14,11 @@ class LogicNetwork {
       physics: false, // ノードが物理演算で動かないようにする
       interaction: {
         multiselect: false,// 複数選択を無効化
-        // dragNodes: false, // ノードのドラッグを無効化
+        dragNodes: false, // ノードのドラッグを無効化
       },
       layout: {
         hierarchical: {
+          enabled: true,            // 明示的に有効化
           direction: "UD", // 上下方向
           levelSeparation: 150, // レベル間の距離
           nodeSpacing: 100, // ノード間の距離
@@ -31,6 +32,11 @@ class LogicNetwork {
         width: 1
       },
     };
+    // ノード配置用の簡易グリッド（三角作成時の初期位置）
+    this.triIndex = 0;
+    this.triCols = 4;
+    this.triSpacingX = this.TRIANGLE_SIZE * 2;
+    this.triSpacingY = this.TRIANGLE_SIZE * 2;
     this.network = null;
     this.edgeEditMode = false; //リンクの編集モード
     this.dragStartNodeId = null;  //ドラッグスタートしたノードのID
@@ -182,6 +188,7 @@ class LogicNetwork {
 
   //ノードのラベル編集(完了)
   editNode(node_id, node_content) {
+    // 入力時にのみ10文字ごとに改行を挿入（これが唯一の自動改行ポイント）
     //ノードのラベルの編集
     const node = this.nodes.get(node_id);
     if (node) { // IDに相当するノードがある場合の中身を編集
@@ -192,7 +199,7 @@ class LogicNetwork {
       for (let i = 0; i < node_content.length; i += 10) {
         result_label += node_content.substr(i, 10) + '\n';
       }
-      result_label = result_label.trim(); // 末尾の不要な改行を除去
+      result_label = result_label.trim();
       
       // ノードの情報を更新
       const updatedNode = {
@@ -331,8 +338,14 @@ class LogicNetwork {
     
     // 右に並べるレイアウト（横一列）
     // const centerX = independentGroups * gridSpacing;
-    const centerX = 0
-    const centerY = 0; // Y座標は固定
+    // const centerX = 0
+    // const centerY = 0;
+    // グリッドで重なりを避ける
+    const col = this.triIndex % this.triCols;
+    const row = Math.floor(this.triIndex / this.triCols);
+    const centerX = col * this.triSpacingX;
+    const centerY = row * this.triSpacingY;
+    this.triIndex += 1;
     const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
 
 
@@ -701,9 +714,15 @@ class LogicNetwork {
         let formattedLabel = "";
         if (!isDeleted) {
           const originalLabel = node.label || "Node";
-          formattedLabel = this.formatLabelWithLineBreaks(originalLabel);
+          // DB側に改行(\n)が既に含まれている場合はそのまま使用
+          // 含まれていない場合のみ入力時と同様の自動改行を適用
+          if (originalLabel.includes('\n')) {
+            formattedLabel = originalLabel;
+          } else {
+            formattedLabel = this.formatLabelWithLineBreaks(originalLabel);
+          }
         }
-        
+
         const restoredNode = {
           id: node.node_id,
           label: isDeleted ? "" : formattedLabel,
