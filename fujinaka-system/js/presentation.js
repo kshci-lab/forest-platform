@@ -2335,11 +2335,11 @@ async function Rebuild_content(){
         }else{
           console.log(arr);
           var parse = JSON.parse(arr);
-          console.log(parse);
-          console.log(parse.length);
+          // console.log(parse);
+          // console.log(parse.length);
           for(var i=0; i<parse.length; i++){
             for(var j=0; j<parse.length; j++){
-              console.log(String(i), parse[j].rank);
+              // console.log(String(i), parse[j].rank);
               if(String(i) == parse[j].rank){
                 const newcontent = new Content({
               		content_id: parse[j].content_id,

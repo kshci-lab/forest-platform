@@ -38,15 +38,13 @@ if ($purpose === 'record') {
         $label = $_POST["label"];
         $f_node_id = $_POST["f_node_id"];
         $p_node_id = $_POST["p_node_id"];
-        $x = $_POST["x"];
-        $y = $_POST["y"];
         $edited = $_POST["edited"];
         $level = $_POST["level"]; 
 
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, p_node_id, x, y, edited, level, created_at, updated_at) 
-                VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', '$x', '$y', '$edited', '$level', '$timestamp', '$timestamp')";
+        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, p_node_id, edited, level, created_at, updated_at) 
+                VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', '$edited', '$level', '$timestamp', '$timestamp')";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $node_id]);
@@ -218,8 +216,8 @@ else if ($purpose === 'load') {
     $load_thing = $_POST['load_thing'];
     
     if ($load_thing === 'all') {
-        // ノードデータを取得（p_node_idも含める）
-        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, p_node_id, x, y, edited, level FROM logic_node ORDER BY created_at";
+        // ノードデータを取得（x,yは保持しない）
+        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, p_node_id, edited, level FROM logic_node ORDER BY created_at";
         $nodesResult = $mysqli->query($nodesSql);
         $nodes = [];
         if ($nodesResult) {
@@ -227,25 +225,33 @@ else if ($purpose === 'load') {
                 $nodes[] = $row;
             }
         }
-        
-        // エッジデータを取得（logic_triangleテーブルから三角形の辺を生成）
+
+        // 三角データを取得しつつ、従来通りedgesも生成
         $trianglesSql = "SELECT claim_id, reason_id, fact_id FROM logic_triangle";
         $trianglesResult = $mysqli->query($trianglesSql);
         $edges = [];
+        $triangles = [];
         if ($trianglesResult) {
             while ($row = $trianglesResult->fetch_assoc()) {
-                // 三角形の3つの辺を追加
-                $edges[] = ['edge_start' => $row['claim_id'], 'edge_end' => $row['reason_id']];
+                // triangles配列（JSのtriangleData用）
+                $triangles[] = [
+                    'claim_id'  => $row['claim_id'],
+                    'reason_id' => $row['reason_id'],
+                    'fact_id'   => $row['fact_id'],
+                ];
+                // 従来のedgesも維持（後方互換）
+                $edges[] = ['edge_start' => $row['claim_id'],  'edge_end' => $row['reason_id']];
                 $edges[] = ['edge_start' => $row['reason_id'], 'edge_end' => $row['fact_id']];
-                $edges[] = ['edge_start' => $row['fact_id'], 'edge_end' => $row['claim_id']];
+                $edges[] = ['edge_start' => $row['fact_id'],   'edge_end' => $row['claim_id']];
             }
         }
         
         echo json_encode([
-            "status" => "success", 
-            "message" => "データロード完了",
-            "nodes" => $nodes,
-            "edges" => $edges
+            "status"    => "success",
+            "message"   => "データロード完了",
+            "nodes"     => $nodes,
+            "edges"     => $edges,
+            "triangles" => $triangles
         ]);
     }
 }

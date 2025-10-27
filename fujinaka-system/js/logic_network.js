@@ -3,6 +3,7 @@ let defaultRecordLogicNetwork;
 
 class LogicNetwork {
   constructor(container, load) {
+    console.log("[LogicNetwork] constructor start");
     defaultRecordLogicNetwork = new RecordLogicNetwork();
     this.nodes = new vis.DataSet();
     this.edges = new vis.DataSet();
@@ -46,11 +47,15 @@ class LogicNetwork {
     this.dragEndNodeId = null; //ドラッグエンドしたノードID
 
     this.ownNetwork = this.generateLogicNetworkCanvas(container, this.nodes, this.edges);
+    if (!this.ownNetwork) {
+      console.error("[LogicNetwork] vis.Network not created. Check container:", container);
+    }
     if (load == "load") {
       this.ownNetwork.on('dragStart', this.dragstart.bind(this));
       this.ownNetwork.on('dragEnd', this.dragend.bind(this));
       this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
     }
+    console.log("[LogicNetwork] constructor end");
   }
 
   setNodes(newNodes) {
@@ -545,7 +550,7 @@ class LogicNetwork {
     const styledNode = {
       ...updatedNode,
       f_node_id: f_node.id || "default", // Forestから持ってきたことを示す
-      edited: 1, // Forestから持ってきたばかりなので1
+      edited: 1 // Forestから持ってきたばかりなので1
     };
     // スタイルを適用
     this.applyNodeStyle(styledNode);
@@ -633,6 +638,7 @@ class LogicNetwork {
 
   // データベースからロジックネットワークをロードする
   async loadLogicNetworkFromDatabase() {
+    console.log("[LogicNetwork] loadLogicNetworkFromDatabase: start");
     try {
       const response = await $.ajax({
         url: "php/logic_maneger.php",
@@ -643,23 +649,45 @@ class LogicNetwork {
         },
         dataType: "json"
       });
+      console.log("[LogicNetwork] loadLogicNetworkFromDatabase: response", response);
 
       if (response.status === "success") {
-        this.restoreFromData(response.nodes, response.edges);
-        console.log("ロジックネットワークを復元しました");
+        // triangles があればそれを利用して再構築（edgesが無くてもOK）
+        this.restoreFromData(response.nodes, response.edges, response.triangles);
+        console.log("[LogicNetwork] loadLogicNetworkFromDatabase: restored");
       } else {
-        console.error("ロードエラー:", response.message);
+        console.error("[LogicNetwork] load error:", response.message);
       }
     } catch (error) {
-      console.error("通信エラー:", error);
+      // jQuery.ajax の errorオブジェクトから詳細を出す
+      const xhr = error && error.responseText ? error.responseText : error;
+      console.error("[LogicNetwork] ajax error:", xhr);
     }
+    console.log("[LogicNetwork] loadLogicNetworkFromDatabase: end");
+  }
+
+  // 初期化時にDBから復元するためのエイリアスメソッド（ロード処理を委譲）
+  async initializeFromDatabase() {
+    console.log("[LogicNetwork] initializeFromDatabase: start");
+    const res = await this.loadLogicNetworkFromDatabase();
+    console.log("[LogicNetwork] initializeFromDatabase: end");
+    return res;
+  }
+
+  // ネットワークの再読込API（ボタン用）
+  async refreshNetwork() {
+    console.log("[LogicNetwork] refreshNetwork: start");
+    await this.loadLogicNetworkFromDatabase();
+    console.log("[LogicNetwork] refreshNetwork: end");
   }
 
   // データからノードとエッジを復元（x/yは使わず、levelのみ反映）
-  restoreFromData(nodeData, edgeData) {
+  restoreFromData(nodeData, edgeData, triangleData) {
+    console.log("[LogicNetwork] restoreFromData: nodes=", (nodeData||[]).length, "triangles=", (triangleData||[]).length, "edges=", (edgeData||[]).length);
     this.nodes.clear();
     this.edges.clear();
 
+    // ノード追加（既存処理）
     if (nodeData && nodeData.length > 0) {
       nodeData.sort((a, b) => a.node_id.localeCompare(b.node_id));
       nodeData.forEach(node => {
@@ -694,7 +722,10 @@ class LogicNetwork {
       });
     }
 
-    if (edgeData && edgeData.length > 0) {
+    // エッジは triangleData 優先で再構築。無ければ従来の edgeData を使用
+    if (triangleData && triangleData.length > 0) {
+      this.reconstructEdgesFromTriangles(nodeData || [], triangleData);
+    } else if (edgeData && edgeData.length > 0) {
       edgeData.forEach(edge => {
         this.edges.add({
           from: edge.edge_start,
@@ -709,377 +740,66 @@ class LogicNetwork {
       this.ownNetwork.stabilize();
       this.ownNetwork.fit({ animation: { duration: 200, easingFunction: 'easeInOutQuad' } });
     }
+    console.log("[LogicNetwork] restoreFromData: applied");
   }
 
-  // ネットワークを更新・再描画する
-  async refreshNetwork() {
-    await this.loadLogicNetworkFromDatabase();
-  }
+  // triangles（logic_triangle）から階層レベルを使って三角ロジックを再構築
+  reconstructEdgesFromTriangles(nodeData, triangles) {
+    // node_id -> level のマップと存在確認のためのセット
+    const levelMap = new Map();
+    const nodeSet = new Set();
+    (nodeData || []).forEach(n => {
+      nodeSet.add(n.node_id);
+      levelMap.set(n.node_id, parseInt(n.level) || 0);
+    });
 
-  // 初期化時にデータベースから復元する
-  async initializeFromDatabase() {
-    await this.loadLogicNetworkFromDatabase();
-  }
+    // claim_id -> [{reason_id, fact_id}]（1つのclaimに複数三角が紐づく場合にも対応）
+    const claimIndex = new Map();
+    (triangles || []).forEach(t => {
+      if (!claimIndex.has(t.claim_id)) claimIndex.set(t.claim_id, []);
+      claimIndex.get(t.claim_id).push({ reason_id: t.reason_id, fact_id: t.fact_id });
+    });
 
-  // 論理の説明を追加する関数
-  completeLogic() {
-    console.log("completeLogic: 開始");
-    
-    // 選択されているノードを取得
-    const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
-    
-    if (!selectedNodeId) {
-      alert("ノードを選択してください");
-      return;
-    }
+    // レベル0の claim を起点に DFS で三角を辿る
+    const roots = [...nodeSet].filter(id => (levelMap.get(id) || 0) === 0);
+    const visitedEdges = new Set(); // 重複エッジ防止
 
-    // 選択されたノードの情報を取得
-    const selectedNode = this.nodes.get(selectedNodeId);
-    
-    if (!selectedNode) {
-      console.error("選択されたノードが見つかりません");
-      return;
-    }
-
-    // ノードのラベルが空の場合は説明を追加できない
-    if (!selectedNode.label || selectedNode.label.trim() === "") {
-      alert("まず、ノードに内容を入力してください");
-      return;
-    }
-
-    // 既存の説明を取得（ある場合）
-    const existingClaimReason = selectedNode.ClaimReason || "";
-
-    // モーダルボックスを表示
-    this.showLogicClaimReasonModal(selectedNodeId, selectedNode.label, existingClaimReason);
-  }
-
-  // 論理説明用のモーダルボックスを表示する関数
-  showLogicClaimReasonModal(nodeId, nodeLabel, existingClaimReason) {
-    console.log("showLogicClaimReasonModal: nodeId =", nodeId);
-    
-    // モーダルの表示
-    const modal = document.getElementById('logicClaimReasonModal');
-    const nodeTitle = document.getElementById('claimReasonNodeTitle');
-    const textarea = document.getElementById('claimReasonTextarea');
-    
-    if (modal && nodeTitle && textarea) {
-      // ノードのラベルを表示（改行文字を除去）
-      const cleanLabel = nodeLabel.replace(/\n/g, ' ').trim();
-      nodeTitle.textContent = `「${cleanLabel}」についての説明`;
-      
-      // 既存の説明があれば設定
-      textarea.value = existingClaimReason;
-      
-      // モーダルを表示
-      modal.style.display = 'block';
-      
-      // テキストエリアにフォーカス
-      textarea.focus();
-      
-      // 現在のノードIDを保存
-      modal.dataset.currentNodeId = nodeId;
-    } else {
-      console.error("モーダル要素が見つかりません");
-      alert("説明入力画面を表示できませんでした");
-    }
-  }
-
-  // 論理説明を保存する関数
-  saveLogicClaimReason() {
-    console.log("saveLogicClaimReason: 開始");
-
-    const modal = document.getElementById('logicClaimReasonModal');
-    const textarea = document.getElementById('claimReasonTextarea');
-
-    if (!modal || !textarea) {
-      console.error("モーダル要素が見つかりません");
-      return;
-    }
-
-    const nodeId = modal.dataset.currentNodeId;
-    const claimReason = textarea.value.trim();
-
-    if (!nodeId) {
-      console.error("ノードIDが取得できません");
-      return;
-    }
-
-    // 選択されたノードが主張となる三角形のIDを取得
-    this.getTriangleIdByClaimId(nodeId).then(triangleId => {
-      if (!triangleId) {
-        console.error("該当する三角形が見つかりません");
-        alert("この主張に対応する三角形が見つかりません");
-        return;
-      }
-
-    // ノードに説明を追加
-    const node = this.nodes.get(nodeId);
-    if (node) {
-      const updatedNode = {
-        ...node,
-        claimReason: claimReason,
-        hasClaimReason: claimReason.length > 0
-      };
-
-      // ノードを更新
-      this.nodes.update(updatedNode);
-
-      // データベースに保存
-      this.saveClaimReasonToDatabase(triangleId, claimReason);
-
-      console.log(`ノード ${nodeId} の説明を更新しました:`, claimReason);
-    }
-
-    // モーダルを閉じる
-    this.closeLogicClaimReasonModal();
-
-    alert(claimReason.length > 0 ? "説明を保存しました" : "説明を削除しました");
-  });
-}
-
-// 主張ノードIDから三角形IDを取得する関数
-  async getTriangleIdByClaimId(claimId) {
-    try {
-      const response = await $.ajax({
-        url: "php/logic_maneger.php",
-        type: "POST",
-        data: {
-          claim_id: claimId,
-          purpose: 'get',
-          get_thing: 'triangle_by_claim'
-        },
-        dataType: "json"
+    const addEdgeOnce = (from, to) => {
+      const key = `${from}->${to}`;
+      if (visitedEdges.has(key)) return;
+      visitedEdges.add(key);
+      this.edges.add({
+        from,
+        to,
+        color: { color: '#848484', highlight: '#848484', hover: '#848484' }
       });
+    };
 
-      if (response.status === "success" && response.triangle_id) {
-        return response.triangle_id;
-      } else {
-        console.error("三角形ID取得エラー:", response.message);
-        return null;
+    const dfs = (claimId) => {
+      const triples = claimIndex.get(claimId);
+      if (!triples || triples.length === 0) return;
+      for (const tri of triples) {
+        const { reason_id, fact_id } = tri;
+        // 三角の3本の辺を追加
+        addEdgeOnce(claimId, reason_id);
+        addEdgeOnce(reason_id, fact_id);
+        addEdgeOnce(fact_id, claimId);
+        // reason / fact が次の claim になっている場合は続けて再現
+        if (claimIndex.has(reason_id)) dfs(reason_id);
+        if (claimIndex.has(fact_id)) dfs(fact_id);
       }
-    } catch (error) {
-      console.error("三角形ID取得通信エラー:", error);
-      return null;
+    };
+
+    // ルートから辿る
+    roots.forEach(rootId => dfs(rootId));
+
+    // ルートから辿れない孤立三角もケア（全claimをフォールバック処理）
+    for (const claimId of claimIndex.keys()) {
+      dfs(claimId);
     }
   }
 
-  // 論理説明をデータベースに保存する関数
-  saveClaimReasonToDatabase(triangleId, claimReason) {
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        triangle_id: triangleId,
-        claimReason: claimReason,
-        purpose: 'update',
-        update_thing: 'claimReason'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log("説明保存レスポンス:", response);
-        if (response.status === "success") {
-          console.log("説明保存成功:", response.node_id);
-        } else {
-          console.error("説明保存エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("説明保存通信エラー:", error);
-      }
-    });
-  }
-
-  // モーダルを閉じる関数
-  closeLogicClaimReasonModal() {
-    const modal = document.getElementById('logicClaimReasonModal');
-    if (modal) {
-      modal.style.display = 'none';
-      modal.dataset.currentNodeId = '';
-    }
-  }
-
-  // 論理の葛藤を追加する関数
-  conflictLogic() {
-    console.log("conflictLogic: 開始");
-    
-    // 選択されているノードを取得
-    const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
-    
-    if (!selectedNodeId) {
-      alert("ノードを選択してください");
-      return;
-    }
-
-    // 選択されたノードの情報を取得
-    const selectedNode = this.nodes.get(selectedNodeId);
-    
-    if (!selectedNode) {
-      console.error("選択されたノードが見つかりません");
-      return;
-    }
-
-    // ノードのラベルが空の場合は葛藤を追加できない
-    if (!selectedNode.label || selectedNode.label.trim() === "") {
-      alert("まず、ノードに内容を入力してください");
-      return;
-    }
-
-    // 既存の葛藤を取得（ある場合）
-    const existingConflict = selectedNode.conflict || "";
-
-    // モーダルボックスを表示
-    this.showLogicConflictModal(selectedNodeId, selectedNode.label, existingConflict);
-  }
-
-  // 論理葛藤用のモーダルボックスを表示する関数
-  showLogicConflictModal(nodeId, nodeLabel, existingConflict) {
-    console.log("showLogicConflictModal: nodeId =", nodeId);
-    
-    // モーダルの表示
-    const modal = document.getElementById('logicConflictModal');
-    const nodeTitle = document.getElementById('conflictNodeTitle');
-    const textarea = document.getElementById('conflictTextarea');
-    
-    if (modal && nodeTitle && textarea) {
-      // ノードのラベルを表示（改行文字を除去）
-      const cleanLabel = nodeLabel.replace(/\n/g, ' ').trim();
-      nodeTitle.textContent = `「${cleanLabel}」についての葛藤`;
-      
-      // 既存の葛藤があれば設定
-      textarea.value = existingConflict;
-      
-      // モーダルを表示
-      modal.style.display = 'block';
-      
-      // テキストエリアにフォーカス
-      textarea.focus();
-      
-      // 現在のノードIDを保存
-      modal.dataset.currentNodeId = nodeId;
-    } else {
-      console.error("モーダル要素が見つかりません");
-      alert("葛藤入力画面を表示できませんでした");
-    }
-  }
-
-  // 論理葛藤を保存する関数
-  saveLogicConflict() {
-    console.log("saveLogicConflict: 開始");
-    
-    const modal = document.getElementById('logicConflictModal');
-    const textarea = document.getElementById('conflictTextarea');
-    
-    if (!modal || !textarea) {
-      console.error("モーダル要素が見つかりません");
-      return;
-    }
-
-    const nodeId = modal.dataset.currentNodeId;
-    const conflict = textarea.value.trim();
-
-    if (!nodeId) {
-      console.error("ノードIDが取得できません");
-      return;
-    }
-
-    // 選択されたノードが主張となる三角形のIDを取得
-    this.getTriangleIdByClaimId(nodeId).then(triangleId => {
-      if (!triangleId) {
-        console.error("該当する三角形が見つかりません");
-        alert("この主張に対応する三角形が見つかりません");
-        return;
-      }
-
-      console.log("取得した三角形ID:", triangleId);
-
-      // ノードに葛藤を追加
-      const node = this.nodes.get(nodeId);
-      if (node) {
-        const updatedNode = {
-          ...node,
-          conflict: conflict,
-          hasConflict: conflict.length > 0
-        };
-
-        // ノードを更新
-        this.nodes.update(updatedNode);
-
-        // データベースに保存（三角形IDを使用）
-        this.saveConflictToDatabase(triangleId, conflict);
-
-        console.log(`ノード ${nodeId} の葛藤を更新しました:`, conflict);
-      }
-
-      // モーダルを閉じる
-      this.closeLogicConflictModal();
-      
-      alert(conflict.length > 0 ? "葛藤を保存しました" : "葛藤を削除しました");
-    });
-  }
-
-  // 主張ノードIDから三角形IDを取得する関数
-  async getTriangleIdByClaimId(claimId) {
-    try {
-      const response = await $.ajax({
-        url: "php/logic_maneger.php",
-        type: "POST",
-        data: {
-          claim_id: claimId,
-          purpose: 'get',
-          get_thing: 'triangle_by_claim'
-        },
-        dataType: "json"
-      });
-
-      if (response.status === "success" && response.triangle_id) {
-        return response.triangle_id;
-      } else {
-        console.error("三角形ID取得エラー:", response.message);
-        return null;
-      }
-    } catch (error) {
-      console.error("三角形ID取得通信エラー:", error);
-      return null;
-    }
-  }
-
-  // 論理葛藤をデータベースに保存する関数
-  saveConflictToDatabase(triangleId, conflict) {
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        triangle_id: triangleId,
-        conflict: conflict,
-        purpose: 'update',
-        update_thing: 'conflict'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log("葛藤保存レスポンス:", response);
-        if (response.status === "success") {
-          console.log("葛藤保存成功:", response.node_id);
-        } else {
-          console.error("葛藤保存エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("葛藤保存通信エラー:", error);
-      }
-    });
-  }
-
-  // 葛藤モーダルを閉じる関数
-  closeLogicConflictModal() {
-    const modal = document.getElementById('logicConflictModal');
-    if (modal) {
-      modal.style.display = 'none';
-      modal.dataset.currentNodeId = '';
-    }
-  }
-
-  // ノード編集(ラベル)後の重なり回避用: 階層レイアウトを再適用
+  //ノード編集(ラベル)後の重なり回避用: 階層レイアウトを再適用
   relayoutHierarchy(fit = false) {
     if (!this.ownNetwork) return;
     // 現在の選択状態を保持
@@ -1132,14 +852,14 @@ class RecordLogicNetwork{
       url: "php/logic_maneger.php",
       type: "POST",
       data: {
+        purpose: 'record',
+        record_thing: 'node',
         node_id: node_id,
         label: label,
         f_node_id: f_node_id,
         p_node_id: p_node_id,
         edited: edited,
         level: node_level,
-        purpose: 'record',
-        record_thing: 'node'
       },
       dataType: "json",
       success: function(response) {
@@ -1264,18 +984,21 @@ class RecordLogicNetwork{
 }
 
 window.addEventListener('load', async () => {
-  defaultLogicNetwork = new LogicNetwork("mynetwork", "load");
-  window.defaultLogicNetwork = defaultLogicNetwork; // windowオブジェクトに明示的に設定
-  
-  // データベースから復元
-  await defaultLogicNetwork.initializeFromDatabase();
-  
-  // デバッグ用: 初期化確認
-  console.log('defaultLogicNetwork initialized:', !!window.defaultLogicNetwork);
-  console.log('ownNetwork exists:', !!window.defaultLogicNetwork.ownNetwork);
-  
-  $('#mynetwork').css('visibility', 'visible');
-  
+  try {
+    console.log("[LogicNetwork] window load: start");
+    defaultLogicNetwork = new LogicNetwork("mynetwork", "load");
+    window.defaultLogicNetwork = defaultLogicNetwork;
+    console.log("[LogicNetwork] instance created:", !!window.defaultLogicNetwork);
+
+    // データベースから復元
+    await defaultLogicNetwork.initializeFromDatabase();
+
+    // デバッグ用: 初期化確認
+    console.log('[LogicNetwork] initialized:', !!window.defaultLogicNetwork);
+    console.log('[LogicNetwork] ownNetwork exists:', !!window.defaultLogicNetwork.ownNetwork);
+
+    $('#mynetwork').css('visibility', 'visible');
+
   // 既存のイベントリスナー
   $(`#ln_addNode`).on("click", e => {
     defaultLogicNetwork.addNewNode();
@@ -1341,6 +1064,9 @@ window.addEventListener('load', async () => {
   const logicMenu = document.getElementById('logic_conmenu');
   if (logicMenu) {
     logicMenu.className = '';
+  }
+  } catch (e) {
+    console.error("[LogicNetwork] window load error:", e);
   }
 });
 
