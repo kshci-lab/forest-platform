@@ -150,15 +150,14 @@ class LogicNetwork {
     let borderWidth = 0; // 枠無し
     let borderColor = '#fffacd'; // ノードと同じ
     let backgroundColor = '#fffacd'; // デフォルトの背景色
-    let borderDashes = false; //　点線はfalse（実線）
+    let borderDashes = false; // 点線はfalse（実線）
     
     // editedの値に基づいて点線/実線を決定
-    // edited=0の場合は点線、edited=1の場合は実線
     if (node.edited == 0) {
       borderDashes = true; // 点線
-      // 通常のノードの場合、点線を見えるようにborderWidthとcolorを設定
-      if ((node.f_node_id == null || node.f_node_id == undefined) && 
-          (node.p_node_id == null || node.p_node_id == undefined)) {
+      // Forest/P の紐づきがどちらも無いときだけ黒枠
+      if ((node.f_node_id == null || node.f_node_id === undefined) &&
+          (node.p_node_id == null || node.p_node_id === undefined)) {
         borderWidth = 2;
         borderColor = '#000000'; // 黒色
       }
@@ -166,17 +165,18 @@ class LogicNetwork {
       borderDashes = false; // 実線
     }
     
-    // Forestから持ってきた場合（f_node_idがある場合）は緑色
-    if (node.f_node_id !== null ) {
+    // Origin判定
+    const hasF = node.f_node_id !== null && node.f_node_id !== undefined && node.f_node_id !== "";
+    const hasP = node.p_node_id !== null && node.p_node_id !== undefined && node.p_node_id !== "";
+
+    // 両方あり → 赤, 片方のみ → 緑
+    if (hasF && hasP) {
       borderWidth = 2;
-      borderColor = '#228B22'; // 緑色（フォレストグリーン）
-    }
-    // Presentationから持ってきた場合（p_node_idがある場合）は赤色
-    else if (node.p_node_id !== null) {
+      borderColor = '#DC143C'; // 赤
+    } else if ((hasF || hasP) && !(hasF && hasP)) {
       borderWidth = 2;
-      borderColor = '#DC143C'; // 赤色（クリムゾン）
+      borderColor = '#228B22'; // 緑
     }
-    // 通常のノードの場合は枠無し（何もしない）
     
     // ノードのスタイルを設定
     node.color = {
@@ -984,7 +984,7 @@ class RecordLogicNetwork{
 }
 
 window.addEventListener('load', async () => {
-  try {
+    try {
     console.log("[LogicNetwork] window load: start");
     defaultLogicNetwork = new LogicNetwork("mynetwork", "load");
     window.defaultLogicNetwork = defaultLogicNetwork;
