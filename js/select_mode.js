@@ -14,6 +14,8 @@ document.getElementById("selectmodebutton").addEventListener('click', function()
             window.location.href = "fujinaka-system/select_sheet.php";
           }else if(selectmodeoption[i].value === "4"){
             window.location.href = "shimaoka-system/select_sheet.php";
+          }else if(selectmodeoption[i].value === "5"){
+            window.location.href = "shimaoka-system/forest-extension/upload_form.php";
           }
 
           return;
