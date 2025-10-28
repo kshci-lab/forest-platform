@@ -22,6 +22,19 @@ if($purpose === "save_externalized_content") {
     $stage1 = isset($_POST['stage1']) ? $_POST['stage1'] : '';
     $stage2 = isset($_POST['stage2']) ? $_POST['stage2'] : '';
     $stage3 = isset($_POST['stage3']) ? $_POST['stage3'] : '';
+    $used_flag = 1; // 登録時は使用済み=1
+
+    // カラム存在チェック: used_remarked_utterance が外部DBに存在するか
+    $hasUsedCol = false;
+    try {
+        if ($colRes = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'used_remarked_utterance'")) {
+            $hasUsedCol = ($colRes->num_rows > 0);
+            $colRes->close();
+        }
+    } catch (Exception $exCol) {
+        // 失敗時は未存在扱い（エラーログのみ）
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content SHOW COLUMNS error: " . $exCol->getMessage() . "\n", FILE_APPEND);
+    }
 
     // バリデーション
     if ($selected_contents === '') {
@@ -31,7 +44,11 @@ if($purpose === "save_externalized_content") {
 
     // まずは外部キー（PK）を指定せずにINSERT（AUTO_INCREMENTを期待）
     $deleted = 0;
-    $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
+    if ($hasUsedCol) {
+        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    } else {
+        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
+    }
     if(!$stmt){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (no pk): " . $mysqli->error . "\n", FILE_APPEND);
         echo json_encode(["status" => "error", "error" => $mysqli->error]);
@@ -41,7 +58,12 @@ if($purpose === "save_externalized_content") {
     // remarked_utterance_id は数値に寄せる（空ならNULL）
     $remark_numeric = (is_numeric($remarked_utterance_id) && $remarked_utterance_id !== '') ? intval($remarked_utterance_id, 10) : null;
     // bind_param は NULL を許容するが、型は i を使う
-    $stmt->bind_param("issssi", $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+    if ($hasUsedCol) {
+        // i s s s s i i
+        $stmt->bind_param("issssii", $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+    } else {
+        $stmt->bind_param("issssi", $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+    }
 
     try {
         $ok = $stmt->execute();
@@ -80,13 +102,22 @@ if($purpose === "save_externalized_content") {
         $remark_numeric = $currentRemarkMax + 1; // 1スタート（00001相当）
     }
 
-    $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    if ($hasUsedCol) {
+        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    } else {
+        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    }
     if(!$stmt2){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (pk fallback): " . $mysqli->error . "\n", FILE_APPEND);
         echo json_encode(["status" => "error", "error" => $mysqli->error]);
         return;
     }
-    $stmt2->bind_param("iissssi", $nextExtId, $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+    if ($hasUsedCol) {
+        // i i s s s s i i
+        $stmt2->bind_param("iissssii", $nextExtId, $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+    } else {
+        $stmt2->bind_param("iissssi", $nextExtId, $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+    }
     if(!$stmt2->execute()){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content execute error (pk fallback): " . $stmt2->error . "\n", FILE_APPEND);
         echo json_encode(["status" => "error", "error" => $stmt2->error]);

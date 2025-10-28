@@ -1,0 +1,10 @@
+/* 発話ノードの選択状態表示 */
+.utter_node_in_list {
+	cursor: pointer;
+}
+
+.utter_node_in_list.utter-selected {
+	background-color: #ffe6ea; /* 薄いピンク */
+	border-color: #f5a3b5;
+}
+

@@ -138,7 +138,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <option>資料構成作成モード</option>
                         <option>資料作成モード</option>
                         <option>議論内省マップモード</option>
-                        <option>共有知モード</option>
+                        <option selected>共有知モード</option>
                     </select>
                     <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
                     <!-- shared tabs removed from here and moved to center of the workspace -->
@@ -825,7 +825,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         <div class="externalization-card">
                                             <h3 class="externalization-title">選択された発言についての思考整理</h3>
                                             <div class="externalization-main-section">
-                                            <label class="externalization-label">あなたが選択した発言：</label>
+                                            <label class="externalization-label">あなたが選択した発言とその要約：</label>
                                             <textarea id="externalization-main" class="externalization-main" placeholder="ここに選択した発言を記入"></textarea>
                                             </div>
 
@@ -986,5 +986,6 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="./js/readxmldata.js"></script>  
         
         <!--  ここまで大槻修正　-->
+        
     </body>
 </html>

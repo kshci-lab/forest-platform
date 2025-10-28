@@ -1146,6 +1146,73 @@ const makeUtteranceNodeInList = (utter_id, utter_content, speaker, JPNtime, netw
             </div>`);
 }
 
+// 選択状態の管理とハイライト適用
+const ensureSelectionStore = () => {
+    try { if (!window.selectedUtteranceIds) { window.selectedUtteranceIds = []; } } catch(e) { /* no-op */ }
+};
+const getSelectedIds = () => { ensureSelectionStore(); return window.selectedUtteranceIds; };
+const isSelectedId = (id) => { id = String(id); ensureSelectionStore(); return window.selectedUtteranceIds.indexOf(id) !== -1; };
+const addSelectedId = (id) => {
+    id = String(id);
+    ensureSelectionStore();
+    if (window.selectedUtteranceIds.indexOf(id) === -1) { window.selectedUtteranceIds.push(id); }
+};
+const removeSelectedId = (id) => {
+    id = String(id);
+    ensureSelectionStore();
+    window.selectedUtteranceIds = window.selectedUtteranceIds.filter(function(x){ return String(x) !== id; });
+};
+const clearSelectedIds = () => { ensureSelectionStore(); window.selectedUtteranceIds = []; };
+const applySelectionHighlight = () => {
+    try {
+        const allUtters = document.querySelectorAll('.utter_node_in_list');
+        allUtters.forEach((el) => {
+            const id = String(el.getAttribute('id') || '');
+            const neton = el.getAttribute('network_on');
+            if (isSelectedId(id)) {
+                el.classList.add('utter-selected');
+                el.style.background = '#ffe6ea'; // 選択中は薄いピンクを優先
+            } else {
+                el.classList.remove('utter-selected');
+                el.style.background = (neton === '1') ? 'gray' : 'white';
+            }
+        });
+    } catch (e) { /* no-op */ }
+};
+
+// 背景色を元に戻す（選択ハイライト解除）
+const restoreListBackgrounds = () => {
+    try {
+        const allUtters = document.querySelectorAll('.utter_node_in_list');
+        allUtters.forEach((el) => {
+            el.classList.remove('utter-selected');
+            const neton = el.getAttribute('network_on');
+            el.style.background = (neton === '1') ? 'gray' : 'white';
+        });
+    } catch (e) { /* no-op */ }
+};
+
+// 選択中IDから外部化テキストを再構築（選択された発言内容を含めて元に戻す）
+const rebuildExternalizationTextFromSelection = () => {
+    try {
+        var $extMain = $('#externalization-main');
+        if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
+        if(!$extMain.length) return;
+        var ids = getSelectedIds();
+        var lines = [];
+        if (ids && ids.length) {
+            ids.forEach(function(id){
+                var el = document.getElementById(String(id));
+                if (el) {
+                    var txt = el.getAttribute('utterance') || '';
+                    if (txt) { lines.push(txt); }
+                }
+            });
+        }
+        $extMain.val(lines.join('\n'));
+    } catch(e) { /* no-op */ }
+};
+
 // 発言をネットワークに反映
 const update_text_on = (areaid) => {
     $.ajax({
@@ -1240,13 +1307,29 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
         $(`.utter_node_in_list`).on('click', (e) => {
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             document.getElementById("rclick").innerHTML="";
-            const clicked_node = e.target;
+            // クリックされた要素（内側のテキストや<br>ではなく、.utter_node_in_list 本体）
+            const clicked_node = e.currentTarget || e.target;
+            const clicked_id = String(clicked_node.getAttribute('id'));
             // 直近で選択した発話IDを保持（DB登録用）
-            try { window.lastRemarkedUtteranceId = clicked_node.getAttribute('id'); } catch(err) {}
+            try { window.lastRemarkedUtteranceId = clicked_id; } catch(err) {}
+
+            // 複数選択・トグル: 修飾キー押下時は加算/解除のトグル、未押下時は置換/解除
+            var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
+            var already = isSelectedId(clicked_id);
+            var willDeselect = false;
+            if (appendMode) {
+                if (already) { removeSelectedId(clicked_id); willDeselect = true; }
+                else { addSelectedId(clicked_id); }
+            } else {
+                if (already) { clearSelectedIds(); willDeselect = true; }
+                else { clearSelectedIds(); addSelectedId(clicked_id); }
+            }
+            applySelectionHighlight();
             // 外部化フォームへの反映（.externalization-main or #externalization-main）
             var $extMain = $('#externalization-main');
             if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
-            if($extMain && $extMain.length){
+            // 選択解除の場合はテキストエリアは変更しない
+            if($extMain && $extMain.length && !willDeselect){
                 var addText = clicked_node.getAttribute('utterance') || '';
                 if(addText){
                     var current = $extMain.val();
@@ -1265,7 +1348,9 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
                     defaultForestMRN.addutteranceNode(clicked_node.getAttribute('utterance'));
                     document.getElementById("rclick").innerHTML="";
                     clicked_node.setAttribute('network_on', "1");
-                    document.getElementById(clicked_node.getAttribute('id')).style.background="gray";
+                    // ネットワークに追加済みは灰色へ（選択リストからも除外）
+                    removeSelectedId(clicked_id);
+                    applySelectionHighlight();
                     update_text_on(clicked_node.getAttribute('id'));
                 });
             }
@@ -1276,7 +1361,9 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
             timedisplay_area.empty();
             // rightclick()
         });
-        document.getElementById("accordion_discussion").innerHTML = "";      
+        document.getElementById("accordion_discussion").innerHTML = "";
+        // 再描画後に選択中の発話群があればハイライトを復元
+        applySelectionHighlight();
     });
 }
 
@@ -1379,13 +1466,29 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
         $(`.utter_node_in_list`).on('click', (e) => {
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             document.getElementById("rclick").innerHTML="";
-            const clicked_node = e.target;
+            // クリックされた要素（内側のテキストや<br>ではなく、.utter_node_in_list 本体）
+            const clicked_node = e.currentTarget || e.target;
+            const clicked_id = String(clicked_node.getAttribute('id'));
             // 直近で選択した発話IDを保持（DB登録用）
-            try { window.lastRemarkedUtteranceId = clicked_node.getAttribute('id'); } catch(err) {}
+            try { window.lastRemarkedUtteranceId = clicked_id; } catch(err) {}
+
+            // 複数選択・トグル: 修飾キー押下時は加算/解除のトグル、未押下時は置換/解除
+            var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
+            var already = isSelectedId(clicked_id);
+            var willDeselect = false;
+            if (appendMode) {
+                if (already) { removeSelectedId(clicked_id); willDeselect = true; }
+                else { addSelectedId(clicked_id); }
+            } else {
+                if (already) { clearSelectedIds(); willDeselect = true; }
+                else { clearSelectedIds(); addSelectedId(clicked_id); }
+            }
+            applySelectionHighlight();
             // 外部化フォームへの反映（.externalization-main or #externalization-main）
             var $extMain = $('#externalization-main');
             if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
-            if($extMain && $extMain.length){
+            // 選択解除の場合はテキストエリアは変更しない
+            if($extMain && $extMain.length && !willDeselect){
                 var addText = clicked_node.getAttribute('utterance') || '';
                 if(addText){
                     var current = $extMain.val();
@@ -1404,7 +1507,9 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
                     defaultForestMRN.addutteranceNode(clicked_node.getAttribute('utterance'));
                     document.getElementById("rclick").innerHTML="";
                     clicked_node.setAttribute('network_on', "1");
-                    document.getElementById(clicked_node.getAttribute('id')).style.background="gray";
+                    // ネットワークに追加済みは灰色へ（選択リストからも除外）
+                    removeSelectedId(clicked_id);
+                    applySelectionHighlight();
                     update_text_on(clicked_node.getAttribute('id'));
                 });
             }
@@ -1415,6 +1520,8 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             timedisplay_area.empty();
             // rightclick()
         });        
+        // 再描画後に選択中の発話群があればハイライトを復元
+        applySelectionHighlight();
     });
 }
 
@@ -1506,7 +1613,9 @@ const setUploadedXMLData = function(file_input_btn_id, xml_area_id) {
 // index.php の onclick="handleExternalizationRegister();" から呼ばれる
 window.handleExternalizationRegister = function() {
     try {
-        var remarkedId = (typeof window.lastRemarkedUtteranceId !== 'undefined' && window.lastRemarkedUtteranceId) ? window.lastRemarkedUtteranceId : '';
+        // 複数選択に対応：選択中IDをCSVで送る
+        var idsArr = (typeof getSelectedIds === 'function') ? getSelectedIds() : [];
+        var remarkedIdsCsv = (idsArr && idsArr.length) ? idsArr.join(',') : '';
         var $extMain = $('#externalization-main');
         if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
         var selectedContents = $extMain.length ? ($extMain.val() || '') : '';
@@ -1526,7 +1635,9 @@ window.handleExternalizationRegister = function() {
             dataType: 'json',
             data: {
                 purpose: 'save_externalized_content',
-                remarked_utterance_id: remarkedId,
+                // 後方互換のため単数IDも送るが、サーバ側は remarked_utterance_ids を優先
+                remarked_utterance_id: (typeof window.lastRemarkedUtteranceId !== 'undefined' ? window.lastRemarkedUtteranceId : ''),
+                remarked_utterance_ids: remarkedIdsCsv,
                 selected_contents: selectedContents,
                 stage1: stage1,
                 stage2: stage2,
@@ -1536,6 +1647,34 @@ window.handleExternalizationRegister = function() {
             if(res && res.status === 'ok'){
                 try { console.log('externalized_contents: 保存に成功しました'); } catch(err){}
                 if(window.alert){ alert('登録しました。'); }
+
+                // 登録成功時：選択していた発言の枠線を点線に変更
+                try {
+                    var ids = (typeof getSelectedIds === 'function') ? getSelectedIds() : [];
+                    if (ids && ids.length) {
+                        ids.forEach(function(id){
+                            var el = document.getElementById(String(id));
+                            if (el && el.classList && el.classList.contains('utter_node_in_list')) {
+                                el.style.borderStyle = 'dashed';
+                            }
+                        });
+                    }
+                } catch(ex2) { /* no-op */ }
+
+                // リフレッシュ処理：背景色を元に戻す & テキストエリアを空に戻す
+                try { restoreListBackgrounds(); } catch(e1) { /* no-op */ }
+                try {
+                    var $extMain = $('#externalization-main');
+                    if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
+                    if($extMain && $extMain.length){ $extMain.val(''); }
+                } catch(e2) { /* no-op */ }
+
+                // ステージ入力（stage1～3）を空にリセット
+                try {
+                    $('.qa-answer1').val('');
+                    $('.qa-answer2').val('');
+                    $('.qa-answer3').val('');
+                } catch(e3) { /* no-op */ }
             } else {
                 try { console.error('externalized_contents: 保存に失敗しました', res); } catch(err){}
                 if(window.alert){ alert('登録に失敗しました。'); }
