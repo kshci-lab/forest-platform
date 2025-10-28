@@ -17,12 +17,35 @@ $first_load_flag = isset($_POST["first_load_flag"]) ? $_POST["first_load_flag"] 
 if($purpose === "save_externalized_content") {
     header('Content-Type: application/json; charset=utf-8');
     // 必要な値を受け取る
-    $remarked_utterance_id = isset($_POST['remarked_utterance_id']) ? $_POST['remarked_utterance_id'] : '';
+    // remarked_utterance_id: 複数対応（CSV優先）
+    $remarked_utterance_ids = isset($_POST['remarked_utterance_ids']) ? $_POST['remarked_utterance_ids'] : null;
+    $remarked_utterance_id_single = isset($_POST['remarked_utterance_id']) ? $_POST['remarked_utterance_id'] : '';
+    $remarked_ids_str = '';
+    if ($remarked_utterance_ids !== null && $remarked_utterance_ids !== '') {
+        // 正規化：全角カンマを半角に、空要素除去
+        $tmp = str_replace('，', ',', $remarked_utterance_ids);
+        $parts = array_filter(array_map('trim', explode(',', $tmp)), function($v){ return $v !== ''; });
+        $remarked_ids_str = implode(',', $parts);
+    } else {
+        $remarked_ids_str = trim((string)$remarked_utterance_id_single);
+    }
     $selected_contents = isset($_POST['selected_contents']) ? $_POST['selected_contents'] : '';
     $stage1 = isset($_POST['stage1']) ? $_POST['stage1'] : '';
     $stage2 = isset($_POST['stage2']) ? $_POST['stage2'] : '';
     $stage3 = isset($_POST['stage3']) ? $_POST['stage3'] : '';
     $used_flag = 1; // 登録時は使用済み=1
+    $knowledge_fragment_content = isset($_POST['knowledge_fragment_content']) ? $_POST['knowledge_fragment_content'] : '';
+
+    // カラム存在チェック: knowledge_fragment_content が externalized_contents に存在するか
+    $hasKFragCol = false;
+    try {
+        if ($colRes2 = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'knowledge_fragment_content'")) {
+            $hasKFragCol = ($colRes2->num_rows > 0);
+            $colRes2->close();
+        }
+    } catch (Exception $exCol2) {
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content SHOW COLUMNS (kfrag) error: " . $exCol2->getMessage() . "\n", FILE_APPEND);
+    }
 
     // カラム存在チェック: used_remarked_utterance が外部DBに存在するか
     $hasUsedCol = false;
@@ -44,8 +67,12 @@ if($purpose === "save_externalized_content") {
 
     // まずは外部キー（PK）を指定せずにINSERT（AUTO_INCREMENTを期待）
     $deleted = 0;
-    if ($hasUsedCol) {
+    if ($hasUsedCol && $hasKFragCol) {
+        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    } elseif ($hasUsedCol && !$hasKFragCol) {
         $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    } elseif (!$hasUsedCol && $hasKFragCol) {
+        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
     } else {
         $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
     }
@@ -55,14 +82,19 @@ if($purpose === "save_externalized_content") {
         return;
     }
 
-    // remarked_utterance_id は数値に寄せる（空ならNULL）
-    $remark_numeric = (is_numeric($remarked_utterance_id) && $remarked_utterance_id !== '') ? intval($remarked_utterance_id, 10) : null;
-    // bind_param は NULL を許容するが、型は i を使う
-    if ($hasUsedCol) {
-        // i s s s s i i
-        $stmt->bind_param("issssii", $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+    // bind
+    if ($hasUsedCol && $hasKFragCol) {
+        // s s s s s s i i
+        $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+    } elseif ($hasUsedCol && !$hasKFragCol) {
+        // s s s s s i i
+        $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+    } elseif (!$hasUsedCol && $hasKFragCol) {
+        // s s s s s s i
+        $stmt->bind_param("ssssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
     } else {
-        $stmt->bind_param("issssi", $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+        // s s s s s i
+        $stmt->bind_param("sssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
     }
 
     try {
@@ -70,6 +102,22 @@ if($purpose === "save_externalized_content") {
         if ($ok) {
             $newId = $stmt->insert_id;
             $stmt->close();
+            // knowledge_fragment にも保存（空の場合はスキップ）
+            if ($knowledge_fragment_content !== '') {
+                $kfMax = 0;
+                if ($resKf = $mysqli->query("SELECT MAX(knowledge_fragment_id) AS max_id FROM knowledge_fragment")) {
+                    $rowKf = $resKf->fetch_assoc();
+                    if ($rowKf && isset($rowKf['max_id']) && $rowKf['max_id'] !== null) {
+                        $kfMax = intval($rowKf['max_id'], 10);
+                    }
+                }
+                $nextKfId = ($kfMax >= 11111) ? ($kfMax + 1) : 11111;
+                if ($stmtKf = $mysqli->prepare("INSERT INTO knowledge_fragment (knowledge_fragment_id, knowledge_fragment_content, externalized_contents_id) VALUES (?, ?, ?)")) {
+                    $stmtKf->bind_param("isi", $nextKfId, $knowledge_fragment_content, $newId);
+                    @$stmtKf->execute();
+                    @$stmtKf->close();
+                }
+            }
             echo json_encode(["status" => "ok", "id" => $newId]);
             return;
         }
@@ -86,7 +134,7 @@ if($purpose === "save_externalized_content") {
         }
     }
 
-    // フォールバック: システムでIDを採番してINSERT
+    // フォールバック: システムで externalized_contents_id を採番してINSERT
     $stmt->close();
     // externalized_contents_id: 初期11111から+1
     $res = $mysqli->query("SELECT MAX(externalized_contents_id) AS max_id FROM externalized_contents");
@@ -94,16 +142,12 @@ if($purpose === "save_externalized_content") {
     $currentMax = ($row && isset($row['max_id']) && $row['max_id'] !== null) ? intval($row['max_id'], 10) : 11110;
     $nextExtId = $currentMax + 1; // 11111 スタート
 
-    // remarked_utterance_id: 初期00001(=1)から+1（POSTが不正・空のときのみ採番）
-    if (!is_int($remark_numeric)) {
-        $res2 = $mysqli->query("SELECT MAX(remarked_utterance_id) AS max_rid FROM externalized_contents");
-        $row2 = $res2 ? $res2->fetch_assoc() : null;
-        $currentRemarkMax = ($row2 && isset($row2['max_rid']) && $row2['max_rid'] !== null) ? intval($row2['max_rid'], 10) : 0;
-        $remark_numeric = $currentRemarkMax + 1; // 1スタート（00001相当）
-    }
-
-    if ($hasUsedCol) {
+    if ($hasUsedCol && $hasKFragCol) {
+        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    } elseif ($hasUsedCol && !$hasKFragCol) {
         $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    } elseif (!$hasUsedCol && $hasKFragCol) {
+        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     } else {
         $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
     }
@@ -112,11 +156,18 @@ if($purpose === "save_externalized_content") {
         echo json_encode(["status" => "error", "error" => $mysqli->error]);
         return;
     }
-    if ($hasUsedCol) {
-        // i i s s s s i i
-        $stmt2->bind_param("iissssii", $nextExtId, $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+    if ($hasUsedCol && $hasKFragCol) {
+        // i s s s s s s i i
+        $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+    } elseif ($hasUsedCol && !$hasKFragCol) {
+        // i s s s s s i i
+        $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+    } elseif (!$hasUsedCol && $hasKFragCol) {
+        // i s s s s s s i
+        $stmt2->bind_param("issssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
     } else {
-        $stmt2->bind_param("iissssi", $nextExtId, $remark_numeric, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+        // i s s s s s i
+        $stmt2->bind_param("isssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
     }
     if(!$stmt2->execute()){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content execute error (pk fallback): " . $stmt2->error . "\n", FILE_APPEND);
@@ -125,6 +176,24 @@ if($purpose === "save_externalized_content") {
         return;
     }
     $stmt2->close();
+
+    // knowledge_fragment にも保存（空の場合はスキップ）
+    if ($knowledge_fragment_content !== '') {
+        $kfMax = 0;
+        if ($resKf = $mysqli->query("SELECT MAX(knowledge_fragment_id) AS max_id FROM knowledge_fragment")) {
+            $rowKf = $resKf->fetch_assoc();
+            if ($rowKf && isset($rowKf['max_id']) && $rowKf['max_id'] !== null) {
+                $kfMax = intval($rowKf['max_id'], 10);
+            }
+        }
+        $nextKfId = ($kfMax >= 11111) ? ($kfMax + 1) : 11111;
+        if ($stmtKf = $mysqli->prepare("INSERT INTO knowledge_fragment (knowledge_fragment_id, knowledge_fragment_content, externalized_contents_id) VALUES (?, ?, ?)")) {
+            $stmtKf->bind_param("isi", $nextKfId, $knowledge_fragment_content, $nextExtId);
+            @$stmtKf->execute();
+            @$stmtKf->close();
+        }
+    }
+
     echo json_encode(["status" => "ok", "id" => $nextExtId]);
     return;
 }

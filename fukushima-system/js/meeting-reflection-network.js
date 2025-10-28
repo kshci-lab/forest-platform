@@ -1622,6 +1622,7 @@ window.handleExternalizationRegister = function() {
         var stage1 = $('.qa-answer1').first().val() || '';
         var stage2 = $('.qa-answer2').first().val() || '';
         var stage3 = $('.qa-answer3').first().val() || '';
+    var knowledgeFragmentContent = $('.qa-answer4').first().val() || '';
 
         // 簡易バリデーション
         if(!selectedContents){
@@ -1641,7 +1642,8 @@ window.handleExternalizationRegister = function() {
                 selected_contents: selectedContents,
                 stage1: stage1,
                 stage2: stage2,
-                stage3: stage3
+                stage3: stage3,
+                knowledge_fragment_content: knowledgeFragmentContent
             }
         }).done(function(res){
             if(res && res.status === 'ok'){
@@ -1669,11 +1671,12 @@ window.handleExternalizationRegister = function() {
                     if($extMain && $extMain.length){ $extMain.val(''); }
                 } catch(e2) { /* no-op */ }
 
-                // ステージ入力（stage1～3）を空にリセット
+                // ステージ入力（stage1～3）＋ 追加入力（qa-answer4）を空にリセット
                 try {
                     $('.qa-answer1').val('');
                     $('.qa-answer2').val('');
                     $('.qa-answer3').val('');
+                    $('.qa-answer4').val('');
                 } catch(e3) { /* no-op */ }
             } else {
                 try { console.error('externalized_contents: 保存に失敗しました', res); } catch(err){}

@@ -1549,6 +1549,64 @@ select[name="user_list"] {
 	margin-bottom:8px; 
 	font-size:16px; 
 }
+
+
+/* 横並びレイアウト（qa-summary 用） */
+.qa-summary{
+	display:flex;
+	flex-direction:row;
+	align-items:center; /* テキストボックス行の中央にラベルを揃える */
+	margin-top:20px; 
+	flex-wrap:wrap; /* 狭い画面で折り返し */
+	min-height:25px; /* 初期の高さを約25pxに */
+	margin-left: 10px; 
+	margin-right: 10px; 
+	background: #a8cde0; 
+	padding:10px; /* 高さを抑えるために余白も縮小 */
+	border-radius:12px; 
+	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
+}
+.qa-summary .qa-question{
+	margin-bottom:0; /* 横並びなので下マージン不要 */
+	flex: 0 1 30%;
+	/* 高さは固定しない。行の中央に揃えるため */
+	display: flex; /* ラベル内の縦中央寄せ */
+	align-items: center;
+	background:transparent; 
+	color:#003049; 
+	font-weight:700; 
+	padding-left:5px;
+	/*padding:10px 10px;*/ 
+	border-radius:6px; 
+	/* margin-bottom:5px;  */
+	font-size:16px;	
+}
+.qa-summary .qa-answer4{
+	flex: 1 1 58%;
+	width: auto; /* グローバルの width:100% を上書きして横並びにする */
+	background:#ffffff; 
+	font-size: 18px;
+	align-items: center;
+	border-radius:8px; 
+	border:1px solid #e6eef2; 
+	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
+	min-height:40px; /* 初期の高さを合わせる */
+	height:40px; /* 初期表示の高さ */
+	resize:vertical; /* ユーザー操作で拡大可 */
+	padding:8px;
+	box-sizing:border-box;
+}
+/* qa-answer4 のプレースホルダーを中央寄せ（水平方向） */
+.qa-answer4::placeholder{
+	align-items: center;
+}
+/* Fallback: 空欄時はテキスト自体を中央寄せ（入力開始で自動的に左寄せへ戻る）*/
+.qa-answer4:placeholder-shown{
+	align-items: center;
+}
+.qa-answer4:not(:placeholder-shown){
+	text-align:left;
+}
 .qa-answer1, .qa-answer2, .qa-answer3{ 
 	width: 100%; 
 	min-height:68px; 
@@ -1560,6 +1618,7 @@ select[name="user_list"] {
 	border:1px solid #e6eef2; 
 	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03); 
 }
+
 .externalization-footer{ margin-top:12px; }
 .externalization-subhead{ font-weight:bold; margin-top:8px; }
 .externalization-own-answer{ 

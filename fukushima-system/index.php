@@ -138,7 +138,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <option>資料構成作成モード</option>
                         <option>資料作成モード</option>
                         <option>議論内省マップモード</option>
-                        <option selected>共有知モード</option>
+                        <option>共有知モード</option>
                     </select>
                     <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
                     <!-- shared tabs removed from here and moved to center of the workspace -->
@@ -813,7 +813,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     <div id="jsmind_nav2">
                         <div class ="mt_timing">
                             <!-- 時刻入力で過去のマップ表示 -->
-                            <!-- ここから大槻修正 -->
+                            <!-- ここから福島修正 -->
                             <div id="timeselect">
                                 <select id="selectiontime">
                                 </select>
@@ -842,6 +842,12 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                     <div class="qa-question">この発言には、他の場面でも使える考え方の指針はありますか？</div>
                                                     <textarea class="qa-answer3" placeholder="ここに記入"></textarea>
                                                 </div>
+                                            </div>
+
+                                            <!-- 追加の自由記述入力（.qa形式、.qa-pairs と 登録ボタンの間） -->
+                                            <div class="qa-summary">
+                                                <div class="qa-question">産出する知の要約：</div>
+                                                <textarea class="qa-answer4" placeholder="ここに記入"></textarea>
                                             </div>
 
                                             <div class="externalization-actions" style="margin-top:10px;">
@@ -986,6 +992,5 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="./js/readxmldata.js"></script>  
         
         <!--  ここまで大槻修正　-->
-        
     </body>
 </html>
