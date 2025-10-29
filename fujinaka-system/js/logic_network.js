@@ -54,8 +54,10 @@ class LogicNetwork {
       this.ownNetwork.on('dragStart', this.dragstart.bind(this));
       this.ownNetwork.on('dragEnd', this.dragend.bind(this));
       this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
-      // ノードクリック時にForest側をハイライト
+      // 既存: Forest側をハイライト
       this.ownNetwork.on('click', this.handleNodeClickHighlightForest.bind(this));
+      // 追加: シナリオ側をハイライト
+      this.ownNetwork.on('click', this.handleNodeClickHighlightPresentation.bind(this));
     }
     console.log("[LogicNetwork] constructor end");
   }
@@ -875,6 +877,60 @@ class LogicNetwork {
     }
   }
 
+  // 追加: 三角ロジックのノードクリックで、p_node_id に対応するシナリオ側ノードをハイライト
+  handleNodeClickHighlightPresentation(params) {
+    try {
+      if (!params || !Array.isArray(params.nodes) || params.nodes.length === 0) return;
+      const clickedId = params.nodes[0];
+      const node = this.nodes.get(clickedId);
+      if (!node) return;
+
+      const pId = node.p_node_id;
+      if (pId === null || pId === undefined || pId === "") return;
+
+      let el = null;
+
+      // 1) id一致
+      el = document.getElementById(String(pId));
+
+      // 2) node_id属性一致（.cspan/.tspan/.thread/.section/.chapterを走査）
+      if (!el) {
+        const candidates = document.querySelectorAll('.cspan, .tspan, .thread, .section, .chapter, .scenario_content');
+        for (let i = 0; i < candidates.length; i++) {
+          const nid = candidates[i].getAttribute('node_id') || candidates[i].getAttribute('nodeid');
+          if (nid && String(nid) === String(pId)) { el = candidates[i]; break; }
+        }
+      }
+
+      // 3) scenario_content の場合は中の .cspan を対象にする
+      if (el && el.classList && el.classList.contains('scenario_content')) {
+        const inner = el.querySelector('.cspan') || el.querySelector('.tspan');
+        if (inner) el = inner;
+      }
+
+      if (!el) return;
+
+      // .cspan の選択枠をいったん解除
+      const spans = document.getElementsByClassName('cspan');
+      for (let i = 0; i < spans.length; i++) {
+        spans[i].style.border = "";
+      }
+
+      // スクロール・フォーカス
+      try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); } catch(_) {}
+      if (typeof el.focus === 'function') el.focus();
+
+      // ハイライト（.cspanは既存の選択スタイルに合わせて枠線、その他は一時アウトライン）
+      if (el.classList && el.classList.contains('cspan')) {
+        el.style.border = "2px solid gray";
+      } else {
+        el.style.outline = "3px solid orange";
+        setTimeout(() => { try { el.style.outline = ""; } catch(_) {} }, 1200);
+      }
+    } catch (e) {
+      console.warn("handleNodeClickHighlightPresentation error:", e);
+    }
+  }
 }
 
 class RecordLogicNetwork{
