@@ -1247,12 +1247,14 @@ function NodeAppendfromLogic(){
       const selectedNodeId = selectedNodes[0];
       const nodeData = defaultLogicNetwork.nodes.get(selectedNodeId);
       if (nodeData) {
-        // f_node_id を取得して保持（未設定/空は null に正規化）
         const fId = (nodeData.f_node_id !== undefined && nodeData.f_node_id !== "") ? nodeData.f_node_id : null;
+        // 追加: level（または group）を拾っておく
+        const level = nodeData.level || nodeData.group || null;
         selected_logic_node = {
           id: selectedNodeId,
           topic: nodeData.label,
-          f_node_id: fId
+          f_node_id: fId,
+          level: level
         };
       }
     }
@@ -1279,10 +1281,19 @@ function NodeAppendfromLogic(){
   var setid = getUniqueStr();  //contentID
   var quot_setid = "\"" + setid + "\"";
 
-  // 内容テキストエリアにノード内容を挿入（node_id に logic ノードIDも載せる）
+  // 追加: level -> type 変換（claim系=toi、reason/fact系=answer、それ以外はanswer）
+  var spanType = (function mapLogicLevelToType(level) {
+    if (!level) return "answer";
+    const lv = String(level).toLowerCase();
+    if (lv.includes("claim") || lv.includes("主張") || lv.includes("結論")) return "toi";
+    if (lv.includes("reason") || lv.includes("fact") || lv.includes("理由") || lv.includes("根拠") || lv.includes("事実")) return "answer";
+    return "answer";
+  })(selected_logic_node && selected_logic_node.level);
+
+  // 内容テキストエリアにノード内容を挿入（type を明示付与）
   let area = document.getElementById("target")
   let label = "<div id='"+setid+"' class='scenario_content'>"+
-                "<span node_id='"+id+"' logic_node_id='"+id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_logic_node.topic+"</span>"+
+                "<span node_id='"+id+"' logic_node_id='"+id+"' class='cspan' name='0' type='"+spanType+"' style='width:calc(100% - 25px)' tabindex='0'>"+selected_logic_node.topic+"</span>"+
                 "<textarea id='contents-"+setid+"' class='text_border' class='statement' onFocus='TextboxClick()' onblur='Edit_save(this,"+quot_setid+");' placeholder='内容' style='width:calc(100% - 25px)' onkeypress='Keypress(event.keyCode, this);'>"+selected_logic_node.topic+"</textarea>"+
                 "<input class='content_delete' type='button' value='×' onclick='RemoveAppendNode("+quot_setid+");Get_ContentRank();'>"+
               "</div>";
@@ -1303,9 +1314,21 @@ function NodeAppendfromLogic(){
     $('#'+target).children('.purpose').append(label);
   }
 
-  $slide_topic.push(selected_logic_node.topic);
-  console.log($slide_topic);
-  
+  // 追加: 初期色の直接反映（Get_ContentRank 適用前の見た目も崩れないように）
+  (function initSpanColor() {
+    var dom_tmp = document.getElementById("contents-"+setid);
+    if (!dom_tmp) return;
+    var dom_target = dom_tmp.previousElementSibling;
+    if (!dom_target) return;
+    if (dom_target.getAttribute("type") === "toi") {
+      dom_target.style.backgroundColor = "#cce5ff";
+      // dom_target.style.border = "0.3px solid #b8daff";
+    } else {
+      dom_target.style.backgroundColor = "#fff3cd";
+      // dom_target.style.border = "0.3px solid #ffeeba";
+    }
+  })();
+
   // NodeAppend と同様、f_node_id を渡して一括同期（即時Record_content_rankは行わない）
   Get_ContentRank(selected_logic_node.f_node_id || null);
 
@@ -1706,22 +1729,42 @@ function Get_ContentRank(forestNodeId){
 
         // 表示内容と属性
         const content = spanEl ? (spanEl.innerHTML || spanEl.textContent || "") : "";
-        const type = spanEl ? spanEl.getAttribute('type') : null;
+        let type = spanEl ? spanEl.getAttribute('type') : null;
         const indent = spanEl ? spanEl.getAttribute('name') : null;
         const concept_id = spanEl ? spanEl.getAttribute('concept_id') : null;
 
-        // シナリオ上のnode_idは従来通り取得
+        // シナリオ上のnode_id
         const node_id =
           (spanEl && (spanEl.getAttribute('node_id') ||
                       spanEl.getAttribute('nodeid') ||
                       (spanEl.dataset ? (spanEl.dataset.node_id || spanEl.dataset.nodeId) : null))) || null;
 
-        // 変更点: 引数forestNodeIdを優先。無ければf_node_idはnullにする
+        // 追加: type が無いロジック由来ノードは logic_node_id から補完
+        if (spanEl && (!type || type === "")) {
+          const logicId = spanEl.getAttribute('logic_node_id');
+          if (logicId && window.defaultLogicNetwork && defaultLogicNetwork.nodes) {
+            try {
+              const n = defaultLogicNetwork.nodes.get(logicId);
+              const level = n ? (n.level || n.group || null) : null;
+              if (level) {
+                const lv = String(level).toLowerCase();
+                if (lv.includes("claim") || lv.includes("主張") || lv.includes("結論")) {
+                  type = "toi";
+                } else {
+                  type = "answer";
+                }
+                spanEl.setAttribute('type', type);
+              }
+            } catch(e) {
+              // nodes.get で見つからない場合は何もしない（既定は answer 扱い）
+            }
+          }
+        }
+
+        // 変更点: 引数forestNodeIdを優先。無ければf_node_idはnull
         const f_node_id = (forestNodeId != null && String(forestNodeId).trim() !== "")
           ? String(forestNodeId).trim()
           : null;
-
-        console.log("Get_ContentRank: content_id=", content_id, "f_node_id=", f_node_id, "node_id=", node_id);
 
         // 修正: content_id を先頭、次に f_node_id を渡す
         Record_content_rank(
@@ -1734,6 +1777,29 @@ function Get_ContentRank(forestNodeId){
           type,
           indent,
         );
+
+        // 追加: ランク同期タイミングでノードスタイルを適用（互換呼び出し）
+        try {
+          if (spanEl) {
+            const payload = { content_id, slide_id, node_id, f_node_id, type, indent, concept_id, content };
+            if (typeof applyNodeStyle === 'function') {
+              if (applyNodeStyle.length >= 2) {
+                applyNodeStyle(spanEl, payload);
+              } else {
+                applyNodeStyle(spanEl);
+              }
+            } else if (typeof applynodestyle === 'function') {
+              if (applynodestyle.length >= 2) {
+                applynodestyle(spanEl, payload);
+              } else {
+
+                applynodestyle(spanEl);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('applyNodeStyle failed:', e);
+        }
       }
     }
   });
@@ -2443,7 +2509,7 @@ function Unreflected_node(){ //fujinaka変更
   const jmnode_array = Array.prototype.slice.call(jmnode);
 
   for (let i = 0; i < cnode.length; i++) { 
-    //シナリオ上で追加，編集したノードの背景色を変更
+    //シナリオで追加，編集したノードの背景色を変更
     const cno = cnode[i];
     if (jmnode_array.every(jmn => cno.getAttribute("node_id") !== jmn.getAttribute("nodeid"))) { 
       // シナリオにあってマップにないノード（シナリオ上で新規作成したノード）の場合

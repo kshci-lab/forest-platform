@@ -6,13 +6,24 @@ date_default_timezone_set('Asia/Tokyo');
 
 header('Content-Type: application/json'); // JSON 形式でレスポンスを返す
 
-if (!isset($_SESSION['USERID'])) {
-    echo json_encode(["status" => "error", "message" => "ユーザーIDが設定されていません"]);
+// 追加: POST指定があればそれを利用（再現のために優先）。なければセッション。
+$post_user_id = $_POST['user_id'] ?? null;
+$post_sheet_id = $_POST['sheet_id'] ?? null;
+
+if ((!isset($_SESSION['USERID']) || !isset($_SESSION['SHEETID'])) && (!$post_user_id || !$post_sheet_id)) {
+    echo json_encode(["status" => "error", "message" => "ユーザーIDまたはシートIDが設定されていません"]);
     exit;
 }
 
-$user_id = $_SESSION['USERID']; // ユーザーID
-$purpose =$_POST['purpose'];
+// デフォルトはセッション、POSTに両方あれば上書きして「指定再現」
+$user_id = isset($_SESSION['USERID']) ? $_SESSION['USERID'] : $post_user_id;
+$sheet_id = isset($_SESSION['SHEETID']) ? $_SESSION['SHEETID'] : $post_sheet_id;
+if ($post_user_id && $post_sheet_id) {
+    $user_id = $post_user_id;
+    $sheet_id = $post_sheet_id;
+}
+
+$purpose = $_POST['purpose'] ?? null;
 
 if ($purpose === 'record') {
     $record_thing = $_POST['record_thing'];
@@ -24,8 +35,8 @@ if ($purpose === 'record') {
 
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-        $sql = "INSERT INTO logic_triangle (triangle_id, claim_id, reason_id, fact_id) 
-                VALUES ('$triangle_id', '$claim_id', '$reason_id', '$fact_id')";
+        $sql = "INSERT INTO logic_triangle (triangle_id, claim_id, reason_id, fact_id, sheet_id, user_id) 
+                VALUES ('$triangle_id', '$claim_id', '$reason_id', '$fact_id', '$sheet_id', '$user_id')";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "三角ロジックが記録されました", "triangle_id" => $triangle_id]);
@@ -43,8 +54,8 @@ if ($purpose === 'record') {
 
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, p_node_id, edited, level, created_at, updated_at) 
-                VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', '$edited', '$level', '$timestamp', '$timestamp')";
+        $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, p_node_id, edited, level, created_at, updated_at, sheet_id, user_id) 
+                VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', '$edited', '$level', '$timestamp', '$timestamp', '$sheet_id', '$user_id')";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $node_id]);
@@ -103,7 +114,7 @@ else if ($purpose === 'update') {
         }
 
         $node_id_esc = $mysqli->real_escape_string($node_id);
-        $sql = "UPDATE logic_node SET $set WHERE logic_node_id = '$node_id_esc'";
+        $sql = "UPDATE logic_node SET $set WHERE logic_node_id = '$node_id_esc' AND sheet_id = '$sheet_id' AND user_id = '$user_id'"; // 追加: 絞り込み
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードのラベルが更新されました", "node_id" => $node_id]);
@@ -114,9 +125,9 @@ else if ($purpose === 'update') {
         //三角ロジックからforestに反映したときにf_node_idを更新
         $logic_node_id = $_POST["logic_node_id"];
         $f_node_id = $_POST["id"];
-        $sql = "UPDATE logic_node SET f_node_id = '$f_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$logic_node_id'";
+        $sql = "UPDATE logic_node SET f_node_id = '$f_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$logic_node_id' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
         if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
+            echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $logic_node_id]); // 修正
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
@@ -124,9 +135,9 @@ else if ($purpose === 'update') {
         //三角ロジックから論文シナリオに反映したときにp_node_idを更新
         $logic_node_id = $_POST["logic_node_id"];
         $p_node_id = $_POST["content_id"];
-        $sql = "UPDATE logic_node SET p_node_id = '$p_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$logic_node_id'";
+        $sql = "UPDATE logic_node SET p_node_id = '$p_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$logic_node_id' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
         if ($mysqli->query($sql)) {
-            echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
+            echo json_encode(["status" => "success", "message" => "Presentationノードからの更新が完了しました", "node_id" => $logic_node_id]); // 修正
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
@@ -137,7 +148,7 @@ else if ($purpose === 'update') {
         $f_node_id = $_POST["f_node_id"];
         $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
 
-        $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
+        $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
@@ -151,7 +162,7 @@ else if ($purpose === 'update') {
         $p_node_id = $_POST["p_node_id"];
         $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
 
-        $sql = "UPDATE logic_node SET label = '$newlabel', p_node_id = '$p_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId'";
+        $sql = "UPDATE logic_node SET label = '$newlabel', p_node_id = '$p_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "Presentationノードからの更新が完了しました", "node_id" => $updatedNodeId]);
@@ -164,7 +175,7 @@ else if ($purpose === 'update') {
         $conflict = $_POST['conflict'];
         
         // SQLクエリを修正（プレースホルダーを使用）
-        $sql = "UPDATE logic_triangle SET conflict = ?, updated_at = ? WHERE triangle_id = ?";
+        $sql = "UPDATE logic_triangle SET conflict = ?, updated_at = ? WHERE triangle_id = ? AND sheet_id = ? AND user_id = ?";
         $stmt = $mysqli->prepare($sql);
         
         if (!$stmt) {
@@ -177,7 +188,7 @@ else if ($purpose === 'update') {
         }
         
         // パラメータを正しい順序でバインド
-        $stmt->bind_param("sss", $conflict, $timestamp, $triangle_id);
+        $stmt->bind_param("sssss", $conflict, $timestamp, $triangle_id, $sheet_id, $user_id);
         
         if ($stmt->execute()) {
             echo json_encode([
@@ -198,9 +209,9 @@ else if ($purpose === 'update') {
         $triangle_id = $_POST['triangle_id'];
         $claimReason = $_POST['claimReason'];
 
-        $sql = "UPDATE logic_triangle SET claimReason = ?, updated_at = ? WHERE triangle_id = ?";
+        $sql = "UPDATE logic_triangle SET claimReason = ?, updated_at = ? WHERE triangle_id = ? AND sheet_id = ? AND user_id = ?";
         $stmt = $mysqli->prepare($sql);
-        $stmt->bind_param("sss", $claimReason, $timestamp, $triangle_id);
+        $stmt->bind_param("sssss", $claimReason, $timestamp, $triangle_id, $sheet_id, $user_id);
 
         if ($stmt->execute()) {
             echo json_encode([
@@ -234,7 +245,7 @@ else if ($purpose === 'delete') {
                 created_at = NULL,
                 updated_at = '$timestamp',
                 edited = '$edited'
-                WHERE logic_node_id = '$node_id'";
+                WHERE logic_node_id = '$node_id' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードの内容がクリアされました", "node_id" => $node_id]);
@@ -249,18 +260,25 @@ else if ($purpose === 'load') {
     
     if ($load_thing === 'all') {
         // ノードデータを取得（x,yは保持しない）
-        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, p_node_id, edited, level FROM logic_node ORDER BY created_at";
-        $nodesResult = $mysqli->query($nodesSql);
+        $nodesSql = "SELECT logic_node_id as node_id, label, f_node_id, p_node_id, edited, level FROM logic_node WHERE sheet_id = ? AND user_id = ? ORDER BY created_at";
+        $stmtNodes = $mysqli->prepare($nodesSql);
+        $stmtNodes->bind_param("ss", $sheet_id, $user_id);
+        $stmtNodes->execute();
+        $nodesResult = $stmtNodes->get_result();
         $nodes = [];
         if ($nodesResult) {
             while ($row = $nodesResult->fetch_assoc()) {
                 $nodes[] = $row;
             }
         }
+        $stmtNodes->close();
 
         // 三角データを取得しつつ、従来通りedgesも生成
-        $trianglesSql = "SELECT claim_id, reason_id, fact_id FROM logic_triangle";
-        $trianglesResult = $mysqli->query($trianglesSql);
+        $trianglesSql = "SELECT claim_id, reason_id, fact_id FROM logic_triangle WHERE sheet_id = ? AND user_id = ?";
+        $stmtTri = $mysqli->prepare($trianglesSql);
+        $stmtTri->bind_param("ss", $sheet_id, $user_id);
+        $stmtTri->execute();
+        $trianglesResult = $stmtTri->get_result();
         $edges = [];
         $triangles = [];
         if ($trianglesResult) {
@@ -277,6 +295,7 @@ else if ($purpose === 'load') {
                 $edges[] = ['edge_start' => $row['fact_id'],   'edge_end' => $row['claim_id']];
             }
         }
+        $stmtTri->close();
         
         echo json_encode([
             "status"    => "success",
@@ -293,9 +312,9 @@ else if ($purpose === 'get') {
     if ($get_thing === 'triangle_by_claim') {
         $claim_id = $_POST['claim_id'];
         
-        $sql = "SELECT triangle_id FROM logic_triangle WHERE claim_id = ?";
+        $sql = "SELECT triangle_id FROM logic_triangle WHERE claim_id = ? AND sheet_id = ? AND user_id = ?";
         $stmt = $mysqli->prepare($sql);
-        $stmt->bind_param("s", $claim_id);
+        $stmt->bind_param("sss", $claim_id, $sheet_id, $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
         

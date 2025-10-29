@@ -76,6 +76,37 @@ function updateContentFromLogicNetwork(logicNodeID, scenarioContentID) {
       },
       success: function () {
         console.log("logic-node link updated:", logicNodeID, "-> content:", scenarioContentID);
+
+        // ここから: LogicNetwork側ノードに applyNodeStyle を適用して即時反映
+        try {
+          const ln = window.defaultLogicNetwork;
+          if (ln && ln.nodes && typeof ln.nodes.get === 'function') {
+            const logicNode = ln.nodes.get(logicNodeID);
+            if (logicNode) {
+              const updatedLogicNode = Object.assign({}, logicNode, {
+                p_node_id: scenarioContentID,
+                edited: 1
+              });
+              // スタイル適用
+              if (typeof ln.applyNodeStyle === 'function') {
+                ln.applyNodeStyle(updatedLogicNode);
+              }
+              // データセット更新
+              if (typeof ln.nodes.update === 'function') {
+                ln.nodes.update(updatedLogicNode);
+              }
+              // レイアウト/再描画（存在する場合のみ）
+              if (typeof ln.relayoutHierarchy === 'function') {
+                ln.relayoutHierarchy(false);
+              } else if (ln.ownNetwork && typeof ln.ownNetwork.redraw === 'function') {
+                ln.ownNetwork.redraw();
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('applyNodeStyle failed:', e);
+        }
+        // ここまで: 即時反映
       },
       error: function () {
         console.log("登録失敗");
