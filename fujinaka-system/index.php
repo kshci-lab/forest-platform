@@ -240,7 +240,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   <li class="category-header">三角ロジック</li>
                   <li class="subcategory">
                     <ul>
-                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.completeLogic()">完了</a></li>
+                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.completeLogic(); completelogic_colorchange();">完了</a></li>
                       <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.conflictLogic()">途中</a></li>
                     </ul>
                   </li>
