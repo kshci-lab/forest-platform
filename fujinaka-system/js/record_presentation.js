@@ -258,32 +258,32 @@ function Record_slide_rank(slideID, rank, title){
 
 
 
-function Record_content_rank(contentID, rank, slideID, content, nodeID, type, indent, concept_id){
+function Record_content_rank(content_id, f_node_id, rank, slideID, content, nodeID, type, indent){
   var id = getUniqueStr();
 
   $.ajax({
-
       url: "php/scenario_manager.php",
       type: "POST",
       data: {
         purpose: "record",
-        record_thing: "content",
-        id : id,
-        content_id : contentID,
+        record_thing: "paragraph_content",
+        id : id,                 // レコード物理ID
+        content_id: content_id,  // 論理ID（UPSERTキー）
+        f_node_id : f_node_id,   // ForestノードID
         rank : rank,
         slide_id : slideID,
         content : content,
         node_id : nodeID,
         type : type,
-        indent : indent,
-        concept_id : concept_id
-          },
+        indent : indent
+        // concept_id は現状未使用。必要になれば追加
+      },
       success: function () {
         console.log("登録成功");
       },
       error: function () {
-      console.log("登録失敗");},
-
+        console.log("登録失敗");
+      },
   });
 }
 

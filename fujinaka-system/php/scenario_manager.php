@@ -219,24 +219,26 @@ if($purpose === 'record'){
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
     }
-    else if($record_thing == "content"){
+    else if($record_thing == "paragraph_content"){
         // 段落内容 UPSERT（content_id + sheet_id で一意にする）
-        $id = $_POST["id"];
-        $content_id = $_POST["content_id"];
-        $rank = $_POST["rank"];
+        $id        = $_POST["id"];
+        // フォールバック: content_id が無い場合の互換
+        $content_id = $_POST["content_id"] ?? ($_POST["contentID"] ?? null);
+        $rank     = $_POST["rank"];
         $slide_id = $_POST["slide_id"];
-        $content = $_POST["content"];
-        $node_id = $_POST["node_id"];
-        $type = $_POST["type"];
-        $indent = $_POST["indent"];
-        $concept_id = $_POST["concept_id"];
+        $content  = $_POST["content"];
+        $node_id  = $_POST["node_id"];
+        $type     = $_POST["type"];
+        $indent   = $_POST["indent"];
+        // フォールバック: f_node_id / forest_node_id 両対応
+        $f_node_id = $_POST["f_node_id"] ?? ($_POST["forest_node_id"] ?? null);
 
         $chk = "SELECT id FROM slide_content_rank WHERE content_id='$content_id' AND sheet_id='$sheet_id' LIMIT 1";
         if ($res = $mysqli->query($chk)) {
             if ($res->num_rows > 0) {
                 // 既存→UPDATE（deletedは復活させる）
                 $upd = "UPDATE slide_content_rank
-                        SET node_id='$node_id', concept_id='$concept_id', rank='$rank', content='$content',
+                        SET node_id='$node_id', f_node_id='$f_node_id', rank='$rank', content='$content',
                             slide_id='$slide_id', type='$type', indent='$indent',
                             updated_at='$timestamp', user_id='$user_id', deleted=0
                         WHERE content_id='$content_id' AND sheet_id='$sheet_id'";
@@ -244,10 +246,10 @@ if($purpose === 'record'){
             } else {
                 // 新規→INSERT
                 $ins = "INSERT INTO slide_content_rank
-                        (id, content_id, node_id, concept_id, rank, content, slide_id, type, indent,
+                        (id, content_id, node_id, f_node_id, rank, content, slide_id, type, indent,
                          created_at, updated_at, user_id, sheet_id, deleted)
                         VALUES
-                        ('$id', '$content_id', '$node_id', '$concept_id', '$rank', '$content', '$slide_id', '$type', '$indent',
+                        ('$id', '$content_id', '$node_id', '$f_node_id', '$rank', '$content', '$slide_id', '$type', '$indent',
                          '$timestamp', '$timestamp', '$user_id', '$sheet_id', 0)";
                 $ok = $mysqli->query($ins);
             }

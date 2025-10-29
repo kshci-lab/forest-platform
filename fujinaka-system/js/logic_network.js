@@ -227,7 +227,13 @@ class LogicNetwork {
       this.relayoutHierarchy(false);
 
       // データベースに編集状態を記録（edited = 1）
-      defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label, 1);
+      defaultRecordLogicNetwork.edit_LogicNode(
+        node.id,
+        result_label,
+        1,
+        node.f_node_id || null,
+        node.p_node_id || null
+      );
     }
   }
 
@@ -568,7 +574,7 @@ class LogicNetwork {
     console.log("applyForestToTriangle: update_f_to_LogicNodelabelを呼び出し, f_node_id =", f_node_id);
     
     // Forestから反映されたので edited = 1 を設定
-    defaultRecordLogicNetwork.update_f_to_LogicNodelabel(LogicNodeId, f_node.topic, f_node_id, 1);
+    defaultRecordLogicNetwork.edit_LogicNode(LogicNodeId, f_node.topic, 1, f_node_id, null);
   }
 
   // 三角ロジックのノードの内容を論文シナリオの内容に反映する
@@ -613,11 +619,18 @@ class LogicNetwork {
     const updatedNode = this.nodes.get(selectedLogicNodeId);
     updatedNode.p_node_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
     updatedNode.presentation_origin = true; // presentationから反映されたことを示すフラグ
+
+    // 追加: presentation要素が conceptid を持っていれば取得してUI側にも反映
+    const conceptIdFromPresentation =
+      selectedElement.getAttribute('concept_id') ||
+      selectedElement.getAttribute('conceptid') ||
+      (selectedElement.dataset ? (selectedElement.dataset.conceptid || selectedElement.dataset.conceptId) : null) || null;
+    if (conceptIdFromPresentation) {
+      updatedNode.f_node_id = conceptIdFromPresentation;
+    }
     
     // 既存のapplyNodeStyleを使用してスタイルを再適用
     this.applyNodeStyle(updatedNode);
-    
-    // ノードを更新
     this.nodes.update(updatedNode);
     
     // 削除済みノードだった場合の追加処理
@@ -630,10 +643,16 @@ class LogicNetwork {
     
     // presentation要素のIDを取得
     const p_element_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
-    console.log("applyPresentationToTriangle: update_p_to_LogicNodelabelを呼び出し, p_element_id =", p_element_id);
-    
-    // presentation ID付きでデータベースを更新
-    defaultRecordLogicNetwork.update_p_to_LogicNodelabel(selectedLogicNodeId, elementText, p_element_id, 1);
+    console.log("applyPresentationToTriangle: edit_LogicNode 呼び出し (p, concept)", { p_element_id, conceptIdFromPresentation });
+
+    // presentation ID付きでデータベースを更新（conceptidがあれば第四引数に渡す）
+    defaultRecordLogicNetwork.edit_LogicNode(
+      selectedLogicNodeId,
+      elementText,
+      1,
+      conceptIdFromPresentation || null,
+      p_element_id
+    );
   }
 
   // データベースからロジックネットワークをロードする
@@ -876,7 +895,7 @@ class RecordLogicNetwork{
     });
   }
 
-  edit_LogicNode(node_id, new_label, edited = 1) {
+  edit_LogicNode(node_id, new_label, edited = 1, f_node_id = null, p_node_id = null) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
@@ -884,6 +903,8 @@ class RecordLogicNetwork{
         node_id: node_id,
         new_label: new_label,
         edited: edited,
+        f_node_id: f_node_id,
+        p_node_id: p_node_id,
         purpose: 'update',
         update_thing: 'label'
       },
@@ -898,33 +919,6 @@ class RecordLogicNetwork{
       },
       error: function(xhr, status, error) {
         console.error("ラベル編集通信エラー:", error);
-      }
-    });
-  }
-
-  update_f_to_LogicNodelabel(LogicNodeId, newlabel, f_node_id, edited = 1) {
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        updatedNodeId: LogicNodeId,
-        label: newlabel,
-        f_node_id: f_node_id,
-        edited: edited,
-        purpose: 'update',
-        update_thing: 'f_to_LogicNodelabel'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log("ラベル更新レスポンス:", response);
-        if (response.status === "success") {
-          console.log("ラベル更新成功:", response.node_id);
-        } else {
-          console.error("ラベル更新エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("ラベル更新通信エラー:", error);
       }
     });
   }
@@ -953,34 +947,6 @@ class RecordLogicNetwork{
       }
     })
   }
-  // presentation IDと共にラベルを更新
-  update_p_to_LogicNodelabel(LogicNodeId, newlabel, p_node_id, edited = 1) {
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        updatedNodeId: LogicNodeId,
-        label: newlabel,
-        p_node_id: p_node_id,
-        edited: edited,
-        purpose: 'update',
-        update_thing: 'p_to_LogicNodelabel'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log("presentation ID付きラベル更新レスポンス:", response);
-        if (response.status === "success") {
-          console.log("presentation ID付きラベル更新成功:", response.node_id);
-        } else {
-          console.error("presentation ID付きラベル更新エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("presentation ID付きラベル更新通信エラー:", error);
-      }
-    });
-  }
-
 }
 
 window.addEventListener('load', async () => {

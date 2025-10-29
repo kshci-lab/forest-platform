@@ -86,12 +86,24 @@ else if ($purpose === 'update') {
     $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
     
     if ($update_thing === 'label') {
-        // ノードのラベルのみ更新（edit_LogicNode用）
+        // ノードのラベルのみ更新（必要なら f_node_id / p_node_id も）
         $node_id = $_POST["node_id"];
         $new_label = $_POST["new_label"];
-        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
+        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1;
 
-        $sql = "UPDATE logic_node SET label = '$new_label', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$node_id'";
+        // 動的にSET句を構築（f_node_id / p_node_id が来た時のみ更新）
+        $set = "label = '".$mysqli->real_escape_string($new_label)."', edited = '".$mysqli->real_escape_string($edited)."', updated_at = '$timestamp'";
+        if (isset($_POST["f_node_id"]) && $_POST["f_node_id"] !== '') {
+            $f_node_id = $mysqli->real_escape_string($_POST["f_node_id"]);
+            $set .= ", f_node_id = '$f_node_id'";
+        }
+        if (isset($_POST["p_node_id"]) && $_POST["p_node_id"] !== '') {
+            $p_node_id = $mysqli->real_escape_string($_POST["p_node_id"]);
+            $set .= ", p_node_id = '$p_node_id'";
+        }
+
+        $node_id_esc = $mysqli->real_escape_string($node_id);
+        $sql = "UPDATE logic_node SET $set WHERE logic_node_id = '$node_id_esc'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードのラベルが更新されました", "node_id" => $node_id]);

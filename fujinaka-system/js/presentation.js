@@ -1201,7 +1201,7 @@ function NodeAppend(){
   // console.log(target);  //slideID
   var type = GetType(id);
   // 重複INSERT防止
-  // Record_content(setid, id, conceptID, content, target, type);
+  // Record_content(setid,  '','', '', data,'');
 
   var dom_tmp = document.getElementById("contents-"+setid);
   var dom_target = dom_tmp.previousElementSibling;
@@ -1232,11 +1232,8 @@ function NodeAppend(){
     }
   }
   SetIndent();
-
-  Get_ContentRank();
-
-  unconsidered_rationality_feedback(id, c_id);
-
+  //forestのIDを渡す
+  Get_ContentRank(id);
 }
 
 // 三角ロジック上のノードを選択した状態でサブセンテンスとしてパラグラフに内容を追加する関数
@@ -1484,6 +1481,7 @@ function NewContent_Append(type){ //fujinaka追加
   }
   SetIndent();
 
+
   Get_ContentRank();
 }
 
@@ -1711,11 +1709,10 @@ function Record_ContentRank(){ //
 
 }
 
-function Get_ContentRank(){
+function Get_ContentRank(forestNodeId){
   var slide_dom = document.getElementsByClassName("thread");
   var content_dom;
   console.log(slide_dom);
-
 
   Update_content_rank().then(() => {
     //最新のコンテントの順番を保存する処理
@@ -1726,16 +1723,41 @@ function Get_ContentRank(){
       console.log(content_dom);
       for(var j=0; j<content_dom.length; j++){
         var rank = j;
-        console.log(rank);
         var content_id = content_dom[j].id;
-        const content = content_dom[j].firstElementChild.innerHTML;
-        const node_id = content_dom[j].firstElementChild.getAttribute('node_id');
-        const type = content_dom[j].firstElementChild.getAttribute('type');
-        const indent = content_dom[j].firstElementChild.getAttribute('name');
-        const concept_id = content_dom[j].firstElementChild.getAttribute('concept_id');
 
+        // 対象cspanを取得
+        const spanEl = content_dom[j].querySelector('.cspan') || content_dom[j].firstElementChild;
 
-        Record_content_rank(content_id, rank, slide_id, content, node_id, type, indent, concept_id);
+        // 表示内容と属性
+        const content = spanEl ? (spanEl.innerHTML || spanEl.textContent || "") : "";
+        const type = spanEl ? spanEl.getAttribute('type') : null;
+        const indent = spanEl ? spanEl.getAttribute('name') : null;
+        const concept_id = spanEl ? spanEl.getAttribute('concept_id') : null;
+
+        // シナリオ上のnode_idは従来通り取得
+        const node_id =
+          (spanEl && (spanEl.getAttribute('node_id') ||
+                      spanEl.getAttribute('nodeid') ||
+                      (spanEl.dataset ? (spanEl.dataset.node_id || spanEl.dataset.nodeId) : null))) || null;
+
+        // 変更点: 引数forestNodeIdを優先。無ければf_node_idはnullにする
+        const f_node_id = (forestNodeId != null && String(forestNodeId).trim() !== "")
+          ? String(forestNodeId).trim()
+          : null;
+
+        console.log("Get_ContentRank: content_id=", content_id, "f_node_id=", f_node_id, "node_id=", node_id);
+
+        // 修正: content_id を先頭、次に f_node_id を渡す
+        Record_content_rank(
+          content_id,
+          f_node_id,
+          rank,
+          slide_id,
+          content,
+          node_id,
+          type,
+          indent,
+        );
       }
     }
   });
@@ -1744,7 +1766,7 @@ function Get_ContentRank(){
 
 $(function(){
     $('html').keydown(function(e){
-        if(e.which==9 || (event.shiftKey && event.which == 9)){//e.which==37
+        if(e.which==9 || (event.shiftKey && e.which == 9)){//e.which==37
           console.log(e.which);
           var span_dom = document.getElementsByClassName("cspan");
           var target_dom;
@@ -1786,7 +1808,7 @@ $(function(){
                 target_dom.setAttribute('name', '0');
                 text_dom.style.width = "calc(100% - 25px)";
                 text_dom.style.marginLeft = "";
-              }
+                           }
              }
              else if(event.which == 9){// Key[←]37
                if(target_dom.style.width == "calc(100% - 25px)"){
@@ -2037,9 +2059,9 @@ class Section{
           var log = $(this).sortable("toArray");
           console.log(log);
           setTimeout( () =>
-          {
-           Record_ChapterRank();
-         }, 3000 ); 
+         {
+          Record_ChapterRank();
+        }, 3000 ); 
       }
     });*/
   }
@@ -2806,7 +2828,6 @@ function createTriangleFromPresentation() {
       }
     } else {
       elementText = selectedElement.value || "";
-      elementType = "テキスト";
     }
     
     if (!elementText || elementText.trim() === "") {
