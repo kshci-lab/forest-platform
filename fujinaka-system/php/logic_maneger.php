@@ -6,22 +6,13 @@ date_default_timezone_set('Asia/Tokyo');
 
 header('Content-Type: application/json'); // JSON 形式でレスポンスを返す
 
-// 追加: POST指定があればそれを利用（再現のために優先）。なければセッション。
-$post_user_id = $_POST['user_id'] ?? null;
-$post_sheet_id = $_POST['sheet_id'] ?? null;
-
-if ((!isset($_SESSION['USERID']) || !isset($_SESSION['SHEETID'])) && (!$post_user_id || !$post_sheet_id)) {
-    echo json_encode(["status" => "error", "message" => "ユーザーIDまたはシートIDが設定されていません"]);
+if (!isset($_SESSION['USERID'])) {
+    echo json_encode(["status" => "error", "message" => "ユーザーIDが設定されていません"]);
     exit;
 }
 
-// デフォルトはセッション、POSTに両方あれば上書きして「指定再現」
-$user_id = isset($_SESSION['USERID']) ? $_SESSION['USERID'] : $post_user_id;
-$sheet_id = isset($_SESSION['SHEETID']) ? $_SESSION['SHEETID'] : $post_sheet_id;
-if ($post_user_id && $post_sheet_id) {
-    $user_id = $post_user_id;
-    $sheet_id = $post_sheet_id;
-}
+$user_id = $_SESSION['USERID'];
+$sheet_id = $_SESSION['SHEETID'];
 
 $purpose = $_POST['purpose'] ?? null;
 
