@@ -54,6 +54,8 @@ class LogicNetwork {
       this.ownNetwork.on('dragStart', this.dragstart.bind(this));
       this.ownNetwork.on('dragEnd', this.dragend.bind(this));
       this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
+      // ノードクリック時にForest側をハイライト
+      this.ownNetwork.on('click', this.handleNodeClickHighlightForest.bind(this));
     }
     console.log("[LogicNetwork] constructor end");
   }
@@ -833,6 +835,43 @@ class LogicNetwork {
       this.ownNetwork.fit({ animation: { duration: 200, easingFunction: 'easeInOutQuad' } });
     } else {
       this.ownNetwork.redraw();
+    }
+  }
+
+  // Logic側ノードクリックでForest側の対応ノードをハイライト
+  handleNodeClickHighlightForest(params) {
+    try {
+      if (!params || !Array.isArray(params.nodes) || params.nodes.length === 0) return;
+      const clickedId = params.nodes[0];
+      const node = this.nodes.get(clickedId);
+      if (!node) return;
+
+      const fId = node.f_node_id;
+      if (fId === null || fId === undefined || fId === "") return;
+
+      // グローバルAPIがあればそれを使用
+      if (typeof window.highlightForestNodeById === 'function') {
+        window.highlightForestNodeById(String(fId));
+        return;
+      }
+
+      // フォールバック（直接 jsMind に触る）
+      if (typeof _jm !== 'undefined' && _jm) {
+        _jm.select_node(String(fId));
+        const jmnodes = document.getElementsByTagName("jmnode");
+        for (let i = 0; i < jmnodes.length; i++) {
+          if (jmnodes[i].getAttribute("nodeid") == String(fId)) {
+            const el = jmnodes[i];
+            el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            el.style.transition = "box-shadow 0.2s ease-out";
+            el.style.boxShadow = "0 0 0 3px orange inset";
+            setTimeout(() => { el.style.boxShadow = ""; }, 1200);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("handleNodeClickHighlightForest error:", e);
     }
   }
 

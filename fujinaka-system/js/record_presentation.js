@@ -64,6 +64,25 @@ function Record_content(contentID, nodeID, conceptID, content, slideID, type, pa
   });
 }
 
+function updateContentFromLogicNetwork(logicNodeID, scenarioContentID) {
+  $.ajax({ 
+      url: "php/logic_maneger.php", 
+      type: "POST",
+      data: {
+        purpose: "update",
+        update_thing: "p_node_id", // f_node_id ではなくシナリオ側content_idを更新
+        logic_node_id: logicNodeID,
+        content_id: scenarioContentID
+      },
+      success: function () {
+        console.log("logic-node link updated:", logicNodeID, "-> content:", scenarioContentID);
+      },
+      error: function () {
+        console.log("登録失敗");
+      },
+  });
+  
+}
 
 //コンテンツ削除を記録する関数
 function Delete_content(contentID){

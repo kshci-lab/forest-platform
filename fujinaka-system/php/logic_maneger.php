@@ -110,6 +110,26 @@ else if ($purpose === 'update') {
         } else {
             echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
         }
+    } else if($update_thing === 'f_node_id') {
+        //三角ロジックからforestに反映したときにf_node_idを更新
+        $logic_node_id = $_POST["logic_node_id"];
+        $f_node_id = $_POST["id"];
+        $sql = "UPDATE logic_node SET f_node_id = '$f_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$logic_node_id'";
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
+    } else if($update_thing === 'p_node_id') {
+        //三角ロジックから論文シナリオに反映したときにp_node_idを更新
+        $logic_node_id = $_POST["logic_node_id"];
+        $p_node_id = $_POST["content_id"];
+        $sql = "UPDATE logic_node SET p_node_id = '$p_node_id', updated_at = '$timestamp' WHERE logic_node_id = '$logic_node_id'";
+        if ($mysqli->query($sql)) {
+            echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "データベースエラー: " . $mysqli->error]);
+        }
     } else if ($update_thing === 'f_to_LogicNodelabel') {
         // ForestからLogicノードへの更新（update_f_to_LogicNodelabel用）
         $updatedNodeId = $_POST["updatedNodeId"];

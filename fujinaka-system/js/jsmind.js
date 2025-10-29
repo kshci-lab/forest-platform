@@ -3333,7 +3333,7 @@
         _jm.show(mind);
         return _jm;
     };
-
+    // yamashita編集
     // logic_networkで選択されたノードの内容をjsMindの選択ノードに反映する関数
     jm.createNodeFromLogic = function() {
         try {
@@ -3396,7 +3396,9 @@
                 var jmnode = document.getElementsByTagName("jmnode");
                 
                 for(var i=0; i<jmnode.length; i++){
+
                     if(jmSelectedNode.id == jmnode[i].getAttribute("nodeid")){
+
                         // logic_networkから更新されたことを示すフラグを追加
                         jmnode[i].setAttribute("logic_origin", "true");
                         jmnode[i].setAttribute("logic_node_id", selectedNodeId);
@@ -3419,7 +3421,24 @@
                                 console.error('Failed to update node content from logic:', error);
                             }
                         });
-
+                        //logic_nodeテーブルにf_node_idを反映
+                        $.ajax({
+                            url: "php/logic_maneger.php", 
+                            type: "POST",
+                            data: { 
+                                purpose: "update",
+                                update_thing: "f_node_id",
+                                id: jmSelectedNode.id,
+                                logic_node_id: selectedNodeId
+                            },
+                            success: function(response) {
+                                console.log('Node content updated from logic successfully:', response);
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Failed to update node content from logic:', error);
+                            }
+                        });
+                        
                         // 活動記録
                         if (typeof Record_activities === 'function') {
                             Record_activities(jmSelectedNode.id,
@@ -3434,6 +3453,30 @@
                         break;
                     }
                 }
+
+                // ここから: LogicNetwork側ノードに applyNodeStyle を適用して即時反映
+                try {
+                    const ln = window.defaultLogicNetwork;
+                    if (ln && typeof ln.applyNodeStyle === 'function' && ln.nodes && typeof ln.nodes.get === 'function') {
+                        const logicNode = ln.nodes.get(selectedNodeId);
+                        if (logicNode) {
+                            const updatedLogicNode = {
+                                ...logicNode,
+                                // Forestとの紐づけと編集済みフラグを即時反映
+                                f_node_id: jmSelectedNode.id,
+                                edited: 1
+                            };
+                            ln.applyNodeStyle(updatedLogicNode);
+                            ln.nodes.update(updatedLogicNode);
+                            if (typeof ln.relayoutHierarchy === 'function') {
+                                ln.relayoutHierarchy(false);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('applyNodeStyle failed:', e);
+                }
+                // ここまで: スタイル適用
 
                 // シートを更新
                 $.ajax({

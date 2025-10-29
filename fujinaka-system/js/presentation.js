@@ -694,7 +694,7 @@ function SetPurposeonChapter(){
    MakeChapter(selected_node.topic);
  }
 }
-
+//yamashita　三角ロジックから章作成
 function SetPurposeonChapterfromlogic(){
 
   // 三角ロジックの選択されたノードを取得
@@ -731,7 +731,7 @@ function SetPurposeonSection(){
    MakeSection(selected_node.topic);
  }
 }
-
+//yamashita 三角ロジックから節作成
 function SetPurposeonSectionfromlogic(){
 
   // 三角ロジックの選択されたノードを取得
@@ -967,7 +967,7 @@ function SetPurpose(){
  }
 }
 
-// 三角ロジック上のノードを選択した状態で右クリックすると文書に反映する関数
+// yamashita 三角ロジックからパラグラフ作成
 function SetPurposefromLogic(){
 
   // 三角ロジックの選択されたノードを取得
@@ -1236,7 +1236,7 @@ function NodeAppend(){
   Get_ContentRank(id);
 }
 
-// 三角ロジック上のノードを選択した状態でサブセンテンスとしてパラグラフに内容を追加する関数
+// yamashita 三角ロジックからパラグラフに内容追加
 function NodeAppendfromLogic(){
   
   // 三角ロジックの選択されたノードを取得
@@ -1247,9 +1247,12 @@ function NodeAppendfromLogic(){
       const selectedNodeId = selectedNodes[0];
       const nodeData = defaultLogicNetwork.nodes.get(selectedNodeId);
       if (nodeData) {
+        // f_node_id を取得して保持（未設定/空は null に正規化）
+        const fId = (nodeData.f_node_id !== undefined && nodeData.f_node_id !== "") ? nodeData.f_node_id : null;
         selected_logic_node = {
           id: selectedNodeId,
-          topic: nodeData.label
+          topic: nodeData.label,
+          f_node_id: fId
         };
       }
     }
@@ -1276,10 +1279,10 @@ function NodeAppendfromLogic(){
   var setid = getUniqueStr();  //contentID
   var quot_setid = "\"" + setid + "\"";
 
-  //内容テキストエリアにノード内容を挿入
+  // 内容テキストエリアにノード内容を挿入（node_id に logic ノードIDも載せる）
   let area = document.getElementById("target")
   let label = "<div id='"+setid+"' class='scenario_content'>"+
-                "<span logic_node_id='"+id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_logic_node.topic+"</span>"+
+                "<span node_id='"+id+"' logic_node_id='"+id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_logic_node.topic+"</span>"+
                 "<textarea id='contents-"+setid+"' class='text_border' class='statement' onFocus='TextboxClick()' onblur='Edit_save(this,"+quot_setid+");' placeholder='内容' style='width:calc(100% - 25px)' onkeypress='Keypress(event.keyCode, this);'>"+selected_logic_node.topic+"</textarea>"+
                 "<input class='content_delete' type='button' value='×' onclick='RemoveAppendNode("+quot_setid+");Get_ContentRank();'>"+
               "</div>";
@@ -1303,38 +1306,11 @@ function NodeAppendfromLogic(){
   $slide_topic.push(selected_logic_node.topic);
   console.log($slide_topic);
   
-  // Logic Networkの場合のRecord_content呼び出し（concept_idはnull）
-  var type = "logic_node"; // Logic Networkからの場合の識別用
-  // 重複INSERT防止
-  // Record_content(setid, id, null, content, target, type);
+  // NodeAppend と同様、f_node_id を渡して一括同期（即時Record_content_rankは行わない）
+  Get_ContentRank(selected_logic_node.f_node_id || null);
 
-  var dom_tmp = document.getElementById("contents-"+setid);
-  var dom_target = dom_tmp.previousElementSibling;
-  console.log(dom_target);
-  
-  // Logic Networkノードの場合は赤色系の背景色を設定
-  dom_target.style.backgroundColor = "#ffe6e6";
-  dom_target.style.border = "2px solid #ff9999";
-  dom_target.setAttribute("type","logic_origin");
-
-  //インデント情報の格納
-  console.log(setindent);
-  console.log(settype);
-  if(!(typeof setindent === 'undefined')){
-    if(settype == "toi"){
-      if(!(Number(setindent) == 3)){
-        const num = Number(setindent) + 1;
-        dom_target.setAttribute("name",num);
-      }else{
-        dom_target.setAttribute("name",setindent);
-      }
-    }else{
-      dom_target.setAttribute("name",setindent);
-    }
-  }
-  SetIndent();
-
-  Get_ContentRank();
+  // 論文シナリオの content_id(setid) をロジック側へ関連付けとして通知
+  updateContentFromLogicNetwork(selected_logic_node.id, setid);
 
   console.log("NodeAppendfromLogic: Logic Networkノードから内容を追加しました");
 }
@@ -1800,7 +1776,7 @@ $(function(){
                 target_dom.style.width = "calc(100% - 45px)";
                 target_dom.style.marginLeft = "20px";
                 target_dom.setAttribute('name', '1');
-                text_dom.style.width = "calc(100% - 45px)";
+                text_dom.style.width = "calc(100% -  45px)";
                 text_dom.style.marginLeft = "20px";
               } else if(target_dom.style.width == "calc(100% - 45px)"){
                 target_dom.style.width = "calc(100% - 25px)";
@@ -2692,6 +2668,7 @@ const add_span = () => {
   recursive_leaf_apply(before_spanned_text);
 
 }
+
 
 
 /*　プレビュー更新関数
