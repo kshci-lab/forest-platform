@@ -1293,7 +1293,7 @@ function NodeAppendfromLogic(){
   // 内容テキストエリアにノード内容を挿入（type を明示付与）
   let area = document.getElementById("target")
   let label = "<div id='"+setid+"' class='scenario_content'>"+
-                "<span node_id='"+id+"' logic_node_id='"+id+"' class='cspan' name='0' type='"+spanType+"' style='width:calc(100% - 25px)' tabindex='0'>"+selected_logic_node.topic+"</span>"+
+                "<span node_id='"+id+"' logic_node_id='"+id+"' f_node_id='"+(selected_logic_node.f_node_id || "")+"' class='cspan' name='0' type='"+spanType+"' style='width:calc(100% - 25px)' tabindex='0'>"+selected_logic_node.topic+"</span>"+
                 "<textarea id='contents-"+setid+"' class='text_border' class='statement' onFocus='TextboxClick()' onblur='Edit_save(this,"+quot_setid+");' placeholder='内容' style='width:calc(100% - 25px)' onkeypress='Keypress(event.keyCode, this);'>"+selected_logic_node.topic+"</textarea>"+
                 "<input class='content_delete' type='button' value='×' onclick='RemoveAppendNode("+quot_setid+");Get_ContentRank();'>"+
               "</div>";
@@ -1483,7 +1483,6 @@ function NewContent_Append(type){ //fujinaka追加
 
   Get_ContentRank();
 }
-
 
 // textareaの内容をテキストファイルを出力する
 // 拡張子はtxt，中身はHTML形式で，クライアント側に保存
@@ -1732,6 +1731,8 @@ function Get_ContentRank(forestNodeId){
         let type = spanEl ? spanEl.getAttribute('type') : null;
         const indent = spanEl ? spanEl.getAttribute('name') : null;
         const concept_id = spanEl ? spanEl.getAttribute('concept_id') : null;
+        // 追加: f_node_id属性（DB移行対応）
+        const f_node_attr = spanEl ? spanEl.getAttribute('f_node_id') : null;
 
         // シナリオ上のnode_id
         const node_id =
@@ -1761,10 +1762,10 @@ function Get_ContentRank(forestNodeId){
           }
         }
 
-        // 変更点: 引数forestNodeIdを優先。無ければf_node_idはnull
+        // 修正: 引数が無ければ各要素のf_node_id属性から補完
         const f_node_id = (forestNodeId != null && String(forestNodeId).trim() !== "")
           ? String(forestNodeId).trim()
-          : null;
+          : (f_node_attr ? String(f_node_attr) : null);
 
         // 修正: content_id を先頭、次に f_node_id を渡す
         Record_content_rank(
@@ -2390,54 +2391,75 @@ async function Rebuild_paragraph(){
 //コンテンツ再現の関数
 async function Rebuild_content(){
   await $.ajax({
-	    url: "php/content_rebuild.php",
-	    type: "POST",
-	    success: function(arr){
+    url: "php/content_rebuild.php",
+    type: "POST",
+    dataType: "json", // ここを追加：受信を自動でJSONパース
+    success: function(arr){
+      try {
+        // 想定レスポンス: 配列 or エラーオブジェクト
+        if (!Array.isArray(arr)) {
+          console.warn("content_rebuild.php 非配列レスポンス:", arr);
+          console.log("コンテント再現完了（レスポンス非配列）");
+          return;
+        }
+        if (arr.length === 0) {
+          console.log("[] 受信: コンテンツなし");
+          console.log("コンテント再現完了");
+          return;
+        }
 
-        if(arr == "[]"){
-          console.log(arr);
-        }else{
-          console.log(arr);
-          var parse = JSON.parse(arr);
-          // console.log(parse);
-          // console.log(parse.length);
-          for(var i=0; i<parse.length; i++){
-            for(var j=0; j<parse.length; j++){
-              // console.log(String(i), parse[j].rank);
-              if(String(i) == parse[j].rank){
-                const newcontent = new Content({
-              		content_id: parse[j].content_id,
-              		node_id: parse[j].node_id,
-                  content: parse[j].content,
-                  slide_id: parse[j].slide_id,
-                  type: parse[j].type,
-              	  indent: parse[j].indent});
-                if(parse[j].node_id != ""){
-                  const content_id = parse[j].content_id;
-                  const node_id = parse[j].node_id;
-                  var dom_tmp = document.getElementById("contents-"+content_id);
-                  var dom_target = dom_tmp.previousElementSibling;
-                  console.log(dom_target);
-                  dom_target.setAttribute("node_id",node_id);
-                }
-                if(parse[j].concept_id != ""){
-                  const content_id = parse[j].content_id;
-                  const concept_id = parse[j].concept_id;
-                  var dom_tmp = document.getElementById("contents-"+content_id);
-                  var dom_target = dom_tmp.previousElementSibling;
-                  console.log(dom_target);
-                  dom_target.setAttribute("concept_id",concept_id);
-                }
-                console.log("コンテント再現完了");
-              }
+        // 並び順を保証
+        arr.sort(function(a, b){
+          const s = String(a.slide_id).localeCompare(String(b.slide_id));
+          if (s !== 0) return s;
+          return Number(a.rank) - Number(b.rank);
+        });
+
+        // 単一ループで復元
+        for (let i = 0; i < arr.length; i++) {
+          const it = arr[i];
+
+          // 対象スライドDOMが無ければスキップ（章/節/パラグラフ復元後の呼び出し前提）
+          // const purpose = elem.querySelector(`#${it.slide_id} .purpose`);
+          const slideEl = document.getElementById(String(it.slide_id));
+          const purpose = slideEl ? slideEl.querySelector('.purpose') : null;
+          if (!purpose) {
+            console.warn("目的DOM未存在のためスキップ:", it.slide_id, it.content_id);
+            continue;
+          }
+
+          // コンテンツ生成
+          try {
+            const newcontent = new Content({
+              content_id: it.content_id,
+              node_id: it.node_id,
+              content: it.content,
+              slide_id: it.slide_id,
+              type: it.type,
+              indent: it.indent
+            });
+
+            // 生成直後に node_id / f_node_id を安全に反映
+            const textarea = document.getElementById("contents-" + it.content_id);
+            const span = textarea ? textarea.previousElementSibling : null;
+            if (span) {
+              if (it.node_id) span.setAttribute("node_id", it.node_id);
+              if (it.f_node_id) span.setAttribute("f_node_id", it.f_node_id);
             }
+          } catch(e) {
+            console.error("Content生成エラー:", it, e);
           }
         }
-	    },
-      error:function(){
-        console.log("エラーです");
+
+        console.log("コンテント再現完了");
+      } catch (e) {
+        console.error("Rebuild_content 処理エラー:", e);
       }
-	});
+    },
+    error: function(xhr){
+      console.log("エラーです", xhr && xhr.responseText);
+    }
+  });
 }
 
 function Rebuild_title(){

@@ -12,7 +12,7 @@ date_default_timezone_set('Asia/Tokyo');
 $today_date = date("Y-m-d");
 
 
-$sql = "SELECT content_id, node_id, concept_id, rank, content, slide_id, type, indent FROM slide_content_rank WHERE sheet_id='$sheet_id' AND deleted=0";
+$sql = "SELECT content_id, node_id, f_node_id, rank, content, slide_id, type, indent FROM slide_content_rank WHERE sheet_id='$sheet_id' AND deleted=0";
 
 $reflections = array();
 
@@ -23,7 +23,7 @@ if($result = $mysqli->query($sql)){
     $reflections[] = array(
     'content_id'=> $row["content_id"],
     'node_id'=> $row["node_id"],
-    'concept_id'=> $row["concept_id"],
+    'f_node_id'=> $row["f_node_id"],
     'rank' => $row["rank"],
     'content' => $row["content"],
     'slide_id'=> $row["slide_id"],
