@@ -849,7 +849,12 @@ class LogicNetwork {
       if (!node) return;
 
       const fId = node.f_node_id;
-      if (fId === null || fId === undefined || fId === "") return;
+
+      // 追加: Forest側未対応の示唆
+      if (fId === null || fId === undefined || fId === "") {
+        this.suggestMissingForest();
+        return;
+      }
 
       // グローバルAPIがあればそれを使用
       if (typeof window.highlightForestNodeById === 'function') {
@@ -886,14 +891,16 @@ class LogicNetwork {
       if (!node) return;
 
       const pId = node.p_node_id;
-      if (pId === null || pId === undefined || pId === "") return;
 
-      let el = null;
+      // 追加: Presentation側未対応の示唆
+      if (pId === null || pId === undefined || pId === "") {
+        this.suggestMissingPresentation();
+        return;
+      }
 
       // 1) id一致
-      el = document.getElementById(String(pId));
-
-      // 2) node_id属性一致（.cspan/.tspan/.thread/.section/.chapterを走査）
+      let el = document.getElementById(String(pId));
+      // 2) node_id属性一致
       if (!el) {
         const candidates = document.querySelectorAll('.cspan, .tspan, .thread, .section, .chapter, .scenario_content');
         for (let i = 0; i < candidates.length; i++) {
@@ -901,13 +908,11 @@ class LogicNetwork {
           if (nid && String(nid) === String(pId)) { el = candidates[i]; break; }
         }
       }
-
-      // 3) scenario_content の場合は中の .cspan を対象にする
+      // 3) scenario_content の場合は中の .cspan へ
       if (el && el.classList && el.classList.contains('scenario_content')) {
         const inner = el.querySelector('.cspan') || el.querySelector('.tspan');
         if (inner) el = inner;
       }
-
       if (!el) return;
 
       // .cspan の選択枠をいったん解除
@@ -930,6 +935,56 @@ class LogicNetwork {
     } catch (e) {
       console.warn("handleNodeClickHighlightPresentation error:", e);
     }
+  }
+
+  // 追加: 欠落側に示唆（Forest側）
+  suggestMissingForest() {
+    // Forest領域の枠を一時点滅（候補: #mind_all）
+    this.pulseElementById('mind_all');
+    // トースト表示
+    this.showToast('Forest側に未対応です。マインドマップのノードと対応付けるか、Forestから反映してください。');
+  }
+
+  // 追加: 欠落側に示唆（Presentation側）
+  suggestMissingPresentation() {
+    // Presentation領域の枠を一時点滅（候補: #document_area）
+    this.pulseElementById('document_area');
+    // トースト表示
+    this.showToast('シナリオ側に未対応です。シナリオへ内容を反映するか、対応付けを行ってください。');
+  }
+
+  // 追加: コンテナを軽くハイライト
+  pulseElementById(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prev = el.style.outline;
+    el.style.transition = 'outline 0.2s ease';
+    el.style.outline = '3px solid orange';
+    setTimeout(() => { try { el.style.outline = prev || ''; } catch(_) {} }, 1200);
+  }
+
+  // 追加: 簡易トースト表示（自動クローズ）
+  showToast(message) {
+    try {
+      const old = document.getElementById('ln_toast_hint');
+      if (old) old.remove();
+      const div = document.createElement('div');
+      div.id = 'ln_toast_hint';
+      div.textContent = message;
+      div.style.position = 'fixed';
+      div.style.zIndex = 9999;
+      div.style.left = '50%';
+      div.style.top = '16px';
+      div.style.transform = 'translateX(-50%)';
+      div.style.background = 'rgba(0,0,0,0.75)';
+      div.style.color = '#fff';
+      div.style.padding = '8px 12px';
+      div.style.borderRadius = '6px';
+      div.style.fontSize = '13px';
+      div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+      document.body.appendChild(div);
+      setTimeout(() => { try { div.remove(); } catch(_) {} }, 2500);
+    } catch(_) {}
   }
 }
 
