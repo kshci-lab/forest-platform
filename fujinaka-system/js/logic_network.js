@@ -50,7 +50,7 @@ class LogicNetwork {
     this.triangles = [];
     this._highlightedNodeIds = new Set();
     this._highlightedEdgeIds = new Set();
-    // 追加: 役割タグDOMの管理
+    // 役割タグDOMの管理（ノードID+位置キーで複数タグを保持）
     this._roleTagEls = new Map();
 
     this.ownNetwork = this.generateLogicNetworkCanvas(container, this.nodes, this.edges);
@@ -67,7 +67,7 @@ class LogicNetwork {
       this.ownNetwork.on('click', this.handleNodeClickHighlightPresentation.bind(this));
       // 追加: 三角ロジック全体のハイライト
       this.ownNetwork.on('click', this.handleNodeClickHighlightTriangles.bind(this));
-      // 追加: 再描画ごとに役割タグの位置を更新
+      // 再描画ごとに役割タグの位置を更新
       this.ownNetwork.on('afterDrawing', this.updateRoleTagPositions.bind(this));
     }
     // 追加: タグ配置のため、コンテナを相対配置に
@@ -1402,12 +1402,11 @@ class LogicNetwork {
     } catch(_) {}
   }
 
-  // 追加: ノードクリックで該当三角(複数可)をハイライト
+  // ノードクリックで該当三角(複数可)をハイライト
   handleNodeClickHighlightTriangles(params) {
     try {
       if (!params || !Array.isArray(params.nodes)) return;
 
-      // 背景クリックでハイライト解除
       if (params.nodes.length === 0) {
         this.clearTriangleHighlight();
         return;
@@ -1416,19 +1415,19 @@ class LogicNetwork {
       const clickedId = String(params.nodes[0]);
       const tris = this.findTrianglesByNode(clickedId);
 
-      // 対象三角なし → ハイライト解除のみ
       if (!tris.length) {
         this.clearTriangleHighlight();
         return;
       }
 
-      this.highlightTriangles(tris);
+      // クリックIDを渡し、主張レベル最小判定に基づく位置決定を行う
+      this.highlightTriangles(tris, clickedId);
     } catch (e) {
       console.warn("handleNodeClickHighlightTriangles error:", e);
     }
   }
 
-  // 追加: 指定ノードを含む三角を抽出（claim/reason/fact いずれでも）
+  // 指定ノードを含む三角を抽出（claim/reason/fact いずれでも）
   findTrianglesByNode(nodeId) {
     if (!Array.isArray(this.triangles) || this.triangles.length === 0) return [];
     const res = [];
@@ -1444,7 +1443,7 @@ class LogicNetwork {
     return res;
   }
 
-  // 追加: 三角オブジェクトのキー差異を吸収
+  // 三角オブジェクトのキー差異を吸収
   normalizeTriangle(t) {
     if (!t) return null;
     const claimId = t.claim_id ?? t.claimId;
@@ -1462,43 +1461,61 @@ class LogicNetwork {
     };
   }
 
-  // 追加: 三角(複数)をハイライト + 役割タグ表示
-  highlightTriangles(triangles) {
+  // 三角(複数)をハイライト + 役割タグ表示（主張ノードのレベルでタグ位置決定）
+  highlightTriangles(triangles, clickedNodeId) {
     // 既存ハイライトとタグ解除
     this.clearTriangleHighlight();
 
     const nodeIds = new Set();
     const edgeTriples = [];
-    const nodeRoles = new Map();            // nodeId -> Set(役割)
-    const nodeMinTriLevel = new Map();      // nodeId -> 参加三角の最小レベルの最小値
+    const nodeRoles = new Map();       // nodeId -> Set(役割)
+    const nodePosSet = new Map();      // nodeId -> Set('top-left' | 'bottom')
 
-    // 対象ノードとエッジ組(有向)・役割・レベル集計
+    // 対象三角の主張レベル最小を算出（同時に主張レベルを控える）
+    const claimLevels = [];
+    const triWithLevels = [];
     for (const tri of triangles) {
       const nClaim = this.nodes.get(tri.claimId);
-      const nReason = this.nodes.get(tri.reasonId);
-      const nFact = this.nodes.get(tri.factId);
-      if (!nClaim || !nReason || !nFact) continue;
-
+      if (!nClaim) continue;
       const lvClaim = parseInt(nClaim.level) || 0;
-      const lvReason = parseInt(nReason.level) || 0;
-      const lvFact = parseInt(nFact.level) || 0;
-      const triMinLevel = Math.min(lvClaim, lvReason, lvFact);
+      claimLevels.push(lvClaim);
+      triWithLevels.push({ tri, lvClaim });
+    }
+    if (triWithLevels.length === 0) return;
 
-      const addRole = (nodeId, role) => {
-        if (!nodeRoles.has(nodeId)) nodeRoles.set(nodeId, new Set());
-        nodeRoles.get(nodeId).add(role);
-        const cur = nodeMinTriLevel.get(nodeId);
-        nodeMinTriLevel.set(nodeId, cur == null ? triMinLevel : Math.min(cur, triMinLevel));
-      };
+    const minClaimLevel = Math.min(...claimLevels);
+    const multipleTri = triWithLevels.length > 1;
 
-      nodeIds.add(tri.claimId);
-      nodeIds.add(tri.reasonId);
-      nodeIds.add(tri.factId);
+    const addRole = (nodeId, role) => {
+      if (!nodeRoles.has(nodeId)) nodeRoles.set(nodeId, new Set());
+      nodeRoles.get(nodeId).add(role);
+    };
+    const addPos = (nodeId, pos) => {
+      if (!nodePosSet.has(nodeId)) nodePosSet.set(nodeId, new Set());
+      nodePosSet.get(nodeId).add(pos);
+    };
 
+    // 役割と位置を集計
+    for (const { tri, lvClaim } of triWithLevels) {
+      // 位置: 主張レベルが「最小」なら左上、それ以外は真下
+      const posForTriangle = (lvClaim === minClaimLevel) ? 'top-left' : (multipleTri ? 'bottom' : 'top-left');
+
+      // 役割を付与
       addRole(tri.claimId, "主張");
       addRole(tri.reasonId, "理由付け");
       addRole(tri.factId, "事実");
 
+      // 位置を三角内の全ノードに反映（同一ノードが複数三角に属する場合は集合で両位置を保持）
+      addPos(tri.claimId, posForTriangle);
+      addPos(tri.reasonId, posForTriangle);
+      addPos(tri.factId, posForTriangle);
+
+      // ハイライト対象ノード集約
+      nodeIds.add(tri.claimId);
+      nodeIds.add(tri.reasonId);
+      nodeIds.add(tri.factId);
+
+      // エッジ三本
       edgeTriples.push([tri.claimId, tri.reasonId]);
       edgeTriples.push([tri.reasonId, tri.factId]);
       edgeTriples.push([tri.factId, tri.claimId]);
@@ -1509,13 +1526,12 @@ class LogicNetwork {
     nodeIds.forEach(id => {
       const n = this.nodes.get(id);
       if (!n) return;
-      const next = {
+      nodeUpdates.push({
         id: n.id,
         borderWidth: 3,
         borderWidthSelected: 3,
         color: { ...(n.color || {}), border: '#ff8c00' }
-      };
-      nodeUpdates.push(next);
+      });
       this._highlightedNodeIds.add(n.id);
     });
     if (nodeUpdates.length) this.nodes.update(nodeUpdates);
@@ -1535,21 +1551,19 @@ class LogicNetwork {
       });
     }
 
-    // 役割タグを作成・配置
+    // 役割タグを生成（必要なら同一ノードに左上と真下の両方を表示）
     nodeRoles.forEach((rolesSet, nodeId) => {
-      const node = this.nodes.get(nodeId);
-      if (!node) return;
-      const nodeLevel = parseInt(node.level) || 0;
-      const triMin = nodeMinTriLevel.get(nodeId) ?? nodeLevel;
-      const posMode = nodeLevel <= triMin ? 'top-left' : 'bottom';
-      this.createOrUpdateRoleTag(String(nodeId), Array.from(rolesSet), posMode);
+      const roles = Array.from(rolesSet);
+      const posSet = nodePosSet.get(nodeId) || new Set(['top-left']);
+      posSet.forEach(pos => {
+        this.createOrUpdateRoleTag(String(nodeId), roles, pos);
+      });
     });
 
-    // 再描画
     if (this.ownNetwork) this.ownNetwork.redraw();
   }
 
-  // 追加: 三角ハイライト解除（元のスタイルへ）+ タグ削除
+  // 三角ハイライト解除（元のスタイルへ）+ タグ削除
   clearTriangleHighlight() {
     // エッジを戻す
     if (this._highlightedEdgeIds && this._highlightedEdgeIds.size) {
@@ -1607,38 +1621,42 @@ class LogicNetwork {
     if (this.ownNetwork) this.ownNetwork.redraw();
   }
 
-  // 追加: 役割タグDOMを生成/更新
+  // 役割タグDOMを生成/更新（ノードID+位置の複数タグに対応）
   createOrUpdateRoleTag(nodeId, roles, posMode) {
     try {
       if (!this._containerEl || !this.ownNetwork) return;
       const text = Array.isArray(roles) ? roles.join('・') : String(roles || '');
-      let el = this._roleTagEls.get(nodeId);
+      const pos = (posMode === 'bottom') ? 'bottom' : 'top-left';
+      const key = `${nodeId}:${pos}`;
+
+      let el = this._roleTagEls.get(key);
       if (!el) {
         el = document.createElement('div');
         el.className = 'ln-role-tag';
         el.style.position = 'absolute';
         el.style.pointerEvents = 'none';
-        el.style.zIndex = 10;
-        el.style.fontSize = '11px';
+        el.style.zIndex = '10';
+        el.style.fontSize = '25px'; // 11px → 25px
         el.style.lineHeight = '1.4';
         el.style.whiteSpace = 'nowrap';
-        el.style.color = '#ff8c00';
+        el.style.color = '#000'; // オレンジ → 黒
         el.style.background = 'rgba(255,140,0,0.10)';
         el.style.border = '1px solid #ff8c00';
         el.style.borderRadius = '4px';
         el.style.padding = '1px 6px';
+        el.dataset.nodeId = String(nodeId);
+        el.dataset.pos = pos;
         this._containerEl.appendChild(el);
-        this._roleTagEls.set(nodeId, el);
+        this._roleTagEls.set(key, el);
       }
       el.textContent = text;
-      el.dataset.nodeId = String(nodeId);
-      el.dataset.pos = posMode === 'bottom' ? 'bottom' : 'top-left';
+
       // 初回配置
       this.updateRoleTagPositionFor(nodeId, el);
     } catch(_) {}
   }
 
-  // 追加: 全タグ削除
+  // 全タグ削除
   removeAllRoleTags() {
     try {
       if (!this._roleTagEls) return;
@@ -1647,15 +1665,16 @@ class LogicNetwork {
     } catch(_) {}
   }
 
-  // 追加: 描画ごとに全タグ位置を更新
+  // 描画ごとに全タグ位置を更新
   updateRoleTagPositions() {
     if (!this._roleTagEls || this._roleTagEls.size === 0) return;
-    this._roleTagEls.forEach((el, nodeId) => {
-      this.updateRoleTagPositionFor(nodeId, el);
+    this._roleTagEls.forEach((el) => {
+      const nodeId = el.dataset && el.dataset.nodeId ? el.dataset.nodeId : null;
+      if (nodeId) this.updateRoleTagPositionFor(nodeId, el);
     });
   }
 
-  // 追加: 単一タグの位置更新
+  // 単一タグの位置更新（左上/真下）
   updateRoleTagPositionFor(nodeId, el) {
     try {
       if (!this.ownNetwork) return;
@@ -1664,441 +1683,14 @@ class LogicNetwork {
       const posMode = el.dataset.pos || 'top-left';
 
       if (posMode === 'bottom') {
-        // ノードの下中央
         const bottomCenter = { x: (bb.left + bb.right) / 2, y: bb.bottom + 4 };
         const dom = this.ownNetwork.canvasToDOM(bottomCenter);
         el.style.left = `${dom.x}px`;
         el.style.top = `${dom.y}px`;
-        el.style.transform = 'translate(-50%, 0)'; // 中央寄せ
+        el.style.transform = 'translate(-50%, 0)';
       } else {
-        // 左上
-        const topLeft = { x: bb.left - 4, y: bb.top - 6 };
-        const dom = this.ownNetwork.canvasToDOM(topLeft);
-        el.style.left = `${dom.x}px`;
-        el.style.top = `${dom.y}px`;
-        el.style.transform = 'none';
-      }
-    } catch(_) {}
-  }
-
-  //Logic側ノードクリックでForest側の対応ノードをハイライト
-  handleNodeClickHighlightForest(params) {
-    try {
-      if (!params || !Array.isArray(params.nodes) || params.nodes.length === 0) return;
-      const clickedId = params.nodes[0];
-      const node = this.nodes.get(clickedId);
-      if (!node) return;
-
-      const fId = node.f_node_id;
-
-      // 追加: Forest側未対応の示唆
-      if (fId === null || fId === undefined || fId === "") {
-        this.suggestMissingForest();
-        return;
-      }
-
-      // グローバルAPIがあればそれを使用
-      if (typeof window.highlightForestNodeById === 'function') {
-        window.highlightForestNodeById(String(fId));
-        return;
-      }
-
-      // フォールバック（直接 jsMind に触る）
-      if (typeof _jm !== 'undefined' && _jm) {
-        _jm.select_node(String(fId));
-        const jmnodes = document.getElementsByTagName("jmnode");
-        for (let i = 0; i < jmnodes.length; i++) {
-          if (jmnodes[i].getAttribute("nodeid") == String(fId)) {
-            const el = jmnodes[i];
-            el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-            el.style.transition = "box-shadow 0.2s ease-out";
-            el.style.boxShadow = "0 0 0 3px orange inset";
-            setTimeout(() => { el.style.boxShadow = ""; }, 1200);
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("handleNodeClickHighlightForest error:", e);
-    }
-  }
-
-  // 追加: 三角ロジックのノードクリックで、p_node_id に対応するシナリオ側ノードをハイライト
-  handleNodeClickHighlightPresentation(params) {
-    try {
-      if (!params || !Array.isArray(params.nodes) || params.nodes.length === 0) return;
-      const clickedId = params.nodes[0];
-      const node = this.nodes.get(clickedId);
-      if (!node) return;
-
-      const pId = node.p_node_id;
-
-      // 追加: Presentation側未対応の示唆
-      if (pId === null || pId === undefined || pId === "") {
-        this.suggestMissingPresentation();
-        return;
-      }
-
-      // 1) id一致
-      let el = document.getElementById(String(pId));
-      // 2) node_id属性一致
-      if (!el) {
-        const candidates = document.querySelectorAll('.cspan, .tspan, .thread, .section, .chapter, .scenario_content');
-        for (let i = 0; i < candidates.length; i++) {
-          const nid = candidates[i].getAttribute('node_id') || candidates[i].getAttribute('nodeid');
-          if (nid && String(nid) === String(pId)) { el = candidates[i]; break; }
-        }
-      }
-      // 3) scenario_content の場合は中の .cspan へ
-      if (el && el.classList && el.classList.contains('scenario_content')) {
-        const inner = el.querySelector('.cspan') || el.querySelector('.tspan');
-        if (inner) el = inner;
-      }
-      if (!el) return;
-
-      // .cspan の選択枠をいったん解除
-      const spans = document.getElementsByClassName('cspan');
-      for (let i = 0; i < spans.length; i++) {
-        spans[i].style.border = "";
-      }
-
-      // スクロール・フォーカス
-      try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); } catch(_) {}
-      if (typeof el.focus === 'function') el.focus();
-
-      // ハイライト（.cspanは既存の選択スタイルに合わせて枠線、その他は一時アウトライン）
-      if (el.classList && el.classList.contains('cspan')) {
-        el.style.border = "2px solid gray";
-      } else {
-        el.style.outline = "3px solid orange";
-        setTimeout(() => { try { el.style.outline = ""; } catch(_) {} }, 1200);
-      }
-    } catch (e) {
-      console.warn("handleNodeClickHighlightPresentation error:", e);
-    }
-  }
-
-  // 追加: 欠落側に示唆（Forest側）
-  suggestMissingForest() {
-    // Forest領域の枠を一時点滅（候補: #mind_all）
-    this.pulseElementById('mind_all');
-    // トースト表示
-    this.showToast('Forest側に未対応です。マインドマップのノードと対応付けるか、Forestから反映してください。');
-  }
-
-  // 追加: 欠落側に示唆（Presentation側）
-  suggestMissingPresentation() {
-    // Presentation領域の枠を一時点滅（候補: #document_area）
-    this.pulseElementById('document_area');
-    // トースト表示
-    this.showToast('シナリオ側に未対応です。シナリオへ内容を反映するか、対応付けを行ってください。');
-  }
-
-  // 追加: コンテナを軽くハイライト
-  pulseElementById(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const prev = el.style.outline;
-    el.style.transition = 'outline 0.2s ease';
-    el.style.outline = '3px solid orange';
-    setTimeout(() => { try { el.style.outline = prev || ''; } catch(_) {} }, 1200);
-  }
-
-  // 追加: 簡易トースト表示（自動クローズ）
-  showToast(message) {
-    try {
-      const old = document.getElementById('ln_toast_hint');
-      if (old) old.remove();
-      const div = document.createElement('div');
-      div.id = 'ln_toast_hint';
-      div.textContent = message;
-      div.style.position = 'fixed';
-      div.style.zIndex = 9999;
-      div.style.left = '50%';
-      div.style.top = '16px';
-      div.style.transform = 'translateX(-50%)';
-      div.style.background = 'rgba(0,0,0,0.75)';
-      div.style.color = '#fff';
-      div.style.padding = '8px 12px';
-      div.style.borderRadius = '6px';
-      div.style.fontSize = '13px';
-      div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-      document.body.appendChild(div);
-      setTimeout(() => { try { div.remove(); } catch(_) {} }, 2500);
-    } catch(_) {}
-  }
-
-  // 追加: ノードクリックで該当三角(複数可)をハイライト
-  handleNodeClickHighlightTriangles(params) {
-    try {
-      if (!params || !Array.isArray(params.nodes)) return;
-
-      // 背景クリックでハイライト解除
-      if (params.nodes.length === 0) {
-        this.clearTriangleHighlight();
-        return;
-      }
-
-      const clickedId = String(params.nodes[0]);
-      const tris = this.findTrianglesByNode(clickedId);
-
-      // 対象三角なし → ハイライト解除のみ
-      if (!tris.length) {
-        this.clearTriangleHighlight();
-        return;
-      }
-
-      this.highlightTriangles(tris);
-    } catch (e) {
-      console.warn("handleNodeClickHighlightTriangles error:", e);
-    }
-  }
-
-  // 追加: 指定ノードを含む三角を抽出（claim/reason/fact いずれでも）
-  findTrianglesByNode(nodeId) {
-    if (!Array.isArray(this.triangles) || this.triangles.length === 0) return [];
-    const res = [];
-    for (const t of this.triangles) {
-      const nt = this.normalizeTriangle(t);
-      if (!nt) continue;
-      if (String(nt.claimId) === String(nodeId) ||
-          String(nt.reasonId) === String(nodeId) ||
-          String(nt.factId) === String(nodeId)) {
-        res.push(nt);
-      }
-    }
-    return res;
-  }
-
-  // 追加: 三角オブジェクトのキー差異を吸収
-  normalizeTriangle(t) {
-    if (!t) return null;
-    const claimId = t.claim_id ?? t.claimId;
-    const reasonId = t.reason_id ?? t.reasonId;
-    const factId = t.fact_id ?? t.factId;
-    const triangleId = t.triangle_id ?? t.triangleId ?? this.generateUniqueNumberText();
-    if (claimId == null || reasonId == null || factId == null) return null;
-    return {
-      triangleId,
-      claimId: String(claimId),
-      reasonId: String(reasonId),
-      factId: String(factId),
-      claimReason: t.claimReason ?? "",
-      conflict: t.conflict ?? ""
-    };
-  }
-
-  // 追加: 三角(複数)をハイライト + 役割タグ表示
-  highlightTriangles(triangles) {
-    // 既存ハイライトとタグ解除
-    this.clearTriangleHighlight();
-
-    const nodeIds = new Set();
-    const edgeTriples = [];
-    const nodeRoles = new Map();            // nodeId -> Set(役割)
-    const nodeMinTriLevel = new Map();      // nodeId -> 参加三角の最小レベルの最小値
-
-    // 対象ノードとエッジ組(有向)・役割・レベル集計
-    for (const tri of triangles) {
-      const nClaim = this.nodes.get(tri.claimId);
-      const nReason = this.nodes.get(tri.reasonId);
-      const nFact = this.nodes.get(tri.factId);
-      if (!nClaim || !nReason || !nFact) continue;
-
-      const lvClaim = parseInt(nClaim.level) || 0;
-      const lvReason = parseInt(nReason.level) || 0;
-      const lvFact = parseInt(nFact.level) || 0;
-      const triMinLevel = Math.min(lvClaim, lvReason, lvFact);
-
-      const addRole = (nodeId, role) => {
-        if (!nodeRoles.has(nodeId)) nodeRoles.set(nodeId, new Set());
-        nodeRoles.get(nodeId).add(role);
-        const cur = nodeMinTriLevel.get(nodeId);
-        nodeMinTriLevel.set(nodeId, cur == null ? triMinLevel : Math.min(cur, triMinLevel));
-      };
-
-      nodeIds.add(tri.claimId);
-      nodeIds.add(tri.reasonId);
-      nodeIds.add(tri.factId);
-
-      addRole(tri.claimId, "主張");
-      addRole(tri.reasonId, "理由付け");
-      addRole(tri.factId, "事実");
-
-      edgeTriples.push([tri.claimId, tri.reasonId]);
-      edgeTriples.push([tri.reasonId, tri.factId]);
-      edgeTriples.push([tri.factId, tri.claimId]);
-    }
-
-    // ノードを強調（枠太・枠色オレンジ）
-    const nodeUpdates = [];
-    nodeIds.forEach(id => {
-      const n = this.nodes.get(id);
-      if (!n) return;
-      const next = {
-        id: n.id,
-        borderWidth: 3,
-        borderWidthSelected: 3,
-        color: { ...(n.color || {}), border: '#ff8c00' }
-      };
-      nodeUpdates.push(next);
-      this._highlightedNodeIds.add(n.id);
-    });
-    if (nodeUpdates.length) this.nodes.update(nodeUpdates);
-
-    // エッジを強調（太さ・色オレンジ）
-    for (const [from, to] of edgeTriples) {
-      const matches = this.edges.get({
-        filter: e => String(e.from) === String(from) && String(e.to) === String(to)
-      });
-      matches.forEach(e => {
-        this.edges.update({
-          id: e.id,
-          color: { color: '#ff8c00', highlight: '#ff8c00', hover: '#ff8c00' },
-          width: 3
-        });
-        this._highlightedEdgeIds.add(e.id);
-      });
-    }
-
-    // 役割タグを作成・配置
-    nodeRoles.forEach((rolesSet, nodeId) => {
-      const node = this.nodes.get(nodeId);
-      if (!node) return;
-      const nodeLevel = parseInt(node.level) || 0;
-      const triMin = nodeMinTriLevel.get(nodeId) ?? nodeLevel;
-      const posMode = nodeLevel <= triMin ? 'top-left' : 'bottom';
-      this.createOrUpdateRoleTag(String(nodeId), Array.from(rolesSet), posMode);
-    });
-
-    // 再描画
-    if (this.ownNetwork) this.ownNetwork.redraw();
-  }
-
-  // 追加: 三角ハイライト解除（元のスタイルへ）+ タグ削除
-  clearTriangleHighlight() {
-    // エッジを戻す
-    if (this._highlightedEdgeIds && this._highlightedEdgeIds.size) {
-      const edgeUpdates = [];
-      this._highlightedEdgeIds.forEach(id => {
-        const e = this.edges.get(id);
-        if (!e) return;
-        edgeUpdates.push({
-          id: id,
-          color: { color: '#848484', highlight: '#848484', hover: '#848484' },
-          width: 1
-        });
-      });
-      if (edgeUpdates.length) this.edges.update(edgeUpdates);
-      this._highlightedEdgeIds.clear();
-    }
-
-    // ノードを戻す
-    if (this._highlightedNodeIds && this._highlightedNodeIds.size) {
-      const nodeUpdates = [];
-      this._highlightedNodeIds.forEach(id => {
-        const n = this.nodes.get(id);
-        if (!n) return;
-
-        // 削除状態（ラベル空）は灰色のまま
-        if (!n.label || n.label === '') {
-          nodeUpdates.push({
-            id: n.id,
-            color: { background: '#f0f0f0', border: '#cccccc' },
-            borderWidth: 1,
-            borderWidthSelected: 1,
-            shapeProperties: { borderDashes: false }
-          });
-          return;
-        }
-
-        // 通常ノードは既存ルールで再適用
-        const base = { ...n };
-        this.applyNodeStyle(base);
-        nodeUpdates.push({
-          id: base.id,
-          color: base.color,
-          borderWidth: base.borderWidth,
-          borderWidthSelected: base.borderWidthSelected,
-          shapeProperties: base.shapeProperties
-        });
-      });
-      if (nodeUpdates.length) this.nodes.update(nodeUpdates);
-      this._highlightedNodeIds.clear();
-    }
-
-    // 追加: 役割タグを全削除
-    this.removeAllRoleTags();
-
-    if (this.ownNetwork) this.ownNetwork.redraw();
-  }
-
-  // 追加: 役割タグDOMを生成/更新
-  createOrUpdateRoleTag(nodeId, roles, posMode) {
-    try {
-      if (!this._containerEl || !this.ownNetwork) return;
-      const text = Array.isArray(roles) ? roles.join('・') : String(roles || '');
-      let el = this._roleTagEls.get(nodeId);
-      if (!el) {
-        el = document.createElement('div');
-        el.className = 'ln-role-tag';
-        el.style.position = 'absolute';
-        el.style.pointerEvents = 'none';
-        el.style.zIndex = 10;
-        el.style.fontSize = '11px';
-        el.style.lineHeight = '1.4';
-        el.style.whiteSpace = 'nowrap';
-        el.style.color = '#ff8c00';
-        el.style.background = 'rgba(255,140,0,0.10)';
-        el.style.border = '1px solid #ff8c00';
-        el.style.borderRadius = '4px';
-        el.style.padding = '1px 6px';
-        this._containerEl.appendChild(el);
-        this._roleTagEls.set(nodeId, el);
-      }
-      el.textContent = text;
-      el.dataset.nodeId = String(nodeId);
-      el.dataset.pos = posMode === 'bottom' ? 'bottom' : 'top-left';
-      // 初回配置
-      this.updateRoleTagPositionFor(nodeId, el);
-    } catch(_) {}
-  }
-
-  // 追加: 全タグ削除
-  removeAllRoleTags() {
-    try {
-      if (!this._roleTagEls) return;
-      this._roleTagEls.forEach(el => { try { el.remove(); } catch(_) {} });
-      this._roleTagEls.clear();
-    } catch(_) {}
-  }
-
-  // 追加: 描画ごとに全タグ位置を更新
-  updateRoleTagPositions() {
-    if (!this._roleTagEls || this._roleTagEls.size === 0) return;
-    this._roleTagEls.forEach((el, nodeId) => {
-      this.updateRoleTagPositionFor(nodeId, el);
-    });
-  }
-
-  // 追加: 単一タグの位置更新
-  updateRoleTagPositionFor(nodeId, el) {
-    try {
-      if (!this.ownNetwork) return;
-      const bb = this.ownNetwork.getBoundingBox(nodeId);
-      if (!bb) return;
-      const posMode = el.dataset.pos || 'top-left';
-
-      if (posMode === 'bottom') {
-        // ノードの下中央
-        const bottomCenter = { x: (bb.left + bb.right) / 2, y: bb.bottom + 4 };
-        const dom = this.ownNetwork.canvasToDOM(bottomCenter);
-        el.style.left = `${dom.x}px`;
-        el.style.top = `${dom.y}px`;
-        el.style.transform = 'translate(-50%, 0)'; // 中央寄せ
-      } else {
-        // 左上
-        const topLeft = { x: bb.left - 4, y: bb.top - 6 };
+        // 左上（さらに左上へオフセット）
+        const topLeft = { x: bb.left - 14, y: bb.top - 14 };
         const dom = this.ownNetwork.canvasToDOM(topLeft);
         el.style.left = `${dom.x}px`;
         el.style.top = `${dom.y}px`;
@@ -2200,9 +1792,9 @@ class RecordLogicNetwork{
       data: {
         node_id : node_id,
         edited: edited,
-        purpose : 'delete',
+               purpose : 'delete',
         delete_thing : 'node'
-      },
+           },
       dataType: "json",
       success: function(response) {
         console.log(response); // ← ここでレスポンス確認
