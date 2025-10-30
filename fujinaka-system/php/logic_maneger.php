@@ -265,7 +265,7 @@ else if ($purpose === 'load') {
         $stmtNodes->close();
 
         // 三角データを取得しつつ、従来通りedgesも生成
-        $trianglesSql = "SELECT claim_id, reason_id, fact_id FROM logic_triangle WHERE sheet_id = ? AND user_id = ?";
+        $trianglesSql = "SELECT triangle_id, claim_id, reason_id, fact_id, claimReason, conflict FROM logic_triangle WHERE sheet_id = ? AND user_id = ?";
         $stmtTri = $mysqli->prepare($trianglesSql);
         $stmtTri->bind_param("ss", $sheet_id, $user_id);
         $stmtTri->execute();
@@ -274,11 +274,14 @@ else if ($purpose === 'load') {
         $triangles = [];
         if ($trianglesResult) {
             while ($row = $trianglesResult->fetch_assoc()) {
-                // triangles配列（JSのtriangleData用）
+                // triangles配列（JS側で復元に利用）
                 $triangles[] = [
-                    'claim_id'  => $row['claim_id'],
-                    'reason_id' => $row['reason_id'],
-                    'fact_id'   => $row['fact_id'],
+                    'triangle_id' => $row['triangle_id'],
+                    'claim_id'    => $row['claim_id'],
+                    'reason_id'   => $row['reason_id'],
+                    'fact_id'     => $row['fact_id'],
+                    'claimReason' => $row['claimReason'],
+                    'conflict'    => $row['conflict'],
                 ];
                 // 従来のedgesも維持（後方互換）
                 $edges[] = ['edge_start' => $row['claim_id'],  'edge_end' => $row['reason_id']];
@@ -301,11 +304,26 @@ else if ($purpose === 'get') {
     $get_thing = $_POST['get_thing'] ?? null;
     
     if ($get_thing === 'triangle_by_claim') {
-        $claim_id = $_POST['claim_id'];
-        
-        $sql = "SELECT triangle_id FROM logic_triangle WHERE claim_id = ? AND sheet_id = ? AND user_id = ?";
+        $claim_id = $_POST['claim_id'] ?? '';
+
+        // プレースホルダを使用し、claim/reason/fact のいずれか一致で取得
+        $sql = "SELECT triangle_id
+                  FROM logic_triangle
+                 WHERE (claim_id = ? OR reason_id = ? OR fact_id = ?)
+                   AND sheet_id = ?
+                   AND user_id = ?
+                 LIMIT 1";
         $stmt = $mysqli->prepare($sql);
-        $stmt->bind_param("sss", $claim_id, $sheet_id, $user_id);
+        if (!$stmt) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "SQLプリペア失敗: " . $mysqli->error
+            ]);
+            exit;
+        }
+
+        // すべて文字列としてバインド
+        $stmt->bind_param("sssss", $claim_id, $claim_id, $claim_id, $sheet_id, $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
         

@@ -686,7 +686,9 @@ class LogicNetwork {
     }
 
     // 既存の説明を取得（ある場合）
-    const existingClaimReason = selectedNode.ClaimReason || "";
+    // 修正: claimReason（小文字）を優先し、互換のため ClaimReason もフォールバック
+    const existingClaimReason = selectedNode.claimReason || selectedNode.ClaimReason || "";
+    console.log("[ClaimReason] existing for modal:", { nodeId: selectedNodeId, length: existingClaimReason.length });
 
     // モーダルボックスを表示
     this.showLogicClaimReasonModal(selectedNodeId, selectedNode.label, existingClaimReason);
@@ -707,7 +709,8 @@ class LogicNetwork {
       nodeTitle.textContent = `「${cleanLabel}」についての説明`;
       
       // 既存の説明があれば設定
-      textarea.value = existingClaimReason;
+      textarea.value = existingClaimReason; // textarea に復元
+      console.log("[ClaimReason] textarea set", { nodeId, length: existingClaimReason.length });
       
       // モーダルを表示
       modal.style.display = 'block';
@@ -775,6 +778,33 @@ class LogicNetwork {
     alert(claimReason.length > 0 ? "説明を保存しました" : "説明を削除しました");
   });
 }
+
+// 主張ノードIDから三角形IDを取得する関数
+  async getTriangleIdByClaimId(claimId) {
+    try {
+      const response = await $.ajax({
+        url: "php/logic_maneger.php",
+        type: "POST",
+        data: {
+          claim_id: claimId,
+          purpose: 'get',
+          get_thing: 'triangle_by_claim'
+        },
+        dataType: "json"
+      });
+
+      if (response.status === "success" && response.triangle_id) {
+        return response.triangle_id;
+      } else {
+        console.error("三角形ID取得エラー:", response.message);
+        return null;
+      }
+    } catch (error) {
+      console.error("三角形ID取得通信エラー:", error);
+      return null;
+    }
+  }
+  
 // 論理説明をデータベースに保存する関数
   saveClaimReasonToDatabase(triangleId, claimReason) {
     $.ajax({
@@ -1064,6 +1094,46 @@ class LogicNetwork {
       this.ownNetwork.fit({ animation: { duration: 200, easingFunction: 'easeInOutQuad' } });
     }
     console.log("[LogicNetwork] restoreFromData: applied");
+
+    // 追加: triangles に保存されている claimReason / conflict を claim ノードへ再現
+    console.log("[Restore] start apply claimReason/conflict:", { triangles: Array.isArray(triangleData) ? triangleData.length : 0 });
+    try {
+      if (Array.isArray(triangleData) && triangleData.length > 0) {
+        const updates = [];
+        for (const t of triangleData) {
+          const claimId = t && (t.claim_id || t.claimId);
+          if (!claimId) continue;
+          const n = this.nodes.get(String(claimId));
+          if (!n) continue;
+
+          const cr = (t.claimReason ?? "").trim();
+          const cf = (t.conflict ?? "").trim();
+
+          // 既存値と差分がある場合のみ更新
+          const next = {};
+          let need = false;
+          if (cr !== "" || n.claimReason) {
+            next.claimReason = cr;
+            next.hasClaimReason = cr.length > 0;
+            need = true;
+          }
+          if (cf !== "" || n.conflict) {
+            next.conflict = cf;
+            next.hasConflict = cf.length > 0;
+            need = true;
+          }
+          if (need) updates.push({ id: n.id, ...next });
+        }
+        if (updates.length) {
+          this.nodes.update(updates);
+          console.log("[Restore] applied claimReason/conflict to nodes:", updates.map(u => u.id));
+        } else {
+          console.log("[Restore] no claimReason/conflict updates required");
+        }
+      }
+    } catch (e) {
+      console.warn("restoreFromData: reclaim claimReason/conflict failed:", e);
+    }
   }
 
   // triangles（logic_triangle）から階層レベルを使って三角ロジックを再構築
