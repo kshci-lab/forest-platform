@@ -46,6 +46,13 @@ class LogicNetwork {
     this.dragStartNodeId = null;  //ドラッグスタートしたノードのID
     this.dragEndNodeId = null; //ドラッグエンドしたノードID
 
+    // 三角定義とハイライト状態を保持
+    this.triangles = [];
+    this._highlightedNodeIds = new Set();
+    this._highlightedEdgeIds = new Set();
+    // 追加: 役割タグDOMの管理
+    this._roleTagEls = new Map();
+
     this.ownNetwork = this.generateLogicNetworkCanvas(container, this.nodes, this.edges);
     if (!this.ownNetwork) {
       console.error("[LogicNetwork] vis.Network not created. Check container:", container);
@@ -58,7 +65,16 @@ class LogicNetwork {
       this.ownNetwork.on('click', this.handleNodeClickHighlightForest.bind(this));
       // 追加: シナリオ側をハイライト
       this.ownNetwork.on('click', this.handleNodeClickHighlightPresentation.bind(this));
+      // 追加: 三角ロジック全体のハイライト
+      this.ownNetwork.on('click', this.handleNodeClickHighlightTriangles.bind(this));
+      // 追加: 再描画ごとに役割タグの位置を更新
+      this.ownNetwork.on('afterDrawing', this.updateRoleTagPositions.bind(this));
     }
+    // 追加: タグ配置のため、コンテナを相対配置に
+    try {
+      this._containerEl = document.getElementById(container);
+      if (this._containerEl) this._containerEl.style.position = this._containerEl.style.position || 'relative';
+    } catch(_) {}
     console.log("[LogicNetwork] constructor end");
   }
 
@@ -364,6 +380,19 @@ class LogicNetwork {
     defaultRecordLogicNetwork.record_LogicNode(reason_id, "", null, null, 0, node2level);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, "", null, null, 0, node3level);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id, "", "");
+
+    // 追加: メモリ上の三角一覧にも反映
+    try {
+      this.triangles = this.triangles || [];
+      this.triangles.push({
+        triangle_id: triangle_id,
+        claim_id: claim_id,
+        reason_id: reason_id,
+        fact_id: fact_id,
+        claimReason: "",
+        conflict: ""
+      });
+    } catch (_) {}
   }
 
   // 三角ロジックを追加する関数（x/yは使わず level のみ）
@@ -413,6 +442,19 @@ class LogicNetwork {
     defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", null, null, 0, newNodeLevel);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", null, null, 0, newNodeLevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id, "", "");
+
+    // 追加: メモリ上の三角一覧にも反映
+    try {
+      this.triangles = this.triangles || [];
+      this.triangles.push({
+        triangle_id: triangle_id,
+        claim_id: baseNode.id,
+        reason_id: reason_id,
+        fact_id: fact_id,
+        claimReason: "",
+        conflict: ""
+      });
+    } catch (_) {}
 
     console.log(`三角形を作成しました - 基準ノード: ${selectedNodeId} (レベル${baseLevel}), 新ノード: レベル${newNodeLevel}`);
   }
@@ -750,7 +792,7 @@ class LogicNetwork {
     this.getTriangleIdByClaimId(nodeId).then(triangleId => {
       if (!triangleId) {
         console.error("該当する三角形が見つかりません");
-        alert("この主張に対応する三角形が見つかりません");
+        alert("この主張に対応する三角が見つかりません");
         return;
       }
 
@@ -926,7 +968,7 @@ class LogicNetwork {
     this.getTriangleIdByClaimId(nodeId).then(triangleId => {
       if (!triangleId) {
         console.error("該当する三角形が見つかりません");
-        alert("この主張に対応する三角形が見つかりません");
+        alert("この主張に対応する三角が見つかりません");
         return;
       }
 
@@ -1040,6 +1082,9 @@ class LogicNetwork {
     this.nodes.clear();
     this.edges.clear();
 
+    // 追加: 三角定義を保持
+    this.triangles = Array.isArray(triangleData) ? triangleData : [];
+
     // ノード追加（既存処理）
     if (nodeData && nodeData.length > 0) {
       nodeData.sort((a, b) => a.node_id.localeCompare(b.node_id));
@@ -1101,7 +1146,7 @@ class LogicNetwork {
       if (Array.isArray(triangleData) && triangleData.length > 0) {
         const updates = [];
         for (const t of triangleData) {
-          const claimId = t && (t.claim_id || t.claimId);
+          const claimId = t && (t.claimReason || t.ClaimReason);
           if (!claimId) continue;
           const n = this.nodes.get(String(claimId));
           if (!n) continue;
@@ -1354,6 +1399,711 @@ class LogicNetwork {
       div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
       document.body.appendChild(div);
       setTimeout(() => { try { div.remove(); } catch(_) {} }, 2500);
+    } catch(_) {}
+  }
+
+  // 追加: ノードクリックで該当三角(複数可)をハイライト
+  handleNodeClickHighlightTriangles(params) {
+    try {
+      if (!params || !Array.isArray(params.nodes)) return;
+
+      // 背景クリックでハイライト解除
+      if (params.nodes.length === 0) {
+        this.clearTriangleHighlight();
+        return;
+      }
+
+      const clickedId = String(params.nodes[0]);
+      const tris = this.findTrianglesByNode(clickedId);
+
+      // 対象三角なし → ハイライト解除のみ
+      if (!tris.length) {
+        this.clearTriangleHighlight();
+        return;
+      }
+
+      this.highlightTriangles(tris);
+    } catch (e) {
+      console.warn("handleNodeClickHighlightTriangles error:", e);
+    }
+  }
+
+  // 追加: 指定ノードを含む三角を抽出（claim/reason/fact いずれでも）
+  findTrianglesByNode(nodeId) {
+    if (!Array.isArray(this.triangles) || this.triangles.length === 0) return [];
+    const res = [];
+    for (const t of this.triangles) {
+      const nt = this.normalizeTriangle(t);
+      if (!nt) continue;
+      if (String(nt.claimId) === String(nodeId) ||
+          String(nt.reasonId) === String(nodeId) ||
+          String(nt.factId) === String(nodeId)) {
+        res.push(nt);
+      }
+    }
+    return res;
+  }
+
+  // 追加: 三角オブジェクトのキー差異を吸収
+  normalizeTriangle(t) {
+    if (!t) return null;
+    const claimId = t.claim_id ?? t.claimId;
+    const reasonId = t.reason_id ?? t.reasonId;
+    const factId = t.fact_id ?? t.factId;
+    const triangleId = t.triangle_id ?? t.triangleId ?? this.generateUniqueNumberText();
+    if (claimId == null || reasonId == null || factId == null) return null;
+    return {
+      triangleId,
+      claimId: String(claimId),
+      reasonId: String(reasonId),
+      factId: String(factId),
+      claimReason: t.claimReason ?? "",
+      conflict: t.conflict ?? ""
+    };
+  }
+
+  // 追加: 三角(複数)をハイライト + 役割タグ表示
+  highlightTriangles(triangles) {
+    // 既存ハイライトとタグ解除
+    this.clearTriangleHighlight();
+
+    const nodeIds = new Set();
+    const edgeTriples = [];
+    const nodeRoles = new Map();            // nodeId -> Set(役割)
+    const nodeMinTriLevel = new Map();      // nodeId -> 参加三角の最小レベルの最小値
+
+    // 対象ノードとエッジ組(有向)・役割・レベル集計
+    for (const tri of triangles) {
+      const nClaim = this.nodes.get(tri.claimId);
+      const nReason = this.nodes.get(tri.reasonId);
+      const nFact = this.nodes.get(tri.factId);
+      if (!nClaim || !nReason || !nFact) continue;
+
+      const lvClaim = parseInt(nClaim.level) || 0;
+      const lvReason = parseInt(nReason.level) || 0;
+      const lvFact = parseInt(nFact.level) || 0;
+      const triMinLevel = Math.min(lvClaim, lvReason, lvFact);
+
+      const addRole = (nodeId, role) => {
+        if (!nodeRoles.has(nodeId)) nodeRoles.set(nodeId, new Set());
+        nodeRoles.get(nodeId).add(role);
+        const cur = nodeMinTriLevel.get(nodeId);
+        nodeMinTriLevel.set(nodeId, cur == null ? triMinLevel : Math.min(cur, triMinLevel));
+      };
+
+      nodeIds.add(tri.claimId);
+      nodeIds.add(tri.reasonId);
+      nodeIds.add(tri.factId);
+
+      addRole(tri.claimId, "主張");
+      addRole(tri.reasonId, "理由付け");
+      addRole(tri.factId, "事実");
+
+      edgeTriples.push([tri.claimId, tri.reasonId]);
+      edgeTriples.push([tri.reasonId, tri.factId]);
+      edgeTriples.push([tri.factId, tri.claimId]);
+    }
+
+    // ノードを強調（枠太・枠色オレンジ）
+    const nodeUpdates = [];
+    nodeIds.forEach(id => {
+      const n = this.nodes.get(id);
+      if (!n) return;
+      const next = {
+        id: n.id,
+        borderWidth: 3,
+        borderWidthSelected: 3,
+        color: { ...(n.color || {}), border: '#ff8c00' }
+      };
+      nodeUpdates.push(next);
+      this._highlightedNodeIds.add(n.id);
+    });
+    if (nodeUpdates.length) this.nodes.update(nodeUpdates);
+
+    // エッジを強調（太さ・色オレンジ）
+    for (const [from, to] of edgeTriples) {
+      const matches = this.edges.get({
+        filter: e => String(e.from) === String(from) && String(e.to) === String(to)
+      });
+      matches.forEach(e => {
+        this.edges.update({
+          id: e.id,
+          color: { color: '#ff8c00', highlight: '#ff8c00', hover: '#ff8c00' },
+          width: 3
+        });
+        this._highlightedEdgeIds.add(e.id);
+      });
+    }
+
+    // 役割タグを作成・配置
+    nodeRoles.forEach((rolesSet, nodeId) => {
+      const node = this.nodes.get(nodeId);
+      if (!node) return;
+      const nodeLevel = parseInt(node.level) || 0;
+      const triMin = nodeMinTriLevel.get(nodeId) ?? nodeLevel;
+      const posMode = nodeLevel <= triMin ? 'top-left' : 'bottom';
+      this.createOrUpdateRoleTag(String(nodeId), Array.from(rolesSet), posMode);
+    });
+
+    // 再描画
+    if (this.ownNetwork) this.ownNetwork.redraw();
+  }
+
+  // 追加: 三角ハイライト解除（元のスタイルへ）+ タグ削除
+  clearTriangleHighlight() {
+    // エッジを戻す
+    if (this._highlightedEdgeIds && this._highlightedEdgeIds.size) {
+      const edgeUpdates = [];
+      this._highlightedEdgeIds.forEach(id => {
+        const e = this.edges.get(id);
+        if (!e) return;
+        edgeUpdates.push({
+          id: id,
+          color: { color: '#848484', highlight: '#848484', hover: '#848484' },
+          width: 1
+        });
+      });
+      if (edgeUpdates.length) this.edges.update(edgeUpdates);
+      this._highlightedEdgeIds.clear();
+    }
+
+    // ノードを戻す
+    if (this._highlightedNodeIds && this._highlightedNodeIds.size) {
+      const nodeUpdates = [];
+      this._highlightedNodeIds.forEach(id => {
+        const n = this.nodes.get(id);
+        if (!n) return;
+
+        // 削除状態（ラベル空）は灰色のまま
+        if (!n.label || n.label === '') {
+          nodeUpdates.push({
+            id: n.id,
+            color: { background: '#f0f0f0', border: '#cccccc' },
+            borderWidth: 1,
+            borderWidthSelected: 1,
+            shapeProperties: { borderDashes: false }
+          });
+          return;
+        }
+
+        // 通常ノードは既存ルールで再適用
+        const base = { ...n };
+        this.applyNodeStyle(base);
+        nodeUpdates.push({
+          id: base.id,
+          color: base.color,
+          borderWidth: base.borderWidth,
+          borderWidthSelected: base.borderWidthSelected,
+          shapeProperties: base.shapeProperties
+        });
+      });
+      if (nodeUpdates.length) this.nodes.update(nodeUpdates);
+      this._highlightedNodeIds.clear();
+    }
+
+    // 追加: 役割タグを全削除
+    this.removeAllRoleTags();
+
+    if (this.ownNetwork) this.ownNetwork.redraw();
+  }
+
+  // 追加: 役割タグDOMを生成/更新
+  createOrUpdateRoleTag(nodeId, roles, posMode) {
+    try {
+      if (!this._containerEl || !this.ownNetwork) return;
+      const text = Array.isArray(roles) ? roles.join('・') : String(roles || '');
+      let el = this._roleTagEls.get(nodeId);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'ln-role-tag';
+        el.style.position = 'absolute';
+        el.style.pointerEvents = 'none';
+        el.style.zIndex = 10;
+        el.style.fontSize = '11px';
+        el.style.lineHeight = '1.4';
+        el.style.whiteSpace = 'nowrap';
+        el.style.color = '#ff8c00';
+        el.style.background = 'rgba(255,140,0,0.10)';
+        el.style.border = '1px solid #ff8c00';
+        el.style.borderRadius = '4px';
+        el.style.padding = '1px 6px';
+        this._containerEl.appendChild(el);
+        this._roleTagEls.set(nodeId, el);
+      }
+      el.textContent = text;
+      el.dataset.nodeId = String(nodeId);
+      el.dataset.pos = posMode === 'bottom' ? 'bottom' : 'top-left';
+      // 初回配置
+      this.updateRoleTagPositionFor(nodeId, el);
+    } catch(_) {}
+  }
+
+  // 追加: 全タグ削除
+  removeAllRoleTags() {
+    try {
+      if (!this._roleTagEls) return;
+      this._roleTagEls.forEach(el => { try { el.remove(); } catch(_) {} });
+      this._roleTagEls.clear();
+    } catch(_) {}
+  }
+
+  // 追加: 描画ごとに全タグ位置を更新
+  updateRoleTagPositions() {
+    if (!this._roleTagEls || this._roleTagEls.size === 0) return;
+    this._roleTagEls.forEach((el, nodeId) => {
+      this.updateRoleTagPositionFor(nodeId, el);
+    });
+  }
+
+  // 追加: 単一タグの位置更新
+  updateRoleTagPositionFor(nodeId, el) {
+    try {
+      if (!this.ownNetwork) return;
+      const bb = this.ownNetwork.getBoundingBox(nodeId);
+      if (!bb) return;
+      const posMode = el.dataset.pos || 'top-left';
+
+      if (posMode === 'bottom') {
+        // ノードの下中央
+        const bottomCenter = { x: (bb.left + bb.right) / 2, y: bb.bottom + 4 };
+        const dom = this.ownNetwork.canvasToDOM(bottomCenter);
+        el.style.left = `${dom.x}px`;
+        el.style.top = `${dom.y}px`;
+        el.style.transform = 'translate(-50%, 0)'; // 中央寄せ
+      } else {
+        // 左上
+        const topLeft = { x: bb.left - 4, y: bb.top - 6 };
+        const dom = this.ownNetwork.canvasToDOM(topLeft);
+        el.style.left = `${dom.x}px`;
+        el.style.top = `${dom.y}px`;
+        el.style.transform = 'none';
+      }
+    } catch(_) {}
+  }
+
+  //Logic側ノードクリックでForest側の対応ノードをハイライト
+  handleNodeClickHighlightForest(params) {
+    try {
+      if (!params || !Array.isArray(params.nodes) || params.nodes.length === 0) return;
+      const clickedId = params.nodes[0];
+      const node = this.nodes.get(clickedId);
+      if (!node) return;
+
+      const fId = node.f_node_id;
+
+      // 追加: Forest側未対応の示唆
+      if (fId === null || fId === undefined || fId === "") {
+        this.suggestMissingForest();
+        return;
+      }
+
+      // グローバルAPIがあればそれを使用
+      if (typeof window.highlightForestNodeById === 'function') {
+        window.highlightForestNodeById(String(fId));
+        return;
+      }
+
+      // フォールバック（直接 jsMind に触る）
+      if (typeof _jm !== 'undefined' && _jm) {
+        _jm.select_node(String(fId));
+        const jmnodes = document.getElementsByTagName("jmnode");
+        for (let i = 0; i < jmnodes.length; i++) {
+          if (jmnodes[i].getAttribute("nodeid") == String(fId)) {
+            const el = jmnodes[i];
+            el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            el.style.transition = "box-shadow 0.2s ease-out";
+            el.style.boxShadow = "0 0 0 3px orange inset";
+            setTimeout(() => { el.style.boxShadow = ""; }, 1200);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("handleNodeClickHighlightForest error:", e);
+    }
+  }
+
+  // 追加: 三角ロジックのノードクリックで、p_node_id に対応するシナリオ側ノードをハイライト
+  handleNodeClickHighlightPresentation(params) {
+    try {
+      if (!params || !Array.isArray(params.nodes) || params.nodes.length === 0) return;
+      const clickedId = params.nodes[0];
+      const node = this.nodes.get(clickedId);
+      if (!node) return;
+
+      const pId = node.p_node_id;
+
+      // 追加: Presentation側未対応の示唆
+      if (pId === null || pId === undefined || pId === "") {
+        this.suggestMissingPresentation();
+        return;
+      }
+
+      // 1) id一致
+      let el = document.getElementById(String(pId));
+      // 2) node_id属性一致
+      if (!el) {
+        const candidates = document.querySelectorAll('.cspan, .tspan, .thread, .section, .chapter, .scenario_content');
+        for (let i = 0; i < candidates.length; i++) {
+          const nid = candidates[i].getAttribute('node_id') || candidates[i].getAttribute('nodeid');
+          if (nid && String(nid) === String(pId)) { el = candidates[i]; break; }
+        }
+      }
+      // 3) scenario_content の場合は中の .cspan へ
+      if (el && el.classList && el.classList.contains('scenario_content')) {
+        const inner = el.querySelector('.cspan') || el.querySelector('.tspan');
+        if (inner) el = inner;
+      }
+      if (!el) return;
+
+      // .cspan の選択枠をいったん解除
+      const spans = document.getElementsByClassName('cspan');
+      for (let i = 0; i < spans.length; i++) {
+        spans[i].style.border = "";
+      }
+
+      // スクロール・フォーカス
+      try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); } catch(_) {}
+      if (typeof el.focus === 'function') el.focus();
+
+      // ハイライト（.cspanは既存の選択スタイルに合わせて枠線、その他は一時アウトライン）
+      if (el.classList && el.classList.contains('cspan')) {
+        el.style.border = "2px solid gray";
+      } else {
+        el.style.outline = "3px solid orange";
+        setTimeout(() => { try { el.style.outline = ""; } catch(_) {} }, 1200);
+      }
+    } catch (e) {
+      console.warn("handleNodeClickHighlightPresentation error:", e);
+    }
+  }
+
+  // 追加: 欠落側に示唆（Forest側）
+  suggestMissingForest() {
+    // Forest領域の枠を一時点滅（候補: #mind_all）
+    this.pulseElementById('mind_all');
+    // トースト表示
+    this.showToast('Forest側に未対応です。マインドマップのノードと対応付けるか、Forestから反映してください。');
+  }
+
+  // 追加: 欠落側に示唆（Presentation側）
+  suggestMissingPresentation() {
+    // Presentation領域の枠を一時点滅（候補: #document_area）
+    this.pulseElementById('document_area');
+    // トースト表示
+    this.showToast('シナリオ側に未対応です。シナリオへ内容を反映するか、対応付けを行ってください。');
+  }
+
+  // 追加: コンテナを軽くハイライト
+  pulseElementById(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prev = el.style.outline;
+    el.style.transition = 'outline 0.2s ease';
+    el.style.outline = '3px solid orange';
+    setTimeout(() => { try { el.style.outline = prev || ''; } catch(_) {} }, 1200);
+  }
+
+  // 追加: 簡易トースト表示（自動クローズ）
+  showToast(message) {
+    try {
+      const old = document.getElementById('ln_toast_hint');
+      if (old) old.remove();
+      const div = document.createElement('div');
+      div.id = 'ln_toast_hint';
+      div.textContent = message;
+      div.style.position = 'fixed';
+      div.style.zIndex = 9999;
+      div.style.left = '50%';
+      div.style.top = '16px';
+      div.style.transform = 'translateX(-50%)';
+      div.style.background = 'rgba(0,0,0,0.75)';
+      div.style.color = '#fff';
+      div.style.padding = '8px 12px';
+      div.style.borderRadius = '6px';
+      div.style.fontSize = '13px';
+      div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+      document.body.appendChild(div);
+      setTimeout(() => { try { div.remove(); } catch(_) {} }, 2500);
+    } catch(_) {}
+  }
+
+  // 追加: ノードクリックで該当三角(複数可)をハイライト
+  handleNodeClickHighlightTriangles(params) {
+    try {
+      if (!params || !Array.isArray(params.nodes)) return;
+
+      // 背景クリックでハイライト解除
+      if (params.nodes.length === 0) {
+        this.clearTriangleHighlight();
+        return;
+      }
+
+      const clickedId = String(params.nodes[0]);
+      const tris = this.findTrianglesByNode(clickedId);
+
+      // 対象三角なし → ハイライト解除のみ
+      if (!tris.length) {
+        this.clearTriangleHighlight();
+        return;
+      }
+
+      this.highlightTriangles(tris);
+    } catch (e) {
+      console.warn("handleNodeClickHighlightTriangles error:", e);
+    }
+  }
+
+  // 追加: 指定ノードを含む三角を抽出（claim/reason/fact いずれでも）
+  findTrianglesByNode(nodeId) {
+    if (!Array.isArray(this.triangles) || this.triangles.length === 0) return [];
+    const res = [];
+    for (const t of this.triangles) {
+      const nt = this.normalizeTriangle(t);
+      if (!nt) continue;
+      if (String(nt.claimId) === String(nodeId) ||
+          String(nt.reasonId) === String(nodeId) ||
+          String(nt.factId) === String(nodeId)) {
+        res.push(nt);
+      }
+    }
+    return res;
+  }
+
+  // 追加: 三角オブジェクトのキー差異を吸収
+  normalizeTriangle(t) {
+    if (!t) return null;
+    const claimId = t.claim_id ?? t.claimId;
+    const reasonId = t.reason_id ?? t.reasonId;
+    const factId = t.fact_id ?? t.factId;
+    const triangleId = t.triangle_id ?? t.triangleId ?? this.generateUniqueNumberText();
+    if (claimId == null || reasonId == null || factId == null) return null;
+    return {
+      triangleId,
+      claimId: String(claimId),
+      reasonId: String(reasonId),
+      factId: String(factId),
+      claimReason: t.claimReason ?? "",
+      conflict: t.conflict ?? ""
+    };
+  }
+
+  // 追加: 三角(複数)をハイライト + 役割タグ表示
+  highlightTriangles(triangles) {
+    // 既存ハイライトとタグ解除
+    this.clearTriangleHighlight();
+
+    const nodeIds = new Set();
+    const edgeTriples = [];
+    const nodeRoles = new Map();            // nodeId -> Set(役割)
+    const nodeMinTriLevel = new Map();      // nodeId -> 参加三角の最小レベルの最小値
+
+    // 対象ノードとエッジ組(有向)・役割・レベル集計
+    for (const tri of triangles) {
+      const nClaim = this.nodes.get(tri.claimId);
+      const nReason = this.nodes.get(tri.reasonId);
+      const nFact = this.nodes.get(tri.factId);
+      if (!nClaim || !nReason || !nFact) continue;
+
+      const lvClaim = parseInt(nClaim.level) || 0;
+      const lvReason = parseInt(nReason.level) || 0;
+      const lvFact = parseInt(nFact.level) || 0;
+      const triMinLevel = Math.min(lvClaim, lvReason, lvFact);
+
+      const addRole = (nodeId, role) => {
+        if (!nodeRoles.has(nodeId)) nodeRoles.set(nodeId, new Set());
+        nodeRoles.get(nodeId).add(role);
+        const cur = nodeMinTriLevel.get(nodeId);
+        nodeMinTriLevel.set(nodeId, cur == null ? triMinLevel : Math.min(cur, triMinLevel));
+      };
+
+      nodeIds.add(tri.claimId);
+      nodeIds.add(tri.reasonId);
+      nodeIds.add(tri.factId);
+
+      addRole(tri.claimId, "主張");
+      addRole(tri.reasonId, "理由付け");
+      addRole(tri.factId, "事実");
+
+      edgeTriples.push([tri.claimId, tri.reasonId]);
+      edgeTriples.push([tri.reasonId, tri.factId]);
+      edgeTriples.push([tri.factId, tri.claimId]);
+    }
+
+    // ノードを強調（枠太・枠色オレンジ）
+    const nodeUpdates = [];
+    nodeIds.forEach(id => {
+      const n = this.nodes.get(id);
+      if (!n) return;
+      const next = {
+        id: n.id,
+        borderWidth: 3,
+        borderWidthSelected: 3,
+        color: { ...(n.color || {}), border: '#ff8c00' }
+      };
+      nodeUpdates.push(next);
+      this._highlightedNodeIds.add(n.id);
+    });
+    if (nodeUpdates.length) this.nodes.update(nodeUpdates);
+
+    // エッジを強調（太さ・色オレンジ）
+    for (const [from, to] of edgeTriples) {
+      const matches = this.edges.get({
+        filter: e => String(e.from) === String(from) && String(e.to) === String(to)
+      });
+      matches.forEach(e => {
+        this.edges.update({
+          id: e.id,
+          color: { color: '#ff8c00', highlight: '#ff8c00', hover: '#ff8c00' },
+          width: 3
+        });
+        this._highlightedEdgeIds.add(e.id);
+      });
+    }
+
+    // 役割タグを作成・配置
+    nodeRoles.forEach((rolesSet, nodeId) => {
+      const node = this.nodes.get(nodeId);
+      if (!node) return;
+      const nodeLevel = parseInt(node.level) || 0;
+      const triMin = nodeMinTriLevel.get(nodeId) ?? nodeLevel;
+      const posMode = nodeLevel <= triMin ? 'top-left' : 'bottom';
+      this.createOrUpdateRoleTag(String(nodeId), Array.from(rolesSet), posMode);
+    });
+
+    // 再描画
+    if (this.ownNetwork) this.ownNetwork.redraw();
+  }
+
+  // 追加: 三角ハイライト解除（元のスタイルへ）+ タグ削除
+  clearTriangleHighlight() {
+    // エッジを戻す
+    if (this._highlightedEdgeIds && this._highlightedEdgeIds.size) {
+      const edgeUpdates = [];
+      this._highlightedEdgeIds.forEach(id => {
+        const e = this.edges.get(id);
+        if (!e) return;
+        edgeUpdates.push({
+          id: id,
+          color: { color: '#848484', highlight: '#848484', hover: '#848484' },
+          width: 1
+        });
+      });
+      if (edgeUpdates.length) this.edges.update(edgeUpdates);
+      this._highlightedEdgeIds.clear();
+    }
+
+    // ノードを戻す
+    if (this._highlightedNodeIds && this._highlightedNodeIds.size) {
+      const nodeUpdates = [];
+      this._highlightedNodeIds.forEach(id => {
+        const n = this.nodes.get(id);
+        if (!n) return;
+
+        // 削除状態（ラベル空）は灰色のまま
+        if (!n.label || n.label === '') {
+          nodeUpdates.push({
+            id: n.id,
+            color: { background: '#f0f0f0', border: '#cccccc' },
+            borderWidth: 1,
+            borderWidthSelected: 1,
+            shapeProperties: { borderDashes: false }
+          });
+          return;
+        }
+
+        // 通常ノードは既存ルールで再適用
+        const base = { ...n };
+        this.applyNodeStyle(base);
+        nodeUpdates.push({
+          id: base.id,
+          color: base.color,
+          borderWidth: base.borderWidth,
+          borderWidthSelected: base.borderWidthSelected,
+          shapeProperties: base.shapeProperties
+        });
+      });
+      if (nodeUpdates.length) this.nodes.update(nodeUpdates);
+      this._highlightedNodeIds.clear();
+    }
+
+    // 追加: 役割タグを全削除
+    this.removeAllRoleTags();
+
+    if (this.ownNetwork) this.ownNetwork.redraw();
+  }
+
+  // 追加: 役割タグDOMを生成/更新
+  createOrUpdateRoleTag(nodeId, roles, posMode) {
+    try {
+      if (!this._containerEl || !this.ownNetwork) return;
+      const text = Array.isArray(roles) ? roles.join('・') : String(roles || '');
+      let el = this._roleTagEls.get(nodeId);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'ln-role-tag';
+        el.style.position = 'absolute';
+        el.style.pointerEvents = 'none';
+        el.style.zIndex = 10;
+        el.style.fontSize = '11px';
+        el.style.lineHeight = '1.4';
+        el.style.whiteSpace = 'nowrap';
+        el.style.color = '#ff8c00';
+        el.style.background = 'rgba(255,140,0,0.10)';
+        el.style.border = '1px solid #ff8c00';
+        el.style.borderRadius = '4px';
+        el.style.padding = '1px 6px';
+        this._containerEl.appendChild(el);
+        this._roleTagEls.set(nodeId, el);
+      }
+      el.textContent = text;
+      el.dataset.nodeId = String(nodeId);
+      el.dataset.pos = posMode === 'bottom' ? 'bottom' : 'top-left';
+      // 初回配置
+      this.updateRoleTagPositionFor(nodeId, el);
+    } catch(_) {}
+  }
+
+  // 追加: 全タグ削除
+  removeAllRoleTags() {
+    try {
+      if (!this._roleTagEls) return;
+      this._roleTagEls.forEach(el => { try { el.remove(); } catch(_) {} });
+      this._roleTagEls.clear();
+    } catch(_) {}
+  }
+
+  // 追加: 描画ごとに全タグ位置を更新
+  updateRoleTagPositions() {
+    if (!this._roleTagEls || this._roleTagEls.size === 0) return;
+    this._roleTagEls.forEach((el, nodeId) => {
+      this.updateRoleTagPositionFor(nodeId, el);
+    });
+  }
+
+  // 追加: 単一タグの位置更新
+  updateRoleTagPositionFor(nodeId, el) {
+    try {
+      if (!this.ownNetwork) return;
+      const bb = this.ownNetwork.getBoundingBox(nodeId);
+      if (!bb) return;
+      const posMode = el.dataset.pos || 'top-left';
+
+      if (posMode === 'bottom') {
+        // ノードの下中央
+        const bottomCenter = { x: (bb.left + bb.right) / 2, y: bb.bottom + 4 };
+        const dom = this.ownNetwork.canvasToDOM(bottomCenter);
+        el.style.left = `${dom.x}px`;
+        el.style.top = `${dom.y}px`;
+        el.style.transform = 'translate(-50%, 0)'; // 中央寄せ
+      } else {
+        // 左上
+        const topLeft = { x: bb.left - 4, y: bb.top - 6 };
+        const dom = this.ownNetwork.canvasToDOM(topLeft);
+        el.style.left = `${dom.x}px`;
+        el.style.top = `${dom.y}px`;
+        el.style.transform = 'none';
+      }
     } catch(_) {}
   }
 }
