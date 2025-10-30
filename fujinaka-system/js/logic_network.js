@@ -15,14 +15,14 @@ class LogicNetwork {
       physics: false,
       interaction: {
         multiselect: false,
-        dragNodes: false, // 手動ドラッグは無効のまま
+        dragNodes: false, // 手動ドラッグは無効
       },
       layout: {
         hierarchical: {
           enabled: true,            // 明示的に有効化
           direction: "UD",          // 上下方向
-          levelSeparation: 150,     // レベル間の距離
-          nodeSpacing: 200,         // 同レベル内ノード間の距離
+          levelSeparation: 150,     // レベル間（縦）の距離
+          nodeSpacing: 200,         // 同レベル内ノード間（横）の距離
           blockShifting: true,      // ブロックのずれ補正
           edgeMinimization: true,   // エッジの交差最小化
           parentCentralization: true
@@ -151,7 +151,7 @@ class LogicNetwork {
     return this.nodes;
   }
 
-  // ラベルに自動改行を挿入する関数
+  // ラベルに自動改行を挿入する関数 (10文字ごと)
   formatLabelWithLineBreaks(label, maxCharsPerLine = 10) {
     if (!label || label.length <= maxCharsPerLine) {
       return label;
@@ -173,6 +173,7 @@ class LogicNetwork {
     let borderDashes = false; // 点線はfalse（実線）
     
     // editedの値に基づいて点線/実線を決定
+    //編集されているならedited = 1で実線，未編集ならedited = 0で点線
     if (node.edited == 0) {
       borderDashes = true; // 点線
       // Forest/P の紐づきがどちらも無いときだけ黒枠
@@ -189,7 +190,7 @@ class LogicNetwork {
     const hasF = node.f_node_id !== null && node.f_node_id !== undefined && node.f_node_id !== "";
     const hasP = node.p_node_id !== null && node.p_node_id !== undefined && node.p_node_id !== "";
 
-    // 両方あり → 赤, 片方のみ → 緑
+    // Forest，論文シナリオどちらにもあるなら赤色，片方なら緑色
     if (hasF && hasP) {
       borderWidth = 2;
       borderColor = '#DC143C'; // 赤
@@ -212,7 +213,6 @@ class LogicNetwork {
 
   //ノードのラベル編集(完了)
   editNode(node_id, node_content) {
-    // 入力時にのみ10文字ごとに改行を挿入（これが唯一の自動改行ポイント）
     //ノードのラベルの編集
     const node = this.nodes.get(node_id);
     if (node) { // IDに相当するノードがある場合の中身を編集
@@ -247,13 +247,7 @@ class LogicNetwork {
       this.relayoutHierarchy(false);
 
       // データベースに編集状態を記録（edited = 1）
-      defaultRecordLogicNetwork.edit_LogicNode(
-        node.id,
-        result_label,
-        1,
-        node.f_node_id || null,
-        node.p_node_id || null
-      );
+      defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label, 1, node.f_node_id || null, node.p_node_id || null);
     }
   }
 
@@ -287,7 +281,7 @@ class LogicNetwork {
         };
         this.nodes.update(clearedNode);
     }
-    // データベース側でもノードの内容をNULLにする（edited = 0で削除状態）
+    // ノードを削除すると三角ロジックの形が崩れてしまうため，データベース側でノードの内容をNULLにする処理にしている（edited = 0で削除状態）
     defaultRecordLogicNetwork.delete_LogicNode(selectNodeId, 0);
   }
 
@@ -303,7 +297,7 @@ class LogicNetwork {
       }
     });
   }
-
+  //一応おいてるけどエッジを自由につなげるような仕様にはしていないため使ってない
   //ドラッグ開始
   dragstart(params) {
     if (!this.edgeEditMode) {
@@ -395,7 +389,7 @@ class LogicNetwork {
     } catch (_) {}
   }
 
-  // 三角ロジックを追加する関数（x/yは使わず level のみ）
+  // 三角ロジックを追加する関数（選択しているノードを主張として事実，理由付けノードを作成する関数）（x/yは使わず level のみ）
   createTriangleFromSelectedNode() {
     // 選択されているノードを取得
     const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
@@ -701,7 +695,7 @@ class LogicNetwork {
     );
   }
 
-   // 論理の説明を追加する関数
+  // 論理の説明を追加する関数（なぜその主張をしたのかを入力する）
   completeLogic() {
     console.log("completeLogic: 開始");
     
@@ -736,7 +730,7 @@ class LogicNetwork {
     this.showLogicClaimReasonModal(selectedNodeId, selectedNode.label, existingClaimReason);
   }
 
-  // 論理説明用のモーダルボックスを表示する関数
+  // なぜその主張をするのかを入力するモーダルボックスを表示する関数
   showLogicClaimReasonModal(nodeId, nodeLabel, existingClaimReason) {
     console.log("showLogicClaimReasonModal: nodeId =", nodeId);
     
@@ -768,7 +762,7 @@ class LogicNetwork {
     }
   }
 
-  // 論理説明を保存する関数
+  // なぜその主張をするのかの内容を保存する関数
   saveLogicClaimReason() {
     console.log("saveLogicClaimReason: 開始");
 
@@ -847,7 +841,7 @@ class LogicNetwork {
     }
   }
   
-// 論理説明をデータベースに保存する関数
+// なぜその主張をするのかの内容をデータベースに保存する関数
   saveClaimReasonToDatabase(triangleId, claimReason) {
     $.ajax({
       url: "php/logic_maneger.php",
@@ -880,7 +874,7 @@ class LogicNetwork {
       modal.dataset.currentNodeId = '';
     }
   }
-  // 論理の葛藤を追加する関数
+  // 論理の認知的葛藤葛藤を追加する関数
   conflictLogic() {
     console.log("conflictLogic: 開始");
     
@@ -1636,7 +1630,7 @@ class LogicNetwork {
         el.style.position = 'absolute';
         el.style.pointerEvents = 'none';
         el.style.zIndex = '10';
-        el.style.fontSize = '25px'; // 11px → 25px
+        el.style.fontSize = '17px'; // 11px → 17px
         el.style.lineHeight = '1.4';
         el.style.whiteSpace = 'nowrap';
         el.style.color = '#000'; // オレンジ → 黒
