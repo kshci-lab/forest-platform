@@ -1,7 +1,7 @@
 <?php
 
 	//kagitani共有
-	$db_host = "10.240.186.80";  // ホスト名のみ
+	$db_host = "10.250.63.6";  // ホスト名のみ
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
 	$db_password = "your_password";
