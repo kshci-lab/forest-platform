@@ -36,16 +36,23 @@ if($purpose === "save_externalized_content") {
     $used_flag = 1; // 登録時は使用済み=1
     $knowledge_fragment_content = isset($_POST['knowledge_fragment_content']) ? $_POST['knowledge_fragment_content'] : '';
 
-    // カラム存在チェック: knowledge_fragment_content が externalized_contents に存在するか
-    $hasKFragCol = false;
+    // カラム存在チェック: knowledge_fragments_content（推奨）/ knowledge_fragment_content（旧）
+    $kfragColName = null; // 実際に使うカラム名
     try {
-        if ($colRes2 = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'knowledge_fragment_content'")) {
-            $hasKFragCol = ($colRes2->num_rows > 0);
-            $colRes2->close();
+        if ($colRes2a = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'knowledge_fragments_content'")) {
+            if ($colRes2a->num_rows > 0) { $kfragColName = 'knowledge_fragments_content'; }
+            $colRes2a->close();
+        }
+        if ($kfragColName === null) {
+            if ($colRes2b = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'knowledge_fragment_content'")) {
+                if ($colRes2b->num_rows > 0) { $kfragColName = 'knowledge_fragment_content'; }
+                $colRes2b->close();
+            }
         }
     } catch (Exception $exCol2) {
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content SHOW COLUMNS (kfrag) error: " . $exCol2->getMessage() . "\n", FILE_APPEND);
     }
+    $hasKFragCol = ($kfragColName !== null);
 
     // カラム存在チェック: used_remarked_utterance が外部DBに存在するか
     $hasUsedCol = false;
@@ -68,11 +75,11 @@ if($purpose === "save_externalized_content") {
     // まずは外部キー（PK）を指定せずにINSERT（AUTO_INCREMENTを期待）
     $deleted = 0;
     if ($hasUsedCol && $hasKFragCol) {
-        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     } elseif ($hasUsedCol && !$hasKFragCol) {
         $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
     } elseif (!$hasUsedCol && $hasKFragCol) {
-        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
     } else {
         $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
     }
@@ -143,11 +150,11 @@ if($purpose === "save_externalized_content") {
     $nextExtId = $currentMax + 1; // 11111 スタート
 
     if ($hasUsedCol && $hasKFragCol) {
-        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     } elseif ($hasUsedCol && !$hasKFragCol) {
         $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     } elseif (!$hasUsedCol && $hasKFragCol) {
-        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, knowledge_fragment_content, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     } else {
         $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
     }

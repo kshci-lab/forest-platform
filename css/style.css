@@ -1585,7 +1585,7 @@ select[name="user_list"] {
 	flex: 1 1 58%;
 	width: auto; /* グローバルの width:100% を上書きして横並びにする */
 	background:#ffffff; 
-	font-size: 18px;
+	font-size: 14px;
 	align-items: center;
 	border-radius:8px; 
 	border:1px solid #e6eef2; 
