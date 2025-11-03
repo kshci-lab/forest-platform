@@ -498,7 +498,7 @@ class LogicNetwork {
   }
 
   // Forestのノードを起点に三角ロジックを作成する
-  createTriangleFromForest() {
+  async createTriangleFromForest() {
     // マインドマップ側から選択ノード情報を取得
     let selected_fnode = this.CheckSelectedNode();
     if (!selected_fnode || !selected_fnode.topic) {
@@ -506,15 +506,47 @@ class LogicNetwork {
       return;
     }
 
-    // 選択されたノードのIDを取得（conceptIDの代わり）
+    // DBから type を取得して判定
     const forestNodeId = selected_fnode.id;
-    console.log("Selected Forest node ID:", forestNodeId);
+    let fetchedType = null;
+    try {
+      fetchedType = await this.fetchForestNodeTypeById(forestNodeId);
+      console.log(`[LogicNetwork] Forest node type fetched (id=${forestNodeId}):`, fetchedType);
+    } catch (e) {
+      console.warn("[LogicNetwork] fetchForestNodeTypeById failed:", e);
+    }
+    if (fetchedType && String(fetchedType).toLowerCase() === 'toi') {
+      alert("問いノードは三角ロジックに適用できません。");
+      return;
+    }
 
+    console.log("Selected Forest node ID:", forestNodeId);
     // maketriangleを呼び出し、ForestのノードIDを渡す
     this.maketriangle(selected_fnode.topic, forestNodeId, null, 1);
   }
 
-  // シナリオ側から選択された要素の内容とIDを取得する関数
+  // DBから Forest ノードの type を取得
+  async fetchForestNodeTypeById(nodeId) {
+    const res = await $.ajax({
+      url: "php/logic_maneger.php",
+      type: "POST",
+      data: {
+        purpose: 'get',
+        get_thing: 'node_type',
+        node_id: nodeId
+      },
+      dataType: "json"
+    });
+    // 期待フォーマット: { status: "success", type: "..." }
+    if (res && res.status === "success") {
+      const t = res.type || res.node_type || (res.data && (res.data.type || res.data.node_type)) || null;
+      return t;
+    }
+    console.warn("[LogicNetwork] fetchForestNodeTypeById unexpected response:", res);
+    return null;
+  }
+
+  //シナリオ側から選択された要素の内容とIDを取得する関数
   getSelectedScenarioContent() {
     console.log("getSelectedScenarioContent: 開始");
     
@@ -564,7 +596,7 @@ class LogicNetwork {
   }
 
   // Forestのノードの内容を三角ロジックに反映する
-  applyForestToTriangle() {
+  async applyForestToTriangle() {
     // 左側（マインドマップ）の選択ノードを取得
     const f_node = this.CheckSelectedNode();
     console.log("applyForestToTriangle: f_node =", f_node);
@@ -572,6 +604,18 @@ class LogicNetwork {
     if (!f_node || !f_node.topic) {
       alert("左側のノードを選択してください");
       return;
+    }
+
+    // 追加: DBからtypeを取得して問い(toi)ならブロック
+    try {
+      const fetchedType = await this.fetchForestNodeTypeById(f_node.id);
+      console.log(`[LogicNetwork] Forest node type fetched (id=${f_node.id}):`, fetchedType);
+      if (fetchedType && String(fetchedType).toLowerCase() === 'toi') {
+        alert("問いノードは三角ロジックに適用できません。");
+        return;
+      }
+    } catch (e) {
+      console.warn("[LogicNetwork] fetchForestNodeTypeById failed:", e);
     }
 
     // 右側（論理ネットワーク）の選択ノードを取得
@@ -1692,6 +1736,88 @@ class LogicNetwork {
       }
     } catch(_) {}
   }
+
+  // ネットワークキャンバスをPDF保存（jsPDF使用、未読込時はPNG保存にフォールバック）
+  exportNetworkToPDF(filename) {
+    if (!this.ownNetwork) {
+      alert("ロジックネットワークが初期化されていません");
+      return;
+    }
+
+    // 直近描画を保証してからキャプチャ
+    const capture = () => {
+      try {
+        const canvas = this.ownNetwork.canvas?.frame?.canvas;
+        if (!canvas) {
+          alert("キャンバスが取得できませんでした");
+          return;
+        }
+        const imgData = canvas.toDataURL("image/png", 1.0);
+
+        // jsPDF 存在チェック（UMD/グローバル両対応）
+        const JSPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        if (!JSPDFCtor) {
+          // フォールバック: PNG をダウンロード
+          const a = document.createElement('a');
+          const ts = this._buildTimestamp();
+          a.href = imgData;
+          a.download = filename || `logic_network_${ts}.png`;
+          a.click();
+          return;
+        }
+
+        // キャンバス縦横から向きを決定
+        const isLandscape = canvas.width >= canvas.height;
+        const pdf = new JSPDFCtor({
+          orientation: isLandscape ? 'landscape' : 'portrait',
+          unit: 'pt',
+          format: 'a4'
+        });
+
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const margin = 24; // pt
+        const maxW = pageW - margin * 2;
+        const maxH = pageH - margin * 2;
+
+        // 画像をA4にフィット
+        const imgW = canvas.width;
+        const imgH = canvas.height;
+        const scale = Math.min(maxW / imgW, maxH / imgH);
+        const drawW = Math.max(1, imgW * scale);
+        const drawH = Math.max(1, imgH * scale);
+        const x = margin + (maxW - drawW) / 2;
+        const y = margin + (maxH - drawH) / 2;
+
+        // タイトル/タイムスタンプ
+        const ts = this._buildTimestamp();
+        const title = "Logic Network";
+        pdf.setFontSize(12);
+        pdf.text(title, margin, 18);
+        pdf.setFontSize(9);
+        pdf.text(`Exported: ${ts}`, pageW - margin - 140, 18);
+
+        pdf.addImage(imgData, 'PNG', x, y, drawW, drawH, undefined, 'FAST');
+        pdf.save(filename || `logic_network_${ts}.pdf`);
+      } catch (e) {
+        console.error("exportNetworkToPDF error:", e);
+        alert("PDFの作成に失敗しました");
+      }
+    };
+
+    // 一度の描画完了後にキャプチャ
+    this.ownNetwork.once('afterDrawing', capture);
+    this.ownNetwork.redraw();
+  }
+
+  // タイムスタンプ生成（YYYYMMDD_HHMM）
+  _buildTimestamp() {
+    const d = new Date();
+    const z = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
+  }
+
+  // ...existing code...
 }
 
 class RecordLogicNetwork{
@@ -1847,6 +1973,23 @@ window.addEventListener('load', async () => {
   // 更新ボタンのイベントリスナーを追加
   $(`#ln_refresh`).on("click", async e => {
     await defaultLogicNetwork.refreshNetwork();
+  });
+
+  // PDF出力ボタン（id: ln_export_pdf）
+  $(`#ln_export_pdf`).on("click", e => {
+    defaultLogicNetwork.exportNetworkToPDF();
+  });
+
+  // フォールバック: inline onClick="defaultLogicNetwork.exportNetworkToPDF;" にも対応
+  document.querySelectorAll('a[onclick*="defaultLogicNetwork.exportNetworkToPDF"]').forEach((el) => {
+    el.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      try {
+        window.defaultLogicNetwork && window.defaultLogicNetwork.exportNetworkToPDF();
+      } catch (e) {
+        console.error("inline-PDF export failed:", e);
+      }
+    });
   });
 
   // mynetwork（ネットワークエリア）に右クリックイベントを追加

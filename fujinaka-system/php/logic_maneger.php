@@ -339,6 +339,45 @@ else if ($purpose === 'get') {
             ]);
         }
         $stmt->close();
+    } 
+    // 追加: Forestの nodes テーブルから type を取得
+    else if ($get_thing === 'node_type') {
+        $node_id = $_POST['node_id'] ?? '';
+        if ($node_id === '') {
+            echo json_encode([
+                "status" => "error",
+                "message" => "node_id が指定されていません"
+            ]);
+            exit;
+        }
+
+        // nodes テーブル(id 指定)から type を取得
+        $sql = "SELECT type FROM nodes WHERE id = ? LIMIT 1";
+        $stmt = $mysqli->prepare($sql);
+        if (!$stmt) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "SQLプリペア失敗: " . $mysqli->error
+            ]);
+            exit;
+        }
+
+        $stmt->bind_param("s", $node_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($row = $result->fetch_assoc()) {
+            echo json_encode([
+                "status" => "success",
+                "type" => $row['type']
+            ]);
+        } else {
+            echo json_encode([
+                "status" => "error",
+                "message" => "該当ノードが見つかりません"
+            ]);
+        }
+        $stmt->close();
     }
 }
 

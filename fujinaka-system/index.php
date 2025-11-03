@@ -233,6 +233,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
 
               <div id="logic_area">
                 <div id="mynetwork"></div>
+                <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.exportNetworkToPDF;">PDF</a></li>
               </div>
 
               <div id="logic_conmenu">
