@@ -692,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'addWeeklyGoalBtn': 'Add Weekly Goal',
                 'showThinkingProcessMapBtn': 'Goal Hierarchy Map',
                 'editWeeklyGoalBtnText': 'Edit',
-                'exportWeeklyGoalBtnText': 'Export Report',
+                'exportWeeklyGoalBtnText': 'Export Journal',
                 'deleteWeeklyGoalBtnText': 'Delete',
                 'sheetbtn': 'Back to Sheet Selection',
                 'logout': 'Logout',

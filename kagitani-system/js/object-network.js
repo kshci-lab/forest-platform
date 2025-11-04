@@ -533,8 +533,44 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         if (node_type === "reason-tag") {
             result_label = '?';
         } else {
-            for (let i = 0; i < node_label.length; i += 10) {
-                result_label += node_label.substr(i, 10) + '\n';
+            const maxLength = 20;
+            let currentPosition = 0;
+            
+            while (currentPosition < node_label.length) {
+                let endPosition = Math.min(currentPosition + maxLength, node_label.length);
+                
+                // 行の途中で終わる場合は、最後の空白を探す
+                if (endPosition < node_label.length) {
+                    let lastSpaceIndex = node_label.substring(currentPosition, endPosition).lastIndexOf(' ');
+                    
+                    // スペースが見つかった場合
+                    if (lastSpaceIndex !== -1) {
+                        endPosition = currentPosition + lastSpaceIndex;
+                    } else {
+                        // スペースが見つからない場合は、英単語の途中を避けるため、
+                        // 次の文字が英字なら前に戻り、そうでなければそのまま切る
+                        if (endPosition < node_label.length && 
+                            /[a-zA-Z]/.test(node_label[endPosition]) && 
+                            /[a-zA-Z]/.test(node_label[endPosition - 1])) {
+                            // 英単語の途中の場合、前の文字まで戻る
+                            while (endPosition > currentPosition && 
+                                   /[a-zA-Z]/.test(node_label[endPosition - 1])) {
+                                endPosition--;
+                            }
+                            // 戻りすぎた場合は元の位置に戻す
+                            if (endPosition === currentPosition) {
+                                endPosition = currentPosition + maxLength;
+                            }
+                        }
+                    }
+                }
+                
+                result_label += node_label.substring(currentPosition, endPosition) + '\n';
+                currentPosition = endPosition;
+                // 次の行の開始位置を空白の後ろにする
+                while (currentPosition < node_label.length && node_label[currentPosition] === ' ') {
+                    currentPosition++;
+                }
             }
             result_label = result_label.trim(); // 末尾の不要な改行を除去
         }
@@ -632,8 +668,44 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // 改行処理
         let result_label = '';
-        for (let i = 0; i < node_label.length; i += 10) {
-            result_label += node_label.substr(i, 10) + '\n';
+        const maxLength = 20;
+        let currentPosition = 0;
+        
+        while (currentPosition < node_label.length) {
+            let endPosition = Math.min(currentPosition + maxLength, node_label.length);
+            
+            // 行の途中で終わる場合は、最後の空白を探す
+            if (endPosition < node_label.length) {
+                let lastSpaceIndex = node_label.substring(currentPosition, endPosition).lastIndexOf(' ');
+                
+                // スペースが見つかった場合
+                if (lastSpaceIndex !== -1) {
+                    endPosition = currentPosition + lastSpaceIndex;
+                } else {
+                    // スペースが見つからない場合は、英単語の途中を避けるため、
+                    // 次の文字が英字なら前に戻り、そうでなければそのまま切る
+                    if (endPosition < node_label.length && 
+                        /[a-zA-Z]/.test(node_label[endPosition]) && 
+                        /[a-zA-Z]/.test(node_label[endPosition - 1])) {
+                        // 英単語の途中の場合、前の文字まで戻る
+                        while (endPosition > currentPosition && 
+                               /[a-zA-Z]/.test(node_label[endPosition - 1])) {
+                            endPosition--;
+                        }
+                        // 戻りすぎた場合は元の位置に戻す
+                        if (endPosition === currentPosition) {
+                            endPosition = currentPosition + maxLength;
+                        }
+                    }
+                }
+            }
+            
+            result_label += node_label.substring(currentPosition, endPosition) + '\n';
+            currentPosition = endPosition;
+            // 次の行の開始位置を空白の後ろにする
+            while (currentPosition < node_label.length && node_label[currentPosition] === ' ') {
+                currentPosition++;
+            }
         }
         result_label = result_label.trim();
 
@@ -644,9 +716,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
         if (action_reason || completion_reason || challenges_learnings) {
             tooltip += '\n\n内省情報:';
-            tooltip += '\n行動意図: ' + (action_reason || '未記入');
-            tooltip += '\n完了基準: ' + (completion_reason || '未記入');
-            tooltip += '\n学び: ' + (challenges_learnings || '未記入');
+            tooltip += '\nAction Intention: ' + (action_reason || '未記入');
+            tooltip += '\nCompletion Criteria: ' + (completion_reason || '未記入');
+            tooltip += '\nLearnings: ' + (challenges_learnings || '未記入');
         }
 
         // ノード作成
@@ -734,7 +806,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             setTimeout(() => {
                 const nodeBoundingBox = defaultThinkingProcess.ownNetwork.getBoundingBox(`${node_id}`);
                 const reflectionTagId = `reflection-tag-${node_id}`;
-                const reflectionTitle = `行動意図: ${action_reason || "未記入"}\n完了基準: ${completion_reason || "未記入"}\n学び: ${challenges_learnings || "未記入"}`;
+                const reflectionTitle = `Action Intention: ${action_reason || "未記入"}\nCompletion Criteria: ${completion_reason || "未記入"}\nLearnings: ${challenges_learnings || "未記入"}`;
                 const reflectionTag = {
                     id: reflectionTagId,
                     label: '💭',
@@ -2047,24 +2119,25 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         tooltip.style.minWidth = "300px";
         tooltip.innerHTML = `
         <div style="border: 2px solid #888; border-radius: 8px; background: white; box-shadow: 2px 2px 8px rgba(0,0,0,0.3);">
-            <div id="feedbackTooltipHeader" style="cursor: move; background: #ccc; padding: 5px; border-bottom: 1px solid #888;">
-                <strong>【行動記録入力】</strong>
-            </div>
-            <div style="padding: 10px;">
-                <form id="formFeedbackInput">
-                    <label for="actionReason">行動意図：なぜこの手段を実行しましたか？</label><br>
-                    <textarea id="actionReason" name="actionReason" rows="3" placeholder="例：実験対象者を選定するための参考基準を得るため．" style="width: 100%;"></textarea><br><br>
-    
-                    <label for="completionReason">完了基準：なぜ完了と判断しましたか？</label><br>
-                    <textarea id="completionReason" name="completionReason" rows="3" placeholder="例：必要な研究事例（5つ）を確認し，比較表を作成できたから．" style="width: 100%;"></textarea><br><br>
-    
-                    <label for="challengesAndLearnings">経験の活用：困難や学びはありますか？</label><br>
-                    <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="4" placeholder="例：他の研究事例を調べる過程で混乱が生じた．関連論文を追加調査し共通点を抽出した．" style="width: 100%;"></textarea><br><br>
-    
-                    <button type="button" id="btnSaveFeedback">保存</button>
-                </form>
-            </div>
-        </div>
+    <div id="feedbackTooltipHeader" style="cursor: move; background: #ccc; padding: 5px; border-bottom: 1px solid #888;">
+        <strong>【Reflection Note】</strong>
+    </div>
+    <div style="padding: 10px;">
+        <form id="formFeedbackInput">
+            <label for="actionReason">Evaluation: What went well and what did not go well in this activity?</label><br>
+            <textarea id="actionReason" name="actionReason" rows="3" placeholder="e.g., The literature review was thorough, but it took longer than expected. Some sources were difficult to access." style="width: 100%;"></textarea><br><br>
+
+            <label for="completionReason">Attribution: Why do you think those results occurred?</label><br>
+            <textarea id="completionReason" name="completionReason" rows="3" placeholder="e.g., The delay was due to not having a clear search strategy initially. Success in finding key papers came from using specific keywords." style="width: 100%;"></textarea><br><br>
+
+            <label for="challengesAndLearnings">Application: What would you change next time in a similar situation?</label><br>
+            <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="4" placeholder="e.g., Next time, I will create a structured search plan before starting and set up institutional access in advance." style="width: 100%;"></textarea><br><br>
+
+            <button type="button" id="btnSaveFeedback">Save</button>
+        </form>
+    </div>
+</div>
+
     `;
     
         tooltip.style.display = "block";
@@ -2098,9 +2171,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
                     // ノードの title を更新（入力内容を簡略化して表示）
                     const title = `
-                        行動意図: ${actionReason || "未記入"}\n
-                        完了基準: ${completionReason || "未記入"}\n
-                        学び: ${challengesAndLearnings || "未記入"}
+                        Action Intention: ${actionReason || "未記入"}\n
+                        Completion Criteria: ${completionReason || "未記入"}\n
+                        Learnings: ${challengesAndLearnings || "未記入"}
                     `;
                     this.nodes.update({
                         id: this.selectId,
@@ -2112,7 +2185,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     if (actionReason || completionReason || challengesAndLearnings) {
                         const nodeBoundingBox = this.ownNetwork.getBoundingBox(this.selectId);
                         const reflectionTagId = `reflection-tag-${this.selectId}`;
-                        const reflectionTitle = `行動意図: ${actionReason || "未記入"}\n完了基準: ${completionReason || "未記入"}\n学び: ${challengesAndLearnings || "未記入"}`;
+                        const reflectionTitle = `Action Intention: ${actionReason || "未記入"}\nCompletion Criteria: ${completionReason || "未記入"}\nLearnings: ${challengesAndLearnings || "未記入"}`;
                         
                         // 既存の内省タグがあるかチェック
                         const existingReflectionTag = this.nodes.get(reflectionTagId);
