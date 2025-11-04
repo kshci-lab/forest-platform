@@ -134,7 +134,7 @@ class LogicNetwork {
   }
 
   //ノードを追加する（x/yは渡さない）
-  addNode(node_id, label, f_node_id = null, p_node_id = null, edited = 0, level) {
+  addNode(node_id, label, f_node_id = null, p_node_id = null, edited = false, level) {
     const newNode = {
       id: node_id,
       label: label,
@@ -142,7 +142,7 @@ class LogicNetwork {
       shape: 'box',
       f_node_id: f_node_id,
       p_node_id: p_node_id,
-      edited: edited,
+      edited: !!edited,
       level: level
     };
     // スタイルを適用
@@ -172,13 +172,12 @@ class LogicNetwork {
     let backgroundColor = '#fffacd'; // デフォルトの背景色
     let borderDashes = false; // 点線はfalse（実線）
     
-    // editedの値に基づいて点線/実線を決定
-    //編集されているならedited = 1で実線，未編集ならedited = 0で点線
-    if (node.edited == 0) {
+    // 編集されているならedited = trueで実線，未編集ならedited = falseで点線
+    if (!node.edited) {
       borderDashes = true; // 点線
       // Forest/P の紐づきがどちらも無いときだけ黒枠
-      if ((node.f_node_id == null || node.f_node_id === undefined) &&
-          (node.p_node_id == null || node.p_node_id === undefined)) {
+      if ((node.f_node_id == null || node.f_node_id === '') &&
+          (node.p_node_id == null || node.p_node_id === '')) {
         borderWidth = 2;
         borderColor = '#000000'; // 黒色
       }
@@ -215,7 +214,7 @@ class LogicNetwork {
   editNode(node_id, node_content) {
     //ノードのラベルの編集
     const node = this.nodes.get(node_id);
-    if (node) { // IDに相当するノードがある場合の中身を編集
+    if (node) {
       // 元のラベルがnullまたは空の場合（削除済みノード）をチェック
       const wasDeleted = !node.label || node.label === null || node.label === '';
       
@@ -229,7 +228,7 @@ class LogicNetwork {
       const updatedNode = {
         ...node,
         label: result_label,
-        edited: 1 // 編集されたので1に設定
+        edited: true // 編集されたので true に設定
       };
       
       // スタイルを適用
@@ -247,7 +246,7 @@ class LogicNetwork {
       this.relayoutHierarchy(false);
 
       // データベースに編集状態を記録（edited = 1）
-      defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label, 1, node.f_node_id || null, node.p_node_id || null);
+      defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label, true, node.f_node_id || null, node.p_node_id || null);
     }
   }
 
@@ -357,9 +356,9 @@ class LogicNetwork {
     const fact_id = this.generateUniqueNumberText();
 
     // 主張ノードは整形済みラベルを使用
-    this.addNode(claim_id, claimLabel, f_node_id, p_node_id, edited, node1level);
-    this.addNode(reason_id, "", null, null, 0, node2level);
-    this.addNode(fact_id, "", null, null, 0, node3level);
+    this.addNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, node1level);
+    this.addNode(reason_id, "", null, null, false, node2level);
+    this.addNode(fact_id, "", null, null, false, node3level);
 
     // エッジ追加まで完了
     this.addEdge(claim_id, reason_id);
@@ -369,10 +368,10 @@ class LogicNetwork {
     // レイアウトを再適用（重なり回避）
     this.relayoutHierarchy(true);
 
-    // DB記録
-    defaultRecordLogicNetwork.record_LogicNode(claim_id, claimLabel, f_node_id, p_node_id, edited, node1level);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "", null, null, 0, node2level);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "", null, null, 0, node3level);
+    // DB記録（edited は bool -> 1/0 変換は送信側で実施）
+    defaultRecordLogicNetwork.record_LogicNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, node1level);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "", null, null, false, node2level);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "", null, null, false, node3level);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
@@ -421,8 +420,8 @@ class LogicNetwork {
     const fact_id = this.generateUniqueNumberText();
   
     // 新しいノードを追加（選択ノードの1つ下のレベルに配置）
-    this.addNode(reason_id, "", null, null, 0, newNodeLevel);
-    this.addNode(fact_id, "", null, null, 0, newNodeLevel);
+    this.addNode(reason_id, "", null, null, false, newNodeLevel);
+    this.addNode(fact_id, "", null, null, false, newNodeLevel);
 
     // エッジ追加まで完了
     this.addEdge(selectedNodeId, reason_id);
@@ -433,8 +432,8 @@ class LogicNetwork {
     this.relayoutHierarchy(true);
 
     // DB記録
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", null, null, 0, newNodeLevel);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", null, null, 0, newNodeLevel);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", null, null, false, newNodeLevel);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", null, null, false, newNodeLevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
@@ -639,8 +638,8 @@ class LogicNetwork {
     const updatedNode = this.nodes.get(LogicNodeId);
     const styledNode = {
       ...updatedNode,
-      f_node_id: f_node.id || "default", // Forestから持ってきたことを示す
-      edited: 1 // Forestから持ってきたばかりなので1
+      f_node_id: f_node.id || "default",
+      edited: true
     };
     // スタイルを適用
     this.applyNodeStyle(styledNode);
@@ -657,8 +656,8 @@ class LogicNetwork {
     const f_node_id = f_node.id || "default";
     console.log("applyForestToTriangle: update_f_to_LogicNodelabelを呼び出し, f_node_id =", f_node_id);
     
-    // Forestから反映されたので edited = 1 を設定
-    defaultRecordLogicNetwork.edit_LogicNode(LogicNodeId, f_node.topic, 1, f_node_id, null);
+    // Forestから反映されたので edited = true を設定して送信（送信側で1/0に変換）
+    defaultRecordLogicNetwork.edit_LogicNode(LogicNodeId, f_node.topic, true, f_node_id, null);
   }
 
   // 三角ロジックのノードの内容を論文シナリオの内容に反映する
@@ -733,7 +732,7 @@ class LogicNetwork {
     defaultRecordLogicNetwork.edit_LogicNode(
       selectedLogicNodeId,
       elementText,
-      1,
+      true,
       conceptIdFromPresentation || null,
       p_element_id
     );
@@ -1136,6 +1135,9 @@ class LogicNetwork {
             : this.formatLabelWithLineBreaks(originalLabel);
         }
 
+        // edited を boolean に正規化（true/1/"1" => true）
+        const editedBool = (node.edited === true) || (node.edited === 1) || (node.edited === "1");
+
         const restoredNode = {
           id: node.node_id,
           label: isDeleted ? "" : formattedLabel,
@@ -1143,7 +1145,7 @@ class LogicNetwork {
           shape: 'box',
           f_node_id: node.f_node_id || null,
           p_node_id: node.p_node_id || null,
-          edited: parseInt(node.edited) || 0,
+          edited: editedBool,
           level: parseInt(node.level) || 0
         };
 
@@ -1848,7 +1850,7 @@ class RecordLogicNetwork{
     });
   }
 
-  record_LogicNode(node_id, label, f_node_id, p_node_id, edited = 0, node_level) {
+  record_LogicNode(node_id, label, f_node_id, p_node_id, edited = false, node_level) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
@@ -1859,7 +1861,8 @@ class RecordLogicNetwork{
         label: label,
         f_node_id: f_node_id,
         p_node_id: p_node_id,
-        edited: edited,
+        // bool -> 1/0 に変換して送信
+        edited: edited ? 1 : 0,
         level: node_level,
       },
       dataType: "json",
@@ -1877,14 +1880,15 @@ class RecordLogicNetwork{
     });
   }
 
-  edit_LogicNode(node_id, new_label, edited = 1, f_node_id = null, p_node_id = null) {
+  edit_LogicNode(node_id, new_label, edited = true, f_node_id = null, p_node_id = null) {
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
       data: {
         node_id: node_id,
         new_label: new_label,
-        edited: edited,
+        // bool -> 1/0 に変換して送信
+        edited: edited ? 1 : 0,
         f_node_id: f_node_id,
         p_node_id: p_node_id,
         purpose: 'update',
@@ -1930,7 +1934,6 @@ class RecordLogicNetwork{
     })
   }
 }
-
 window.addEventListener('load', async () => {
     try {
     console.log("[LogicNetwork] window load: start");

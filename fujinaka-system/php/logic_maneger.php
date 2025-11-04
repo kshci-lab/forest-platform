@@ -6,6 +6,14 @@ date_default_timezone_set('Asia/Tokyo');
 
 header('Content-Type: application/json'); // JSON 形式でレスポンスを返す
 
+// 追加: true/false, "true"/"false", 1/0 を 1/0 へ正規化
+function ln_bool_to_int($v) {
+    if (is_bool($v)) return $v ? 1 : 0;
+    if ($v === null) return 0;
+    $s = strtolower(trim((string)$v));
+    return in_array($s, ['1', 'true', 'on', 'yes'], true) ? 1 : 0;
+}
+
 if (!isset($_SESSION['USERID'])) {
     echo json_encode(["status" => "error", "message" => "ユーザーIDが設定されていません"]);
     exit;
@@ -40,13 +48,15 @@ if ($purpose === 'record') {
         $label = $_POST["label"];
         $f_node_id = $_POST["f_node_id"];
         $p_node_id = $_POST["p_node_id"];
-        $edited = $_POST["edited"];
-        $level = $_POST["level"]; 
+        // 変更: true/false も受けて 1/0 に正規化し、SQLでは TRUE/FALSE を使用
+        $edited = ln_bool_to_int($_POST["edited"] ?? 0);
+        $edited_sql = $edited ? "TRUE" : "FALSE";
+        $level = isset($_POST["level"]) ? (int)$_POST["level"] : null;
 
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
         $sql = "INSERT INTO logic_node (logic_node_id, label, f_node_id, p_node_id, edited, level, created_at, updated_at, sheet_id, user_id) 
-                VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', '$edited', '$level', '$timestamp', '$timestamp', '$sheet_id', '$user_id')";
+                VALUES ('$node_id', '$label', '$f_node_id', '$p_node_id', $edited_sql, '$level', '$timestamp', '$timestamp', '$sheet_id', '$user_id')";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "ノードが記録されました", "node_id" => $node_id]);
@@ -91,10 +101,12 @@ else if ($purpose === 'update') {
         // ノードのラベルのみ更新（必要なら f_node_id / p_node_id も）
         $node_id = $_POST["node_id"];
         $new_label = $_POST["new_label"];
-        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1;
+        // 変更: edited を 1/0 に正規化
+        $edited = ln_bool_to_int($_POST["edited"] ?? 1);
+        $edited_sql = $edited ? "TRUE" : "FALSE";
 
         // 動的にSET句を構築（f_node_id / p_node_id が来た時のみ更新）
-        $set = "label = '".$mysqli->real_escape_string($new_label)."', edited = '".$mysqli->real_escape_string($edited)."', updated_at = '$timestamp'";
+        $set = "label = '".$mysqli->real_escape_string($new_label)."', edited = $edited_sql, updated_at = '$timestamp'";
         if (isset($_POST["f_node_id"]) && $_POST["f_node_id"] !== '') {
             $f_node_id = $mysqli->real_escape_string($_POST["f_node_id"]);
             $set .= ", f_node_id = '$f_node_id'";
@@ -137,9 +149,11 @@ else if ($purpose === 'update') {
         $updatedNodeId = $_POST["updatedNodeId"];
         $newlabel = $_POST["label"];
         $f_node_id = $_POST["f_node_id"];
-        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
+        // 変更: edited を 1/0 に正規化
+        $edited = ln_bool_to_int($_POST["edited"] ?? 1);
+        $edited_sql = $edited ? "TRUE" : "FALSE";
 
-        $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
+        $sql = "UPDATE logic_node SET label = '$newlabel', f_node_id = '$f_node_id', edited = $edited_sql, updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "Forestノードからの更新が完了しました", "node_id" => $updatedNodeId]);
@@ -151,9 +165,11 @@ else if ($purpose === 'update') {
         $updatedNodeId = $_POST["updatedNodeId"];
         $newlabel = $_POST["label"];
         $p_node_id = $_POST["p_node_id"];
-        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 1; // edited パラメータを追加（デフォルト1）
+        // 変更: edited を 1/0 に正規化
+        $edited = ln_bool_to_int($_POST["edited"] ?? 1);
+        $edited_sql = $edited ? "TRUE" : "FALSE";
 
-        $sql = "UPDATE logic_node SET label = '$newlabel', p_node_id = '$p_node_id', edited = '$edited', updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
+        $sql = "UPDATE logic_node SET label = '$newlabel', p_node_id = '$p_node_id', edited = $edited_sql, updated_at = '$timestamp' WHERE logic_node_id = '$updatedNodeId' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "Presentationノードからの更新が完了しました", "node_id" => $updatedNodeId]);
@@ -219,15 +235,15 @@ else if ($purpose === 'update') {
         $stmt->close();
     }
 }
-
 else if ($purpose === 'delete') {
     $delete_thing = $_POST['delete_thing'];
     if ($delete_thing === 'node') {
         $node_id = $_POST["node_id"];
-        $edited = isset($_POST["edited"]) ? $_POST["edited"] : 0;
+        // 変更: edited を 1/0 に正規化（削除時に edited=0/1 を受ける想定）
+        $edited = ln_bool_to_int($_POST["edited"] ?? 0);
+        $edited_sql = $edited ? "TRUE" : "FALSE";
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-        // ノードを削除する代わりに、node_id以外の項目をNULLに更新
         $sql = "UPDATE logic_node SET 
                 label = NULL, 
                 f_node_id = NULL, 
@@ -235,7 +251,7 @@ else if ($purpose === 'delete') {
                 y = NULL, 
                 created_at = NULL,
                 updated_at = '$timestamp',
-                edited = '$edited'
+                edited = $edited_sql
                 WHERE logic_node_id = '$node_id' AND sheet_id = '$sheet_id' AND user_id = '$user_id'";
 
         if ($mysqli->query($sql)) {
@@ -259,6 +275,10 @@ else if ($purpose === 'load') {
         $nodes = [];
         if ($nodesResult) {
             while ($row = $nodesResult->fetch_assoc()) {
+                // edited: 1/0 -> true/false に変換して返す
+                $row['edited'] = isset($row['edited']) ? (bool)$row['edited'] : false;
+                // level は数値として返す（念のため）
+                $row['level'] = isset($row['level']) ? (int)$row['level'] : 0;
                 $nodes[] = $row;
             }
         }
