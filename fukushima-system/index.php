@@ -138,7 +138,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <option>資料構成作成モード</option>
                         <option>資料作成モード</option>
                         <option>議論内省マップモード</option>
-                        <option>共有知モード</option>
+                        <option selected>共有知モード</option>
                     </select>
                     <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
                     <!-- shared tabs removed from here and moved to center of the workspace -->
@@ -531,8 +531,37 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <div id="mynetwork"></div>
                                 </div>
                             </div>
+                            <!-- 連結化タブ画面分割エリア -->
                             <!-- White overlay to cover jsmind_container, utterance_area, mynetwork2 when in Combination tab -->
-                            <div id="shared_combination_overlay"></div>
+                            <div id="shared_combination_overlay">
+                                <!-- Shared Combination Overlay Layout (scoped CSS) -->
+                                <div class="comb-row" style="display:flex; flex-direction:row; width:100%; height:100%;">
+                                    <!-- Left 70% -->
+                                    <div class="comb-left" style="display:flex; flex-direction:column; flex:0 0 70%; box-sizing:border-box;">
+                                        <!-- Left Top: FragmentList -->
+                                        <div class="comb-left-top" style="background:white; flex:1 1 0; overflow-y:auto; overflow-x:hidden;">
+                                            <div class="overlay-knowledge-fragments">
+                                                <div class="overlay-title">知識フラグメント一覧</div>
+                                                <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
+                                            </div>
+                                        </div>
+                                        <!-- Left Bottom: InputArea -->
+                                        <div class="comb-left-bottom" style="background:white; flex:1 1 0; overflow:auto;">
+                                            <div class="overlay-input-area">
+                                                <!-- <div class="overlay-title">ユーザーリスト</div> -->
+                                                <!-- TODO: inputs (追加する領域/コメント/登録ボタン 等) go here -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Right 30%: KnowledgeTree -->
+                                    <div class="comb-right" style="background:white; flex:0 0 30%; overflow:auto; box-sizing:border-box;">
+                                        <div class="overlay-knowledge-tree">
+                                            <div class="overlay-title">産出した知</div>
+                                            <!-- TODO: knowledge tree view goes here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Placeholder containers for shared/共有知モード (hidden by default) -->
                             <div id="jsmind_container_shared" style="display:none;" oncontextmenu="return false;"></div>
                             <div id="network_container_shared" style="display:none;" oncontextmenu="return false;"></div>

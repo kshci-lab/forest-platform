@@ -216,6 +216,123 @@ table[type] {
 	display: none; /* hidden unless combination tab is active */
 }
 
+/* --- Scoped layout for Shared Combination Overlay --- */
+#shared_combination_overlay .comb-row{
+	display:flex;
+	flex-direction:row;
+	width:100%;
+	height:100%;
+}
+#shared_combination_overlay .comb-left{
+	display:flex;
+	flex-direction:column;
+	flex:0 0 70%; /* 70% width */
+}
+#shared_combination_overlay .comb-left-top,
+#shared_combination_overlay .comb-left-bottom{
+	flex:1 1 0;
+	/* 親では横スクロールを出さず、縦だけに限定する。横は内側リストで制御 */
+	overflow-y:auto;
+	overflow-x:hidden;
+	min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
+}
+#shared_combination_overlay .comb-right{
+	flex:0 0 30%; /* 30% width */
+	overflow:auto;
+}
+#shared_combination_overlay .overlay-knowledge-fragments,
+#shared_combination_overlay .overlay-input-area,
+#shared_combination_overlay .overlay-knowledge-tree{
+	height:100%;
+	width:100%;
+	padding:12px;
+	box-sizing:border-box;
+}
+#shared_combination_overlay .overlay-title{
+	font-size: 16px;
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+/* Divider lines for the split layout */
+#shared_combination_overlay .comb-left{
+	border-right: 2px solid #ccc;
+	box-sizing: border-box;
+}
+#shared_combination_overlay .comb-left-top{
+	border-bottom: 2px solid #ccc;
+	box-sizing: border-box;
+}
+
+/* Knowledge fragment cards */
+#shared_combination_overlay .knowledge-fragment-list{
+	display:flex;
+	flex-wrap:nowrap;            /* 横一列に並べる */
+	overflow-x:auto;             /* 横スクロールを許可 */
+	overflow-y:hidden;
+	gap:12px;
+	margin-top:8px;
+	-webkit-overflow-scrolling:touch; /* スクロール慣性（モバイル） */
+	width: 100%;                 /* 親幅に固定 */
+	max-width: 100%;             /* 親幅を超えない */
+	box-sizing: border-box;
+	min-width: 0;                /* コンテンツ幅に引っ張られて広がらない */
+}
+#shared_combination_overlay .knowledge_fragment{
+	background:#ffe6e6; /* pale pink */
+	border:1px solid #ccc;
+	border-radius:10px;
+	padding:12px;
+	width:260px;
+	box-sizing:border-box;
+	display:flex;
+	flex-direction:column;
+	gap:8px;
+	flex:0 0 auto;               /* 横スクロール内で折り返さず表示 */
+}
+#shared_combination_overlay .knowledge_fragment .card-title{
+	font-size:15px;
+	font-weight: 500;
+	color:#444;
+}
+#shared_combination_overlay .knowledge_fragment .card-body{
+	white-space:pre-wrap;
+	color:#333;
+	font-size:14px;
+	line-height:1.5;
+}
+#shared_combination_overlay .knowledge_fragment .card-actions{
+	margin-top:auto;
+	display:flex;
+	justify-content:flex-end;
+}
+#shared_combination_overlay .knowledge_fragment .detail-button{
+	background:#fff;
+	border:1px solid #bbb;
+	border-radius:4px;
+	padding:4px 8px;
+	font-size:12px;
+	cursor:pointer;
+}
+#shared_combination_overlay .knowledge_fragment .card-detail{
+	display:none;
+	border-top:1px dashed #ccc;
+	padding-top:8px;
+	color:#444;
+	font-size:13px;
+}
+#shared_combination_overlay .knowledge_fragment.is-open .card-detail{
+	display:block;
+}
+/* 簡易Q&Aの体裁 */
+#shared_combination_overlay .knowledge_fragment .qa-item{ margin-top:6px; }
+#shared_combination_overlay .knowledge_fragment .qa-q{ font-weight:600; margin-bottom:2px; }
+#shared_combination_overlay .knowledge_fragment .qa-a{ color:#333; }
+#shared_combination_overlay .no-fragment-note{
+	color:#777;
+	font-size:13px;
+}
+
 /* #layout{
 	height:100%;
 } */

@@ -1645,15 +1645,24 @@ function activateSharedTab(tabId){
 
   // 連結化タブ時は白いオーバーレイを全面に表示
   var overlay = document.getElementById('shared_combination_overlay');
-  if(overlay){
-    if(tabId === 'tab-combination'){
+  if (overlay) {
+    if (tabId === 'tab-combination') {
+      // グローバルのヘルパがあればそれを使用（なければフォールバック）
+      if (typeof window !== 'undefined' && typeof window.showSharedCombinationOverlay === 'function') {
+        window.showSharedCombinationOverlay();
+      } else {
+        overlay.style.display = 'block';
+      }
       // 表示してから位置とサイズを計算
-      overlay.style.display = 'block';
       updateCombinationOverlayBounds();
       // 画面変化に追随
       attachOverlayAutoResize();
     } else {
-      overlay.style.display = 'none';
+      if (typeof window !== 'undefined' && typeof window.hideSharedCombinationOverlay === 'function') {
+        window.hideSharedCombinationOverlay();
+      } else {
+        overlay.style.display = 'none';
+      }
       detachOverlayAutoResize();
     }
   }

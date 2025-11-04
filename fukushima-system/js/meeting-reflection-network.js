@@ -1870,3 +1870,46 @@ window.addEventListener('load', function() {
       });
     });
 });
+
+// 連結化オーバーレイの表示/非表示ヘルパ
+function showSharedCombinationOverlay() {
+  var $ov = $('#shared_combination_overlay');
+  $ov.addClass('is-active').css('display', 'block');
+}
+function hideSharedCombinationOverlay() {
+  var $ov = $('#shared_combination_overlay');
+  $ov.removeClass('is-active').css('display', 'none');
+}
+
+// タブ切替時のオーバーレイ制御（表出化＝#tab04 選択で必ず隠す）
+$(document).on('click', '.tabnav a', function () {
+  var href = $(this).attr('href') || '';
+  // 連結化用のタブ/ボタンに合わせて必要なら条件追加
+  if (href === '#tab04' /* 表出化 */ || href === '#tab01' || href === '#tab02' || href === '#tab03') {
+    hideSharedCombinationOverlay();
+  }
+});
+
+// 共有知タブ群の「表出化」「内面化」押下でも常に隠す（フォールバック強化）
+$(document).on('click', '#tab-externalization, #tab-internalization', function(){
+    hideSharedCombinationOverlay();
+    // 念のため直接 display をオフ（他コードの介入対策）
+    var $ov = $('#shared_combination_overlay');
+    $ov.css('display', 'none').removeClass('is-active');
+});
+
+// 初期化時・ページ離脱時の保険
+$(function(){ hideSharedCombinationOverlay(); });
+window.addEventListener('beforeunload', hideSharedCombinationOverlay);
+
+// 「詳細▼」ボタンのトグル（開：閉じる▲／閉：詳細▼）
+$(document).on('click', '#shared_combination_overlay .detail-button', function(){
+    var $btn = $(this);
+    var $card = $btn.closest('.knowledge_fragment');
+    if ($card.length) {
+        $card.toggleClass('is-open');
+        var opened = $card.hasClass('is-open');
+        $btn.text(opened ? '閉じる▲' : '詳細▼');
+        $card.find('.card-detail').attr('aria-hidden', opened ? 'false' : 'true');
+    }
+});
