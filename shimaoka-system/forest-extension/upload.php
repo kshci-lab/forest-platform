@@ -1,22 +1,39 @@
 <?php
-// Load .env for OPENAI_API_KEY, etc. (PHP 7+ compatible)
-$envPath = __DIR__ . '/.env';
-if (file_exists($envPath)) {
-    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+// APIキー取得: 環境変数 → プロジェクト直下 .env → forest-extension/.env の順で探索（generate_question.php と統一）
+function load_env_if_exists($path) {
+    if (!is_readable($path)) return;
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) return;
     foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '' || strpos($line, '#') === 0) continue;
+        if (strpos($line, 'export ') === 0) $line = trim(substr($line, 7));
         $eq = strpos($line, '=');
         if ($eq === false) continue;
         $k = trim(substr($line, 0, $eq));
         $v = trim(substr($line, $eq + 1));
         if ($k === '') continue;
-        // remove optional surrounding quotes
         if ((strlen($v) >= 2) && (($v[0] === '"' && substr($v, -1) === '"') || ($v[0] === "'" && substr($v, -1) === "'"))) {
             $v = substr($v, 1, -1);
         }
-        putenv($k . '=' . $v);
+        if (getenv($k) === false) {
+            putenv($k . '=' . $v);
+            $_ENV[$k] = $v;
+        }
     }
+}
+
+// 1) 環境変数
+$apiKey = getenv('OPENAI_API_KEY') ?: ($_ENV['OPENAI_API_KEY'] ?? '');
+// 2) プロジェクト直下 .env（/shimaoka-system/.env）
+if ($apiKey === '') {
+    load_env_if_exists(dirname(__DIR__) . '/.env');
+    $apiKey = getenv('OPENAI_API_KEY') ?: ($_ENV['OPENAI_API_KEY'] ?? '');
+}
+// 3) forest-extension/.env
+if ($apiKey === '') {
+    load_env_if_exists(__DIR__ . '/.env');
+    $apiKey = getenv('OPENAI_API_KEY') ?: ($_ENV['OPENAI_API_KEY'] ?? '');
 }
 
 // アップロードエラーチェック
@@ -25,8 +42,8 @@ if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] !== UPLOAD_ERR_O
     die('アップロードに失敗しました');
 }
 
-// ユーザーID（現状はダミー固定）。将来ログイン導入時にセッションから取得へ置換
-$userId = 1;
+// セッション開始（user_id は後で users テーブルからも導出可）
+session_start();
 
 // PDFバリデーション（MIME + 拡張子）
 $tmpPath = $_FILES['pdf_file']['tmp_name'];
@@ -54,45 +71,73 @@ try {
     die('DB接続に失敗しました: ' . htmlspecialchars($e->getMessage()));
 }
 
-// 重複チェック（同一ユーザー + 同一タイトル）
-$stmt = $pdo->prepare('SELECT 1 FROM uploaded_files WHERE user_id = ? AND file_name = ? LIMIT 1');
+// usersテーブルに基づき user_id を決定（優先度: SESSION.USERID → SESSION.USERNAME→ SESSION.user_id → POST/GET）
+$userId = null;
+if (isset($_SESSION['USERID']) && ctype_digit((string)$_SESSION['USERID'])) {
+    $userId = (int)$_SESSION['USERID'];
+}
+if ($userId === null && !empty($_SESSION['USERNAME'])) {
+    try {
+        $st = $pdo->prepare('SELECT user_id FROM users WHERE name = ? ORDER BY user_id DESC LIMIT 1');
+        $st->execute([$_SESSION['USERNAME']]);
+        $row = $st->fetch();
+        if ($row && isset($row['user_id'])) {
+            $userId = (int)$row['user_id'];
+        }
+    } catch (Exception $e) {
+        // ユーザー取得失敗は致命ではないが、後段のフォールバックに任せる
+    }
+}
+if ($userId === null && isset($_SESSION['user_id']) && ctype_digit((string)$_SESSION['user_id'])) {
+    $userId = (int)$_SESSION['user_id'];
+}
+if ($userId === null && isset($_POST['user_id']) && ctype_digit((string)$_POST['user_id'])) {
+    $userId = (int)$_POST['user_id'];
+}
+if ($userId === null && isset($_GET['user_id']) && ctype_digit((string)$_GET['user_id'])) {
+    $userId = (int)$_GET['user_id'];
+}
+if ($userId === null) {
+    http_response_code(401);
+    die('ユーザーIDが取得できません（usersテーブル未登録かセッション未設定）。再ログインしてください。');
+}
+
+// 既存チェック（同一ユーザー + 同一タイトル）
+$stmt = $pdo->prepare('SELECT file_id, openai_file_id FROM discussion_materials WHERE user_id = ? AND file_name = ? ORDER BY file_id DESC LIMIT 1');
 $stmt->execute([$userId, $fileName]);
-if ($stmt->fetch()) {
-    http_response_code(409);
-    die('同一タイトルのPDFは既にアップロード済みです（同一ユーザー）');
+$existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if ($existing && !empty($existing['openai_file_id'])) {
+    // 既存のOpenAIファイルを再利用（クラウド再アップロードしない）
+    @unlink($tmpPath);
+    $qs = [
+        'file_id'        => (string)$existing['file_id'],
+        'file_name'      => $fileName,
+        'openai_file_id' => (string)$existing['openai_file_id'],
+    ];
+    header('Location: ./generate_question.php?' . http_build_query($qs));
+    exit;
 }
 
-// BASE64化
-$binary = file_get_contents($tmpPath);
-if ($binary === false) {
-    http_response_code(500);
-    die('ファイル読み込みに失敗しました');
-}
-$base64Data = base64_encode($binary);
-
-// DB保存
-$ins = $pdo->prepare('INSERT INTO uploaded_files (user_id, file_name, file_data) VALUES (?, ?, ?)');
-$ins->execute([$userId, $fileName, $base64Data]);
-$fileId = (int)$pdo->lastInsertId();
-
-// ファイルも保存（アプリで参照する可能性用）
-$upload_dir = __DIR__ . '/uploads/';
-if (!file_exists($upload_dir)) mkdir($upload_dir, 0777, true);
-$pdf_path = $upload_dir . $fileName;
-if (!move_uploaded_file($tmpPath, $pdf_path)) {
-    http_response_code(500);
-    die('ファイル保存に失敗しました');
+// discussion_materials 行を用意（既存があれば流用、なければ新規）
+if ($existing) {
+    $fileId = (int)$existing['file_id'];
+} else {
+    // openai_file_id はDBデフォルト（NULL）に任せる
+    $ins = $pdo->prepare('INSERT INTO discussion_materials (user_id, file_name) VALUES (?, ?)');
+    $ins->execute([$userId, $fileName]);
+    $fileId = (int)$pdo->lastInsertId();
 }
 
 // OpenAI Files API へアップロードし openai_file_id を取得
 $openaiFileId = null;
-$apiKey = getenv('OPENAI_API_KEY');
 $openaiError = false;
 if ($apiKey) {
     $ch = curl_init('https://api.openai.com/v1/files');
     $postFields = [
         'purpose' => 'assistants',
-        'file' => new CURLFile($pdf_path, 'application/pdf', $fileName)
+    // 一時ファイルから直接アップロード（サーバー保存は行わない）
+    'file' => new CURLFile($tmpPath, 'application/pdf', $fileName)
     ];
     curl_setopt_array($ch, [
         CURLOPT_HTTPHEADER => [
@@ -124,19 +169,16 @@ if ($apiKey) {
     curl_close($ch);
 } else {
     $openaiError = true;
+    // APIキー未設定のログ
+    $log = __DIR__ . '/openai_upload_error.log';
+    $msg = '[' . date('c') . "] Missing OPENAI_API_KEY.\n";
+    file_put_contents($log, $msg, FILE_APPEND);
 }
 
-// マップ更新（ファイル名 => openai_file_id）
-$mapFile = __DIR__ . '/openai_files_map.json';
-if ($openaiFileId) {
-    $map = [];
-    if (file_exists($mapFile)) {
-        $raw = file_get_contents($mapFile);
-        $tmp = json_decode($raw, true);
-        if (is_array($tmp)) { $map = $tmp; }
-    }
-    $map[$fileName] = $openaiFileId; // 上書き
-    file_put_contents($mapFile, json_encode($map, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+// DBにopenai_file_idを反映（成功時）
+if (!empty($openaiFileId)) {
+    $upd = $pdo->prepare('UPDATE discussion_materials SET openai_file_id = ? WHERE file_id = ?');
+    $upd->execute([$openaiFileId, $fileId]);
 }
 
 // 次画面へ遷移
