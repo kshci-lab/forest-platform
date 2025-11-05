@@ -21,8 +21,58 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
     header("Location: logout.php");
 }
 
-?>
+// 追加: AJAXでの実行要求に応答（Pythonを実行してJSONで返す）
+if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
+    $ai_output = '';
+    try {
+        $python = stripos(PHP_OS, 'WIN') === 0 ? 'python' : 'python3';
+        $script = __DIR__ . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'test.py';
+        $cmd = $python . ' ' . escapeshellarg($script);
 
+        $disabled = (string)ini_get('disable_functions');
+        if (stripos($disabled, 'proc_open') !== false) {
+            $ai_output = "PHP設定で proc_open が無効です。php.ini の disable_functions を確認してください。";
+        } else {
+            $descriptorspec = [
+                1 => ['pipe', 'w'], // stdout
+                2 => ['pipe', 'w'], // stderr
+            ];
+            $process = @proc_open($cmd, $descriptorspec, $pipes);
+            if (is_resource($process)) {
+                stream_set_blocking($pipes[1], true);
+                stream_set_blocking($pipes[2], true);
+                $stdout = stream_get_contents($pipes[1]);
+                $stderr = stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                $exitCode = proc_close($process);
+
+                if ($exitCode === 0 && trim($stdout) !== '') {
+                    $ai_output = trim($stdout);
+                } else {
+                    $errMsg = trim($stderr) !== '' ? trim($stderr) : '不明';
+                    $outMsg = trim($stdout);
+                    $ai_output = "Python実行エラー\nコマンド: {$cmd}\n終了コード: {$exitCode}\nエラー: {$errMsg}";
+                    if ($outMsg !== '') {
+                        $ai_output .= "\n標準出力: {$outMsg}";
+                    }
+                }
+            } else {
+                $ai_output = "proc_open の初期化に失敗しました。";
+            }
+        }
+    } catch (Throwable $e) {
+        $ai_output = 'AI出力の取得に失敗しました: ' . $e->getMessage();
+    }
+
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(['output' => $ai_output], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// 【変更】初期表示時は実行しない（空のまま）
+$ai_output = '';
+?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html>
     <head>
@@ -341,6 +391,17 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                 <div id="chapter_area"></div>
               </div>
               <div id="preview_area"></div>
+
+              <!-- 追加: 出力領域 -->
+              <div id="ai_output_panel" style="margin:14px 0; padding:12px; border:1px solid #ddd; border-radius:8px; background:#fff;">
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+                  <div style="font-weight:bold;">AI出力</div>
+                  <button id="run_ai_btn" type="button" class="button4" onclick="runAi()">実行</button>
+                </div>
+                <div id="ai_output" style="white-space:pre-wrap; line-height:1.6; font-size:0.95em; min-height:2em; color:#333;">
+                  <?php echo htmlspecialchars($ai_output ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                </div>
+              </div>
             </div>
             <div id="elab_jsmind_container" style="display:none;" oncontextmenu="return false;" ></div>
             <div id="elab_map_conmenu" class="elab_conmenu">
@@ -495,7 +556,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
             <div id="layout">
             <div id="record_container">
               <form id ="reco_peri" class="ref_peri" method = "post" acion="">
-                      <p>確認したいリフレクション履歴期間を設定してください</p>
+                      <p>確認したいリフクション履歴期間を設定してください</p>
                       <label><input id="reco_c2" type="radio" name="reco_per" value="today" onclick="record_period2();" checked/>本日分のリフレクション</label>
                       <br>
                       <br>
@@ -541,6 +602,25 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <script type="text/javascript" src="js/logic_network.js"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script>
+          // 追加: 実行ボタンの処理
+          function runAi() {
+            const btn = document.getElementById('run_ai_btn');
+            const out = document.getElementById('ai_output');
+            const org = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '実行中...';
+            out.textContent = '';
+
+            fetch('index.php?action=run_ai&_t=' + Date.now(), { // キャッシュ回避
+              method: 'POST',
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.ok ? r.json() : Promise.reject(r.status + ' ' + r.statusText))
+            .then(j => { out.textContent = j.output || ''; })
+            .catch(e => { out.textContent = '要求に失敗しました: ' + e; })
+            .finally(() => { btn.disabled = false; btn.textContent = org; });
+          }
+
           open_empty();
           getData();
           rebuild_version_area();
