@@ -5,6 +5,31 @@ import urllib.request
 import urllib.error
 import sys
 
+# 追加: 親ディレクトリを辿って .env を読み込み（最長6階層）
+def _load_dotenv_from_parents(max_up=6):
+    base = os.path.abspath(os.path.dirname(__file__))
+    for _ in range(max_up + 1):
+        env_path = os.path.join(base, '.env')
+        if os.path.isfile(env_path):
+            try:
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#') or '=' not in line:
+                            continue
+                        k, v = line.split('=', 1)
+                        k = k.strip()
+                        v = v.strip().strip('\'"')
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+            except Exception:
+                pass
+            break
+        parent = os.path.dirname(base)
+        if parent == base:
+            break
+        base = parent
+
 # 出力/入力のエンコーディング調整
 sys.stdout.reconfigure(encoding='utf-8')
 try:
@@ -12,7 +37,14 @@ try:
 except Exception:
     pass
 
-API_KEY = "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"
+# ここで .env を取り込み
+_load_dotenv_from_parents()
+
+# 変更: ハードコーディング撤去し、環境変数から取得
+API_KEY = os.environ.get('OPENAI_API_KEY', '').strip()
+if not API_KEY:
+    print("ERROR: OPENAI_API_KEY が未設定です。.env に OPENAI_API_KEY=... を設定してください。", file=sys.stderr)
+    sys.exit(2)
 
 API_BASE = os.environ.get('OPENAI_API_BASE', 'https://api.openai.com/v1').rstrip('/')
 MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')  # 旧gpt-3.5-turboは非推奨のため既定を変更
