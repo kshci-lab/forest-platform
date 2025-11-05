@@ -241,7 +241,8 @@ table[type] {
 	overflow:auto;
 }
 #shared_combination_overlay .overlay-knowledge-fragments{
-	height:100%;
+	height:auto;              /* コンテンツに合わせて伸びる */
+	max-height:100%;         /* ただし親の上限は超えない */
 	width:985px;
 	padding:12px;
 	box-sizing:border-box;

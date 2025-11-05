@@ -50,11 +50,20 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
     $hasExtIdCol = ($res->num_rows > 0);
     $res->free();
   }
+  // カラム存在チェック: selected_contents（詳細先頭に表示）
+  $hasSelectedCol = false;
+  if ($res = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'selected_contents'")) {
+    $hasSelectedCol = ($res->num_rows > 0);
+    $res->free();
+  }
 
   if ($kfragCol !== null) {
     // 値が NULL/空白のみを除外して取得（stage1/2/3 も合わせて取得）
     $orderBy = $hasExtIdCol ? " ORDER BY externalized_contents_id DESC" : "";
-    $sql = "SELECT `{$kfragCol}` AS content, stage1, stage2, stage3
+    // SELECT 句を動的に構築（selected_contentsがある場合のみ取得）
+    $selectFields = "`{$kfragCol}` AS content, stage1, stage2, stage3";
+    if ($hasSelectedCol) { $selectFields .= ", selected_contents"; }
+    $sql = "SELECT {$selectFields}
               FROM externalized_contents
              WHERE `{$kfragCol}` IS NOT NULL
                AND LENGTH(TRIM(`{$kfragCol}`)) > 0" . $orderBy;
@@ -68,7 +77,8 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
               'content' => $__val,
               'stage1' => isset($row['stage1']) ? (string)$row['stage1'] : '',
               'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
-              'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : ''
+              'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
+              'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : ''
             ];
           }
           $result->free();
@@ -91,6 +101,11 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
       <div class="card-title"><?php echo htmlspecialchars($__current_user_name, ENT_QUOTES, 'UTF-8'); ?> さん</div>
       <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>
       <div class="card-detail" aria-hidden="true">
+        <?php 
+          $__sel = is_array($__kfrag_raw) && isset($__kfrag_raw['selected_contents']) ? trim((string)$__kfrag_raw['selected_contents']) : '';
+          if ($__sel !== '') { ?>
+            <div class="selected-utterance">発言内容: <?php echo nl2br(htmlspecialchars($__sel, ENT_QUOTES, 'UTF-8')); ?></div>
+        <?php } ?>
         <div class="qa-item"><div class="qa-q">質問: なぜこの発言が印象に残りましたか？</div><div class="qa-a">回答: <?php echo nl2br(htmlspecialchars($__s1, ENT_QUOTES, 'UTF-8')); ?></div></div>
         <div class="qa-item"><div class="qa-q">質問: その発言には、どんな前提や背景がありますか？</div><div class="qa-a">回答: <?php echo nl2br(htmlspecialchars($__s2, ENT_QUOTES, 'UTF-8')); ?></div></div>
         <div class="qa-item"><div class="qa-q">質問: この発言には、他の場面でも使える考え方の指針はありますか？</div><div class="qa-a">回答: <?php echo nl2br(htmlspecialchars($__s3, ENT_QUOTES, 'UTF-8')); ?></div></div>
