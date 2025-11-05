@@ -1,24 +1,30 @@
 <?php
+// 応答待ちでFastCGIの30秒アイドルタイムアウトに掛からないよう、
+// アプリ側で短めのタイムアウトを設定してフェイルファストにする。
+// （サーバ側の timeout は別設定。ここでは 25〜27 秒で打ち切る）
+@ini_set('max_execution_time', '60'); // PHP 自身の上限（FastCGIの30秒とは別）
 // APIキー取得: 環境変数 → プロジェクト直下 .env → forest-extension/.env の順で探索
-function load_env_if_exists($path) {
-    if (!is_readable($path)) return;
-    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($lines === false) return;
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '' || strpos($line, '#') === 0) continue;
-        if (strpos($line, 'export ') === 0) $line = trim(substr($line, 7));
-        $eq = strpos($line, '=');
-        if ($eq === false) continue;
-        $k = trim(substr($line, 0, $eq));
-        $v = trim(substr($line, $eq + 1));
-        if ($k === '') continue;
-        if ((strlen($v) >= 2) && (($v[0] === '"' && substr($v, -1) === '"') || ($v[0] === "'" && substr($v, -1) === "'"))) {
-            $v = substr($v, 1, -1);
-        }
-        if (getenv($k) === false) {
-            putenv($k . '=' . $v);
-            $_ENV[$k] = $v;
+if (!function_exists('load_env_if_exists')) {
+    function load_env_if_exists($path) {
+        if (!is_readable($path)) return;
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines === false) return;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || strpos($line, '#') === 0) continue;
+            if (strpos($line, 'export ') === 0) $line = trim(substr($line, 7));
+            $eq = strpos($line, '=');
+            if ($eq === false) continue;
+            $k = trim(substr($line, 0, $eq));
+            $v = trim(substr($line, $eq + 1));
+            if ($k === '') continue;
+            if ((strlen($v) >= 2) && (($v[0] === '"' && substr($v, -1) === '"') || ($v[0] === "'" && substr($v, -1) === "'"))) {
+                $v = substr($v, 1, -1);
+            }
+            if (getenv($k) === false) {
+                putenv($k . '=' . $v);
+                $_ENV[$k] = $v;
+            }
         }
     }
 }
@@ -37,7 +43,6 @@ if ($apiKey === '') {
     load_env_if_exists(__DIR__ . '/.env');
     $apiKey = getenv('OPENAI_API_KEY') ?: ($_ENV['OPENAI_API_KEY'] ?? '');
 }
-
 if ($apiKey === '') {
     http_response_code(500);
     echo 'OPENAI_API_KEY not configured.';
@@ -46,6 +51,13 @@ if ($apiKey === '') {
 
 // 多様性（温度）: 既定0.3。環境変数 TEMPERATURE があればそれを採用。
 $temperature = (float) (getenv('TEMPERATURE') ?: ($_ENV['TEMPERATURE'] ?? 0.3));
+// タイムアウトと出力量をクエリで可変化（デフォルトはFastCGI 30秒未満に収める）
+$timeoutSec = isset($_GET['timeout']) ? (int)$_GET['timeout'] : (isset($_POST['timeout']) ? (int)$_POST['timeout'] : 25);
+if ($timeoutSec < 5) $timeoutSec = 5;
+if ($timeoutSec > 27) $timeoutSec = 27; // 30秒未満を強制
+$maxTokens = isset($_GET['max_tokens']) ? (int)$_GET['max_tokens'] : (isset($_POST['max_tokens']) ? (int)$_POST['max_tokens'] : 900);
+if ($maxTokens < 200) $maxTokens = 200;
+if ($maxTokens > 2000) $maxTokens = 2000;
 
 // クエリからの入力値
 $openai_file_id = $_GET['openai_file_id'] ?? $_POST['openai_file_id'] ?? '';
@@ -53,19 +65,18 @@ $file_name = $_GET['file_name'] ?? $_POST['file_name'] ?? '';
 $file_id = $_GET['file_id'] ?? $_POST['file_id'] ?? '';
 $openai_error = isset($_GET['openai_error']) || isset($_POST['openai_error']);
 // 件数パラメータの取得（?count= または ?n=）
-$desiredCount = 5;
+$desiredCount = 3; // デフォルト件数を抑えて応答までの時間を短縮
 $cntRaw = $_GET['count'] ?? $_POST['count'] ?? ($_GET['n'] ?? $_POST['n'] ?? null);
 if ($cntRaw !== null) {
     $cnt = (int)$cntRaw;
     if ($cnt > 0) { $desiredCount = $cnt; }
 }
-// 件数の範囲を 1〜20 に丸める
-//if ($desiredCount < 1) $desiredCount = 1;
-//if ($desiredCount > 20) $desiredCount = 20;
-$desiredCount = 5;
+// 件数の範囲を 1〜10 に丸める（大きいと時間がかかる）
+if ($desiredCount < 1) $desiredCount = 1;
+if ($desiredCount > 10) $desiredCount = 10;
 
 // openai_file_id が無い場合は DB から復旧（ユーザ別）
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 // user_idの取得: SESSION.USERID → SESSION.user_id → SESSION.USERNAMEからusers参照
 $userId = null;
 if (isset($_SESSION['USERID']) && ctype_digit((string)$_SESSION['USERID'])) {
@@ -120,7 +131,7 @@ if (!$openai_file_id) {
 }
 
 // 参照するファイルID（今回 + 過去N件を日付順で抽出）
-$pastLimit = isset($_GET['past']) ? (int)$_GET['past'] : (isset($_GET['history']) ? (int)$_GET['history'] : 3);
+$pastLimit = isset($_GET['past']) ? (int)$_GET['past'] : (isset($_GET['history']) ? (int)$_GET['history'] : 1);
 $pastLimit = max(0, min(10, $pastLimit));
 
 $docs = [];
@@ -207,7 +218,7 @@ $userMsg = [ 'role' => 'user', 'content' => $userContent ];
 $payload = [
     'model' => 'gpt-4o-mini',
     'input' => [ $systemMsg, $userMsg ],
-    'max_output_tokens' => 2000,
+    'max_output_tokens' => $maxTokens,
     'temperature' => $temperature
 ];
 
@@ -217,17 +228,20 @@ curl_setopt_array($ch, [
     CURLOPT_POST => true,
     CURLOPT_HTTPHEADER => [
         'Content-Type: application/json',
+        'Accept: application/json',
         'Authorization: Bearer ' . $apiKey,
     ],
     CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+    CURLOPT_CONNECTTIMEOUT => 10,
+    CURLOPT_TIMEOUT => $timeoutSec,
 ]);
 $res = curl_exec($ch);
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $cerr = curl_error($ch);
 curl_close($ch);
 if ($cerr) {
-    http_response_code(502);
-    echo 'OpenAI呼び出しエラー: ' . htmlspecialchars($cerr);
+    http_response_code(504);
+    echo 'OpenAI呼び出しエラー/タイムアウト: ' . htmlspecialchars($cerr) . '（生成に時間がかかっています。件数を減らす/再試行してください）';
     exit;
 }
 if ($httpcode < 200 || $httpcode >= 300) {
@@ -246,7 +260,9 @@ if (!$jsonOut && isset($resp['output']) && is_array($resp['output'])) {
     }
 }
 if (!$jsonOut) {
-    echo 'モデル出力の取得に失敗しました。';
+    // モデル遅延や分割出力で受け取れない場合は親切メッセージを返す
+    http_response_code(504);
+    echo 'モデル出力の取得に失敗またはタイムアウトしました。件数(count)を小さくする、max_tokensを減らす、timeoutを延長(<=27)して再試行してください。';
     exit;
 }
 
@@ -282,7 +298,21 @@ if (count($data) > $desiredCount) {
 
 // HTML を描画（質問一覧と採用/不採用ボタン）
 header('Content-Type: text/html; charset=utf-8');
+// スタイル（サーバ側制御）: 必要なら GET/POST の fs, lh, ff で調整
+$fs = isset($_GET['fs']) ? (float)$_GET['fs'] : (isset($_POST['fs']) ? (float)$_POST['fs'] : 15.0);
+$lh = isset($_GET['lh']) ? (float)$_GET['lh'] : (isset($_POST['lh']) ? (float)$_POST['lh'] : 1.7);
+$ff = isset($_GET['ff']) ? (string)$_GET['ff'] : (isset($_POST['ff']) ? (string)$_POST['ff'] : '"Noto Sans JP", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif');
+if ($fs <= 0) $fs = 15.0;
+if ($lh <= 0) $lh = 1.7;
 echo '<!doctype html><meta charset="utf-8"><title>質問生成</title>';
+echo '<style>
+.adv-container{ font-size: ' . htmlspecialchars((string)$fs) . 'px; line-height: ' . htmlspecialchars((string)$lh) . '; font-family: ' . $ff . '; color:#222; }
+.adv-container h2{ font-size: ' . htmlspecialchars((string)max(12, $fs+1)) . 'px; margin: 0 0 8px; }
+.adv-container ul{ padding-left: 1.2em; margin: 8px 0; }
+.adv-container li{ margin-bottom: 10px; }
+.adv-container button{ font-size: ' . htmlspecialchars((string)max(10, $fs-2)) . 'px; }
+</style>';
+echo '<div class="adv-container">';
 echo '<h2>生成結果</h2>';
 echo '<ul>';
 $idx = 1;
@@ -308,6 +338,7 @@ foreach ($data as $item) {
     $idx++;
 }
 echo '</ul>';
+echo '</div>';
 ?>
 <script>
 const fileId = <?php echo json_encode($file_id); ?>;

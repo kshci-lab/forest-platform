@@ -1365,10 +1365,12 @@ function ModeChangeButtonClick() {
     $('.cspan').css('margin-bottom', '5');
     $('.tspan').css('font-size', '20');
   
-    $('.inquiry_area').css('height', '25vw');
+    //$('.inquiry_area').css('height', '25vw');
     $('#jsmind_container').css('width','50%');//横幅を全体の40％で表示？
     $('#document').show(); //Menu下の目標設定箇所
-    $('#mind').css('height','50%');　//問い一覧箇所
+    //$('#mind').css('height','100%');　//問い一覧箇所
+    $('#inquiry_area').hide('fast');　//問い一覧箇所
+
 
 
     $('#scenario_title').css('margin-left','15px');
@@ -2127,7 +2129,7 @@ function MoveFinish(){
     //テキストファイルの出力
     OutputTxtFile();
     OutputScenario();
-    // OutputFile();
+    OutputFile();
   }
 }
 

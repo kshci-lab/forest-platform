@@ -220,6 +220,12 @@ table[type] {
 	font-size: 1em;
 	border:solid 5px #ccc;
 	margin: 0;
+#document #advice_frame.searchFrame {
+	/* 既定 280px を 420px に拡大し、増分 140px を左にシフト */
+	width: 420px;
+	height: 75vh;
+	margin-left: -140px;
+}
 	overflow-x: auto;
 	overflow-y: visible;
 	float:left;

@@ -1367,7 +1367,7 @@ function ModeChangeButtonClick() {
   
     $('.inquiry_area').css('height', '25vw');
     $('#jsmind_container').css('width','50%');//横幅を全体の40％で表示？
-    $('#document').show(); //Menu下の目標設定箇所
+    // $('#document').show(); //Menu下の目標設定箇所
     $('#mind').css('height','50%');　//問い一覧箇所
 
 
@@ -2127,7 +2127,7 @@ function MoveFinish(){
     //テキストファイルの出力
     OutputTxtFile();
     OutputScenario();
-    // OutputFile();
+     OutputFile();
   }
 }
 

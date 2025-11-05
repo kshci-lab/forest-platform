@@ -241,6 +241,11 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         <!-- <button class="button4" onclick="OutputFile()">
                                             test
                                             </button> -->
+                                        <!-- PDFアップロードで質問生成（upload_form.php と同等の処理） -->
+                                        <form id="pdfUploadForm" action="forest-extension/upload.php" method="POST" enctype="multipart/form-data" style="display:inline-block; margin-left:6px;">
+                                            <button type="button" class="button4" onclick="document.getElementById('pdfUploadInput').click();">質問生成</button>
+                                            <input id="pdfUploadInput" type="file" name="pdf_file" accept=".pdf" style="display:none;" onchange="uploadPdfAndRender(this)">
+                                        </form>
                                     </div>
                                 </div>
                                     
@@ -573,7 +578,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     <div class="Menu">Menu</div>
 
 
-                    <!-- プレゼンモードのサイドメニュー -->
+<!-- プレゼンモードのサイドメニュー -->
                     <div id="document">
                         <div id="advice_frame" class="searchFrame">
                             <!-- 事前設定 -->
@@ -712,6 +717,10 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             <div id='node_slide'>
                                 <!-- <input id="finish_btn" class="presen-btn" type="button" value="資料作成終了" onclick="macrolevel_xmlLoad();"> -->
                                 <input id="output_file" class="presen-btn" type="button" value="資料構成出力" onclick="OutputFile();">
+                                <form id="pdfUploadForm2" action="forest-extension/upload.php" method="POST" enctype="multipart/form-data" style="display:inline-block; margin-right:6px;">
+                                    <button id="pdf_upload_btn" type="button" class="presen-btn" onclick="document.getElementById('pdfUploadInput2').click();">質問作成</button>
+                                    <input id="pdfUploadInput2" type="file" name="pdf_file" accept=".pdf" style="display:none;" onchange="uploadPdfAndRender(this)">
+                                </form>
                                 <button id="input_btn" class="presen-btn">資料構成復元</button>
                                 <input id="input_file" type="file" onclick="InputFile()" >
                             </div>
@@ -873,7 +882,76 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <!--  ここから大槻修正　--> 
         <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css" rel="stylesheet" type="text/css" /> -->
         <script type="text/javascript" src="./js/network.js"></script>  
-        <script type="text/javascript" src="./js/readxmldata.js"></script>  
+                <script type="text/javascript" src="./js/readxmldata.js"></script>  
+                <script>
+                // PDFをページ遷移せずにアップロードし、結果を#advice_frameに表示
+                async function uploadPdfAndRender(inputEl){
+                    try{
+                        const file = inputEl && inputEl.files && inputEl.files[0];
+                        if(!file){ return; }
+                        const form = inputEl.closest('form');
+                        const action = (form && form.getAttribute('action')) || 'forest-extension/upload.php';
+                        const fd = new FormData();
+                        fd.append('pdf_file', file);
+                        // 可能ならAJAXモードのヒントを付与（サーバが無視しても影響なし）
+                        fd.append('ajax', '1');
+
+                        const target = document.getElementById('advice_frame') || document.body;
+                        if (target) target.innerHTML = '<div style="padding:8px; color:#666;">PDFを解析しています...</div>';
+
+                        const res = await fetch(action, {
+                            method: 'POST',
+                            body: fd,
+                            credentials: 'same-origin'
+                        });
+
+                        // コンテンツタイプで分岐（JSONなら整形、その他はそのまま）
+                        const ct = (res.headers.get('content-type') || '').toLowerCase();
+                        let html = '';
+                        if (ct.includes('application/json')){
+                            try{
+                                const data = await res.json();
+                                if (data && data.html){
+                                    html = String(data.html);
+                                } else if (Array.isArray(data.questions)){
+                                    html = '<div class="adv-questions"><ol>' + data.questions.map(q => '<li>'+String(q)+'</li>').join('') + '</ol></div>';
+                                } else {
+                                    html = '<pre style="white-space:pre-wrap;">'+ JSON.stringify(data, null, 2) +'</pre>';
+                                }
+                            }catch(jsonErr){
+                                // JSONパース失敗時はテキストとして扱う
+                                html = await res.text();
+                            }
+                        } else {
+                            html = await res.text();
+                        }
+
+                                    if (target){
+                                        target.innerHTML = html || '<div style="padding:8px; color:#666;">結果が空でした。</div>';
+                                        // innerHTML経由では<script>が実行されないため、明示的に再実行
+                                        try{
+                                            const scripts = Array.from(target.querySelectorAll('script'));
+                                            for (const old of scripts){
+                                                const s = document.createElement('script');
+                                                // 同一オリジン前提
+                                                if (old.src){ s.src = old.src; s.async = false; }
+                                                else { s.textContent = old.textContent; }
+                                                old.parentNode.replaceChild(s, old);
+                                            }
+                                        }catch(_){/* no-op */}
+                                        // スクロールしてユーザーに見せる
+                                        try{ target.scrollIntoView({ behavior:'smooth', block:'start' }); }catch(_){}
+                                    }
+                    }catch(e){
+                        console.error(e);
+                        const target = document.getElementById('advice_frame') || document.body;
+                        if (target) target.innerHTML = '<div style="color:#c00;">PDFアップロードに失敗しました。時間をおいて再度お試しください。</div>';
+                    }finally{
+                        // 同じファイルの再選択を可能にする
+                        try{ if (inputEl) inputEl.value=''; }catch(_){ }
+                    }
+                }
+                </script>
         
         <!--  ここまで大槻修正　-->
     </body>
