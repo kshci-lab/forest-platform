@@ -23,6 +23,25 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
 
 // 追加: AJAXでの実行要求に応答（Pythonを実行してJSONで返す）
 if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
+    // 受信したシナリオを取得（JSON優先、fallbackでapplication/x-www-form-urlencodedも対応）
+    $scenario = '';
+    $raw = file_get_contents('php://input');
+    if ($raw !== false && $raw !== '') {
+        $data = json_decode($raw, true);
+        if (json_last_error() === JSON_ERROR_NONE && isset($data['scenario'])) {
+            $scenario = (string)$data['scenario'];
+        }
+    }
+    if ($scenario === '' && isset($_POST['scenario'])) {
+        $scenario = (string)$_POST['scenario'];
+    }
+
+    // 追加: 受け取ったシナリオをサーバコンソール（エラーログ）に出力
+    if ($scenario !== '') {
+        error_log("[run_ai] scenario length=" . strlen($scenario));
+        error_log("[run_ai] scenario sample: " . substr($scenario, 0, 2000)); // 長すぎる場合は先頭のみ
+    }
+
     $ai_output = '';
     try {
         $python = stripos(PHP_OS, 'WIN') === 0 ? 'python' : 'python3';
@@ -34,11 +53,19 @@ if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
             $ai_output = "PHP設定で proc_open が無効です。php.ini の disable_functions を確認してください。";
         } else {
             $descriptorspec = [
+                0 => ['pipe', 'w'], // stdin（ここに論文シナリオ文字列を書き込み、Pythonへ渡す）
                 1 => ['pipe', 'w'], // stdout
                 2 => ['pipe', 'w'], // stderr
             ];
             $process = @proc_open($cmd, $descriptorspec, $pipes);
             if (is_resource($process)) {
+                // シナリオを書き込み
+                if (is_string($scenario) && $scenario !== '') {
+                    // ここでPHP→Python(test.py)へ論文シナリオを標準入力で送る
+                    fwrite($pipes[0], $scenario);
+                }
+                fclose($pipes[0]);
+
                 stream_set_blocking($pipes[1], true);
                 stream_set_blocking($pipes[2], true);
                 $stdout = stream_get_contents($pipes[1]);
@@ -602,18 +629,37 @@ $ai_output = '';
         <script type="text/javascript" src="js/logic_network.js"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script>
-          // 追加: 実行ボタンの処理
+          // 実行ボタン: DOMから論文シナリオを収集して送信
           function runAi() {
             const btn = document.getElementById('run_ai_btn');
             const out = document.getElementById('ai_output');
             const org = btn.textContent;
+
+            // タイトルと本文を収集（必要に応じて採取元を調整）
+            const titleEl = document.getElementById('scenario_title');
+            const title = titleEl ? (titleEl.value || titleEl.textContent || '') : '';
+            const bodyEl = document.getElementById('chapter_area');
+            const body = bodyEl ? bodyEl.innerText : '';
+            const scenario = (title ? ('【タイトル】' + title + '\n\n') : '') + (body || '');
+
+            // 追加: ブラウザコンソールに送信内容を出力
+            console.group('AI送信デバッグ');
+            console.log('タイトル:', title);
+            console.log('本文(先頭500文字):', body ? body.slice(0, 500) : '');
+            console.log('送信シナリオ:', scenario);
+            console.groupEnd();
+
             btn.disabled = true;
             btn.textContent = '実行中...';
             out.textContent = '';
 
-            fetch('index.php?action=run_ai&_t=' + Date.now(), { // キャッシュ回避
+            fetch('index.php?action=run_ai&_t=' + Date.now(), {
               method: 'POST',
-              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+              headers: {
+                'Content-Type': 'application/json; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify({ scenario })
             })
             .then(r => r.ok ? r.json() : Promise.reject(r.status + ' ' + r.statusText))
             .then(j => { out.textContent = j.output || ''; })
