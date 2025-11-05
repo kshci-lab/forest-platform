@@ -92,6 +92,28 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
     </head>
     <body id="all">
+        <?php
+        // 共有知モードで起動指定がある場合、初期ロードで共有知モードに切り替えるスクリプトを埋め込む
+        if (!empty($_SESSION['SharedMode'])) {
+            // 一度使ったら破棄
+            unset($_SESSION['SharedMode']);
+            echo '<script type="text/javascript">';
+            echo 'document.addEventListener("DOMContentLoaded", function(){';
+            echo '  try {';
+            echo '    if (document.target_mode && document.target_mode.Select1) {';
+            echo '      document.target_mode.Select1.selectedIndex = 4;';
+            echo '    }';
+            echo '    if (typeof ModeChangeButtonClick === "function") {';
+            echo '      ModeChangeButtonClick();';
+            echo '    }';
+            echo '    if (typeof activateSharedTab === "function") {';
+            echo '      activateSharedTab("tab-externalization");';
+            echo '    }';
+            echo '  } catch(e) { console && console.warn && console.warn("Shared mode auto-start failed", e); }';
+            echo '});';
+            echo '</script>';
+        }
+        ?>
         <!---        タイトルメニューStart                 -->
         <div id="main_title">
             <form name="return" method="POST">
@@ -875,7 +897,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                                             <!-- 追加の自由記述入力（.qa形式、.qa-pairs と 登録ボタンの間） -->
                                             <div class="qa-summary">
-                                                <div class="qa-question">産出する知の要約：</div>
+                                                <div class="qa-question">産出する知のタイトル：</div>
                                                 <textarea class="qa-answer4" placeholder="ここに記入"></textarea>
                                             </div>
 

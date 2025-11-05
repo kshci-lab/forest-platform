@@ -11,8 +11,9 @@ document.getElementById("selectmodebutton").addEventListener('click', function()
             window.location.href = "kii-system/select_sheet.php";
           } else if (selectmodeoption[i].value === "3") {
               window.location.href = "fujinaka-system/select_sheet.php";
-          } else if (selectmodeoption[i].value === "4") {
-              window.location.href = "fukushima-system/select_sheet.php";
+      } else if (selectmodeoption[i].value === "4") {
+        // 共有知モード選択時は共有知モードで起動するフラグを引き継ぐ
+        window.location.href = "fukushima-system/select_sheet.php?shared=1";
           }
           return;
         }

@@ -103,3 +103,4 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
     <div class="no-fragment-note">表示できるフラグメントがありません。</div>
   <?php } ?>
 </div>
+<!-- クリックハンドラは meeting-reflection-network.js 側に集約 -->

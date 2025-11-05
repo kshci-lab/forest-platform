@@ -12,6 +12,11 @@ if (!isset($_SESSION["USERID"])) {
   exit;
 }
 
+// 共有知モードで起動するフラグをGETで受け取った場合はセッションに保持
+if (isset($_GET['shared']) && $_GET['shared'] == '1') {
+  $_SESSION['SharedMode'] = 1;
+}
+
 if (isset($_POST["logout"])) {
   header("Location: ../logout.php");
   exit;
@@ -40,7 +45,8 @@ if(isset($_POST['map'])){
 
 	if(isset($_POST["edit"])){
 
-		header("Location: index.php");
+    // 共有知モード指定があれば index で自動起動する
+    header("Location: index.php");
 
 	}else{
 

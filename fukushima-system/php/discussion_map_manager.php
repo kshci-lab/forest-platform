@@ -66,6 +66,17 @@ if($purpose === "save_externalized_content") {
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content SHOW COLUMNS error: " . $exCol->getMessage() . "\n", FILE_APPEND);
     }
 
+    // カラム存在チェック: user_id が外部DBに存在するか
+    $hasUserCol = false;
+    try {
+        if ($colResU = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'user_id'")) {
+            $hasUserCol = ($colResU->num_rows > 0);
+            $colResU->close();
+        }
+    } catch (Exception $exColU) {
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content SHOW COLUMNS (user_id) error: " . $exColU->getMessage() . "\n", FILE_APPEND);
+    }
+
     // バリデーション
     if ($selected_contents === '') {
         echo json_encode(["status" => "error", "error" => "selected_contents が空です"]);
@@ -75,13 +86,29 @@ if($purpose === "save_externalized_content") {
     // まずは外部キー（PK）を指定せずにINSERT（AUTO_INCREMENTを期待）
     $deleted = 0;
     if ($hasUsedCol && $hasKFragCol) {
-        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        }
     } elseif ($hasUsedCol && !$hasKFragCol) {
-        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        }
     } elseif (!$hasUsedCol && $hasKFragCol) {
-        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        }
     } else {
-        $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
+        }
     }
     if(!$stmt){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (no pk): " . $mysqli->error . "\n", FILE_APPEND);
@@ -91,17 +118,41 @@ if($purpose === "save_externalized_content") {
 
     // bind
     if ($hasUsedCol && $hasKFragCol) {
-        // s s s s s s i i
-        $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+        if ($hasUserCol) {
+            // s s s s s s i i i
+            $uid_val = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt->bind_param("ssssssiii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val, $deleted);
+        } else {
+            // s s s s s s i i
+            $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+        }
     } elseif ($hasUsedCol && !$hasKFragCol) {
-        // s s s s s i i
-        $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+        if ($hasUserCol) {
+            // s s s s s i i i
+            $uid_val = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt->bind_param("sssssiii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val, $deleted);
+        } else {
+            // s s s s s i i
+            $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+        }
     } elseif (!$hasUsedCol && $hasKFragCol) {
-        // s s s s s s i
-        $stmt->bind_param("ssssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+        if ($hasUserCol) {
+            // s s s s s s i i
+            $uid_val = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val, $deleted);
+        } else {
+            // s s s s s s i
+            $stmt->bind_param("ssssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+        }
     } else {
-        // s s s s s i
-        $stmt->bind_param("sssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+        if ($hasUserCol) {
+            // s s s s s i i
+            $uid_val = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val, $deleted);
+        } else {
+            // s s s s s i
+            $stmt->bind_param("sssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+        }
     }
 
     try {
@@ -150,13 +201,29 @@ if($purpose === "save_externalized_content") {
     $nextExtId = $currentMax + 1; // 11111 スタート
 
     if ($hasUsedCol && $hasKFragCol) {
-        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        }
     } elseif ($hasUsedCol && !$hasKFragCol) {
-        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        }
     } elseif (!$hasUsedCol && $hasKFragCol) {
-        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        }
     } else {
-        $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        if ($hasUserCol) {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        } else {
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        }
     }
     if(!$stmt2){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (pk fallback): " . $mysqli->error . "\n", FILE_APPEND);
@@ -164,17 +231,41 @@ if($purpose === "save_externalized_content") {
         return;
     }
     if ($hasUsedCol && $hasKFragCol) {
-        // i s s s s s s i i
-        $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+        if ($hasUserCol) {
+            // i s s s s s s i i i
+            $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt2->bind_param("issssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val2, $deleted);
+        } else {
+            // i s s s s s s i i
+            $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+        }
     } elseif ($hasUsedCol && !$hasKFragCol) {
-        // i s s s s s i i
-        $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+        if ($hasUserCol) {
+            // i s s s s s i i i
+            $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt2->bind_param("isssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val2, $deleted);
+        } else {
+            // i s s s s s i i
+            $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+        }
     } elseif (!$hasUsedCol && $hasKFragCol) {
-        // i s s s s s s i
-        $stmt2->bind_param("issssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+        if ($hasUserCol) {
+            // i s s s s s s i i
+            $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val2, $deleted);
+        } else {
+            // i s s s s s s i
+            $stmt2->bind_param("issssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+        }
     } else {
-        // i s s s s s i
-        $stmt2->bind_param("isssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+        if ($hasUserCol) {
+            // i s s s s s i i
+            $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+            $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val2, $deleted);
+        } else {
+            // i s s s s s i
+            $stmt2->bind_param("isssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+        }
     }
     if(!$stmt2->execute()){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content execute error (pk fallback): " . $stmt2->error . "\n", FILE_APPEND);

@@ -1903,13 +1903,24 @@ $(function(){ hideSharedCombinationOverlay(); });
 window.addEventListener('beforeunload', hideSharedCombinationOverlay);
 
 // 「詳細▼」ボタンのトグル（開：閉じる▲／閉：詳細▼）
-$(document).on('click', '#shared_combination_overlay .detail-button', function(){
+// 仕様: アコーディオン（同時に開けるのは1枚）
+$(document).on('click', '#shared_combination_overlay .detail-button', function(e){
     var $btn = $(this);
     var $card = $btn.closest('.knowledge_fragment');
-    if ($card.length) {
-        $card.toggleClass('is-open');
-        var opened = $card.hasClass('is-open');
-        $btn.text(opened ? '閉じる▲' : '詳細▼');
-        $card.find('.card-detail').attr('aria-hidden', opened ? 'false' : 'true');
+    if (!$card.length) return;
+
+    var $list = $card.closest('.knowledge-fragment-list');
+    if ($list && $list.length) {
+        // まず他のカードをすべて閉じる
+        var $others = $list.find('.knowledge_fragment.is-open').not($card);
+        $others.removeClass('is-open')
+               .find('.card-detail').attr('aria-hidden', 'true');
+        $others.find('.detail-button').text('詳細▼');
     }
+
+    // 自カードをトグル
+    $card.toggleClass('is-open');
+    var opened = $card.hasClass('is-open');
+    $btn.text(opened ? '閉じる▲' : '詳細▼');
+    $card.find('.card-detail').attr('aria-hidden', opened ? 'false' : 'true');
 });

@@ -1720,17 +1720,70 @@ document.addEventListener('DOMContentLoaded', function(){
   var tabIds = ['tab-externalization','tab-combination','tab-internalization'];
   tabIds.forEach(function(id){
     // 同一IDが複数存在するレガシー構造に対応（すべてにハンドラを付与）
-    // CSS.escape 互換のため、ここでは素直に '#' + id を使用（ハイフンはそのままでOK）
     var els = document.querySelectorAll('#' + id);
     if(!els || els.length === 0) return;
     els.forEach(function(el){
-      el.addEventListener('click', function(e){
-        activateSharedTab(id);
-      });
+      // 連結化タブはページリロードで最新状態を反映する
+      if(id === 'tab-combination'){
+        el.addEventListener('click', function(e){
+          try {
+            // リロード後に「共有知モードの連結化タブ」を表示する意図を保存
+            var intent = { mode: 'shared', tab: 'tab-combination' };
+            sessionStorage.setItem('reloadIntent', JSON.stringify(intent));
+          } catch (err) {}
+          location.reload();
+        });
+      } else {
+        el.addEventListener('click', function(e){
+          activateSharedTab(id);
+        });
+      }
     });
   });
-  // 初期表示は 表出化
-  activateSharedTab('tab-externalization');
+
+  // リロード復元: 共有知モード+指定タブの意図があれば優先実行
+  var intentRaw = null;
+  try { intentRaw = sessionStorage.getItem('reloadIntent'); } catch (err) {}
+  if (intentRaw) {
+    try { sessionStorage.removeItem('reloadIntent'); } catch (err) {}
+    try {
+      var intent = JSON.parse(intentRaw);
+      // まず共有知モードへ切替
+      if (intent && intent.mode === 'shared') {
+        var selectOk = false;
+        try {
+          if (document.target_mode && document.target_mode.Select1) {
+            document.target_mode.Select1.selectedIndex = 4; // 共有知モード
+            selectOk = true;
+          }
+        } catch (e) {}
+        try { if (typeof ModeChangeButtonClick === 'function') ModeChangeButtonClick(); } catch (e) {}
+        // 念のためフラグも立てる
+        try { window.SharedModeActive = true; } catch (e) {}
+      }
+      // 次にタブを有効化（デフォルトは連結化）
+      var tab = (intent && intent.tab) ? intent.tab : 'tab-combination';
+      window.RestoringTab = true;
+      activateSharedTab(tab);
+      window.RestoringTab = false;
+    } catch (e) {
+      // フォールバック: 表出化
+      activateSharedTab('tab-externalization');
+    }
+  } else {
+    // 旧フラグ（後方互換）
+    var pendingTab = null;
+    try { pendingTab = sessionStorage.getItem('reloadToTab'); } catch (err) {}
+    if(pendingTab){
+      try { sessionStorage.removeItem('reloadToTab'); } catch (err) {}
+      window.RestoringTab = true;
+      activateSharedTab(pendingTab);
+      window.RestoringTab = false;
+    } else {
+      // 初期表示は 表出化
+      activateSharedTab('tab-externalization');
+    }
+  }
 });
 
 

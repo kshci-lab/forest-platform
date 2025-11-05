@@ -247,6 +247,10 @@ table[type] {
 	width:100%;
 	padding:12px;
 	box-sizing:border-box;
+	min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
+}
+#shared_combination_overlay .overlay-knowledge-fragments{
+	overflow-x: hidden; /* 横スクロールは内側のリストに集約する */
 }
 #shared_combination_overlay .overlay-title{
 	font-size: 16px;
@@ -269,7 +273,8 @@ table[type] {
 	display:flex;
 	flex-wrap:nowrap;            /* 横一列に並べる */
 	overflow-x:auto;             /* 横スクロールを許可 */
-	overflow-y:hidden;
+	overflow-y:visible;          /* 詳細展開時に縦方向へ広がるのを許可 */
+	align-items:flex-start;      /* 各カードの上端を揃える（高さが変わっても崩れにくい） */
 	gap:12px;
 	margin-top:8px;
 	-webkit-overflow-scrolling:touch; /* スクロール慣性（モバイル） */
@@ -277,7 +282,13 @@ table[type] {
 	max-width: 100%;             /* 親幅を超えない */
 	box-sizing: border-box;
 	min-width: 0;                /* コンテンツ幅に引っ張られて広がらない */
+	scrollbar-width: thin;       /* Firefox: 細いスクロールバー */
 }
+/* WebKit系: スクロールバーの視認性を少し上げる */
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{height:10px}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-track{background:#f1f1f1}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb{background:#c9c9c9;border-radius:8px}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb:hover{background:#b0b0b0}
 #shared_combination_overlay .knowledge_fragment{
 	background:#ffe6e6; /* pale pink */
 	border:1px solid #ccc;
@@ -1539,7 +1550,7 @@ select[name="user_list"] {
 	background:#fff;
 	overflow: hidden;
 	/* float:right; */
-	display: none;
+	display: flex;
 	resize: both;
 }
 #mynetwork2{
