@@ -73,8 +73,8 @@ if not scenario_text:
 # 受け取ったシナリオをプロンプトへ埋め込む
 if scenario_text:
     messages = [
-        {"role": "system", "content": "あなたは論文の評論家です。"},
-        {"role": "user", "content": f"書いている内容に踏み込んで欠点を指摘してください。書いていないものについては指摘しないでください\n\n--- 論文シナリオ ---\n{scenario_text}"}
+        {"role": "system", "content": "あなたは論文の評論家です。論文シナリオに対して、内容に踏み込んだ専門的なコメントを行います。書かれていないことについて憶測で指摘することは禁止します。"},
+        {"role": "user", "content": f"これから論文シナリオを送ります。改善点があれば指摘してください。論文シナリオには以下の3点が含まれるべきです：1. 解決したい問題は何か、なぜその問題が重要なのか  2. 本研究で明らかにしたいこと（研究目的）  3. どのような手法で主張を裏付けるか（アプローチ）指摘する際には、必ず「1・2・3のどの観点からの指摘なのか」を明記してください。次に論文シナリオを送ります。\n\n--- 論文シナリオ ---\n{scenario_text}"}
     ]
 else:
     messages = [
@@ -111,16 +111,8 @@ try:
         obj = json.loads(body)
         reply = obj["choices"][0]["message"]["content"]
 
-        # 送信したシナリオのプレビューも出す（本当に渡っているか画面で確認できる）
-        if scenario_text:
-            preview = scenario_text[:500]
-            out = f"【送信シナリオ(先頭500文字)】\n{preview}\n\n【AI応答】\n{reply}"
-        else:
-            out = reply
-
-        # 追記: 標準入力読み取りでエラーがあれば、冒頭に表示
-        if stdin_error:
-            out = f"【標準入力エラー】\n{stdin_error}\n\n{out}"
+        # 画面にはAI応答のみ出力
+        out = reply
 
         print(out.encode("cp932", "ignore").decode("cp932"))
 except urllib.error.HTTPError as e:
