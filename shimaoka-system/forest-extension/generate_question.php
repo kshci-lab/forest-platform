@@ -1,32 +1,28 @@
 <?php
-// 応答待ちでFastCGIの30秒アイドルタイムアウトに掛からないよう、
-// アプリ側で短めのタイムアウトを設定してフェイルファストにする。
-// （サーバ側の timeout は別設定。ここでは 25〜27 秒で打ち切る）
-@ini_set('max_execution_time', '60'); // PHP 自身の上限（FastCGIの30秒とは別）
 // APIキー取得: 環境変数 → プロジェクト直下 .env → forest-extension/.env の順で探索
 if (!function_exists('load_env_if_exists')) {
-    function load_env_if_exists($path) {
-        if (!is_readable($path)) return;
-        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if ($lines === false) return;
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if ($line === '' || strpos($line, '#') === 0) continue;
-            if (strpos($line, 'export ') === 0) $line = trim(substr($line, 7));
-            $eq = strpos($line, '=');
-            if ($eq === false) continue;
-            $k = trim(substr($line, 0, $eq));
-            $v = trim(substr($line, $eq + 1));
-            if ($k === '') continue;
-            if ((strlen($v) >= 2) && (($v[0] === '"' && substr($v, -1) === '"') || ($v[0] === "'" && substr($v, -1) === "'"))) {
-                $v = substr($v, 1, -1);
-            }
-            if (getenv($k) === false) {
-                putenv($k . '=' . $v);
-                $_ENV[$k] = $v;
-            }
+function load_env_if_exists($path) {
+    if (!is_readable($path)) return;
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) return;
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '#') === 0) continue;
+        if (strpos($line, 'export ') === 0) $line = trim(substr($line, 7));
+        $eq = strpos($line, '=');
+        if ($eq === false) continue;
+        $k = trim(substr($line, 0, $eq));
+        $v = trim(substr($line, $eq + 1));
+        if ($k === '') continue;
+        if ((strlen($v) >= 2) && (($v[0] === '"' && substr($v, -1) === '"') || ($v[0] === "'" && substr($v, -1) === "'"))) {
+            $v = substr($v, 1, -1);
+        }
+        if (getenv($k) === false) {
+            putenv($k . '=' . $v);
+            $_ENV[$k] = $v;
         }
     }
+}
 }
 
 // 1) 環境変数
@@ -43,21 +39,12 @@ if ($apiKey === '') {
     load_env_if_exists(__DIR__ . '/.env');
     $apiKey = getenv('OPENAI_API_KEY') ?: ($_ENV['OPENAI_API_KEY'] ?? '');
 }
+
 if ($apiKey === '') {
     http_response_code(500);
     echo 'OPENAI_API_KEY not configured.';
     exit;
 }
-
-// 多様性（温度）: 既定0.3。環境変数 TEMPERATURE があればそれを採用。
-$temperature = (float) (getenv('TEMPERATURE') ?: ($_ENV['TEMPERATURE'] ?? 0.3));
-// タイムアウトと出力量をクエリで可変化（デフォルトはFastCGI 30秒未満に収める）
-$timeoutSec = isset($_GET['timeout']) ? (int)$_GET['timeout'] : (isset($_POST['timeout']) ? (int)$_POST['timeout'] : 25);
-if ($timeoutSec < 5) $timeoutSec = 5;
-if ($timeoutSec > 27) $timeoutSec = 27; // 30秒未満を強制
-$maxTokens = isset($_GET['max_tokens']) ? (int)$_GET['max_tokens'] : (isset($_POST['max_tokens']) ? (int)$_POST['max_tokens'] : 900);
-if ($maxTokens < 200) $maxTokens = 200;
-if ($maxTokens > 2000) $maxTokens = 2000;
 
 // クエリからの入力値
 $openai_file_id = $_GET['openai_file_id'] ?? $_POST['openai_file_id'] ?? '';
@@ -65,18 +52,21 @@ $file_name = $_GET['file_name'] ?? $_POST['file_name'] ?? '';
 $file_id = $_GET['file_id'] ?? $_POST['file_id'] ?? '';
 $openai_error = isset($_GET['openai_error']) || isset($_POST['openai_error']);
 // 件数パラメータの取得（?count= または ?n=）
-$desiredCount = 3; // デフォルト件数を抑えて応答までの時間を短縮
+$desiredCount = 5;
 $cntRaw = $_GET['count'] ?? $_POST['count'] ?? ($_GET['n'] ?? $_POST['n'] ?? null);
 if ($cntRaw !== null) {
     $cnt = (int)$cntRaw;
     if ($cnt > 0) { $desiredCount = $cnt; }
 }
-// 件数の範囲を 1〜10 に丸める（大きいと時間がかかる）
-if ($desiredCount < 1) $desiredCount = 1;
-if ($desiredCount > 10) $desiredCount = 10;
+// 件数の範囲を 1〜20 に丸める
+//if ($desiredCount < 1) $desiredCount = 1;
+//if ($desiredCount > 20) $desiredCount = 20;
+$desiredCount = 5;
 
 // openai_file_id が無い場合は DB から復旧（ユーザ別）
-if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 // user_idの取得: SESSION.USERID → SESSION.user_id → SESSION.USERNAMEからusers参照
 $userId = null;
 if (isset($_SESSION['USERID']) && ctype_digit((string)$_SESSION['USERID'])) {
@@ -131,7 +121,7 @@ if (!$openai_file_id) {
 }
 
 // 参照するファイルID（今回 + 過去N件を日付順で抽出）
-$pastLimit = isset($_GET['past']) ? (int)$_GET['past'] : (isset($_GET['history']) ? (int)$_GET['history'] : 1);
+$pastLimit = isset($_GET['past']) ? (int)$_GET['past'] : (isset($_GET['history']) ? (int)$_GET['history'] : 3);
 $pastLimit = max(0, min(10, $pastLimit));
 
 $docs = [];
@@ -181,32 +171,20 @@ $pastNames = array_map(function($d){ return (string)$d['name']; }, $recentPast);
 $sourcesInfo = "資料一覧:\n- 今回:" . $displayName . "\n- 過去:" . (empty($pastNames) ? 'なし' : implode(', ', $pastNames)) . "\n";
 
 $prompt = "以下の条件で、アップロードされた今回資料を主参照として質問を".$desiredCount."件生成してください。\n"
-    . "- 出力は JSON のみ。配列で、各要素は {question, reason, source, policy}。\n"
+    . "- 出力は JSON のみ。配列で、各要素は {question, reason, source}。\n"
     . "- 厳密にJSONのみを日本語で出力してください。説明文やコードフェンスは出力しないでください。\n"
     . "- source は '今回:" . $displayName . "' または '過去:ファイル名' の形式。\n"
-    . "- policy は、上記『方針: 1〜4』のうち該当する番号を示してください（複数可なら [1,3] のように配列で）。\n"
     . "- 質問は重複不可、具体的に。\n\n"
     . $sourcesInfo;
 
-$systemText = <<<SYS
-あなたは，これまでの同グループでの議論をしっかりと踏まえて，適切に研究を進める活動を支援するプロの秘書です．
-過去の議論資料（PDF）およびそれに基づく議論ログを参照し，最新版の議論資料について「指摘されそうな点」を抽出してください．
-
-方針:
-1. 過去に誰がどのような指摘を行い，それに対してどのように回答してきたかを踏まえ，最新版の資料で適切に記載しているかを検証してください．
-2. 過去の議論や回答と矛盾している場合は，最新版の資料の内容がロジカルに正しいかどうかを検討し，その理由を説明してください．
-3. 表面的な誤りの問題ではなく，研究の中で生じる思考のズレや再構成の必要性に注目してください．
-4. あなたの目的は，学習者・研究者が自らの思考の一貫性や方向性を見直し，研究の質を高めることを支援することです．断定的な誤り指摘ではなく，思考を促す建設的な問いや指摘として提示してください．
- 
- 対象読者:
- あなたが質問を生成する相手は「研究初学者」です。彼らは、教育支援に関する議論を通じて、資料を改善しながら研究を進めています。
-SYS;
+$systemText = 'あなたは研究活動を支援するプロの秘書です。過去の指摘と回答の整合性を最優先で検証し、矛盾がある場合は最新版の妥当性を検討して改善提案を行います。';
 $systemMsg = [ 'role' => 'system', 'content' => [[ 'type' => 'input_text', 'text' => $systemText ]] ];
 
 // 議論ログは未提供のため、その旨を明記
 $prompt .= "\n\n注意事項:\n"
     . "- 直近の指摘とその回答に最低限は応答する前提だが、本プロンプトでは議論ログは未添付である。必要があれば過去資料から推定して指摘を行うこと。\n"
     . "- 過去の議論/回答と矛盾していれば、最新版の主張がロジカルに正しいかを検証し、必要な修正や説明の提案を行うこと。\n"
+    . "- 定義・前提・因果といった具体的観点で整合性を確認すること。\n"
     . "- 出力は配列のみで、各要素は {question, reason, source} とし、要素数は正確に" . $desiredCount . "とすること。\n";
 
 $userContent = [ [ 'type' => 'input_text', 'text' => $prompt ] ];
@@ -218,8 +196,7 @@ $userMsg = [ 'role' => 'user', 'content' => $userContent ];
 $payload = [
     'model' => 'gpt-4o-mini',
     'input' => [ $systemMsg, $userMsg ],
-    'max_output_tokens' => $maxTokens,
-    'temperature' => $temperature
+    'max_output_tokens' => 2000
 ];
 
 $ch = curl_init('https://api.openai.com/v1/responses');
@@ -228,20 +205,17 @@ curl_setopt_array($ch, [
     CURLOPT_POST => true,
     CURLOPT_HTTPHEADER => [
         'Content-Type: application/json',
-        'Accept: application/json',
         'Authorization: Bearer ' . $apiKey,
     ],
     CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-    CURLOPT_CONNECTTIMEOUT => 10,
-    CURLOPT_TIMEOUT => $timeoutSec,
 ]);
 $res = curl_exec($ch);
 $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $cerr = curl_error($ch);
 curl_close($ch);
 if ($cerr) {
-    http_response_code(504);
-    echo 'OpenAI呼び出しエラー/タイムアウト: ' . htmlspecialchars($cerr) . '（生成に時間がかかっています。件数を減らす/再試行してください）';
+    http_response_code(502);
+    echo 'OpenAI呼び出しエラー: ' . htmlspecialchars($cerr);
     exit;
 }
 if ($httpcode < 200 || $httpcode >= 300) {
@@ -260,9 +234,7 @@ if (!$jsonOut && isset($resp['output']) && is_array($resp['output'])) {
     }
 }
 if (!$jsonOut) {
-    // モデル遅延や分割出力で受け取れない場合は親切メッセージを返す
-    http_response_code(504);
-    echo 'モデル出力の取得に失敗またはタイムアウトしました。件数(count)を小さくする、max_tokensを減らす、timeoutを延長(<=27)して再試行してください。';
+    echo 'モデル出力の取得に失敗しました。';
     exit;
 }
 
@@ -298,47 +270,21 @@ if (count($data) > $desiredCount) {
 
 // HTML を描画（質問一覧と採用/不採用ボタン）
 header('Content-Type: text/html; charset=utf-8');
-// スタイル（サーバ側制御）: 必要なら GET/POST の fs, lh, ff で調整
-$fs = isset($_GET['fs']) ? (float)$_GET['fs'] : (isset($_POST['fs']) ? (float)$_POST['fs'] : 15.0);
-$lh = isset($_GET['lh']) ? (float)$_GET['lh'] : (isset($_POST['lh']) ? (float)$_POST['lh'] : 1.7);
-$ff = isset($_GET['ff']) ? (string)$_GET['ff'] : (isset($_POST['ff']) ? (string)$_POST['ff'] : '"Noto Sans JP", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif');
-if ($fs <= 0) $fs = 15.0;
-if ($lh <= 0) $lh = 1.7;
 echo '<!doctype html><meta charset="utf-8"><title>質問生成</title>';
-echo '<style>
-.adv-container{ font-size: ' . htmlspecialchars((string)$fs) . 'px; line-height: ' . htmlspecialchars((string)$lh) . '; font-family: ' . $ff . '; color:#222; }
-.adv-container h2{ font-size: ' . htmlspecialchars((string)max(12, $fs+1)) . 'px; margin: 0 0 8px; }
-.adv-container ul{ padding-left: 1.2em; margin: 8px 0; }
-.adv-container li{ margin-bottom: 10px; }
-.adv-container button{ font-size: ' . htmlspecialchars((string)max(10, $fs-2)) . 'px; }
-</style>';
-echo '<div class="adv-container">';
-echo '<h2>生成結果</h2>';
-echo '<ul>';
+echo '<h2 style="font-size:14px; margin:6px 0;">生成結果</h2>';
+echo '<ul style="font-size:12px; line-height:1.6;">';
 $idx = 1;
 foreach ($data as $item) {
     $q = htmlspecialchars($item['question'] ?? '');
     $r = htmlspecialchars($item['reason'] ?? '');
     $s = htmlspecialchars($item['source'] ?? '');
-    $p = '';
-    if (isset($item['policy'])) {
-        if (is_array($item['policy'])) {
-            $p = '[' . htmlspecialchars(implode(', ', array_map('strval', $item['policy']))) . ']';
-        } else {
-            $p = htmlspecialchars((string)$item['policy']);
-        }
-    }
     echo '<li><strong>Q' . $idx . ':</strong> ' . $q . '<br><em>理由:</em> ' . $r . '<br><em>参照:</em> ' . $s;
-    if ($p !== '') {
-        echo ' <br><em>方針:</em> ' . $p;
-    }
     echo ' <br><button class="adopt" data-q="' . htmlspecialchars($q) . '">採用</button>';
     echo ' <button class="reject" data-q="' . htmlspecialchars($q) . '">不採用</button>';
     echo "</li>";
     $idx++;
 }
 echo '</ul>';
-echo '</div>';
 ?>
 <script>
 const fileId = <?php echo json_encode($file_id); ?>;

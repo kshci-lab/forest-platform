@@ -225,7 +225,7 @@ function micro_disp(){
 
 	for(var i=0; i<$new_global_advice.length; i++){
 		var area = $("#advice_frame");
-		var micro_advice ="<div style='font-size:13px;'>・「"+$new_global_advice[i]+"」について説明する必要はないですか？\n\n</div>";
+		var micro_advice ="<div style='font-size:11px;'>・「"+$new_global_advice[i]+"」について説明する必要はないですか？\n\n</div>";
 		// var test = "<a href='#' onclick='TestFunc();'>テスト</a>";
 		area.append(micro_advice);
 		area.append("<br>");

@@ -246,10 +246,6 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             <button type="button" class="button4" onclick="document.getElementById('pdfUploadInput').click();">質問生成</button>
                                             <input id="pdfUploadInput" type="file" name="pdf_file" accept=".pdf" style="display:none;" onchange="uploadPdfAndRender(this)">
                                         </form>
-                                        <form id="pdfCloudOnlyForm" action="forest-extension/upload_file_only.php" method="POST" enctype="multipart/form-data" style="display:inline-block; margin-left:6px;">
-                                            <button type="button" class="button4" onclick="document.getElementById('pdfCloudOnlyInput').click();">資料だけクラウド保存</button>
-                                            <input id="pdfCloudOnlyInput" type="file" name="pdf_file" accept=".pdf" style="display:none;" onchange="uploadPdfCloudOnly(this)">
-                                        </form>
                                     </div>
                                 </div>
                                     
@@ -726,10 +722,6 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <button id="pdf_upload_btn" type="button" class="presen-btn" onclick="document.getElementById('pdfUploadInput2').click();">質問作成</button>
                                     <input id="pdfUploadInput2" type="file" name="pdf_file" accept=".pdf" style="display:none;" onchange="uploadPdfAndRender(this)">
                                 </form>
-                                <form id="pdfCloudOnlyForm2" action="forest-extension/upload_file_only.php" method="POST" enctype="multipart/form-data" style="display:inline-block; margin-right:6px;">
-                                    <button id="pdf_cloud_only_btn" type="button" class="presen-btn" onclick="document.getElementById('pdfCloudOnlyInput2').click();">資料だけクラウド保存</button>
-                                    <input id="pdfCloudOnlyInput2" type="file" name="pdf_file" accept=".pdf" style="display:none;" onchange="uploadPdfCloudOnly(this)">
-                                </form>
                                 <button id="input_btn" class="presen-btn">資料構成復元</button>
                                 <input id="input_file" type="file" onclick="InputFile()" >
                             </div>
@@ -957,63 +949,6 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         if (target) target.innerHTML = '<div style="color:#c00;">PDFアップロードに失敗しました。時間をおいて再度お試しください。</div>';
                     }finally{
                         // 同じファイルの再選択を可能にする
-                        try{ if (inputEl) inputEl.value=''; }catch(_){ }
-                    }
-                }
-                
-                // PDFをOpenAI Filesにアップロードのみ行い、質問生成はしない
-                async function uploadPdfCloudOnly(inputEl){
-                    try{
-                        const file = inputEl && inputEl.files && inputEl.files[0];
-                        if(!file){ return; }
-                        const form = inputEl.closest('form');
-                        const action = (form && form.getAttribute('action')) || 'forest-extension/upload_file_only.php';
-                        const fd = new FormData();
-                        fd.append('pdf_file', file);
-                        fd.append('ajax', '1');
-
-                        const target = document.getElementById('advice_frame') || document.body;
-                        if (target) target.innerHTML = '<div style="padding:8px; color:#666;">クラウドに保存しています...</div>';
-
-                        const res = await fetch(action, {
-                            method: 'POST',
-                            body: fd,
-                            credentials: 'same-origin'
-                        });
-
-                        const ct = (res.headers.get('content-type') || '').toLowerCase();
-                        if (!res.ok){
-                            let errMsg = 'アップロードに失敗しました';
-                            if (ct.includes('application/json')){
-                                const j = await res.json().catch(()=>null);
-                                if (j && (j.error||j.message)) errMsg = j.error || j.message;
-                            }else{
-                                errMsg = await res.text();
-                            }
-                            if (target) target.innerHTML = '<div style="color:#c00;">'+ String(errMsg) +'</div>';
-                            alert('資料のクラウド保存に失敗: ' + String(errMsg));
-                            return;
-                        }
-
-                        let data = null;
-                        if (ct.includes('application/json')){
-                            data = await res.json();
-                        } else {
-                            // 非JSONの場合はテキスト表示
-                            const text = await res.text();
-                            if (target) target.innerHTML = '<pre style="white-space:pre-wrap;">'+ text +'</pre>';
-                            return;
-                        }
-
-                        const msg = data && (data.message || (data.success ? 'クラウドに保存しました。' : '処理が完了しました。'));
-                        const detail = data && data.openai_file_id ? `OpenAI File ID: ${data.openai_file_id}` : '';
-                        if (target) target.innerHTML = '<div style="padding:8px;">' + String(msg) + '<br>' + String(detail) + '</div>';
-                        alert((data && data.already_exists) ? '既にクラウドに存在するため再利用しました。' : 'クラウドに保存しました。');
-                    }catch(e){
-                        console.error(e);
-                        const target = document.getElementById('advice_frame') || document.body;
-                        if (target) target.innerHTML = '<div style="color:#c00;">クラウド保存に失敗しました。時間をおいて再度お試しください。</div>';
-                    }finally{
                         try{ if (inputEl) inputEl.value=''; }catch(_){ }
                     }
                 }
