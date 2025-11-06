@@ -39,31 +39,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
     // 追加: 受け取ったシナリオをサーバコンソール（エラーログ）に出力
     if ($scenario !== '') {
         error_log("[run_ai] scenario length=" . strlen($scenario));
-        error_log("[run_ai] scenario sample: " . substr($scenario, 0, 2000)); // 長すぎる場合は先頭のみ
+        // 追記: 全文を分割してログ出力（長文対策）
+        $chunk = 4000;
+        $len = strlen($scenario);
+        for ($i = 0, $p = 1; $i < $len; $i += $chunk, $p++) {
+            error_log("[run_ai] scenario part {$p}: " . substr($scenario, $i, $chunk));
+        }
     }
 
     $ai_output = '';
     try {
         $python = stripos(PHP_OS, 'WIN') === 0 ? 'python' : 'python3';
         $script = __DIR__ . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'test.py';
-        $cmd = $python . ' ' . escapeshellarg($script);
+        // 変更: -u を付与（アンバッファ）
+        $cmd = $python . ' -u ' . escapeshellarg($script);
 
         $disabled = (string)ini_get('disable_functions');
         if (stripos($disabled, 'proc_open') !== false) {
             $ai_output = "PHP設定で proc_open が無効です。php.ini の disable_functions を確認してください。";
         } else {
+            // シナリオは環境変数で渡す（stdinへは書き込まない）
+            if (is_string($scenario)) {
+                putenv('SCENARIO=' . $scenario);
+            }
+
             $descriptorspec = [
-                0 => ['pipe', 'w'], // stdin（ここに論文シナリオ文字列を書き込み、Pythonへ渡す）
+                0 => ['pipe', 'w'], // stdin（すぐ閉じてEOFを知らせる）
                 1 => ['pipe', 'w'], // stdout
                 2 => ['pipe', 'w'], // stderr
             ];
             $process = @proc_open($cmd, $descriptorspec, $pipes);
             if (is_resource($process)) {
-                // シナリオを書き込み
-                if (is_string($scenario) && $scenario !== '') {
-                    // ここでPHP→Python(test.py)へ論文シナリオを標準入力で送る
-                    fwrite($pipes[0], $scenario);
-                }
+                // 変更: 書き込まず即座に閉じてEOFを通知（fwriteによるEBADFを回避）
                 fclose($pipes[0]);
 
                 stream_set_blocking($pipes[1], true);
@@ -73,6 +80,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
                 fclose($pipes[1]);
                 fclose($pipes[2]);
                 $exitCode = proc_close($process);
+
+                // 実行後に環境変数を解除
+                putenv('SCENARIO');
 
                 if ($exitCode === 0 && trim($stdout) !== '') {
                     $ai_output = trim($stdout);
@@ -85,10 +95,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
                     }
                 }
             } else {
+                // 実行失敗時も環境変数を解除
+                putenv('SCENARIO');
                 $ai_output = "proc_open の初期化に失敗しました。";
             }
         }
     } catch (Throwable $e) {
+        // 念のため環境変数を解除
+        putenv('SCENARIO');
         $ai_output = 'AI出力の取得に失敗しました: ' . $e->getMessage();
     }
 
@@ -641,13 +655,6 @@ $ai_output = '';
             const bodyEl = document.getElementById('chapter_area');
             const body = bodyEl ? bodyEl.innerText : '';
             const scenario = (title ? ('【タイトル】' + title + '\n\n') : '') + (body || '');
-
-            // 追加: ブラウザコンソールに送信内容を出力
-            console.group('AI送信デバッグ');
-            console.log('タイトル:', title);
-            console.log('本文(先頭500文字):', body ? body.slice(0, 500) : '');
-            console.log('送信シナリオ:', scenario);
-            console.groupEnd();
 
             btn.disabled = true;
             btn.textContent = '実行中...';

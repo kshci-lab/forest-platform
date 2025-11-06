@@ -4,6 +4,7 @@ import ssl
 import urllib.request
 import urllib.error
 import sys
+import traceback
 
 # 追加: 親ディレクトリを辿って .env を読み込み（最長6階層）
 def _load_dotenv_from_parents(max_up=6):
@@ -51,13 +52,23 @@ MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')  # 旧gpt-3.5-turboは非�
 
 # PHPから標準入力(stdin)で送られた論文シナリオを受け取る。
 # 受け取れなかった場合は固定プロンプトで実行する。
+stdin_error = None
 scenario_text = None
 try:
     _stdin = sys.stdin.read()
     if _stdin and _stdin.strip():
         scenario_text = _stdin.strip()
-except Exception:
+except Exception as e:
+    # エラー詳細（メッセージ＋スタックトレース）を保持・stderrにも出力
+    stdin_error = f"{repr(e)}\n{traceback.format_exc()}"
+    print(f"STDIN_READ_ERROR: {stdin_error}", file=sys.stderr)
     scenario_text = None
+
+# 追加: stdinで取得できない場合は環境変数SCENARIOから取得
+if not scenario_text:
+    env_scenario = os.environ.get('SCENARIO')
+    if env_scenario and env_scenario.strip():
+        scenario_text = env_scenario.strip()
 
 # 受け取ったシナリオをプロンプトへ埋め込む
 if scenario_text:
@@ -106,6 +117,10 @@ try:
             out = f"【送信シナリオ(先頭500文字)】\n{preview}\n\n【AI応答】\n{reply}"
         else:
             out = reply
+
+        # 追記: 標準入力読み取りでエラーがあれば、冒頭に表示
+        if stdin_error:
+            out = f"【標準入力エラー】\n{stdin_error}\n\n{out}"
 
         print(out.encode("cp932", "ignore").decode("cp932"))
 except urllib.error.HTTPError as e:
