@@ -1924,3 +1924,94 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
     $btn.text(opened ? '閉じる▲' : '詳細▼');
     $card.find('.card-detail').attr('aria-hidden', opened ? 'false' : 'true');
 });
+
+// --- 知識思考エリア: フラグメントからノード生成（クリック or DnD） ---
+(function(){
+    // フラグメントカードをクリックでノード化
+    $(document).on('click', '#shared_combination_overlay .knowledge_fragment', function(e){
+        // 「詳細」ボタン由来のクリックは無視
+        if ($(e.target).closest('.detail-button').length) return;
+        var $card = $(this);
+        createThinkingNodeFromCard($card, null, null);
+    });
+
+    // ドラッグ&ドロップ: フラグメントカードをドラッグ可能に
+    function markFragmentsDraggable(){
+        $('#shared_combination_overlay .knowledge_fragment').attr('draggable', 'true');
+    }
+    document.addEventListener('DOMContentLoaded', markFragmentsDraggable);
+    // 念のためオーバーレイが表示されるたびに付与（タブ切替時など）
+    window.addEventListener('focus', markFragmentsDraggable);
+
+    // ドラッグ開始: 転送データにインデックスを埋める（なければ本文テキスト）
+    $(document).on('dragstart', '#shared_combination_overlay .knowledge_fragment', function(ev){
+        try{
+            var dt = ev.originalEvent.dataTransfer;
+            dt.setData('text/plain', $(this).find('.card-body').text().trim());
+        }catch(err){}
+    });
+
+    // ドロップ受け側: 思考エリア
+    var $area = $('#knowledge_thinking_area');
+    $(document).on('dragover', '#knowledge_thinking_area', function(ev){ ev.preventDefault(); });
+    $(document).on('drop', '#knowledge_thinking_area', function(ev){
+        ev.preventDefault();
+        var oe = ev.originalEvent;
+        var txt = '';
+        try{ txt = oe.dataTransfer.getData('text/plain') || ''; }catch(err){}
+        var $src = $(oe.target).closest('.knowledge_fragment');
+        if ($src.length === 0) {
+            // dataTransfer から生成（最小情報）
+            var $tmp = $('<div class="knowledge_fragment"></div>');
+            $tmp.append($('<div class="card-title"></div>').text('フラグメント'));
+            $tmp.append($('<div class="card-body"></div>').text(txt));
+            $src = $tmp;
+        }
+        // エリア座標に変換
+        var rect = this.getBoundingClientRect();
+        var x = (oe.clientX - rect.left) + this.scrollLeft;
+        var y = (oe.clientY - rect.top) + this.scrollTop;
+        createThinkingNodeFromCard($src, x, y);
+    });
+
+    // ノード作成ヘルパ
+    function createThinkingNodeFromCard($card, x, y){
+        var $area = $('#knowledge_thinking_area');
+        if ($area.length === 0) return;
+        var title = ($card.find('.card-title').text() || '').trim();
+        var body = ($card.find('.card-body').text() || '').trim();
+        var $node = $('<div class="thinking-node"></div>');
+        $node.append($('<div class="node-title"></div>').text(title !== '' ? title : 'フラグメント'));
+        $node.append($('<div class="node-body"></div>').text(body));
+        $area.append($node);
+        // 位置
+        var ax = 10, ay = 10;
+        if (typeof x === 'number' && typeof y === 'number') { ax = x; ay = y; }
+        $node.css({ left: ax + 'px', top: ay + 'px' });
+        enableNodeDrag($node, $area);
+    }
+
+    // ノードドラッグ移動（思考エリア内に拘束）
+    function enableNodeDrag($node, $container){
+        var dragging = false, sx=0, sy=0, startL=0, startT=0;
+        $node.on('mousedown', function(e){
+            dragging = true;
+            sx = e.clientX; sy = e.clientY;
+            var off = $node.position();
+            startL = off.left; startT = off.top;
+            e.preventDefault();
+        });
+        $(document).on('mousemove.thinking', function(e){
+            if(!dragging) return;
+            var dx = e.clientX - sx, dy = e.clientY - sy;
+            var nl = startL + dx, nt = startT + dy;
+            // コンテナ境界内に収める
+            var cw = $container.innerWidth(), ch = $container.innerHeight();
+            var nw = $node.outerWidth(), nh = $node.outerHeight();
+            nl = Math.max(0, Math.min(nl, cw - nw));
+            nt = Math.max(0, Math.min(nt, ch - nh));
+            $node.css({ left: nl + 'px', top: nt + 'px' });
+        });
+        $(document).on('mouseup.thinking', function(){ dragging = false; });
+    }
+})();

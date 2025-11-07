@@ -560,11 +560,15 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <div class="comb-row" style="display:flex; flex-direction:row; width:100%; height:100%;">
                                     <!-- Left 70% -->
                                     <div class="comb-left" style="display:flex; flex-direction:column; flex:0 0 70%; box-sizing:border-box;">
-                                        <!-- Left Top: FragmentList -->
-                                        <div class="comb-left-top" style="background:white; flex:1 1 0; overflow-y:auto; overflow-x:hidden;">
-                                            <div class="overlay-knowledge-fragments">
+                                        <!-- Left Top: FragmentList + Thinking Area (split vertically) -->
+                                        <div class="comb-left-top" style="background:white; flex:1 1 0; overflow:hidden; display:flex; flex-direction:column;">
+                                            <div class="overlay-knowledge-fragments" style="flex:0 0 auto;">
                                                 <div class="overlay-title">知識フラグメント一覧</div>
                                                 <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
+                                            </div>
+                                            <div id="knowledge_thinking_area" class="knowledge_thinking_area" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
+                                                <div class="overlay-title" style="margin-bottom:0; padding-top:8px;">知識思考エリア</div>
+                                                <!-- ここにフラグメントから生成したノードを配置します -->
                                             </div>
                                         </div>
                                         <!-- Left Bottom: InputArea -->
@@ -770,8 +774,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none">
                             <div id = "ontology_feedback"></div>
-                            <div id = "accordion_discussion"></div>
-                            <input id = "feedbackrecord" type="button" value="記録">
+                            <!-- <div id = "accordion_discussion"></div>
+                            <input id = "feedbackrecord" type="button" value="記録"> -->
                         </div>
                         <div id="xml_upload_area" style="display: none">
                             <form id="uploadForm" enctype="multipart/form-data">
