@@ -21,95 +21,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
     header("Location: logout.php");
 }
 
-// 追加: AJAXでの実行要求に応答（Pythonを実行してJSONで返す）
-if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
-    // 受信したシナリオを取得（JSON優先、fallbackでapplication/x-www-form-urlencodedも対応）
-    $scenario = '';
-    $raw = file_get_contents('php://input');
-    if ($raw !== false && $raw !== '') {
-        $data = json_decode($raw, true);
-        if (json_last_error() === JSON_ERROR_NONE && isset($data['scenario'])) {
-            $scenario = (string)$data['scenario'];
-        }
-    }
-    if ($scenario === '' && isset($_POST['scenario'])) {
-        $scenario = (string)$_POST['scenario'];
-    }
 
-    // 追加: 受け取ったシナリオをサーバコンソール（エラーログ）に出力
-    if ($scenario !== '') {
-        error_log("[run_ai] scenario length=" . strlen($scenario));
-        // 追記: 全文を分割してログ出力（長文対策）
-        $chunk = 4000;
-        $len = strlen($scenario);
-        for ($i = 0, $p = 1; $i < $len; $i += $chunk, $p++) {
-            error_log("[run_ai] scenario part {$p}: " . substr($scenario, $i, $chunk));
-        }
-    }
-
-    $ai_output = '';
-    try {
-        $python = stripos(PHP_OS, 'WIN') === 0 ? 'python' : 'python3';
-        $script = __DIR__ . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'test.py';
-        // 変更: -u を付与（アンバッファ）
-        $cmd = $python . ' -u ' . escapeshellarg($script);
-
-        $disabled = (string)ini_get('disable_functions');
-        if (stripos($disabled, 'proc_open') !== false) {
-            $ai_output = "PHP設定で proc_open が無効です。php.ini の disable_functions を確認してください。";
-        } else {
-            // シナリオは環境変数で渡す（stdinへは書き込まない）
-            if (is_string($scenario)) {
-                putenv('SCENARIO=' . $scenario);
-            }
-
-            $descriptorspec = [
-                0 => ['pipe', 'w'], // stdin（すぐ閉じてEOFを知らせる）
-                1 => ['pipe', 'w'], // stdout
-                2 => ['pipe', 'w'], // stderr
-            ];
-            $process = @proc_open($cmd, $descriptorspec, $pipes);
-            if (is_resource($process)) {
-                // 変更: 書き込まず即座に閉じてEOFを通知（fwriteによるEBADFを回避）
-                fclose($pipes[0]);
-
-                stream_set_blocking($pipes[1], true);
-                stream_set_blocking($pipes[2], true);
-                $stdout = stream_get_contents($pipes[1]);
-                $stderr = stream_get_contents($pipes[2]);
-                fclose($pipes[1]);
-                fclose($pipes[2]);
-                $exitCode = proc_close($process);
-
-                // 実行後に環境変数を解除
-                putenv('SCENARIO');
-
-                if ($exitCode === 0 && trim($stdout) !== '') {
-                    $ai_output = trim($stdout);
-                } else {
-                    $errMsg = trim($stderr) !== '' ? trim($stderr) : '不明';
-                    $outMsg = trim($stdout);
-                    $ai_output = "Python実行エラー\nコマンド: {$cmd}\n終了コード: {$exitCode}\nエラー: {$errMsg}";
-                    if ($outMsg !== '') {
-                        $ai_output .= "\n標準出力: {$outMsg}";
-                    }
-                }
-            } else {
-                // 実行失敗時も環境変数を解除
-                putenv('SCENARIO');
-                $ai_output = "proc_open の初期化に失敗しました。";
-            }
-        }
-    } catch (Throwable $e) {
-        // 念のため環境変数を解除
-        putenv('SCENARIO');
-        $ai_output = 'AI出力の取得に失敗しました: ' . $e->getMessage();
-    }
-
-    header('Content-Type: application/json; charset=UTF-8');
-    echo json_encode(['output' => $ai_output], JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 // 【変更】初期表示時は実行しない（空のまま）
 $ai_output = '';
@@ -642,41 +554,6 @@ $ai_output = '';
         <script type="text/javascript" src="js/tensaku.js"></script>
         <script type="text/javascript" src="js/logic_network.js"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script>
-          // 実行ボタン: DOMから論文シナリオを収集して送信
-          function runAi() {
-            const btn = document.getElementById('run_ai_btn');
-            const out = document.getElementById('ai_output');
-            const org = btn.textContent;
-
-            // タイトルと本文を収集（必要に応じて採取元を調整）
-            const titleEl = document.getElementById('scenario_title');
-            const title = titleEl ? (titleEl.value || titleEl.textContent || '') : '';
-            const bodyEl = document.getElementById('chapter_area');
-            const body = bodyEl ? bodyEl.innerText : '';
-            const scenario = (title ? ('【タイトル】' + title + '\n\n') : '') + (body || '');
-
-            btn.disabled = true;
-            btn.textContent = '実行中...';
-            out.textContent = '';
-
-            fetch('index.php?action=run_ai&_t=' + Date.now(), {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json; charset=UTF-8',
-                'X-Requested-With': 'XMLHttpRequest'
-              },
-              body: JSON.stringify({ scenario })
-            })
-            .then(r => r.ok ? r.json() : Promise.reject(r.status + ' ' + r.statusText))
-            .then(j => { out.textContent = j.output || ''; })
-            .catch(e => { out.textContent = '要求に失敗しました: ' + e; })
-            .finally(() => { btn.disabled = false; btn.textContent = org; });
-          }
-
-          open_empty();
-          getData();
-          rebuild_version_area();
-        </script>
+        <script src="js/run_ai.js"></script>
     </body>
 </html>
