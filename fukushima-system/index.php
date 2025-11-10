@@ -567,15 +567,59 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                 <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
                                             </div>
                                             <div id="knowledge_thinking_area" class="knowledge_thinking_area" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
-                                                <div class="overlay-title" style="margin-bottom:0; padding-top:8px;">知識思考エリア</div>
+                                                <div class="overlay-title" style="margin-bottom:0; padding-top:8px; padding-left:8px;">思考エリア</div>
                                                 <!-- ここにフラグメントから生成したノードを配置します -->
                                             </div>
                                         </div>
                                         <!-- Left Bottom: InputArea -->
                                         <div class="comb-left-bottom" style="background:white; flex:1 1 0; overflow:auto;">
                                             <div class="overlay-input-area">
-                                                <!-- <div class="overlay-title">ユーザーリスト</div> -->
-                                                <!-- TODO: inputs (追加する領域/コメント/登録ボタン 等) go here -->
+                                                <!-- 左右2分割: 左=ディスカッション履歴, 右=知識登録フォーム -->
+                                                <div id="discussion_history_area" class="discussion_history_area">
+                                                    <div class="overlay-title" style="margin-bottom:8px;">ディスカッション履歴</div>
+                                                    <!-- TODO: 履歴リストをここに表示（将来実装） -->
+                                                </div>
+                                                <div id="knowledge_register_area" class="knowledge_register_area">
+                                                    <form id="knowledge_register_form" method="POST" action="register_knowledge.php" onsubmit="window.onbeforeunload=null;">
+                                                        <!-- 上部：追加する領域 -->
+                                                        <div class="kra-row kra-top">
+                                                            <label for="kra_area_select" class="kra-label">追加する領域:</label>
+                                                            <select id="kra_area_select" name="knowledge_area" class="kra-control">
+                                                                <option value="知識関連">知識関連</option>
+                                                                <option value="研究方略関連" selected>研究方略関連</option>
+                                                                <option value="その他">その他</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <!-- 中央：見出し + タイプ選択 -->
+                                                        <div class="kra-row kra-header">
+                                                            <div class="kra-title"><strong>■産出する知</strong></div>
+                                                            <label for="kra_type_select" class="kra-label">タイプ:</label>
+                                                            <select id="kra_type_select" name="knowledge_type" class="kra-control kra-control-inline">
+                                                                <option value="自分の研究に役立ちそうなもの">自分の研究に役立ちそうなもの</option>
+                                                                <option value="他者に共有できそうなもの">他者に共有できそうなもの</option>
+                                                                <option value="その他">その他</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <!-- 本文 -->
+                                                        <div class="kra-row kra-body">
+                                                            <textarea name="knowledge_content" class="kra-control" rows="6" placeholder="ここに内容を記入"></textarea>
+                                                        </div>
+
+                                                        <!-- 下部：コメント -->
+                                                        <div class="kra-row kra-comment">
+                                                            <label for="kra_comment_input" class="kra-label">コメント:</label>
+                                                            <textarea id="kra_comment_input" name="comment" class="kra-control" rows="2" placeholder="任意のコメント"></textarea>
+                                                        </div>
+
+                                                        <!-- 右下：登録ボタン -->
+                                                        <div class="kra-actions">
+                                                            <button type="submit" class="button4 kra-submit" id="kra-submit">登録</button>
+                                                        </div>
+                                                    </form>
+                                                    <div id="knowledge_register_feedback" style="margin-top:8px;"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -583,7 +627,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <div class="comb-right" style="background:white; flex:0 0 30%; overflow:auto; box-sizing:border-box;">
                                         <div class="overlay-knowledge-tree">
                                             <div class="overlay-title">産出した知</div>
-                                            <!-- TODO: knowledge tree view goes here -->
+                                            <div id="overlay_knowledge_tree"></div>
                                         </div>
                                     </div>
                                 </div>

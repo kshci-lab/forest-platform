@@ -52,26 +52,23 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
         }//右クリックされやメニューの表示場所
         this.ownNetwork = this.generateMeetingReflectionNetworkCanvas(container, this.nodes, this.edges); // デフォルトのマップを表示
         this.choose_input_xmlLoad();
-        if(load == "load"){
-            this.jmindex = [];
-            this.addEventLister();
-            // $(`#jsmind_container`).on('click',this.connect_mindmap.bind(this));
-            // $(`#net_conmenu1`).on('click',this.show_select.bind(this));
-            // $(`#net_conmenu2`).on('click',this.connect_network.bind(this));
-            // $(`#net_conmenu3`).on('click',this.Recruit_Idea.bind(this));
-            // $(`#net_conmenu4`).on('click',this.ContentmenuCancel.bind(this));
-            // $(`#ontology_select`).on('click',this.addontology.bind(this));
-            // $(`#recruit_select`).on('click',this.Selected_Recruit_Idea.bind(this));
-            this.ownNetwork.on('click', this.networkClick.bind(this));
-            this.ownNetwork.on('dragStart', this.dragstart.bind(this));
-            this.ownNetwork.on('dragEnd', this.dragend.bind(this));
-            this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
-            this.ownNetwork.on("oncontext", this.onContext.bind(this));
-            this.ownNetwork.on('select', this.selectdelete.bind(this));
-        }else if(load == 'pastmap'){
-            this.jmindex2 = [];
-            this.jmindex3 = [];
-            this.ownNetwork.on('click', this.shownetworkClick.bind(this));
+        if(this.ownNetwork){
+            if(load == "load"){
+                this.jmindex = [];
+                this.addEventLister();
+                this.ownNetwork.on('click', this.networkClick.bind(this));
+                this.ownNetwork.on('dragStart', this.dragstart.bind(this));
+                this.ownNetwork.on('dragEnd', this.dragend.bind(this));
+                this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
+                this.ownNetwork.on("oncontext", this.onContext.bind(this));
+                this.ownNetwork.on('select', this.selectdelete.bind(this));
+            } else if(load == 'pastmap') {
+                this.jmindex2 = [];
+                this.jmindex3 = [];
+                this.ownNetwork.on('click', this.shownetworkClick.bind(this));
+            }
+        } else {
+            try { console.warn('ForestMRN: network not initialized (container missing or shared mode).'); } catch(e){}
         }
     }
 
@@ -261,6 +258,8 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
             // コンテナが無い、または共有知モード中は初期化を抑止
             return null;
         }
+        // el が存在しないケースで後続が実行されないよう安全対策
+        if(!el){ return null; }
         return new vis.Network(
             el,
             { nodes: nodes, edges: edges },
@@ -1692,6 +1691,220 @@ window.handleExternalizationRegister = function() {
     }
 };
 
+// 知識登録フォーム（連結化タブ右下）のAJAX送信（表示方式: externalization_register と同じ alert のみ）
+$(document).on('submit', '#knowledge_register_form', function(e){
+    try {
+        e.preventDefault();
+        try { window.onbeforeunload = null; } catch(ex) {}
+        var $form = $(this);
+        // 簡易バリデーション（本文必須）
+        try {
+            var bodyVal = ($form.find('textarea[name="knowledge_content"]').val() || '').trim();
+            if(!bodyVal){
+                if(window.alert){ alert('内容が空です。本文を入力してください。'); }
+                return;
+            }
+        } catch(_){ /* no-op */ }
+        var fd = new FormData(this);
+        // 追加用に値を保持
+        var areaVal = ($form.find('select[name="knowledge_area"]').val() || '').trim();
+        var contentVal = ($form.find('textarea[name="knowledge_content"]').val() || '').trim();
+        $.ajax({
+            url: 'register_knowledge.php',
+            type: 'POST',
+            data: fd,
+            dataType: 'json',
+            processData: false,
+            contentType: false
+        }).done(function(res){
+            if(res && res.status === 'ok'){
+                if(window.alert){ alert('登録しました。'); }
+                // 入力リセット（外部化と同等の挙動）
+                try {
+                    // フォーム初期状態に戻す（selectの既定値も含めて）
+                    if ($form.length && $form[0] && typeof $form[0].reset === 'function') {
+                        $form[0].reset();
+                    } else {
+                        $form.find('textarea[name="knowledge_content"]').val('');
+                        $form.find('textarea[name="comment"]').val('');
+                    }
+                } catch(_){ }
+                // ツリーへノード追加（knowledge_explorer）
+                if(contentVal){
+                    addKnowledgeNodeToTree(areaVal, contentVal);
+                }
+            } else {
+                var msg = (res && res.message) ? res.message : '登録に失敗しました。';
+                if(window.alert){ alert(msg); }
+            }
+        }).fail(function(xhr, status, err){
+            var body = (xhr && xhr.responseText) ? xhr.responseText : (err||status||'');
+            if(window.alert){ alert('通信エラーにより登録に失敗しました。'); }
+            try { console.error('knowledge_register fail', status, err, body); } catch(_){ }
+        });
+    } catch(ex) {
+        if(window.alert){ alert('登録処理でエラーが発生しました。'); }
+        try { console.error('knowledge_register exception', ex); } catch(_){ }
+    }
+});
+
+// --- Knowledge Tree Logic ---
+function fetchKnowledgeTree(){
+    $.ajax({
+        url: 'php/get_knowledge_tree.php',
+        dataType: 'json'
+    }).done(function(res){
+        if(res && res.status==='ok' && Array.isArray(res.nodes)){
+            buildKnowledgeTree(res.nodes);
+        } else {
+            console.error('Tree取得失敗', res);
+        }
+    }).fail(function(xhr, st, err){
+        console.error('Tree通信失敗', st, err, xhr && xhr.responseText);
+    });
+}
+
+function buildKnowledgeTree(nodes){
+    var container = document.getElementById('overlay_knowledge_tree');
+    if(!container){ return; }
+    container.innerHTML = '';
+    // parent_id -> children
+    var byParent = {};
+    nodes.forEach(function(n){
+        var p = (n.parent_id===null ? 'root' : String(n.parent_id));
+        if(!byParent[p]){ byParent[p] = []; }
+        byParent[p].push(n);
+    });
+    // トップレベルは parent_id null
+    var top = byParent['root'] || [];
+    // 指定順序で並び替え
+    var order = ['知識関連','研究方略関連','その他'];
+    top.sort(function(a,b){ return order.indexOf(a.node_title) - order.indexOf(b.node_title); });
+    // 初期表示は3つのトップレベルすべてを表示
+    var rootFrag = document.createDocumentFragment();
+    top.forEach(function(node){
+        rootFrag.appendChild(renderTreeNode(node, byParent));
+    });
+    container.appendChild(rootFrag);
+}
+
+function renderTreeNode(node, byParent){
+    var hasChildren = !!byParent[String(node.node_id)] && byParent[String(node.node_id)].length>0;
+    var wrapper = document.createElement('div');
+    wrapper.className = 'kt-node';
+    wrapper.setAttribute('data-node-id', node.node_id);
+    if(hasChildren){
+        var toggle = document.createElement('span');
+        toggle.className = 'kt-toggle';
+        toggle.textContent = '+';
+        wrapper.appendChild(toggle);
+    } else {
+        var placeholder = document.createElement('span');
+        placeholder.className = 'kt-toggle';
+        placeholder.textContent = '·';
+        wrapper.appendChild(placeholder);
+    }
+    var titleSpan = document.createElement('span');
+    titleSpan.className = 'kt-title';
+    titleSpan.textContent = node.node_title;
+    wrapper.appendChild(titleSpan);
+    if(hasChildren){
+        var childrenBox = document.createElement('div');
+        childrenBox.className = 'kt-children';
+        childrenBox.style.display = 'none';
+        byParent[String(node.node_id)].forEach(function(ch){
+            childrenBox.appendChild(renderTreeNode(ch, byParent));
+        });
+        wrapper.appendChild(childrenBox);
+    }
+    return wrapper;
+}
+
+// トグル展開/折りたたみ
+$(document).on('click', '.kt-toggle', function(){
+    var $toggle = $(this);
+    var $node = $toggle.closest('.kt-node');
+    var $children = $node.children('.kt-children');
+    if(!$children.length){ return; }
+    var isOpen = $children.is(':visible');
+    if(isOpen){
+        $children.hide();
+        $toggle.text('+');
+    } else {
+        $children.show();
+        $toggle.text('-');
+    }
+});
+
+// ダブルクリックで編集
+$(document).on('dblclick', '.kt-title', function(){
+    var $span = $(this);
+    if($span.hasClass('editing')){ return; }
+    var oldText = $span.text();
+    $span.addClass('editing');
+    var $input = $('<input type="text" class="kt-edit" />').val(oldText);
+    $span.empty().append($input);
+    $input.focus().select();
+    var commit = function(newVal){
+        $span.removeClass('editing');
+        $span.text(newVal);
+    };
+    $input.on('keydown', function(e){
+        if(e.key==='Enter'){
+            var val = ($input.val()||'').trim();
+            if(val && val!==oldText){
+                var nodeId = parseInt($span.closest('.kt-node').data('node-id'),10);
+                saveNodeTitleHistory(nodeId, val);
+            }
+            commit(val || oldText);
+        } else if(e.key==='Escape'){
+            commit(oldText);
+        }
+    });
+    $input.on('blur', function(){ commit(oldText); });
+});
+
+function saveNodeTitleHistory(nodeId, newTitle){
+    $.ajax({
+        url: 'php/update_node_title.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { node_id: nodeId, new_title: newTitle }
+    }).done(function(res){
+        if(res && res.status==='ok'){
+            fetchKnowledgeTree(); // 最新状態再取得
+        } else {
+            console.error('タイトル履歴追加失敗', res);
+        }
+    }).fail(function(xhr,st,err){
+        console.error('タイトル履歴通信失敗', st, err, xhr && xhr.responseText);
+    });
+}
+
+function addKnowledgeNodeToTree(areaLabel, content){
+    if(!content){ return; }
+    // areaLabel はトップレベルノードタイトルと一致している前提
+    $.ajax({
+        url: 'php/insert_knowledge_node.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { parent_label: areaLabel, node_title: content }
+    }).done(function(res){
+        if(res && res.status==='ok'){
+            fetchKnowledgeTree();
+        } else {
+            console.error('ノード追加失敗', res);
+        }
+    }).fail(function(xhr,st,err){
+        console.error('ノード追加通信失敗', st, err, xhr && xhr.responseText);
+    });
+}
+
+// 初期ロード
+$(function(){
+    fetchKnowledgeTree();
+});
+
 // 発言をアップロードする関数
 const uploadMeetingUtteranceXML = function() {
   // フォームデータを作成
@@ -1873,8 +2086,10 @@ window.addEventListener('load', function() {
 
 // 連結化オーバーレイの表示/非表示ヘルパ
 function showSharedCombinationOverlay() {
-  var $ov = $('#shared_combination_overlay');
-  $ov.addClass('is-active').css('display', 'block');
+    var $ov = $('#shared_combination_overlay');
+    $ov.addClass('is-active').css('display', 'block');
+    // 安全のため、このタイミングでもフラグメントをドラッグ可能にしておく
+    try { $('#shared_combination_overlay .knowledge_fragment').attr('draggable','true'); } catch (e) {}
 }
 function hideSharedCombinationOverlay() {
   var $ov = $('#shared_combination_overlay');
@@ -1927,10 +2142,12 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
 
 // --- 知識思考エリア: フラグメントからノード生成（クリック or DnD） ---
 (function(){
-    // フラグメントカードをクリックでノード化
+    // フラグメントカードをクリックでピンクカード（簡易ノード）を生成（thinking_area 内のカードは増殖防止のため除外）
     $(document).on('click', '#shared_combination_overlay .knowledge_fragment', function(e){
-        // 「詳細」ボタン由来のクリックは無視
-        if ($(e.target).closest('.detail-button').length) return;
+        // 操作系（詳細ボタン/詳細領域/フォーム類）でのクリックは無視してカード本体のみ反応
+        if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
+        // 既に思考エリア内にある複製カード（wrapper配下）は再複製しない
+        if ($(this).closest('#knowledge_thinking_area').length) return;
         var $card = $(this);
         createThinkingNodeFromCard($card, null, null);
     });
@@ -1977,18 +2194,41 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
     // ノード作成ヘルパ
     function createThinkingNodeFromCard($card, x, y){
         var $area = $('#knowledge_thinking_area');
-        if ($area.length === 0) return;
+        if ($area.length === 0 || $card.length === 0) return;
+        // ユーザー名と本文だけをシンプルなピンクカードとして生成
         var title = ($card.find('.card-title').text() || '').trim();
         var body = ($card.find('.card-body').text() || '').trim();
         var $node = $('<div class="thinking-node"></div>');
-        $node.append($('<div class="node-title"></div>').text(title !== '' ? title : 'フラグメント'));
+        // フォールバックのための最小インラインスタイル（CSS未適用時でもピンクカードにする）
+        try {
+            $node.css({
+                background: '#ffe6e6',
+                border: '1px solid #ccc',
+                borderRadius: '10px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+                padding: '12px',
+                minWidth: '200px',
+                maxWidth: '260px',
+                boxSizing: 'border-box'
+            });
+        } catch (e) {}
+        $node.append($('<div class="node-title"></div>').text(title));
         $node.append($('<div class="node-body"></div>').text(body));
-        $area.append($node);
-        // 位置
-        var ax = 10, ay = 10;
+        var $wrapper = $('<div class="thinking-node-wrapper"></div>');
+        $wrapper.append($node);
+        $area.append($wrapper);
+        // 位置: 初期はタイトル(overlay-title)直下、D&D時は渡された座標を優先
+        var titleOffset = 0;
+        var $title = $area.children('.overlay-title').first();
+        if ($title.length) {
+            try { titleOffset = $title.outerHeight(true) + 6; } catch(e) { titleOffset = 24; }
+        } else {
+            titleOffset = 24;
+        }
+        var ax = 12, ay = titleOffset;
         if (typeof x === 'number' && typeof y === 'number') { ax = x; ay = y; }
-        $node.css({ left: ax + 'px', top: ay + 'px' });
-        enableNodeDrag($node, $area);
+        $wrapper.css({ left: ax + 'px', top: ay + 'px' });
+        enableNodeDrag($wrapper, $area);
     }
 
     // ノードドラッグ移動（思考エリア内に拘束）

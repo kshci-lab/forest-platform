@@ -1654,7 +1654,16 @@ function activateSharedTab(tabId){
         overlay.style.display = 'block';
       }
       // 表示してから位置とサイズを計算
-      updateCombinationOverlayBounds();
+      // タブのfadeInやレイアウト確定のタイミング差で誤計測になるのを避けるため、複数回再計算する
+      var recalc = function(){ try { updateCombinationOverlayBounds(); } catch (e) {} };
+      recalc();
+      // レイアウト確定後（次フレーム）
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(recalc);
+      }
+      // jQueryのfadeIn(デフォルト約400ms)にも対応して追い計測
+      setTimeout(recalc, 120);
+      setTimeout(recalc, 420);
       // 画面変化に追随
       attachOverlayAutoResize();
     } else {
@@ -1784,6 +1793,11 @@ document.addEventListener('DOMContentLoaded', function(){
       activateSharedTab('tab-externalization');
     }
   }
+});
+
+// ページ内の画像やフォント読み込み完了後にも最終調整（サイズ誤差の保険）
+window.addEventListener('load', function(){
+  try { updateCombinationOverlayBounds(); } catch (e) {}
 });
 
 

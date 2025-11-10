@@ -251,6 +251,42 @@ table[type] {
 	min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
 }
 
+/* Knowledge tree */
+#overlay_knowledge_tree {
+	font-size: 14px;
+}
+#overlay_knowledge_tree .kt-node {
+	position: relative;
+	padding-left: 18px; /* for toggle */
+	line-height: 1.6;
+}
+#overlay_knowledge_tree .kt-children {
+	margin-left: 14px;
+	border-left: 1px solid #ddd;
+	padding-left: 10px;
+}
+#overlay_knowledge_tree .kt-toggle {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 16px;
+	text-align: center;
+	cursor: pointer;
+	user-select: none;
+	color: #666;
+}
+#overlay_knowledge_tree .kt-title {
+	cursor: default;
+}
+#overlay_knowledge_tree .kt-title.editing {
+	background: #f0f0f0;
+}
+#overlay_knowledge_tree input.kt-edit {
+	font: inherit;
+	padding: 2px 4px;
+	width: calc(100% - 24px);
+}
+
 #shared_combination_overlay .overlay-knowledge-fragments{
 	overflow-x: hidden; /* 横スクロールは内側のリストに集約する */
 	height: auto;       /* コンテンツに合わせて伸びる */
@@ -265,28 +301,39 @@ table[type] {
 	min-height: 120px;
 }
 
-/* 思考エリア内 ノード */
-#shared_combination_overlay .thinking-node{
-	position: absolute;
-	min-width: 140px;
+/* 思考エリア内 ノード（ピンクカード） */
+#shared_combination_overlay .thinking-node,
+.thinking-node{
+	position: relative; /* wrapper が absolute */
+	min-width: 200px;
 	max-width: 260px;
-	background: #fff7cc; /* ほんのり黄色 */
-	border: 1px solid #e0c97a;
-	border-radius: 8px;
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-	padding: 8px;
-	cursor: move;
+	background: #ffe6e6; /* フラグメントと同系の淡いピンク */
+	border: 1px solid #ccc;
+	border-radius: 10px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+	padding: 12px;
+	box-sizing: border-box;
 	user-select: none;
 }
-#shared_combination_overlay .thinking-node .node-title{
-	font-size: 12px;
-	font-weight: 600;
-	color: #666;
-	margin-bottom: 4px;
+#shared_combination_overlay .thinking-node-wrapper,
+.thinking-node-wrapper{
+	position:absolute;
+	cursor:move;
+	user-select:none;
+	border-radius:10px; /* カード角丸と揃える */
 }
-#shared_combination_overlay .thinking-node .node-body{
-	font-size: 13px;
-	color: #333;
+#shared_combination_overlay .thinking-node .node-title,
+.thinking-node .node-title{
+	font-size:15px;
+	font-weight:500;
+	color:#444;
+	margin-bottom:8px;
+}
+#shared_combination_overlay .thinking-node .node-body,
+.thinking-node .node-body{
+	font-size:14px;
+	color:#333;
+	line-height:1.5;
 	white-space: pre-wrap;
 }
 #shared_combination_overlay .overlay-knowledge-fragments{
@@ -325,6 +372,8 @@ table[type] {
 	box-sizing: border-box;
 	min-width: 0;                /* コンテンツ幅に引っ張られて広がらない */
 	scrollbar-width: thin;       /* Firefox: 細いスクロールバー */
+    /* 念のためクリックを有効化（外部からの pointer-events:none の影響を打ち消す） */
+    pointer-events: auto;
 }
 /* WebKit系: スクロールバーの視認性を少し上げる */
 #shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{height:10px}
@@ -342,6 +391,9 @@ table[type] {
 	flex-direction:column;
 	gap:8px;
 	flex:0 0 auto;               /* 横スクロール内で折り返さず表示 */
+    /* クリックできないケースの保険（上位で pointer-events: none が当たっても有効化） */
+    pointer-events: auto;
+    cursor: pointer;
 }
 #shared_combination_overlay .knowledge_fragment .card-title{
 	font-size:15px;

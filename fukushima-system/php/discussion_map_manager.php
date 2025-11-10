@@ -87,9 +87,9 @@ if($purpose === "save_externalized_content") {
     $deleted = 0;
     if ($hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         } else {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         }
     } elseif ($hasUsedCol && !$hasKFragCol) {
         if ($hasUserCol) {
@@ -99,9 +99,9 @@ if($purpose === "save_externalized_content") {
         }
     } elseif (!$hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         } else {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
         }
     } else {
         if ($hasUserCol) {
@@ -202,9 +202,9 @@ if($purpose === "save_externalized_content") {
 
     if ($hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         } else {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         }
     } elseif ($hasUsedCol && !$hasKFragCol) {
         if ($hasUserCol) {
@@ -214,9 +214,9 @@ if($purpose === "save_externalized_content") {
         }
     } elseif (!$hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         } else {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, ${kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         }
     } else {
         if ($hasUserCol) {

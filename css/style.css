@@ -225,6 +225,7 @@ table[type] {
 }
 #shared_combination_overlay .comb-left{
 	display:flex;
+	height:100%;
 	flex-direction:column;
 	flex:0 0 70%; /* 70% width */
 }
@@ -265,6 +266,51 @@ table[type] {
 	font-weight: 600;
 	margin-bottom: 8px;
 }
+
+/* overlay-input-area を左右2分割 */
+#shared_combination_overlay .overlay-input-area{
+	display:flex;
+	flex-direction:row;
+	gap:12px;
+	align-items:stretch;
+	/* 余白は上の padding で確保済み */
+}
+#shared_combination_overlay #discussion_history_area,
+#shared_combination_overlay #knowledge_register_area{
+	flex:1 1 0;
+	min-width:0;
+	border: 1px solid #aaa;           /* 外枠 */
+	border-radius: 12px;
+	padding: 11px;
+	margin: 0px;
+	box-sizing: border-box;
+	background:#fff;
+}
+
+/* knowledge_register_area 内のフォーム整形 */
+#shared_combination_overlay #knowledge_register_area .kra-row{margin-bottom:10px;}
+#shared_combination_overlay #knowledge_register_area .kra-row.kra-header{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#shared_combination_overlay #knowledge_register_area .kra-row.kra-top{display:flex;gap:8px;align-items:center}
+#shared_combination_overlay #knowledge_register_area .kra-title{margin-right:auto}
+#shared_combination_overlay #knowledge_register_area .kra-label{white-space:nowrap;color:#444}
+
+/* 各入力エリア（コントロール） */
+#shared_combination_overlay #knowledge_register_area .kra-control{
+	border: 1px solid #ccc;
+	border-radius: 8px;
+	padding: 8px;
+	box-sizing:border-box;
+}
+/* 幅の扱い：通常は100%だが、ヘッダ行のセレクトのみ横幅自動 */
+#shared_combination_overlay #knowledge_register_area .kra-row:not(.kra-header) .kra-control{width:100%;}
+#shared_combination_overlay #knowledge_register_area .kra-control.kra-control-inline{width:auto;min-width: 220px;}
+
+/* コメント行はラベル + インプットを横並び可 */
+#shared_combination_overlay #knowledge_register_area .kra-comment{display:flex;gap:8px;align-items:center}
+#shared_combination_overlay #knowledge_register_area .kra-comment .kra-control{flex:1}
+
+/* 送信ボタンを右寄せ */
+#shared_combination_overlay #knowledge_register_area .kra-actions{display:flex;justify-content:flex-end;margin-top:12px}
 
 /* Divider lines for the split layout */
 #shared_combination_overlay .comb-left{
@@ -350,6 +396,53 @@ table[type] {
 #shared_combination_overlay .no-fragment-note{
 	color:#777;
 	font-size:13px;
+}
+
+/* 思考エリア */
+#shared_combination_overlay .knowledge_thinking_area{
+	position: relative;
+	background: #fff;
+	overflow: auto;
+	min-height: 120px;
+}
+
+/* 思考エリア内 ノード（ピンクカード） */
+#shared_combination_overlay .thinking-node,
+.thinking-node{
+	position: relative; /* wrapper が absolute */
+	min-width: 200px;
+	max-width: 260px;
+	background: #ffe6e6; /* フラグメントと同系の淡いピンク */
+	border: 1px solid #ccc;
+	border-radius: 10px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+	padding: 12px;
+	box-sizing: border-box;
+	user-select: none;
+}
+
+#shared_combination_overlay .thinking-node-wrapper,
+.thinking-node-wrapper{
+	position:absolute;
+	cursor:move;
+	user-select:none;
+	border-radius:10px; /* カード角丸と揃える */
+}
+
+#shared_combination_overlay .thinking-node .node-title,
+.thinking-node .node-title{
+	font-size:15px;
+	font-weight:500;
+	color:#444;
+	margin-bottom:8px;
+}
+
+#shared_combination_overlay .thinking-node .node-body,
+.thinking-node .node-body{
+	font-size:14px;
+	color:#333;
+	line-height:1.5;
+	white-space: pre-wrap;
 }
 
 /* #layout{
@@ -2112,6 +2205,7 @@ select[name="user_list"] {
 	width: 50px;
 	height: 25px;
 	font-size: 12px;
+	border:none;
 	margin-left: 0;
 }
 .button3:hover {
@@ -2129,6 +2223,7 @@ select[name="user_list"] {
 	margin-left: 10px;
 	margin-right: 8px;
 	margin-top: 5px;
+	border:none;
 	overflow: auto;
 }
 .button4:hover {
@@ -2137,7 +2232,7 @@ select[name="user_list"] {
 
 .button-container {
     display: inline-block;
-    margin-left: 20px;
+	margin-left: 80px; /* 左側の余白を拡大して Screenshot とタブの間隔を調整 */
 }
 
 .button5 {
@@ -2148,6 +2243,7 @@ select[name="user_list"] {
     margin-left: 1px;
 	margin-right: 1px;
 	margin-top: 5px;
+	border:none;
     align-items: center; /* 垂直方向の中央寄せ */
     justify-content: center; /* 水平方向の中央寄せ */
 }
