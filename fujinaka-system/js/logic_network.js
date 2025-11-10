@@ -432,8 +432,9 @@ class LogicNetwork {
     this.relayoutHierarchy(true);
 
     // DB記録
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Reason", null, null, false, newNodeLevel);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Fact", null, null, false, newNodeLevel);
+    // ここで保存ラベルが表示の役割と逆になっているなら入れ替える
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Fact", null, null, false, newNodeLevel);   // 旧: "Reason"
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Reason", null, null, false, newNodeLevel);   // 旧: "Fact"
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
@@ -1540,10 +1541,10 @@ class LogicNetwork {
       // 位置: 主張レベルが「最小」なら左上、それ以外は真下
       const posForTriangle = (lvClaim === minClaimLevel) ? 'top-left' : (multipleTri ? 'bottom' : 'top-left');
 
-      // 役割を付与
+      // 役割を付与（入れ替え）
       addRole(tri.claimId, "主張");
-      addRole(tri.reasonId, "理由付け");
-      addRole(tri.factId, "事実");
+      addRole(tri.reasonId, "事実");       // 旧: "理由付け"
+      addRole(tri.factId, "理由付け");     // 旧: "事実"
 
       // 位置を三角内の全ノードに反映（同一ノードが複数三角に属する場合は集合で両位置を保持）
       addPos(tri.claimId, posForTriangle);
@@ -1741,78 +1742,217 @@ class LogicNetwork {
 
   // ネットワークキャンバスをPDF保存（jsPDF使用、未読込時はPNG保存にフォールバック）
   exportNetworkToPDF(filename) {
-    if (!this.ownNetwork) {
-      alert("ロジックネットワークが初期化されていません");
-      return;
-    }
-
-    // 直近描画を保証してからキャプチャ
-    const capture = () => {
-      try {
-        const canvas = this.ownNetwork.canvas?.frame?.canvas;
-        if (!canvas) {
-          alert("キャンバスが取得できませんでした");
-          return;
-        }
-        const imgData = canvas.toDataURL("image/png", 1.0);
-
-        // jsPDF 存在チェック（UMD/グローバル両対応）
-        const JSPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-        if (!JSPDFCtor) {
-          // フォールバック: PNG をダウンロード
-          const a = document.createElement('a');
-          const ts = this._buildTimestamp();
-          a.href = imgData;
-          a.download = filename || `logic_network_${ts}.png`;
-          a.click();
-          return;
-        }
-
-        // キャンバス縦横から向きを決定
-        const isLandscape = canvas.width >= canvas.height;
-        const pdf = new JSPDFCtor({
-          orientation: isLandscape ? 'landscape' : 'portrait',
-          unit: 'pt',
-          format: 'a4'
-        });
-
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const margin = 24; // pt
-        const maxW = pageW - margin * 2;
-        const maxH = pageH - margin * 2;
-
-        // 画像をA4にフィット
-        const imgW = canvas.width;
-        const imgH = canvas.height;
-        const scale = Math.min(maxW / imgW, maxH / imgH);
-        const drawW = Math.max(1, imgW * scale);
-        const drawH = Math.max(1, imgH * scale);
-        const x = margin + (maxW - drawW) / 2;
-        const y = margin + (maxH - drawH) / 2;
-
-        // タイトル/タイムスタンプ
-        const ts = this._buildTimestamp();
-        const title = "Logic Network";
-        pdf.setFontSize(12);
-        pdf.text(title, margin, 18);
-        pdf.setFontSize(9);
-        pdf.text(`Exported: ${ts}`, pageW - margin - 140, 18);
-
-        pdf.addImage(imgData, 'PNG', x, y, drawW, drawH, undefined, 'FAST');
-        pdf.save(filename || `logic_network_${ts}.pdf`);
-      } catch (e) {
-        console.error("exportNetworkToPDF error:", e);
-        alert("PDFの作成に失敗しました");
+    try {
+      // 1) レポート本文を作成（collectTriangleLogic 優先）
+      const reportText = this.buildTriangleTextReport();
+      if (!reportText || reportText.trim() === "") {
+        alert("出力する三角ロジックが見つかりません");
+        return;
       }
-    };
 
-    // 一度の描画完了後にキャプチャ
-    this.ownNetwork.once('afterDrawing', capture);
-    this.ownNetwork.redraw();
+      const ts = this._buildTimestamp();
+      const outName = filename || `logic_triangles_${ts}.pdf`;
+
+      // 2) jsPDF 検出（旧/新両対応）
+      const JSPDFCtor =
+        (window.jspdf && (window.jspdf.jsPDF || window.jspdf.default)) ||
+        window.jsPDF;
+
+      if (!JSPDFCtor) {
+        // TXT フォールバック
+        const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (outName.replace(/\.pdf$/i, '') + ".txt");
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        return;
+      }
+
+      // PDF 出力
+      const pdf = new JSPDFCtor({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4'
+      });
+
+      // 旧API互換: getWidth/getHeight が無い環境に対応
+      const ps = pdf.internal && pdf.internal.pageSize ? pdf.internal.pageSize : {};
+      const pageW = (typeof ps.getWidth === 'function') ? ps.getWidth() : (ps.width || 595.28);
+      const pageH = (typeof ps.getHeight === 'function') ? ps.getHeight() : (ps.height || 841.89);
+
+      const margin = 36;
+      const maxW = pageW - margin * 2;
+      const lineH = 14;
+
+      // ヘッダー
+      pdf.setFontSize(12);
+      pdf.text("三角ロジック エクスポート", margin, 20);
+      pdf.setFontSize(9);
+      pdf.text(`Exported: ${ts}`, pageW - margin - 140, 20);
+
+      // 本文
+      pdf.setFontSize(11);
+
+      // splitTextToSize が無い場合のフォールバック
+      const simpleWrap = (text, maxChars = 60) => {
+        const result = [];
+        const para = String(text).split('\n');
+        for (let p = 0; p < para.length; p++) {
+          const t = para[p];
+          if (t.length <= maxChars) { result.push(t); continue; }
+          for (let i = 0; i < t.length; i += maxChars) {
+            result.push(t.substr(i, maxChars));
+          }
+        }
+        return result;
+      };
+      const lines = (typeof pdf.splitTextToSize === 'function')
+        ? pdf.splitTextToSize(reportText, maxW)
+        : simpleWrap(reportText, 80);
+
+      let y = 36 + 10;
+      for (const line of lines) {
+        if (y > pageH - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+        pdf.text(line, margin, y);
+        y += lineH;
+      }
+
+      pdf.save(outName);
+    } catch (e) {
+      console.error("exportNetworkToPDF text-mode error:", e && (e.stack || e));
+      alert("文章の出力に失敗しました");
+    }
   }
 
-  // タイムスタンプ生成（YYYYMMDD_HHMM）
+  // collectTriangleLogic を使って文章を作成。無ければ this.triangles + this.nodes で生成
+  buildTriangleTextReport() {
+    const header = () => {
+      const ts = this._buildTimestamp();
+      return [
+        "=== 三角ロジック エクスポート ===",
+        `Exported: ${ts}`,
+        ""
+      ].join("\n");
+    };
+
+    // 1) 外部collectTriangleLogicを優先
+    try {
+      const external = (typeof this.collectTriangleLogic === "function")
+        ? this.collectTriangleLogic()
+        : (typeof window.collectTriangleLogic === "function")
+          ? window.collectTriangleLogic()
+          : null;
+
+      if (external) {
+        // 文字列ならそのまま
+        if (typeof external === "string") {
+          return header() + external;
+        }
+        // オブジェクト/配列なら整形
+        const body = this._formatTrianglesFromExternal(external);
+        if (body && body.trim() !== "") {
+          return header() + body;
+        }
+      }
+    } catch (e) {
+      console.warn("collectTriangleLogic 呼び出しに失敗:", e);
+    }
+
+    // 2) フォールバック: this.triangles と nodes から構築
+    if (!Array.isArray(this.triangles) || this.triangles.length === 0) {
+      return "";
+    }
+
+    const lines = [header()];
+    let idx = 1;
+    for (const t of this.triangles) {
+      const triId = String(t.triangle_id ?? t.triangleId ?? idx);
+      const claimId = String(t.claim_id ?? t.claimId ?? "");
+      const reasonId = String(t.reason_id ?? t.reasonId ?? "");
+      const factId = String(t.fact_id ?? t.factId ?? "");
+
+      // ラベル取得（boxノードの label から改行を除去）
+      const claim = this._getCleanLabel(this.nodes.get(claimId));
+      const reason = this._getCleanLabel(this.nodes.get(reasonId));
+      const fact = this._getCleanLabel(this.nodes.get(factId));
+
+      // 役割の表記はハイライト時の定義に合わせる（reason=事実, fact=理由付け）
+      const claimReason = (t.claimReason ?? this.nodes.get(claimId)?.claimReason ?? "") || "";
+      const conflict = (t.conflict ?? this.nodes.get(claimId)?.conflict ?? "") || "";
+
+      lines.push(
+        `#${idx}`,
+        `三角ID: ${triId}`,
+        `主張: ${claim || "(空)"}`,
+        `理由付け: ${fact || "(空)"}`,
+        `事実: ${reason || "(空)"}`,
+        `説明: ${claimReason || "-"}`,
+        `葛藤: ${conflict || "-"}`,
+        ""
+      );
+      idx++;
+    }
+
+    return lines.join("\n");
+  }
+
+  // 外部データ（collectTriangleLogicの戻り値）をできるだけ賢く整形
+  _formatTrianglesFromExternal(external) {
+    const arr = Array.isArray(external)
+      ? external
+      : (external && Array.isArray(external.triangles))
+        ? external.triangles
+        : null;
+
+    if (!arr || arr.length === 0) return "";
+
+    const lines = [];
+    let idx = 1;
+    for (const t of arr) {
+      // さまざまなキー名に対応
+      const triId = String(t.triangle_id ?? t.triangleId ?? idx);
+      const claim = String(
+        t.claim ?? t.Claim ?? t.claim_text ?? t.claimLabel ?? ""
+      ).trim();
+      // 役割名の揺れにも対応（reason/factの意味は既存UIに合わせて表示を入替）
+      const reasonText = String(
+        t.reason ?? t.Reason ?? t.reason_text ?? t.reasonLabel ?? ""
+      ).trim();
+      const factText = String(
+        t.fact ?? t.Fact ?? t.fact_text ?? t.factLabel ?? ""
+      ).trim();
+
+      const claimReason = String(
+        t.claimReason ?? t.ClaimReason ?? t.explain ?? ""
+      ).trim();
+      const conflict = String(t.conflict ?? t.Conflict ?? "").trim();
+
+      lines.push(
+        `#${idx}`,
+        `三角ID: ${triId}`,
+        `主張: ${claim || "(空)"}`,
+        `理由付け: ${factText || "(空)"}`, // 表示は UI と同じく fact→理由付け
+        `事実: ${reasonText || "(空)"}`,
+        `説明: ${claimReason || "-"}`,
+        `葛藤: ${conflict || "-"}`,
+        ""
+      );
+      idx++;
+    }
+    return lines.join("\n");
+  }
+
+  // ノードの label を改行除去して取得（未定義や空も安全に処理）
+  _getCleanLabel(node) {
+    if (!node || typeof node.label !== "string") return "";
+    return node.label.replace(/\n/g, "").trim();
+  }
+
+  // 足りていないと例外になるため追加（タイムスタンプ: YYYYMMDD_HHMM）
   _buildTimestamp() {
     const d = new Date();
     const z = n => String(n).padStart(2, '0');

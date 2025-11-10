@@ -100,14 +100,20 @@ if (isset($_GET['action']) && $_GET['action'] === 'run_ai') {
 // 受信データ取得
 $raw = file_get_contents('php://input');
 $scenario = '';
+$triangle = '';
 if ($raw !== false && $raw !== '') {
     $j = json_decode($raw, true);
-    if (json_last_error() === JSON_ERROR_NONE && isset($j['scenario'])) {
-        $scenario = (string)$j['scenario'];
+    if (json_last_error() === JSON_ERROR_NONE) {
+        if (isset($j['scenario'])) {
+            $scenario = (string)$j['scenario'];
+        }
+        if (isset($j['triangle'])) {
+            $triangle = is_string($j['triangle']) ? $j['triangle'] : json_encode($j['triangle'], JSON_UNESCAPED_UNICODE);
+        }
     }
 }
 
-error_log('[post_ai] scenario_len=' . strlen($scenario));
+error_log('[post_ai] scenario_len=' . strlen($scenario) . ' triangle_len=' . strlen($triangle));
 
 $python = stripos(PHP_OS, 'WIN') === 0 ? 'python' : 'python3';
 $script = __DIR__ . '/api/test.py';
@@ -119,8 +125,13 @@ if (stripos($disabled, 'proc_open') !== false) {
     exit;
 }
 
-if ($scenario !== '') {
-    putenv('SCENARIO=' . $scenario);
+// SCENARIO: 論文シナリオ + 三角ロジック(JSON)
+$scenarioToSend = $scenario;
+if ($triangle !== '') {
+    $scenarioToSend .= "\n\n【三角ロジック(JSON)】\n" . $triangle;
+}
+if ($scenarioToSend !== '') {
+    putenv('SCENARIO=' . $scenarioToSend);
 }
 
 $descriptorspec = [
