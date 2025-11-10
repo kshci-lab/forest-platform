@@ -433,3 +433,6 @@ ArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArray2025-
 2025-11-07T06:58:24+00:00 discussion_utterances execute exception: Field 'utterance_id' doesn't have a default value
 2025-11-07T06:58:24+00:00 discussion_utterances execute exception: Field 'utterance_id' doesn't have a default value
 2025-11-07T06:58:24+00:00 discussion_utterances execute exception: Field 'utterance_id' doesn't have a default value
+2025-11-10T07:02:02+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value
+2025-11-10T07:03:49+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value
+2025-11-10T07:08:35+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value

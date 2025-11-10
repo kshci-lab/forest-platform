@@ -23,37 +23,53 @@ if($node_id<=0 || $new_title===''){
 }
 $table = 'knowledge_explorer';
 
-// 元ノードの parent_id を取得（deleted=0 の制約は元レコード取得では必須ではないが、存在性チェックとして）
-$parent_id = null;
-if($st = $mysqli->prepare("SELECT parent_id FROM $table WHERE knowledge_node_id=? LIMIT 1")){
+// 動的カラム検出 (parent_node_id / parent_id など) + id カラム名
+$colId = 'knowledge_node_id';
+$colParent = 'parent_id';
+$colTitle = 'node_title';
+$hasDeleted = false;
+if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
+    while($c = $cols->fetch_assoc()){
+        $f = $c['Field']; $lf = strtolower($f);
+        if(in_array($lf,['knowledge_node_id','node_id','id'])){ $colId = $f; }
+        if(in_array($lf,['parent_node_id','parent_id','parent','pid'])){ $colParent = $f; }
+        if(in_array($lf,['node_title','title','name','label'])){ $colTitle = $f; }
+        if($lf==='deleted'){ $hasDeleted = true; }
+    }
+    $cols->close();
+}
+
+// 元ノードの parent を取得
+$parentId = null;
+if($st = $mysqli->prepare("SELECT $colParent FROM $table WHERE $colId=? LIMIT 1")){
     $st->bind_param('i',$node_id);
     $st->execute();
     $st->bind_result($pid);
-    if($st->fetch()){ $parent_id = ($pid!==null) ? (int)$pid : null; }
+    if($st->fetch()){ $parentId = ($pid!==null) ? (int)$pid : null; }
     $st->close();
 }
 
-// 新しい knowledge_node_id を採番 (MAX+1, 開始=11)
-$nextId = 11;
-if($res = $mysqli->query("SELECT MAX(knowledge_node_id) AS max_id FROM $table")){
+// 新しい ID を採番 (MAX+1, 基準=113)
+$nextId = 113;
+if($res = $mysqli->query("SELECT MAX($colId) AS max_id FROM $table")){
     $row = $res->fetch_assoc();
     if($row && $row['max_id']!==null){
         $m = (int)$row['max_id'];
-        $nextId = ($m >= 11) ? ($m + 1) : 11;
+        $nextId = ($m >= 113) ? ($m + 1) : 113;
     }
     $res->close();
 }
 
-// レコード挿入（content/node_type は未使用→NULL、deleted=0）
-if($parent_id===null){
-    $stmt = $mysqli->prepare("INSERT INTO $table (knowledge_node_id,parent_id,node_title,content,node_type,deleted,created_at,updated_at) VALUES (?,?,?,NULL,NULL,0,NOW(),NOW())");
-    if(!$stmt){ echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]); exit; }
+// レコード挿入 deleted=0 (カラムがあれば)
+if($parentId===null){
+    $sqlIns = "INSERT INTO $table ($colId,$colParent,$colTitle".($hasDeleted?",deleted":"").",created_at,updated_at) VALUES (?,?,?".($hasDeleted?",0":"").",NOW(),NOW())";
+    if(!$stmt = $mysqli->prepare($sqlIns)){ echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]); exit; }
     $nullParent = null;
     $stmt->bind_param('iis',$nextId,$nullParent,$new_title);
 } else {
-    $stmt = $mysqli->prepare("INSERT INTO $table (knowledge_node_id,parent_id,node_title,content,node_type,deleted,created_at,updated_at) VALUES (?,?,?,NULL,NULL,0,NOW(),NOW())");
-    if(!$stmt){ echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]); exit; }
-    $stmt->bind_param('iis',$nextId,$parent_id,$new_title);
+    $sqlIns = "INSERT INTO $table ($colId,$colParent,$colTitle".($hasDeleted?",deleted":"").",created_at,updated_at) VALUES (?,?,?".($hasDeleted?",0":"").",NOW(),NOW())";
+    if(!$stmt = $mysqli->prepare($sqlIns)){ echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]); exit; }
+    $stmt->bind_param('iis',$nextId,$parentId,$new_title);
 }
 if(!$stmt->execute()){
     echo json_encode(['status'=>'error','message'=>'INSERT失敗: '.$stmt->error]);

@@ -82,15 +82,15 @@ if($colParent !== null && $colTitle !== null){
     }
     foreach($topTitles as $t){
         if(!isset($existing[$t])){
-            // 採番（AUTO_INCREMENT 無しなら MAX+1、基準=11）
+            // 採番（AUTO_INCREMENT 無しなら MAX+1、基準=113）
             $nextId = null;
             if(!$idIsAutoInc && $colId){
-                $nextId = 11;
+                $nextId = 113;
                 if($rs = $mysqli->query("SELECT MAX($colId) AS max_id FROM $table")){
                     $rowm = $rs->fetch_assoc();
                     if($rowm && isset($rowm['max_id']) && $rowm['max_id']!==null){
                         $maxv = (int)$rowm['max_id'];
-                        $nextId = ($maxv >= 11) ? ($maxv + 1) : 11;
+                        $nextId = ($maxv >= 113) ? ($maxv + 1) : 113;
                     }
                     $rs->close();
                 }

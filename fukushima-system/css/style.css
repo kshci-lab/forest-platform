@@ -1703,6 +1703,55 @@ select[name="user_list"] {
 	/* resize: auto; */
 }
 
+/* ==== Three-column layout and left panel toggle ==== */
+/* 初期は 3 カラム: 左(33.3%) / 中右を wrap (#network_container) 66.6% で 1:2, 内部で 1:1 */
+#jsmind_container.threecol{
+	width: 33.333%;
+	transition: width 0.3s ease;
+}
+#network_container.threecol{
+	width: 66.666%;
+	display: flex;
+	transition: width 0.3s ease;
+}
+/* 中・右を等分 */
+#network_container.threecol #utterance_area,
+#network_container.threecol #mynetwork2{
+	width: 50% !important;
+	transition: width 0.3s ease;
+}
+/* トグルボタンの配置基準 */
+#network_container.threecol #utterance_area{
+	position: relative;
+}
+/* トグルボタン（中エリア右端） */
+.left-toggle-btn{
+	position: absolute;
+	top: 50%;
+	right: 0;
+	transform: translate(50%, -50%);
+	z-index: 20;
+	border: 1px solid #9bb7ba;
+	background: #ffffff;
+	color: #333;
+	padding: 4px 6px;
+	line-height: 1;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+/* 左ペインを隠した時: 左=0 / 中右親=100%（内部は 1:1） */
+body.left-hidden #jsmind_container.threecol{
+	width: 0 !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	border-width: 0 !important;
+	overflow: hidden !important;
+}
+body.left-hidden #network_container.threecol{
+	width: 100% !important;
+}
+
 #externalization_form{
 	position: relative;
 	width: 100%;

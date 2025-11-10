@@ -382,7 +382,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             <!--jsmind_nav fin-->
 
                             <!-- <div class="Menu">Menu</div> -->
-                            <div id="jsmind_container" oncontextmenu="return false;">
+                            <div id="jsmind_container" class="threecol" oncontextmenu="return false;">
                                 <div id="mindmap_conmenu">
                                     <ul>
                                         <!-- <li><a href="javascript:void(0);" onClick="SetPurpose()">スライドを作成する</a></li> -->
@@ -505,8 +505,9 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <input id="DecideLogicRelationButton" type="button" value="キャンセル" onclick="CancelButton_Click('document_area_conmenu4')">
                             </div>
                             <!--  ここから大槻修正　-->
-                            <div id="network_container" oncontextmenu="return false;" >
+                            <div id="network_container" class="threecol" oncontextmenu="return false;" >
                                 <div id="utterance_area">
+                                    <button id="left-panel-toggle" class="left-toggle-btn" type="button" title="左ペインを折りたたむ">◀</button>
                                     <div id="rclick2">
                                         <div id="timedisplay"></div>
                                         <div id="rclick"></div>
@@ -553,6 +554,21 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <div id="mynetwork"></div>
                                 </div>
                             </div>
+                            <script>
+                            (function(){
+                                try{
+                                    var btn = document.getElementById('left-panel-toggle');
+                                    if(btn){
+                                        btn.addEventListener('click', function(){
+                                            var hidden = document.body.classList.toggle('left-hidden');
+                                            // アイコン切替
+                                            btn.textContent = hidden ? '▶' : '◀';
+                                            btn.title = hidden ? '左ペインを展開' : '左ペインを折りたたむ';
+                                        });
+                                    }
+                                }catch(e){ console && console.warn && console.warn('left panel toggle init failed', e); }
+                            })();
+                            </script>
                             <!-- 連結化タブ画面分割エリア -->
                             <!-- White overlay to cover jsmind_container, utterance_area, mynetwork2 when in Combination tab -->
                             <div id="shared_combination_overlay">
@@ -594,11 +610,11 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                         <!-- 中央：見出し + タイプ選択 -->
                                                         <div class="kra-row kra-header">
                                                             <div class="kra-title"><strong>■産出する知</strong></div>
-                                                            <label for="kra_type_select" class="kra-label">タイプ:</label>
+                                                            <!-- <label for="kra_type_select" class="kra-label">タイプ:</label>
                                                             <select id="kra_type_select" name="knowledge_type" class="kra-control kra-control-inline">
                                                                 <option value="自分の研究に役立ちそうなもの">自分の研究に役立ちそうなもの</option>
                                                                 <option value="他者に共有できそうなもの">他者に共有できそうなもの</option>
-                                                                <option value="その他">その他</option>
+                                                                <option value="その他">その他</option> -->
                                                             </select>
                                                         </div>
 

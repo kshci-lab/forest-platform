@@ -1705,10 +1705,11 @@ $(document).on('submit', '#knowledge_register_form', function(e){
                 return;
             }
         } catch(_){ /* no-op */ }
-        var fd = new FormData(this);
-        // 追加用に値を保持
-        var areaVal = ($form.find('select[name="knowledge_area"]').val() || '').trim();
-        var contentVal = ($form.find('textarea[name="knowledge_content"]').val() || '').trim();
+    var fd = new FormData(this);
+    // 追加用に値を保持（既存処理 + 追加保存処理で使う）
+    var areaVal = ($form.find('select[name="knowledge_area"]').val() || '').trim();
+    var contentVal = ($form.find('textarea[name="knowledge_content"]').val() || '').trim();
+    var commentVal = ($form.find('#kra_comment_input').val() || '').trim();
         $.ajax({
             url: 'register_knowledge.php',
             type: 'POST',
@@ -1733,6 +1734,12 @@ $(document).on('submit', '#knowledge_register_form', function(e){
                 if(contentVal){
                     addKnowledgeNodeToTree(areaVal, contentVal);
                 }
+
+                // 追加要件: knowledge_explorer テーブルへも保存
+                // 親IDはセレクト値に応じて固定マッピング
+                try {
+                    saveToKnowledgeExplorer(areaVal, contentVal, commentVal);
+                } catch(ex2){ console && console.warn && console.warn('saveToKnowledgeExplorer error', ex2); }
             } else {
                 var msg = (res && res.message) ? res.message : '登録に失敗しました。';
                 if(window.alert){ alert(msg); }
@@ -1898,6 +1905,44 @@ function addKnowledgeNodeToTree(areaLabel, content){
     }).fail(function(xhr,st,err){
         console.error('ノード追加通信失敗', st, err, xhr && xhr.responseText);
     });
+}
+
+// knowledge_explorer へ追加保存（ボタン追加要件）
+function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
+    try {
+        if(!nodeTitle){ return; }
+        // エリア名 → parent_node_id をマッピング
+        var parentIdMap = {
+            '知識関連': 111,
+            '研究方略関連': 222,
+            'その他': 333
+        };
+        var parentId = parentIdMap[areaLabel] || 333;
+        // node_type は今回は未指定 → NULL 相当として送らない or 空文字
+        $.ajax({
+            url: 'php/save_knowledge_explorer.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                parent_node_id: parentId,
+                node_title: nodeTitle,
+                content: commentText || '',
+                node_type: ''
+            }
+        }).done(function(res){
+            if(res && res.status === 'ok'){
+                console.log('knowledge_explorer 保存OK', res);
+            } else {
+                console.error('knowledge_explorer 保存失敗', res);
+                if(window.alert){ alert('knowledge_explorer への保存に失敗しました。'); }
+            }
+        }).fail(function(xhr, st, err){
+            console.error('knowledge_explorer 保存通信エラー', st, err, xhr && xhr.responseText);
+            if(window.alert){ alert('knowledge_explorer への保存通信エラー'); }
+        });
+    } catch(ex){
+        console && console.error && console.error('saveToKnowledgeExplorer 例外', ex);
+    }
 }
 
 // 初期ロード
