@@ -1265,6 +1265,10 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
             const utter_dom = makeUtteranceNodeInList(u.utterance_id, u.content, u.sender, u.utter_time, u.network_on);
             target_area.append(utter_dom); // 挿入            
         });
+        // もしラベルマップがあれば適用
+        try {
+            if (window.UtteranceTypeMap) { applyLabelsToUtteranceList(window.UtteranceTypeMap); }
+        } catch(e) { /* no-op */ }
         for(var i=0; i<utterance_list_info.document.length; i++){
             defaultForestMRN.addmaterialNode(utterance_list_info.document[i].item_content_id, utterance_list_info.document[i].item_content_id);
             document.getElementById("labelselect").style.display = "none";
@@ -1606,6 +1610,133 @@ const setUploadedXMLData = function(file_input_btn_id, xml_area_id) {
         };
         reader.readAsText(files[0], 'UTF-8');
     });
+}
+
+// ラベルXMLを保持するアップロード関数（span id を分離）
+const setUploadedLabelXMLData = function(file_input_btn_id, xml_area_id){
+    // 重複ID対策: 属性セレクタで全てにバインド
+    var $inputs = $("[id='" + file_input_btn_id + "']");
+    if(!$inputs.length){ console.warn('setUploadedLabelXMLData: input not found for id=', file_input_btn_id); return; }
+    try { $inputs.off('change'); } catch(e) {}
+    $inputs.on('change', function(evt){
+        var files = this.files || (evt && evt.target && evt.target.files);
+        if(!files || !files.length){ console.warn('label file change: no files'); return; }
+        var reader = new FileReader();
+        reader.onload = function(){
+            var span = document.getElementById('utterance_label_xml');
+            if(!span){
+                span = document.createElement('span');
+                span.id = 'utterance_label_xml';
+            }
+            span.innerHTML = reader.result;
+            var area = document.getElementById(xml_area_id);
+            if(area){
+                area.innerHTML = '';
+                area.appendChild(span);
+            } else {
+                $('#' + xml_area_id).html(span.outerHTML);
+            }
+            try{ console.log('label XML loaded, bytes=', (reader.result||'').length); }catch(e){}
+        };
+        reader.readAsText(files[0], 'UTF-8');
+    });
+}
+
+// ラベルXML（MessageData: id/sender_id/type）からマッピングを取得
+const getLabelXMLMappings = function(){
+    try{
+        var raw = $('#utterance_label_xml').html();
+        if(!raw){ console.warn('getLabelXMLMappings: no #utterance_label_xml content'); return {}; }
+        var xmlDoc = $.parseXML(raw);
+        var $xml = $(xmlDoc);
+        // 大文字・小文字両対応
+        var nodes = $xml.find('MessageData, messagedata');
+        var map = {};
+        if(!nodes || nodes.length === 0){
+            console.warn('getLabelXMLMappings: no <MessageData> found. xml head:', (raw||'').substring(0,200));
+        }
+        nodes.each(function(_, n){
+            var $n = $(n);
+            var idTxt = ($n.find('id').first().text() || '').trim();
+            var senderTxt = ($n.find('sender_id').first().text() || '').trim();
+            var typeTxt = ($n.find('type').first().text() || '').trim();
+            if(idTxt){
+                var key = String(idTxt);
+                map[key] = {
+                    id: key,
+                    sender_id: senderTxt || '',
+                    type: typeTxt ? parseInt(typeTxt, 10) : null
+                };
+            }
+        });
+        try{ console.log('parsed label mappings count=', Object.keys(map).length); }catch(e){}
+        return map;
+    }catch(err){
+        console.error('getLabelXMLMappings error', err);
+        return {};
+    }
+}
+
+// ラベルの可視化適用（発話リストにバッジを付与/色分け）
+const applyLabelsToUtteranceList = function(labelMap){
+    try{
+        if(!labelMap) return;
+        // グローバルにも保持して、後からリスト再描画しても適用できるようにする
+        try { window.UtteranceTypeMap = labelMap; } catch(e) {}
+
+        // 数値→文字列タイプ
+        var labelOf = function(tp){
+            switch(tp){
+                case 1: return 'SELF';
+                case 2: return 'OTHER';
+                case 3: return 'ORGANIZETION';
+                case 4: return 'UNKNOWN';
+                default: return 'UNKNOWN';
+            }
+        };
+        // タイプ→色（要件に合わせて）
+        var colorForType = function(tp){
+            switch(tp){
+                case 1: return '#4fc3f7'; // SELF=青系
+                case 2: return '#81c784'; // OTHER=緑
+                case 3: return '#ffb74d'; // ORGANIZETION=オレンジ
+                case 4: return '#bdbdbd'; // UNKNOWN=グレー
+                default: return '#bdbdbd';
+            }
+        };
+
+        Object.keys(labelMap).forEach(function(id){
+            var el = document.getElementById(String(id));
+            if(!el) return; // まだリストにない場合は無視
+            var info = labelMap[id] || {};
+            var tp = info.type;
+            var badgeId = 'label-badge-' + String(id);
+            var badge = document.getElementById(badgeId);
+            var color = colorForType(tp);
+            if(!badge){
+                badge = document.createElement('span');
+                badge.id = badgeId;
+                badge.className = 'utter-label-badge';
+                badge.style.cssText = 'display:inline-block; margin-left:6px; padding:1px 4px; font-size:10px; border-radius:8px; background:'+color+'; color:#000;';
+                badge.textContent = labelOf(tp);
+                // 先頭にバッジを挿入（タイトルの前）
+                try{
+                    el.insertBefore(badge, el.firstChild);
+                }catch(_){ el.appendChild(badge); }
+            } else {
+                badge.style.background = color;
+                badge.textContent = labelOf(tp);
+            }
+            // ボーダーの色も軽く変える
+            try{ el.style.borderColor = color; } catch(e){}
+        });
+        try{ console.log('labels applied to list'); }catch(e){}
+        // 何件反映できたか詳細
+        try{
+            var appliedCount = Object.keys(labelMap).filter(function(id){ return document.getElementById(String(id)); }).length;
+            console.log('[label] badges actually attached count=', appliedCount);
+        }catch(_){ }
+    }catch(err){ console.error('applyLabelsToUtteranceList error', err); }
 }
 
 // 外部化フォームの登録ボタン押下時の処理
@@ -2039,6 +2170,7 @@ const recordMeetingUtteranceNodes = function(utterances) {
 
 // ロードした際の関数
 window.addEventListener('load', function() {
+    try{ console.log('[label] init start'); }catch(e){}
     const networkContainerEl = document.getElementById("network_container");
     if (networkContainerEl) networkContainerEl.style.display = "none";
     const el = document.getElementById("mynetwork");
@@ -2046,6 +2178,14 @@ window.addEventListener('load', function() {
         defaultForestMRN = new ForestMRN("mynetwork", "load");
     }
     setUploadedXMLData("meetingUtteranceXmlFileUploader", "uploaded_meeting_utterance_xml_concent_display_area");
+    // ラベルXMLアップローダ初期化
+    setUploadedLabelXMLData('utteranceLabelXmlUploader', 'uploaded_utterance_label_xml_display_area');
+    try{
+        var $btns = $("[id='utterance_label_xml_upload_button']");
+        console.log('[label] found apply buttons count=', $btns.length);
+        var $inputs = $("[id='utteranceLabelXmlUploader']");
+        console.log('[label] found file inputs count=', $inputs.length);
+    }catch(e){}
     $("#discussion_log_xml_file_upload_button").on("click", function() {
         // 共有知モードでは vis の再初期化は行わず、アップロード処理のみ実行
         if (!(typeof window !== 'undefined' && window.SharedModeActive === true)) {
@@ -2094,7 +2234,27 @@ window.addEventListener('load', function() {
             defaultForestMRN.zoomOut();
         });
     });
+    // ラベルXMLの適用ボタン
+    // 重複ID対策: 属性セレクタで全てのボタンにバインド
+    $("[id='utterance_label_xml_upload_button']").on('click', function(){
+        console.log('label apply clicked');
+        if (typeof window.applyLabelsFromCurrentXML === 'function') { return window.applyLabelsFromCurrentXML(); }
+        console.warn('applyLabelsFromCurrentXML is not defined');
+    });
+
+    // 念のためイベント委譲でもバインド（重複ID/動的差し替え対策）
+    try{
+        $(document).off('click.labelapply').on('click.labelapply', '#utterance_label_xml_upload_button', function(){
+            console.log('label apply clicked (delegated)');
+            if (typeof window.applyLabelsFromCurrentXML === 'function') { return window.applyLabelsFromCurrentXML(); }
+            $("[id='utterance_label_xml_upload_button']").first().trigger('click');
+        });
+        $(document).off('change.labelupload').on('change.labelupload', '#utteranceLabelXmlUploader', function(e){
+            console.log('label file chosen (delegated)', (this && this.files && this.files.length) ? this.files[0].name : 'none');
+        });
+    }catch(e){ console && console.warn && console.warn('delegate bind failed', e); }
     displayDiscussionMapData("utterance_area2", null); // 最新の議論内省マップの発話リストを表示
+    try{ console.log('[label] init end'); }catch(e){}
     // 内省マップ編集ボタンにイベント付与
     $('#mrnb_addNode').on("click", function(e){
         defaultForestMRN.addNewNode();
@@ -2128,6 +2288,61 @@ window.addEventListener('load', function() {
       });
     });
 });
+
+// グローバル関数: 現在読み込まれているラベルXML(span#utterance_label_xml)から登録＆表示までを一括実行
+window.applyLabelsFromCurrentXML = function(){
+    try{
+        // 1) 解析
+        var map = getLabelXMLMappings();
+        if(!map || Object.keys(map).length === 0){
+            alert('ラベルXMLが読み込まれていないか、内容を解析できませんでした。');
+            return false;
+        }
+        // 2) サーバ保存
+        var entries = Object.keys(map).map(function(id){
+            return {
+                utterance_id: id,
+                user_id: map[id] && map[id].sender_id ? map[id].sender_id : '',
+                type: map[id] && map[id].type != null ? map[id].type : 4
+            };
+        });
+        console.log('applyLabelsFromCurrentXML: entries count=', entries.length);
+        $.ajax({
+            url: 'php/save_remarked_utterances.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { entries: JSON.stringify(entries) }
+        }).done(function(res){
+            console.log('applyLabelsFromCurrentXML: save response:', res);
+            if(res && (res.status === 'ok' || res.status === 'partial')){
+                applyLabelsToUtteranceList(map);
+                try{
+                    var appliedCount = Object.keys(map).filter(function(id){ return document.getElementById(String(id)); }).length;
+                    if(appliedCount === 0){
+                        console.log('[label] no target elements found, reload utterance list then re-apply');
+                        displayUtteranceNodeInList('utterance_area2', null);
+                        setTimeout(function(){ applyLabelsToUtteranceList(map); }, 300);
+                    }
+                }catch(_){ }
+                if(res.status === 'partial'){
+                    console.warn('一部のレコードで保存に失敗しました', res.errors);
+                    alert('一部のラベル保存でエラーが発生しました（詳細はコンソールをご確認ください）。');
+                }
+            } else {
+                console.error('ラベル保存失敗', res);
+                alert('ラベル保存に失敗しました。');
+            }
+        }).fail(function(xhr, st, err){
+            console.error('ラベル保存通信エラー', st, err, xhr && xhr.responseText);
+            alert('ラベル保存の通信でエラーが発生しました。');
+        });
+    }catch(ex){
+        console.error('applyLabelsFromCurrentXML 例外', ex);
+        alert('ラベル処理中にエラーが発生しました。');
+        return false;
+    }
+    return true;
+};
 
 // 連結化オーバーレイの表示/非表示ヘルパ
 function showSharedCombinationOverlay() {

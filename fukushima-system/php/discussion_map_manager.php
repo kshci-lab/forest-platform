@@ -435,7 +435,9 @@ if($purpose === "record_meeting_utterance") {
     $nt_record_query = "INSERT INTO network_texts (network_text_id, network_map_id, sender, content, network_on, time, JPNtime, ST_Time) VALUES ";
     */
         // discussion_utterances への保存（プリペアドステートメント）
-    $du_stmt = $mysqli->prepare("INSERT INTO discussion_utterances (discussion_id, user_id, content, network_on, utter_time, utter_epoc_time) VALUES (?, ?, ?, ?, ?, ?)");
+    // 変更点: アップロードファイルの <id> を utterance_id として格納するため、
+    // 明示的に utterance_id を含めてINSERTするプリペアドステートメントを用意
+    $du_stmt = $mysqli->prepare("INSERT INTO discussion_utterances (utterance_id, discussion_id, user_id, content, network_on, utter_time, utter_epoc_time) VALUES (?, ?, ?, ?, ?, ?, ?)");
         if(!$du_stmt){
             @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances prepare error: " . $mysqli->error . "\n", FILE_APPEND);
         }
@@ -452,50 +454,44 @@ if($purpose === "record_meeting_utterance") {
 
             // discussion_utterances へも登録
             if($du_stmt){
-                $du_content = isset($jsonData['content']) ? $jsonData['content'] : '';
-                $du_network_on = 0; // 新規は0
-                $du_utter_time = isset($jsonData['JPNtime']) ? $jsonData['JPNtime'] : (isset($jsonData['time']) ? $jsonData['time'] : '');
-                $du_utter_epoch = 0.0;
-                if(isset($jsonData['time'])){
-                    $du_utter_epoch = is_numeric($jsonData['time']) ? (float)$jsonData['time'] : 0.0;
+                // アップロードXMLの <id> を優先して utterance_id に使用する
+                $du_utterance_id = null;
+                if (isset($jsonData['id']) && is_numeric($jsonData['id'])) {
+                    $du_utterance_id = intval($jsonData['id'], 10);
+                } elseif (isset($jsonData['message_id']) && is_numeric($jsonData['message_id'])) {
+                    $du_utterance_id = intval($jsonData['message_id'], 10);
+                } elseif (isset($jsonData['utterance_id']) && is_numeric($jsonData['utterance_id'])) {
+                    $du_utterance_id = intval($jsonData['utterance_id'], 10);
                 }
-                // senderが数値IDならそれを使う。そうでない場合は0（後でJOINできないが最低限保存）
-                $du_user_id = 0;
-                if (isset($jsonData['sender']) && is_numeric($jsonData['sender'])) {
-                    $du_user_id = intval($jsonData['sender'], 10);
-                }
-                // 型: i i s i s d
-                $du_stmt->bind_param("iisisd", $du_discussion_id, $du_user_id, $du_content, $du_network_on, $du_utter_time, $du_utter_epoch);
-                try {
-                    $ok_du = $du_stmt->execute();
-                    if(!$ok_du){
-                        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute error: " . $du_stmt->error . "\n", FILE_APPEND);
-                    }
-                } catch (mysqli_sql_exception $e_du) {
-                    $msg_du = $e_du->getMessage();
-                    @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute exception: " . $msg_du . "\n", FILE_APPEND);
-                    $needsPkFallback = (strpos($msg_du, "utterance_id") !== false && strpos($msg_du, "doesn't have a default value") !== false);
-                    if ($needsPkFallback) {
-                        // フォールバック: PK を自前採番
-                        $res3 = $mysqli->query("SELECT MAX(utterance_id) AS max_uid FROM discussion_utterances");
-                        $row3 = $res3 ? $res3->fetch_assoc() : null;
-                        $currentMaxUid = ($row3 && isset($row3['max_uid']) && $row3['max_uid'] !== null) ? intval($row3['max_uid'], 10) : 0;
-                        $nextUid = $currentMaxUid + 1; // 1スタート
 
-                        $du_stmt2 = $mysqli->prepare("INSERT INTO discussion_utterances (utterance_id, discussion_id, user_id, content, network_on, utter_time, utter_epoc_time) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                        if($du_stmt2){
-                            // 型: i i i s i s d
-                            $du_stmt2->bind_param("iiisisd", $nextUid, $du_discussion_id, $du_user_id, $du_content, $du_network_on, $du_utter_time, $du_utter_epoch);
-                            $ok_du2 = $du_stmt2->execute();
-                            if(!$ok_du2){
-                                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute error (pk fallback): " . $du_stmt2->error . "\n", FILE_APPEND);
-                            }
-                            $du_stmt2->close();
-                        } else {
-                            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances prepare error (pk fallback): " . $mysqli->error . "\n", FILE_APPEND);
-                        }
+                if ($du_utterance_id === null) {
+                    // IDが取得できない場合はスキップ（ログのみ）
+                    @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances skip: no valid utterance_id in payload\n", FILE_APPEND);
+                } else {
+                    $du_content = isset($jsonData['content']) ? $jsonData['content'] : '';
+                    $du_network_on = 0; // 新規は0
+                    $du_utter_time = isset($jsonData['JPNtime']) ? $jsonData['JPNtime'] : (isset($jsonData['time']) ? $jsonData['time'] : '');
+                    $du_utter_epoch = 0.0;
+                    if(isset($jsonData['time'])){
+                        $du_utter_epoch = is_numeric($jsonData['time']) ? (float)$jsonData['time'] : 0.0;
                     }
-                    // その他の例外はログのみ（処理は継続）
+                    // senderが数値IDならそれを使う。そうでない場合は0（後でJOINできないが最低限保存）
+                    $du_user_id = 0;
+                    if (isset($jsonData['sender']) && is_numeric($jsonData['sender'])) {
+                        $du_user_id = intval($jsonData['sender'], 10);
+                    }
+                    // 型: i i i s i s d （utterance_id, discussion_id, user_id, content, network_on, utter_time, utter_epoc_time）
+                    $du_stmt->bind_param("iiisisd", $du_utterance_id, $du_discussion_id, $du_user_id, $du_content, $du_network_on, $du_utter_time, $du_utter_epoch);
+                    try {
+                        $ok_du = $du_stmt->execute();
+                        if(!$ok_du){
+                            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute error: " . $du_stmt->error . "\n", FILE_APPEND);
+                        }
+                    } catch (mysqli_sql_exception $e_du) {
+                        $msg_du = $e_du->getMessage();
+                        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " discussion_utterances execute exception: " . $msg_du . "\n", FILE_APPEND);
+                        // 重複キーなどはスキップ（処理継続）
+                    }
                 }
             }
             

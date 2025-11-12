@@ -507,7 +507,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             <!--  ここから大槻修正　-->
                             <div id="network_container" class="threecol" oncontextmenu="return false;" >
                                 <div id="utterance_area">
-                                    <button id="left-panel-toggle" class="left-toggle-btn" type="button" title="左ペインを折りたたむ">◀</button>
+                                    <!-- <button id="left-panel-toggle" class="left-toggle-btn" type="button" title="左ペインを折りたたむ">◀</button> -->
                                     <div id="rclick2">
                                         <div id="timedisplay"></div>
                                         <div id="rclick"></div>
@@ -844,7 +844,103 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             </form>
                             <button id="discussion_log_xml_file_upload_button">アップロード</button>
                             <div id="uploaded_meeting_utterance_xml_concent_display_area" style="display: none"></div>
+                            <hr style="margin:8px 0;">
+                            <div style="font-size: 15px;">ラベルXMLを選んでください（MessageData: id / sender_id / type）</div>
+                            <input type="file" id="utteranceLabelXmlUploader" accept=".xml">
+                            <button id="utterance_label_xml_upload_button" onclick="try{ console.log('onclick: label apply'); if(window.applyLabelsFromCurrentXML){ window.applyLabelsFromCurrentXML(); } }catch(e){ console && console.error && console.error('inline onclick error', e); }">ラベルを適用</button>
+                            <div id="uploaded_utterance_label_xml_display_area" style="display:none"></div>
                         </div>
+                                                <script>
+                                                // フォールバック: meeting-reflection-network.js が未ロード/未定義でも動く最低限の実装
+                                                (function(){
+                                                    try{
+                                                        console.log('[label] inline shim init');
+                                                        if (typeof window.applyLabelsFromCurrentXML === 'function') {
+                                                            console.log('[label] global applyLabelsFromCurrentXML is present');
+                                                            return; // 既に本実装があるなら何もしない
+                                                        }
+                                                        window.applyLabelsFromCurrentXML = function(){
+                                                            try{
+                                                                console.log('[label] shim apply start');
+                                                                // 1) XML取得（span になければ input から読む）
+                                                                var holder = document.getElementById('utterance_label_xml');
+                                                                var xmlText = holder ? (holder.innerHTML || '') : '';
+                                                                var ensureHolder = function(text){
+                                                                    var span = document.getElementById('utterance_label_xml');
+                                                                    if(!span){ span = document.createElement('span'); span.id='utterance_label_xml'; }
+                                                                    span.innerHTML = text || '';
+                                                                    var area = document.getElementById('uploaded_utterance_label_xml_display_area');
+                                                                    if(area){ area.innerHTML=''; area.appendChild(span); }
+                                                                    return span.innerHTML;
+                                                                };
+                                                                var done = function(map){
+                                                                    try{
+                                                                        var entries = Object.keys(map).map(function(id){
+                                                                            return { utterance_id: id, user_id: map[id].sender_id||'', type: (map[id].type!=null?map[id].type:4) };
+                                                                        });
+                                                                        console.log('[label shim] entries count=', entries.length);
+                                                                        if (!entries.length) { alert('ラベルXMLからデータが取得できませんでした'); return false; }
+                                                                        // 2) サーバ保存
+                                                                        if (window.jQuery && jQuery.ajax) {
+                                                                            jQuery.ajax({
+                                                                                url:'php/save_remarked_utterances.php', type:'POST', dataType:'json', data:{ entries: JSON.stringify(entries) }
+                                                                            }).done(function(res){
+                                                                                console.log('[label shim] save response:', res);
+                                                                                // 3) 表示（簡易バッジ）
+                                                                                try{
+                                                                                    var colorOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return '#4fc3f7'; if(tp===2)return '#81c784'; if(tp===3)return '#ffb74d'; if(tp===4)return '#bdbdbd'; return '#bdbdbd'; };
+                                                                                    var labelOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return 'SELF'; if(tp===2)return 'OTHER'; if(tp===3)return 'ORGANIZETION'; if(tp===4)return 'UNKNOWN'; return 'UNKNOWN'; };
+                                                                                    var applied=0; Object.keys(map).forEach(function(id){
+                                                                                        var el=document.getElementById(String(id)); if(!el) return;
+                                                                                        var badgeId='label-badge-'+String(id); var badge=document.getElementById(badgeId);
+                                                                                        var tp=map[id].type; var color=colorOf(tp);
+                                                                                        if(!badge){ badge=document.createElement('span'); badge.id=badgeId; badge.style.cssText='display:inline-block; margin-left:6px; padding:1px 4px; font-size:10px; border-radius:8px; color:#000;'; try{ el.insertBefore(badge, el.firstChild);}catch(_){ el.appendChild(badge);} }
+                                                                                        badge.textContent=labelOf(tp); badge.style.background=color; try{ el.style.borderColor=color; }catch(_){}
+                                                                                        applied++;
+                                                                                    });
+                                                                                    console.log('[label shim] badges applied=', applied);
+                                                                                    if(applied===0){
+                                                                                        // 発言リスト未描画の可能性
+                                                                                        console.warn('[label shim] no targets found. 先に発言XMLをアップロードしてください');
+                                                                                    }
+                                                                                }catch(badgeErr){ console.error('[label shim] badge error', badgeErr); }
+                                                                            }).fail(function(xhr,st,err){
+                                                                                console.error('[label shim] save ajax fail', st, err, xhr && xhr.responseText);
+                                                                                alert('ラベル保存に失敗しました');
+                                                                            });
+                                                                        } else {
+                                                                            // フェッチ版
+                                                                            fetch('php/save_remarked_utterances.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'}, body:'entries='+encodeURIComponent(JSON.stringify(entries)) })
+                                                                            .then(function(r){ return r.json(); }).then(function(res){ console.log('[label shim] save response(fetch):', res); })
+                                                                            .catch(function(e){ console.error('[label shim] fetch error', e); alert('ラベル保存に失敗しました'); });
+                                                                        }
+                                                                    }catch(e){ console.error('[label shim] done error', e); return false; }
+                                                                    return true;
+                                                                };
+                                                                if(!xmlText){
+                                                                    var inp = document.getElementById('utteranceLabelXmlUploader');
+                                                                    if(inp && inp.files && inp.files[0]){
+                                                                        var reader = new FileReader();
+                                                                        reader.onload = function(){ console.log('[label shim] read file bytes=', (reader.result||'').length); ensureHolder(reader.result); var map = (function(txt){ try{ var p=new DOMParser().parseFromString(txt,'text/xml'); var list=p.getElementsByTagName('MessageData'); if(!list||!list.length){ list=p.getElementsByTagName('messagedata'); }
+                                                                            var m={}; for(var i=0;i<list.length;i++){ var node=list[i]; var id=(node.getElementsByTagName('id')[0]||{}).textContent||''; var sid=(node.getElementsByTagName('sender_id')[0]||{}).textContent||''; var tp=(node.getElementsByTagName('type')[0]||{}).textContent||''; if(id){ m[String(id)]={id:String(id), sender_id:String(sid), type: tp?parseInt(tp,10):null }; } } return m; }catch(_){ return {}; } })(reader.result); done(map); };
+                                                                        reader.readAsText(inp.files[0], 'UTF-8');
+                                                                    } else {
+                                                                        alert('先にラベルXMLファイルを選択してください');
+                                                                        return false;
+                                                                    }
+                                                                } else {
+                                                                    // span からパース
+                                                                    var map = (function(txt){ try{ var p=new DOMParser().parseFromString(txt,'text/xml'); var list=p.getElementsByTagName('MessageData'); if(!list||!list.length){ list=p.getElementsByTagName('messagedata'); }
+                                                                        var m={}; for(var i=0;i<list.length;i++){ var node=list[i]; var id=(node.getElementsByTagName('id')[0]||{}).textContent||''; var sid=(node.getElementsByTagName('sender_id')[0]||{}).textContent||''; var tp=(node.getElementsByTagName('type')[0]||{}).textContent||''; if(id){ m[String(id)]={id:String(id), sender_id:String(sid), type: tp?parseInt(tp,10):null }; } } return m; }catch(_){ return {}; } })(xmlText);
+                                                                    return done(map);
+                                                                }
+                                                            }catch(ex){ console.error('[label] shim apply error', ex); alert('ラベル処理に失敗しました'); return false; }
+                                                            return true;
+                                                        };
+                                                        console.log('[label] inline shim installed');
+                                                    }catch(ex){ console && console.error && console.error('[label] inline shim init error', ex); }
+                                                })();
+                                                </script>
                         <!--ここまで大槻修正-->
                         <!-- <div class="correct_reason">修正理由</div>
                             <div id="reason" align="center"></div>
