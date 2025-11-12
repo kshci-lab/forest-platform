@@ -1,17 +1,18 @@
 <?php
 
-//   各々のローカル
-	$db_host = "10.250.63.6";  // ホスト名のみ
+//  // ローカル
+	$db_host = "localhost";  // ホスト名のみ
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
-	$db_password = "your_password";
+	$db_password = "root";
 	$db_dbname = "forest_platform";
-	
-	// 実験データ参照用
-	// $db_host = "localhost:8889";  // DBサーバのurl
+
+	// デスクトップPCに接続
+	// $db_host = "10.250.63.6";  // ホスト名のみ
+	// $db_port = 8889;  // ポート番号
 	// $db_user = "root";
-	// $db_password = "root";
-	// $db_dbname = "FCR-Experiment-Phase1";
+	// $db_password = "your_password";
+	// $db_dbname = "forest_platform";
 
 	//アプリケーションサーバーにアップロードするとき．
 	// $db_host = "localhost";  // DBサーバのurl

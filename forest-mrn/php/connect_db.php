@@ -1,11 +1,18 @@
 <?php
 
-	//develop local環境
-	$db_host = "10.250.63.6";  // ホスト名のみ
+	// ローカル
+	$db_host = "localhost";  // ホスト名のみ
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
-	$db_password = "your_password";
+	$db_password = "root";
 	$db_dbname = "forest_platform";
+
+	// デスクトップPCに接続
+	// $db_host = "10.250.63.6";  // ホスト名のみ
+	// $db_port = 8889;  // ポート番号
+	// $db_user = "root";
+	// $db_password = "your_password";
+	// $db_dbname = "forest_platform";
 
 	//アプリケーションサーバーにアップロードするとき．
 	// $db_host = "localhost";  // DBサーバのurl
@@ -14,11 +21,6 @@
 	// $db_password = "kslabkslab";
 	// $db_dbname = "forest_platform";
 
-	//organizational-system
-	// $db_host = "localhost:8889"; 
-	// $db_user = "root";
-	// $db_password = "your_password";
-	// $db_dbname = "forest_platform";
 
 	// // mysqlへの接続
 	$mysqli = new mysqli($db_host, $db_user, $db_password, $db_dbname, $db_port);
