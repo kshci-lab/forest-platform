@@ -86,7 +86,7 @@ if not scenario_text:
 triangle_text = scenario_text or ''
 messages = [
     {"role": "system", "content": "あなたは三角ロジック（事実-理由付け-主張）の妥当性を精査する評論家です。欠損・曖昧・論理飛躍・用語未定義を厳密に指摘し、改善提案を与えてください。憶測で新情報を創作してはいけません。"},
-    {"role": "user", "content": f"三角ロジックを評価してください。\n---\n{triangle_text}\n---\n出力形式:\n1) 主張の一貫性\n2) 事実と理由付けの関連性\n3) 足りない/曖昧な要素\n4) 改善提案（書き換え例）"}
+    {"role": "user", "content": f"三角ロジックを今から以下の形式で送ります。事実[]に対して理由付け[]をすることで[]という主張をしている。事実は主張の基礎となる事実です。理由付けはデータがサポートするかについての言明です。\n---\n{triangle_text}\n---\n出力形式:\n1) 主張の一貫性\n2) 事実と理由付けの関連性\n3) 足りない/曖昧な要素\n4) 改善提案（書き換え例）"}
 ]
 
 payload = {
@@ -94,36 +94,39 @@ payload = {
     "messages": messages,
     "temperature": 0.7
 }
+# --- API送信は一時停止（コメントアウト） ---
+# url = f"{API_BASE}/chat/completions"
+# data = json.dumps(payload).encode("utf-8")
+# req = urllib.request.Request(
+#     url,
+#     data=data,
+#     headers={
+#         "Authorization": f"Bearer {API_KEY}",
+#         "Content-Type": "application/json",
+#     },
+#     method="POST",
+# )
+#
+# ctx = None
+# if str(os.environ.get("OPENAI_INSECURE_SSL", "false")).lower() in ("1", "true", "yes"):
+#     ctx = ssl._create_unverified_context()
+#
+# try:
+#     with urllib.request.urlopen(req, context=ctx, timeout=int(os.environ.get("OPENAI_TIMEOUT", "60"))) as resp:
+#         body = resp.read().decode("utf-8", errors="replace")
+#         obj = json.loads(body)
+#         reply = obj["choices"][0]["message"]["content"]
+#
+#         # 画面にはAI応答のみ出力
+#         out = reply
+#
+#         print(out.encode("cp932", "ignore").decode("cp932"))
+# except urllib.error.HTTPError as e:
+#     err = e.read().decode("utf-8", errors="replace") if hasattr(e, "read") else ""
+#     raise SystemExit(f"HTTPError {e.code}: {e.reason}\n{err}")
+# except urllib.error.URLError as e:
+#     raise SystemExit(f"URLError: {e.reason}")
 
-url = f"{API_BASE}/chat/completions"
-data = json.dumps(payload).encode("utf-8")
-req = urllib.request.Request(
-    url,
-    data=data,
-    headers={
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-    },
-    method="POST",
-)
-
-# 任意: 証明書検証の一時無効化（開発用）OPENAI_INSECURE_SSL=true で有効
-ctx = None
-if str(os.environ.get("OPENAI_INSECURE_SSL", "false")).lower() in ("1", "true", "yes"):
-    ctx = ssl._create_unverified_context()
-
-try:
-    with urllib.request.urlopen(req, context=ctx, timeout=int(os.environ.get("OPENAI_TIMEOUT", "60"))) as resp:
-        body = resp.read().decode("utf-8", errors="replace")
-        obj = json.loads(body)
-        reply = obj["choices"][0]["message"]["content"]
-
-        # 画面にはAI応答のみ出力
-        out = reply
-
-        print(out.encode("cp932", "ignore").decode("cp932"))
-except urllib.error.HTTPError as e:
-    err = e.read().decode("utf-8", errors="replace") if hasattr(e, "read") else ""
-    raise SystemExit(f"HTTPError {e.code}: {e.reason}\n{err}")
-except urllib.error.URLError as e:
-    raise SystemExit(f"URLError: {e.reason}")
+# 代替: ダミー出力（API呼び出し停止中）
+out = f"[AI呼び出し停止中]\n{triangle_text}"
+print(out.encode("cp932", "ignore").decode("cp932"))

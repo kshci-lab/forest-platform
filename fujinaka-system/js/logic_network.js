@@ -346,33 +346,33 @@ class LogicNetwork {
       : topic;
 
     // レベルのみ指定（縦: claim上、reason/fact下）
-    const node1level = 0;
-    const node2level = 1;
-    const node3level = 1;
+    const claimlevel = 0;
+    const factlevel = 1;
+    const reasonlevel = 1;
 
     const triangle_id = this.generateUniqueNumberText();
     const claim_id = this.generateUniqueNumberText();
-    const reason_id = this.generateUniqueNumberText();
     const fact_id = this.generateUniqueNumberText();
+    const reason_id = this.generateUniqueNumberText();
 
     // 主張ノードは整形済みラベルを使用
-    this.addNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, node1level);
-    this.addNode(reason_id, "", null, null, false, node2level);
-    this.addNode(fact_id, "", null, null, false, node3level);
-
-    // エッジ追加まで完了
+    //三角形描画のため、ノードとエッジを追加
+    //事実ノードを左下にしたいため、追加の順番を調整
+    this.addNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
+    this.addNode(fact_id, "", null, null, false, factlevel);
+    this.addEdge(fact_id, claim_id);
+    this.addNode(reason_id, "", null, null, false, reasonlevel);
     this.addEdge(claim_id, reason_id);
     this.addEdge(reason_id, fact_id);
-    this.addEdge(fact_id, claim_id);
 
     // レイアウトを再適用（重なり回避）
     this.relayoutHierarchy(true);
 
     // DB記録（edited は bool -> 1/0 変換は送信側で実施）
-    defaultRecordLogicNetwork.record_LogicNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, node1level);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "", null, null, false, node2level);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "", null, null, false, node3level);
-    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id, "", "");
+    defaultRecordLogicNetwork.record_LogicNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "", null, null, false, factlevel);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "", null, null, false, reasonlevel);
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, fact_id, reason_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
     try {
@@ -380,8 +380,8 @@ class LogicNetwork {
       this.triangles.push({
         triangle_id: triangle_id,
         claim_id: claim_id,
-        reason_id: reason_id,
         fact_id: fact_id,
+        reason_id: reason_id,
         claimReason: "",
         conflict: ""
       });
@@ -408,34 +408,30 @@ class LogicNetwork {
     // 選択ノードのレベルを取得
     const baseLevel = baseNode.level || 0;
     const newNodeLevel = baseLevel + 1; // 1つ下のレベル
-
-    console.log(`選択ノードのレベル: ${baseLevel}, 新ノードのレベル: ${newNodeLevel}`);
-    const f_node_id = baseNode.f_node_id || null; // 既存ノードのf_node_idを取得
-    const size = this.TRIANGLE_SIZE; // 三角形の辺の長さ
   
     // 新しい三角ロジックのIDを生成
     const triangle_id = this.generateUniqueNumberText();
     // 新しいノードのIDを生成
-    const reason_id = this.generateUniqueNumberText();
-    const fact_id = this.generateUniqueNumberText();
+    const add_reason_id = this.generateUniqueNumberText();
+    const add_fact_id = this.generateUniqueNumberText();
   
     // 新しいノードを追加（選択ノードの1つ下のレベルに配置）
-    this.addNode(reason_id, "", null, null, false, newNodeLevel);
-    this.addNode(fact_id, "", null, null, false, newNodeLevel);
+    this.addNode(add_reason_id, "", null, null, false, newNodeLevel);
+    this.addNode(add_fact_id, "", null, null, false, newNodeLevel);
 
     // エッジ追加まで完了
-    this.addEdge(selectedNodeId, reason_id);
-    this.addEdge(reason_id, fact_id);
-    this.addEdge(fact_id, selectedNodeId);
+    this.addEdge(selectedNodeId, add_reason_id);
+    this.addEdge(add_reason_id, add_fact_id);
+    this.addEdge(add_fact_id, selectedNodeId);
 
     // レイアウトを再適用（重なり回避）
     this.relayoutHierarchy(true);
 
     // DB記録
     // ここで保存ラベルが表示の役割と逆になっているなら入れ替える
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "Fact", null, null, false, newNodeLevel);   // 旧: "Reason"
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "Reason", null, null, false, newNodeLevel);   // 旧: "Fact"
-    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, reason_id, fact_id, "", "");
+    defaultRecordLogicNetwork.record_LogicNode(add_reason_id, "", null, null, false, newNodeLevel);   // 旧: "Reason"
+    defaultRecordLogicNetwork.record_LogicNode(add_fact_id, "", null, null, false, newNodeLevel);   // 旧: "Fact"
+    defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, add_fact_id, add_reason_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
     try {
@@ -443,14 +439,12 @@ class LogicNetwork {
       this.triangles.push({
         triangle_id: triangle_id,
         claim_id: baseNode.id,
-        reason_id: reason_id,
-        fact_id: fact_id,
+        fact_id: add_fact_id,
+        reason_id: add_reason_id,
         claimReason: "",
         conflict: ""
       });
     } catch (_) {}
-
-    console.log(`三角形を作成しました - 基準ノード: ${selectedNodeId} (レベル${baseLevel}), 新ノード: レベル${newNodeLevel}`);
   }
 
   //Forestで選択しているノードのIDとラベルを取得する関数
@@ -506,7 +500,7 @@ class LogicNetwork {
       return;
     }
 
-    // DBから type を取得して判定
+    // DBから type を取得してtoiノードならブロック
     const forestNodeId = selected_fnode.id;
     let fetchedType = null;
     try {
@@ -558,7 +552,6 @@ class LogicNetwork {
         console.log("選択された要素が見つかりません");
         return null;
       }
-      
       // 要素のテキスト内容を取得
       const elementText = selectedElement.textContent || selectedElement.innerHTML || selectedElement.value || "";
       
@@ -566,11 +559,8 @@ class LogicNetwork {
         console.log("選択された要素に内容がありません");
         return null;
       }
-      
       // 要素のIDを取得
       const elementId = selectedElement.id || selectedElement.getAttribute('node_id') || this.generateUniqueNumberText();
-      
-      console.log("取得したシナリオ情報:", { text: elementText, id: elementId });
       
       return {
         text: elementText.trim(),
@@ -605,7 +595,6 @@ class LogicNetwork {
       alert("左側のノードを選択してください");
       return;
     }
-
     // 追加: DBからtypeを取得して問い(toi)ならブロック
     try {
       const fetchedType = await this.fetchForestNodeTypeById(f_node.id);
@@ -617,8 +606,7 @@ class LogicNetwork {
     } catch (e) {
       console.warn("[LogicNetwork] fetchForestNodeTypeById failed:", e);
     }
-
-    // 右側（論理ネットワーク）の選択ノードを取得
+    // 三角ロジックの選択ノードを取得
     const LogicNodeId = this.ownNetwork.getSelection().nodes[0];
     console.log("applyForestToTriangle: LogicNodeId =", LogicNodeId);
     
@@ -627,14 +615,13 @@ class LogicNetwork {
       return;
     }
 
-    // 右側ノードの現在の状態をチェック
+    // 三角ロジックノードの現在の状態をチェック
     const currentLogicNode = this.nodes.get(LogicNodeId);
     const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
 
-    // 右側ノードのラベルを左側ノードの内容で更新
+    // 三角ロジックのラベルをForestの内容で更新
     console.log("applyForestToTriangle: editNodeを呼び出し");
     this.editNode(LogicNodeId, f_node.topic);
-    
     // Forestから反映されたノードに特別なスタイルを適用
     const updatedNode = this.nodes.get(LogicNodeId);
     const styledNode = {
@@ -680,11 +667,8 @@ class LogicNetwork {
       return;
     }
 
-    console.log("applyPresentationToTriangle: elementText =", elementText);
-
     // 論理ネットワーク側の選択ノードを取得
     const selectedLogicNodeId = this.ownNetwork.getSelection().nodes[0];
-    console.log("applyPresentationToTriangle: selectedLogicNodeId =", selectedLogicNodeId);
     
     if (!selectedLogicNodeId) {
       alert("論理ネットワーク側のノードを選択してください");
@@ -721,8 +705,7 @@ class LogicNetwork {
     if (wasDeleted && elementText.length > 0) {
       console.log("削除済みノードを復元しました");
     }
-    
-    console.log("applyPresentationToTriangle: 内容更新完了");
+  
     alert(`論理ネットワークノードの内容を「${elementText}」で更新しました`);
     
     // presentation要素のIDを取得
@@ -739,270 +722,94 @@ class LogicNetwork {
     );
   }
 
-  // 論理の説明を追加する関数（なぜその主張をしたのかを入力する）
+  // 論理の説明を追加する関数（旧）→ 新モーダルに委譲
   completeLogic() {
-    console.log("completeLogic: 開始");
-    
-    // 選択されているノードを取得
-    const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
-    
-    if (!selectedNodeId) {
-      alert("ノードを選択してください");
-      return;
-    }
-
-    // 選択されたノードの情報を取得
-    const selectedNode = this.nodes.get(selectedNodeId);
-    
-    if (!selectedNode) {
-      console.error("選択されたノードが見つかりません");
-      return;
-    }
-
-    // ノードのラベルが空の場合は説明を追加できない
-    if (!selectedNode.label || selectedNode.label.trim() === "") {
-      alert("まず、ノードに内容を入力してください");
-      return;
-    }
-
-    // 既存の説明を取得（ある場合）
-    // 修正: claimReason（小文字）を優先し、互換のため ClaimReason もフォールバック
-    const existingClaimReason = selectedNode.claimReason || selectedNode.ClaimReason || "";
-    console.log("[ClaimReason] existing for modal:", { nodeId: selectedNodeId, length: existingClaimReason.length });
-
-    // モーダルボックスを表示
-    this.showLogicClaimReasonModal(selectedNodeId, selectedNode.label, existingClaimReason);
+    return this.openLogicDetailModal();
   }
 
-  // なぜその主張をするのかを入力するモーダルボックスを表示する関数
-  showLogicClaimReasonModal(nodeId, nodeLabel, existingClaimReason) {
-    console.log("showLogicClaimReasonModal: nodeId =", nodeId);
-    
-    // モーダルの表示
-    const modal = document.getElementById('logicClaimReasonModal');
-    const nodeTitle = document.getElementById('claimReasonNodeTitle');
-    const textarea = document.getElementById('claimReasonTextarea');
-    
-    if (modal && nodeTitle && textarea) {
-      // ノードのラベルを表示（改行文字を除去）
-      const cleanLabel = nodeLabel.replace(/\n/g, ' ').trim();
-      nodeTitle.textContent = `「${cleanLabel}」についての説明`;
-      
-      // 既存の説明があれば設定
-      textarea.value = existingClaimReason; // textarea に復元
-      console.log("[ClaimReason] textarea set", { nodeId, length: existingClaimReason.length });
-      
-      // モーダルを表示
-      modal.style.display = 'block';
-      
-      // テキストエリアにフォーカス
-      textarea.focus();
-      
-      // 現在のノードIDを保存
-      modal.dataset.currentNodeId = nodeId;
-    } else {
-      console.error("モーダル要素が見つかりません");
-      alert("説明入力画面を表示できませんでした");
-    }
-  }
-
-  // なぜその主張をするのかの内容を保存する関数
-  saveLogicClaimReason() {
-    console.log("saveLogicClaimReason: 開始");
-
-    const modal = document.getElementById('logicClaimReasonModal');
-    const textarea = document.getElementById('claimReasonTextarea');
-
-    if (!modal || !textarea) {
-      console.error("モーダル要素が見つかりません");
-      return;
-    }
-
-    const nodeId = modal.dataset.currentNodeId;
-    const claimReason = textarea.value.trim();
-
-    if (!nodeId) {
-      console.error("ノードIDが取得できません");
-      return;
-    }
-
-    // 選択されたノードが主張となる三角形のIDを取得
-    this.getTriangleIdByClaimId(nodeId).then(triangleId => {
-      if (!triangleId) {
-        console.error("該当する三角形が見つかりません");
-        alert("この主張に対応する三角が見つかりません");
-        return;
-      }
-
-    // ノードに説明を追加
-    const node = this.nodes.get(nodeId);
-    if (node) {
-      const updatedNode = {
-        ...node,
-        claimReason: claimReason,
-        hasClaimReason: claimReason.length > 0
-      };
-
-      // ノードを更新
-      this.nodes.update(updatedNode);
-
-      // データベースに保存
-      this.saveClaimReasonToDatabase(triangleId, claimReason);
-
-      console.log(`ノード ${nodeId} の説明を更新しました:`, claimReason);
-    }
-
-    // モーダルを閉じる
-    this.closeLogicClaimReasonModal();
-
-    alert(claimReason.length > 0 ? "説明を保存しました" : "説明を削除しました");
-  });
-}
-
-// 主張ノードIDから三角形IDを取得する関数
-  async getTriangleIdByClaimId(claimId) {
-    try {
-      const response = await $.ajax({
-        url: "php/logic_maneger.php",
-        type: "POST",
-        data: {
-          claim_id: claimId,
-          purpose: 'get',
-          get_thing: 'triangle_by_claim'
-        },
-        dataType: "json"
-      });
-
-      if (response.status === "success" && response.triangle_id) {
-        return response.triangle_id;
-      } else {
-        console.error("三角形ID取得エラー:", response.message);
-        return null;
-      }
-    } catch (error) {
-      console.error("三角形ID取得通信エラー:", error);
-      return null;
-    }
-  }
-  
-// なぜその主張をするのかの内容をデータベースに保存する関数
-  saveClaimReasonToDatabase(triangleId, claimReason) {
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        triangle_id: triangleId,
-        claimReason: claimReason,
-        purpose: 'update',
-        update_thing: 'claimReason'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log("説明保存レスポンス:", response);
-        if (response.status === "success") {
-          console.log("説明保存成功:", response.node_id);
-        } else {
-          console.error("説明保存エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("説明保存通信エラー:", error);
-      }
-    });
-  }
-  // モーダルを閉じる関数
-  closeLogicClaimReasonModal() {
-    const modal = document.getElementById('logicClaimReasonModal');
-    if (modal) {
-      modal.style.display = 'none';
-      modal.dataset.currentNodeId = '';
-    }
-  }
-  // 論理の認知的葛藤葛藤を追加する関数
+  // 論理の認知的葛藤を追加する関数（旧）→ 新モーダルに委譲
   conflictLogic() {
-    console.log("conflictLogic: 開始");
-    
+    return this.openLogicDetailModal();
+  }
+
+  // 統合: 説明・葛藤入力モーダルを開く
+  openLogicDetailModal() {
+    console.log("openLogicDetailModal: 開始");
+
     // 選択されているノードを取得
     const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
-    
     if (!selectedNodeId) {
       alert("ノードを選択してください");
       return;
     }
 
-    // 選択されたノードの情報を取得
     const selectedNode = this.nodes.get(selectedNodeId);
-    
     if (!selectedNode) {
       console.error("選択されたノードが見つかりません");
       return;
     }
-
-    // ノードのラベルが空の場合は葛藤を追加できない
     if (!selectedNode.label || selectedNode.label.trim() === "") {
       alert("まず、ノードに内容を入力してください");
       return;
     }
 
-    // 既存の葛藤を取得（ある場合）
+    // 既存値を取得
+    const existingClaimReason = selectedNode.claimReason || selectedNode.ClaimReason || "";
     const existingConflict = selectedNode.conflict || "";
 
-    // モーダルボックスを表示
-    this.showLogicConflictModal(selectedNodeId, selectedNode.label, existingConflict);
+    // モーダル表示
+    this.showLogicDetailModal(selectedNodeId, selectedNode.label, existingClaimReason, existingConflict);
   }
 
-  // 論理葛藤用のモーダルボックスを表示する関数
-  showLogicConflictModal(nodeId, nodeLabel, existingConflict) {
-    console.log("showLogicConflictModal: nodeId =", nodeId);
-    
-    // モーダルの表示
-    const modal = document.getElementById('logicConflictModal');
-    const nodeTitle = document.getElementById('conflictNodeTitle');
-    const textarea = document.getElementById('conflictTextarea');
-    
-    if (modal && nodeTitle && textarea) {
-      // ノードのラベルを表示（改行文字を除去）
-      const cleanLabel = nodeLabel.replace(/\n/g, ' ').trim();
-      nodeTitle.textContent = `「${cleanLabel}」についての葛藤`;
-      
-      // 既存の葛藤があれば設定
-      textarea.value = existingConflict;
-      
-      // モーダルを表示
+  // 統合モーダルの表示処理
+  showLogicDetailModal(nodeId, nodeLabel, existingClaimReason, existingConflict) {
+    console.log("showLogicDetailModal: nodeId =", nodeId);
+
+    const modal = document.getElementById('logicDetailModal');
+    const nodeTitle = document.getElementById('detailNodeTitle');
+    const crTextarea = document.getElementById('detailClaimReasonTextarea');
+    const cfTextarea = document.getElementById('detailConflictTextarea');
+
+    if (modal && nodeTitle && crTextarea && cfTextarea) {
+      const cleanLabel = String(nodeLabel || "").replace(/\n/g, ' ').trim();
+      nodeTitle.textContent = `「${cleanLabel}」の説明・葛藤`;
+
+      crTextarea.value = existingClaimReason || "";
+      cfTextarea.value = existingConflict || "";
+
       modal.style.display = 'block';
-      
-      // テキストエリアにフォーカス
-      textarea.focus();
-      
-      // 現在のノードIDを保存
-      modal.dataset.currentNodeId = nodeId;
+      crTextarea.focus();
+
+      modal.dataset.currentNodeId = String(nodeId);
     } else {
-      console.error("モーダル要素が見つかりません");
-      alert("葛藤入力画面を表示できませんでした");
+      console.error("統合モーダル要素が見つかりません");
+      alert("説明・葛藤入力画面を表示できませんでした");
     }
   }
 
-  // 論理葛藤を保存する関数
-  saveLogicConflict() {
-    console.log("saveLogicConflict: 開始");
-    
-    const modal = document.getElementById('logicConflictModal');
-    const textarea = document.getElementById('conflictTextarea');
-    
-    if (!modal || !textarea) {
-      console.error("モーダル要素が見つかりません");
+  // 統合: 説明・葛藤を保存
+  saveLogicDetail() {
+    console.log("saveLogicDetail: 開始");
+
+    const modal = document.getElementById('logicDetailModal');
+    const crTextarea = document.getElementById('detailClaimReasonTextarea');
+    const cfTextarea = document.getElementById('detailConflictTextarea');
+
+    if (!modal || !crTextarea || !cfTextarea) {
+      console.error("統合モーダル要素が見つかりません");
       return;
     }
 
     const nodeId = modal.dataset.currentNodeId;
-    const conflict = textarea.value.trim();
-
     if (!nodeId) {
       console.error("ノードIDが取得できません");
       return;
     }
 
-    // 選択されたノードが主張となる三角形のIDを取得
+    const claimReason = (crTextarea.value || "").trim();
+    const conflict = (cfTextarea.value || "").trim();
+
+    // このノードが主張となる三角形のIDを取得して保存
     this.getTriangleIdByClaimId(nodeId).then(triangleId => {
       if (!triangleId) {
         console.error("該当する三角形が見つかりません");
@@ -1010,64 +817,35 @@ class LogicNetwork {
         return;
       }
 
-      console.log("取得した三角形ID:", triangleId);
-
-      // ノードに葛藤を追加
+      // ノード側へも保持（UI反映）
       const node = this.nodes.get(nodeId);
       if (node) {
-        const updatedNode = {
-          ...node,
+        this.nodes.update({
+          id: nodeId,
+          claimReason: claimReason,
+          hasClaimReason: claimReason.length > 0,
           conflict: conflict,
           hasConflict: conflict.length > 0
-        };
-
-        // ノードを更新
-        this.nodes.update(updatedNode);
-
-        // データベースに保存（三角形IDを使用）
-        this.saveConflictToDatabase(triangleId, conflict);
-
-        console.log(`ノード ${nodeId} の葛藤を更新しました:`, conflict);
+        });
       }
 
-      // モーダルを閉じる
-      this.closeLogicConflictModal();
+      // DB保存（既存のAPIを順に呼ぶ）
+      this.saveClaimReasonToDatabase(triangleId, claimReason);
+      this.saveConflictToDatabase(triangleId, conflict);
+
+      this.closeLogicDetailModal();
+      alert((claimReason.length > 0 || conflict.length > 0) ? "説明・葛藤を保存しました" : "説明・葛藤を削除しました");
     });
   }
-  // 論理葛藤をデータベースに保存する関数
-  saveConflictToDatabase(triangleId, conflict) {
-    $.ajax({
-      url: "php/logic_maneger.php",
-      type: "POST",
-      data: {
-        triangle_id: triangleId,
-        conflict: conflict,
-        purpose: 'update',
-        update_thing: 'conflict'
-      },
-      dataType: "json",
-      success: function(response) {
-        console.log("葛藤保存レスポンス:", response);
-        if (response.status === "success") {
-          console.log("葛藤保存成功:", response.node_id);
-        } else {
-          console.error("葛藤保存エラー:", response.message);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error("葛藤保存通信エラー:", error);
-      }
-    });
-  }
-  // 葛藤モーダルを閉じる関数
-  closeLogicConflictModal() {
-    const modal = document.getElementById('logicConflictModal');
+
+  // 統合モーダルを閉じる
+  closeLogicDetailModal() {
+    const modal = document.getElementById('logicDetailModal');
     if (modal) {
       modal.style.display = 'none';
       modal.dataset.currentNodeId = '';
     }
   }
-
 
   // データベースからロジックネットワークをロードする
   async loadLogicNetworkFromDatabase() {
@@ -1187,16 +965,17 @@ class LogicNetwork {
       if (Array.isArray(triangleData) && triangleData.length > 0) {
         const updates = [];
         for (const t of triangleData) {
-          const claimId = t && (t.claimReason || t.ClaimReason);
+          // 修正: claimId の取得ミスを修正（以前は claimReason を参照していた）
+          const claimId = t && (t.claim_id ?? t.claimId);
           if (!claimId) continue;
+
           const n = this.nodes.get(String(claimId));
           if (!n) continue;
 
           const cr = (t.claimReason ?? "").trim();
           const cf = (t.conflict ?? "").trim();
 
-          // 既存値と差分がある場合のみ更新
-          const next = {};
+          const next = { id: n.id };
           let need = false;
           if (cr !== "" || n.claimReason) {
             next.claimReason = cr;
@@ -1208,7 +987,7 @@ class LogicNetwork {
             next.hasConflict = cf.length > 0;
             need = true;
           }
-          if (need) updates.push({ id: n.id, ...next });
+          if (need) updates.push(next);
         }
         if (updates.length) {
           this.nodes.update(updates);
@@ -1474,7 +1253,7 @@ class LogicNetwork {
     const res = [];
     for (const t of this.triangles) {
       const nt = this.normalizeTriangle(t);
-      if (!nt) continue;
+      if (!nt) return null;
       if (String(nt.claimId) === String(nodeId) ||
           String(nt.reasonId) === String(nodeId) ||
           String(nt.factId) === String(nodeId)) {
@@ -1502,64 +1281,35 @@ class LogicNetwork {
     };
   }
 
-  // 三角(複数)をハイライト + 役割タグ表示（主張ノードのレベルでタグ位置決定）
+  // 三角(複数)をハイライト + 役割タグ表示（主張=下、事実/理由付け=上に分割）
   highlightTriangles(triangles, clickedNodeId) {
     // 既存ハイライトとタグ解除
     this.clearTriangleHighlight();
 
     const nodeIds = new Set();
     const edgeTriples = [];
-    const nodeRoles = new Map();       // nodeId -> Set(役割)
-    const nodePosSet = new Map();      // nodeId -> Set('top-left' | 'bottom')
-
-    // 対象三角の主張レベル最小を算出（同時に主張レベルを控える）
-    const claimLevels = [];
-    const triWithLevels = [];
-    for (const tri of triangles) {
-      const nClaim = this.nodes.get(tri.claimId);
-      if (!nClaim) continue;
-      const lvClaim = parseInt(nClaim.level) || 0;
-      claimLevels.push(lvClaim);
-      triWithLevels.push({ tri, lvClaim });
-    }
-    if (triWithLevels.length === 0) return;
-
-    const minClaimLevel = Math.min(...claimLevels);
-    const multipleTri = triWithLevels.length > 1;
+    const nodeRoles = new Map(); // nodeId -> Set(役割)
 
     const addRole = (nodeId, role) => {
       if (!nodeRoles.has(nodeId)) nodeRoles.set(nodeId, new Set());
       nodeRoles.get(nodeId).add(role);
     };
-    const addPos = (nodeId, pos) => {
-      if (!nodePosSet.has(nodeId)) nodePosSet.set(nodeId, new Set());
-      nodePosSet.get(nodeId).add(pos);
-    };
 
-    // 役割と位置を集計
-    for (const { tri, lvClaim } of triWithLevels) {
-      // 位置: 主張レベルが「最小」なら左上、それ以外は真下
-      const posForTriangle = (lvClaim === minClaimLevel) ? 'top-left' : (multipleTri ? 'bottom' : 'top-left');
+    // 役割を集計（表示ラベルは既存どおり: reason=「事実」, fact=「理由付け」）
+    for (const t of triangles) {
+      const nt = this.normalizeTriangle(t);
+      if (!nt) continue;
+      addRole(nt.claimId, "主張");
+      addRole(nt.reasonId, "事実");
+      addRole(nt.factId, "理由付け");
 
-      // 役割を付与（入れ替え）
-      addRole(tri.claimId, "主張");
-      addRole(tri.reasonId, "事実");       // 旧: "理由付け"
-      addRole(tri.factId, "理由付け");     // 旧: "事実"
+      nodeIds.add(nt.claimId);
+      nodeIds.add(nt.reasonId);
+      nodeIds.add(nt.factId);
 
-      // 位置を三角内の全ノードに反映（同一ノードが複数三角に属する場合は集合で両位置を保持）
-      addPos(tri.claimId, posForTriangle);
-      addPos(tri.reasonId, posForTriangle);
-      addPos(tri.factId, posForTriangle);
-
-      // ハイライト対象ノード集約
-      nodeIds.add(tri.claimId);
-      nodeIds.add(tri.reasonId);
-      nodeIds.add(tri.factId);
-
-      // エッジ三本
-      edgeTriples.push([tri.claimId, tri.reasonId]);
-      edgeTriples.push([tri.reasonId, tri.factId]);
-      edgeTriples.push([tri.factId, tri.claimId]);
+      edgeTriples.push([nt.claimId, nt.reasonId]);
+      edgeTriples.push([nt.reasonId, nt.factId]);
+      edgeTriples.push([nt.factId, nt.claimId]);
     }
 
     // ノードを強調（枠太・枠色オレンジ）
@@ -1592,13 +1342,13 @@ class LogicNetwork {
       });
     }
 
-    // 役割タグを生成（必要なら同一ノードに左上と真下の両方を表示）
+    // 役割タグを生成（主張=下、事実/理由付け=上）: 役割ごとに上下へ分割
     nodeRoles.forEach((rolesSet, nodeId) => {
       const roles = Array.from(rolesSet);
-      const posSet = nodePosSet.get(nodeId) || new Set(['top-left']);
-      posSet.forEach(pos => {
-        this.createOrUpdateRoleTag(String(nodeId), roles, pos);
-      });
+      const bottomRoles = roles.filter(r => r === '主張');
+      const topRoles = roles.filter(r => r !== '主張');
+      if (topRoles.length) this.createOrUpdateRoleTag(String(nodeId), topRoles, 'top');
+      if (bottomRoles.length) this.createOrUpdateRoleTag(String(nodeId), bottomRoles, 'bottom');
     });
 
     if (this.ownNetwork) this.ownNetwork.redraw();
@@ -1662,12 +1412,12 @@ class LogicNetwork {
     if (this.ownNetwork) this.ownNetwork.redraw();
   }
 
-  // 役割タグDOMを生成/更新（ノードID+位置の複数タグに対応）
+  // 役割タグDOMを生成/更新（位置: 'top' or 'bottom' をサポート）
   createOrUpdateRoleTag(nodeId, roles, posMode) {
     try {
       if (!this._containerEl || !this.ownNetwork) return;
       const text = Array.isArray(roles) ? roles.join('・') : String(roles || '');
-      const pos = (posMode === 'bottom') ? 'bottom' : 'top-left';
+      const pos = (posMode === 'bottom') ? 'bottom' : (posMode === 'top' ? 'top' : 'top-left');
       const key = `${nodeId}:${pos}`;
 
       let el = this._roleTagEls.get(key);
@@ -1677,10 +1427,10 @@ class LogicNetwork {
         el.style.position = 'absolute';
         el.style.pointerEvents = 'none';
         el.style.zIndex = '10';
-        el.style.fontSize = '17px'; // 11px → 17px
+        el.style.fontSize = '17px';
         el.style.lineHeight = '1.4';
         el.style.whiteSpace = 'nowrap';
-        el.style.color = '#000'; // オレンジ → 黒
+        el.style.color = '#000';
         el.style.background = 'rgba(255,140,0,0.10)';
         el.style.border = '1px solid #ff8c00';
         el.style.borderRadius = '4px';
@@ -1715,22 +1465,30 @@ class LogicNetwork {
     });
   }
 
-  // 単一タグの位置更新（左上/真下）
+  // 単一タグの位置更新（上: top, 下: bottom, 互換: top-left）
   updateRoleTagPositionFor(nodeId, el) {
     try {
       if (!this.ownNetwork) return;
       const bb = this.ownNetwork.getBoundingBox(nodeId);
       if (!bb) return;
-      const posMode = el.dataset.pos || 'top-left';
+      const posMode = el.dataset.pos || 'top';
 
       if (posMode === 'bottom') {
+        // 下中央
         const bottomCenter = { x: (bb.left + bb.right) / 2, y: bb.bottom + 4 };
         const dom = this.ownNetwork.canvasToDOM(bottomCenter);
         el.style.left = `${dom.x}px`;
         el.style.top = `${dom.y}px`;
         el.style.transform = 'translate(-50%, 0)';
+      } else if (posMode === 'top') {
+        // 上中央（少し離して上に）
+        const topCenter = { x: (bb.left + bb.right) / 2, y: bb.top - 6 };
+        const dom = this.ownNetwork.canvasToDOM(topCenter);
+        el.style.left = `${dom.x}px`;
+        el.style.top = `${dom.y}px`;
+        el.style.transform = 'translate(-50%, -100%)';
       } else {
-        // 左上（さらに左上へオフセット）
+        // 互換: 左上
         const topLeft = { x: bb.left - 14, y: bb.top - 14 };
         const dom = this.ownNetwork.canvasToDOM(topLeft);
         el.style.left = `${dom.x}px`;

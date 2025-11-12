@@ -5,8 +5,8 @@ function collectTriangleLogic() {
     const trianglesRaw = (dln && Array.isArray(dln.triangles)) ? dln.triangles : [];
     const normTri = (t) => ({
       claim_id:  String(t.claim_id  ?? t.claimId  ?? ''),
+      fact_id:   String(t.fact_id   ?? t.factId   ?? ''),
       reason_id: String(t.reason_id ?? t.reasonId ?? ''),
-      fact_id:   String(t.fact_id   ?? t.factId   ?? '')
     });
     const triangles = trianglesRaw.map(normTri).filter(t => t.claim_id);
 
@@ -14,7 +14,7 @@ function collectTriangleLogic() {
     const getNode = (id) => byId.get(String(id));
     const getLabel = (n) => {
       if (!n) return '';
-      const cand = [n.text, n.label, n.title, n.name, n.content, n.value, n.description];
+      const cand = [n.label];
       const hit = cand.find(v => typeof v === 'string' && v.trim());
       return hit ? hit.trim().replace(/\s+/g, ' ') : '';
     };
@@ -31,7 +31,9 @@ function collectTriangleLogic() {
     const results = [];
     const visitedClaims = new Set(); // 主張ノードとして既に処理したID
 
-    const recurseClaim = (claimId) => {
+    // allowDefault=true: そのIDが claim の三角が無い場合に限り未設定テンプレを出力
+    // allowDefault=false: 三角が無ければ何も出力しない（再帰先の reason/fact 用）
+    const recurseClaim = (claimId, allowDefault) => {
       if (!claimId || visitedClaims.has(claimId)) return;
       visitedClaims.add(claimId);
       const claimNode = getNode(claimId);
@@ -40,8 +42,9 @@ function collectTriangleLogic() {
       // claimId を主張とする三角形群
       const related = triangles.filter(tr => tr.claim_id === claimId);
       if (related.length === 0) {
-        // 三角が無くても単独主張としてテンプレ (fact/reason 未設定)
-        results.push(template('', '', claimLabel));
+        if (allowDefault) {
+          results.push(template('', '', claimLabel));
+        }
         return;
       }
 
@@ -50,19 +53,19 @@ function collectTriangleLogic() {
         const reasonLabel = getLabel(getNode(tr.reason_id));
         results.push(template(factLabel, reasonLabel, claimLabel));
 
-        // 6. reason_id, fact_id を新たな主張ノードとして再帰
-        if (tr.reason_id) recurseClaim(tr.reason_id);
-        if (tr.fact_id) recurseClaim(tr.fact_id);
+        // 再帰は未設定テンプレを出さない
+        if (tr.reason_id) recurseClaim(tr.reason_id, false);
+        if (tr.fact_id) recurseClaim(tr.fact_id, false);
       }
     };
 
-    // 7. level0 が複数あるなら全て処理
+    // ルート: level0 が複数あるなら全て処理（未設定テンプレ許可）
     if (level0.length) {
-      for (const n of level0) recurseClaim(String(n.id));
+      for (const n of level0) recurseClaim(String(n.id), true);
     } else {
       // level0 無ければフォールバック: 全ノードから一つ選んで最低限表示
       const any = nodesData[0];
-      if (any) recurseClaim(String(any.id));
+      if (any) recurseClaim(String(any.id), true);
     }
 
     if (!results.length) {

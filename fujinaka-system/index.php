@@ -28,290 +28,280 @@ $ai_output = '';
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>自己内対話活性化支援システム</title>
-        <link type="text/css" rel="stylesheet" href="css/jsmind.css" />
-        <link rel="stylesheet" type="text/css" href="css/item.css">
-        <link rel="stylesheet" type="text/css" href="css/font.css">
-        <link rel="stylesheet" type="text/css" href="css/jquery.cleditor.css">
-        <link rel="stylesheet" type="text/css" href="css/ui.css">
-        <link rel="stylesheet" type="text/css" href="css/style.css">
-        <link rel="stylesheet" type="text/css" href="css/annotation.css">
-        <link rel="stylesheet" type="text/css" href="quill-2.0/snow-2.0.css" >
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>自己内対話活性化支援システム</title>
+    <link type="text/css" rel="stylesheet" href="css/jsmind.css" />
+    <link rel="stylesheet" type="text/css" href="css/item.css">
+    <link rel="stylesheet" type="text/css" href="css/font.css">
+    <link rel="stylesheet" type="text/css" href="css/jquery.cleditor.css">
+    <link rel="stylesheet" type="text/css" href="css/ui.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/annotation.css">
+    <link rel="stylesheet" type="text/css" href="quill-2.0/snow-2.0.css" >
+    
+    
+    
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
+    <script type="text/javascript" src="js/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="js/jsmind.js"></script>
+    <script type="text/javascript" src="js/jsmind.draggable.js"></script>
+    <script type="text/javascript" src="js/add_node.js"></script>
+    <script type="text/javascript" src="js/add_annotations.js"></script>
+    <script type="text/javascript" src="js/version.js"></script>
+    <script type="text/javascript" src="quill-2.0/quill-2.0.js"></script>
+    <script type="text/javascript" src="diff-match-patch-master/javascript/diff_match_patch.js" ></script>
+    
+
+
+    <script src="js/jquery.autosize.js"></script>
+    <script src="js/jquery.autosize.min.js"></script>
+
+    <script type="text/javascript" src="js/get_thinking.js"></script>
+    <script type="text/javascript" src="js/jsmind.screenshot.js"></script>
+    <script type="text/javascript" src="js/change_tab.js"></script>
+
+
+    <script type="text/javascript">
+      window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
+    </script>
+
+  </head>
+  <body id="all">
+    <!---        タイトルメニューStart                 -->
+    <div id="main_title">
+      <form name="return" method="POST">
+        <span class="title_name">ForestCW</span>
+        <span><input class="button2" type="submit" name="logout" value="ログアウト"></span>
+        <span><input class="button1" type="submit" name="sheetbtn" value="シート選択画面に戻る"></span>
+      </form>
+    </div>
+
+    <!--      タブメニュー Start        -->
+      <div id ="tab_menu">
+        <ul div class="tabnav">
+          <li class="active"><a href="#tab01">思考整理支援システム</a></li>
+        </ul>
+
+
         
-        
-        
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
-        <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
-        <script type="text/javascript" src="js/jquery-ui.min.js"></script>
-        <script type="text/javascript" src="js/jsmind.js"></script>
-        <script type="text/javascript" src="js/jsmind.draggable.js"></script>
-        <script type="text/javascript" src="js/add_node.js"></script>
-        <script type="text/javascript" src="js/add_annotations.js"></script>
-        <script type="text/javascript" src="js/version.js"></script>
-        <script type="text/javascript" src="quill-2.0/quill-2.0.js"></script>
-        <script type="text/javascript" src="diff-match-patch-master/javascript/diff_match_patch.js" ></script>
-        
-
-
-        <script src="js/jquery.autosize.js"></script>
-        <script src="js/jquery.autosize.min.js"></script>
-
-        <script type="text/javascript" src="js/get_thinking.js"></script>
-        <script type="text/javascript" src="js/jsmind.screenshot.js"></script>
-        <script type="text/javascript" src="js/change_tab.js"></script>
-
-
-        <script type="text/javascript">
-          window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
-        </script>
-
-    </head>
-    <body id="all">
-      <!---        タイトルメニューStart                 -->
-      <div id="main_title">
-        <form name="return" method="POST">
-          <span class="title_name">ForestCW</span>
-          <span><input class="button2" type="submit" name="logout" value="ログアウト"></span>
-          <span><input class="button1" type="submit" name="sheetbtn" value="シート選択画面に戻る"></span>
-        </form>
-      </div>
-
-      <!--      タブメニュー Start        -->
-        <div id ="tab_menu">
-          <ul div class="tabnav">
-            <li class="active"><a href="#tab01">思考整理支援システム</a></li>
-          </ul>
-
-
-          
-          <div id="checkbox_area">
-            <div class="checkbox" id="logic_btn">
-              <input type="checkbox" id="logicbox" class="checkbox" name="check" onclick="CheckClick()">
-              <label for="logicbox" data-on-label="" data-off-label=""></label>
-              <span class="checkbox_text">【三角ロジックを表示】</span>
-            </div>
-
-            <div class="checkbox" id="scenario_btn">
-              <input type="checkbox" id="scenariobox" class="checkbox" name="check" onclick="CheckClick()">
-              <label for="scenariobox" data-on-label="" data-off-label=""></label>
-              <span class="checkbox_text">【論文シナリオを表示】</span>
-            </div>
-            <div class="checkbox" id="preview_btn" style="display:none;" >
-              <input type="checkbox" id="previewbox" class="checkbox" name="check" onclick="CheckClick()">
-              <label for="previewbox" data-on-label="" data-off-label=""></label>
-              <span class="checkbox_text">【論文プレビューを表示】</span>
-            </div>
-            <div class="checkbox" id="plusmap_btn" style="display:none;" >
-              <input type="checkbox" id="plusmapbox" class="checkbox" name="check" onclick="CheckClick()">
-              <label for="plusmapbox" data-on-label="" data-off-label=""></label>
-              <span class="checkbox_text">【マップも表示】</span>
-            </div>
+        <div id="checkbox_area">
+          <div class="checkbox" id="logic_btn">
+            <input type="checkbox" id="logicbox" class="checkbox" name="check" onclick="CheckClick()">
+            <label for="logicbox" data-on-label="" data-off-label=""></label>
+            <span class="checkbox_text">【三角ロジックを表示】</span>
           </div>
 
-          <form name="target_mode" class="select_form" action="">
-              <select class="cp_ipselect2 cp_sl02"name="Select1">
-                <option>論文執筆モード</option>
-                <option>論文推敲モード</option>
-              </select>
-              <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
-          </form>
+          <div class="checkbox" id="scenario_btn">
+            <input type="checkbox" id="scenariobox" class="checkbox" name="check" onclick="CheckClick()">
+            <label for="scenariobox" data-on-label="" data-off-label=""></label>
+            <span class="checkbox_text">【論文シナリオを表示】</span>
+          </div>
+          <div class="checkbox" id="preview_btn" style="display:none;" >
+            <input type="checkbox" id="previewbox" class="checkbox" name="check" onclick="CheckClick()">
+            <label for="previewbox" data-on-label="" data-off-label=""></label>
+            <span class="checkbox_text">【論文プレビューを表示】</span>
+          </div>
+          <div class="checkbox" id="plusmap_btn" style="display:none;" >
+            <input type="checkbox" id="plusmapbox" class="checkbox" name="check" onclick="CheckClick()">
+            <label for="plusmapbox" data-on-label="" data-off-label=""></label>
+            <span class="checkbox_text">【マップも表示】</span>
+          </div>
         </div>
-        <!-- <div class="Menu">Menu</div> -->
 
-        <!--メインメニュー　Start  -->
-        <div class="tabcontent">
-          <div id="tab01">
-            <div id="btn_menu">
-              <div class="menu_css" id = "map_menu">
-                <!-- 【Edit】 -->
-                <button class="button4" onclick="add_Qnode();">
-                  問いノード追加
-                </button>
-                <button class="button4" onclick="add_Anode();">
-                  答えノード追加
-                </button>
-                <!-- <li><button onclick="horisage();">掘り下げる</button></li>
-                  <horisage()関数は現在存在しない-->
-                <button class="button4" onclick="remove_node();">
-                  ノードの削除
-                </button>
-                <!--1つ前に消したノードを復元-->
-                <!-- <button class="button4" onclick="return_node();">
-                  1つ前に戻る
-                </button> -->
+        <form name="target_mode" class="select_form" action="">
+            <select class="cp_ipselect2 cp_sl02"name="Select1">
+              <option>論文執筆モード</option>
+              <option>論文推敲モード</option>
+            </select>
+            <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
+        </form>
+      </div>
+      <!-- <div class="Menu">Menu</div> -->
 
-                <!-- 【Zoom】 -->
-                <button class="button3" id="zoom-in-button" onclick="zoomIn();">
-                  拡大
-                </button>
-                <button class="button3" id="zoom-out-button" onclick="zoomOut();">
-                  縮小
-                </button>
-                <!-- 【Reason】
-                <button class="button4" onclick="add_edit_reason();">
-                  修正理由の追加
-                </button> -->
-                <!-- 【Screenshot】 -->
-                <button class="button4" style="width:80px" onclick="screen_shot();">
-                  screenshot
-                </button>
-                <!-- <label><input type="checkbox" name="Difference" id="Difference" onClick="Difference();">以前のマップとの差分</label> -->
-              </div>
+      <!--メインメニュー　Start  -->
+      <div class="tabcontent">
+        <div id="tab01">
+          <div id="btn_menu">
+            <div class="menu_css" id = "map_menu">
+              <!-- 【Edit】 -->
+              <button class="button4" onclick="add_Qnode();">
+                問いノード追加
+              </button>
+              <button class="button4" onclick="add_Anode();">
+                答えノード追加
+              </button>
+              <!-- <li><button onclick="horisage();">掘り下げる</button></li>
+                <horisage()関数は現在存在しない-->
+              <button class="button4" onclick="remove_node();">
+                ノードの削除
+              </button>
+              <!--1つ前に消したノードを復元-->
+              <!-- <button class="button4" onclick="return_node();">
+                1つ前に戻る
+              </button> -->
 
-              <div class="menu_css" id="logic_menu">
-                <input type="button" id="ln_deleteNode" value="ノード削除">
-                <input type="button" id="ln_maketriangle" value="三角ロジックを作成する">
-                <input type="button" id="ln_createtriangle" value="三角ロジックを追加する">
-              </div>
+              <!-- 【Zoom】 -->
+              <button class="button3" id="zoom-in-button" onclick="zoomIn();">
+                拡大
+              </button>
+              <button class="button3" id="zoom-out-button" onclick="zoomOut();">
+                縮小
+              </button>
+              <!-- 【Reason】
+              <button class="button4" onclick="add_edit_reason();">
+                修正理由の追加
+              </button> -->
+              <!-- 【Screenshot】 -->
+              <button class="button4" style="width:80px" onclick="screen_shot();">
+                screenshot
+              </button>
+              <!-- <label><input type="checkbox" name="Difference" id="Difference" onClick="Difference();">以前のマップとの差分</label> -->
+            </div>
 
-              <div class="menu_css" id ="presen_menu">
-                <!-- 【Slide】 -->
-                <button class="button4" onclick="MakeChapter(null);">
-                  章追加
-                </button>
-                <button class="button4" onclick="MakeSection(null);">
-                  節追加
-                </button>
-                <button class="button4" onclick="MakeSlide();">
-                  パラグラフ追加
-                </button>
-                <button class="button4" onclick="NewContent_Append('問い')">
-                  問いノード追加
-                </button>
-                <button class="button4" onclick="NewContent_Append('答え')">
-                  答えノード追加
-                </button>
-                <button class="button4" onclick="add_Confirm();">
-                  マップ側へ反映
-                </button>
-                <!-- <button class="button4" onclick="Rebuild();">
-                  スライド再現
-                </button> -->
-                <!-- <button class="button4" onclick="Get_SlideRank();Get_ContentRank();Get_SlideTitle();">
-                  スライド保存
-                </button> -->
-                <button class="button4" onclick="Unreflected_node();">
-                  未反映ノード
-                </button>
-                <!-- <button class="button4" onclick="recommend_xmlLoad();">
-                  test
-                </button> -->
-                <!-- 【Export】
-                <button class="button4" onclick="OutputScenario();">
-                  test
-                </button> -->
-                <!-- <button class="button4" onclick="OutputFile()">
-                  test
-                </button> -->
-              </div>
-              
-              <div id ="preview_menu">
-                  <!-- 【Preview】 -->
-                  <button class="button4" onclick="Create_preview();">
-                    プレビュー更新
+            <div class="menu_css" id="logic_menu">
+              <input type="button" id="ln_deleteNode" value="ノード削除">
+              <input type="button" id="ln_maketriangle" value="三角ロジックを作成する">
+              <input type="button" id="ln_createtriangle" value="三角ロジックを追加する">
+            </div>
+
+            <div class="menu_css" id ="presen_menu">
+              <!-- 【Slide】 -->
+              <button class="button4" onclick="MakeChapter(null);">
+                章追加
+              </button>
+              <button class="button4" onclick="MakeSection(null);">
+                節追加
+              </button>
+              <button class="button4" onclick="MakeSlide();">
+                パラグラフ追加
+              </button>
+              <button class="button4" onclick="NewContent_Append('問い')">
+                問いノード追加
+              </button>
+              <button class="button4" onclick="NewContent_Append('答え')">
+                答えノード追加
+              </button>
+              <button class="button4" onclick="add_Confirm();">
+                マップ側へ反映
+              </button>
+              <!-- <button class="button4" onclick="Rebuild();">
+                スライド再現
+              </button> -->
+              <!-- <button class="button4" onclick="Get_SlideRank();Get_ContentRank();Get_SlideTitle();">
+                スライド保存
+              </button> -->
+              <button class="button4" onclick="Unreflected_node();">
+                未反映ノード
+              </button>
+              <!-- <button class="button4" onclick="recommend_xmlLoad();">
+                test
+              </button> -->
+              <!-- 【Export】
+              <button class="button4" onclick="OutputScenario();">
+                test
+              </button> -->
+              <!-- <button class="button4" onclick="OutputFile()">
+                test
+              </button> -->
+            </div>
+            
+            <div id ="preview_menu">
+                <!-- 【Preview】 -->
+                <button class="button4" onclick="Create_preview();">
+                  プレビュー更新
+            </div>
+          </div>
+          <div id="version_area" style="display:none;"></div>
+
+          <div class="Menu">Menu</div>
+          <!-- <div class="checkbox"> -->
+            <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
+            <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="">
+            <label for="checkbox" data-on-label="On" data-off-label="Off"></label>
+            <span class="checkbox_text">【プレゼン作成】</span>
+          </div> -->
+
+          <!-- <div class="changemode_button">
+            <input type="button" id="documentation_mode_button" value="プレゼン" onclick="change_documentation_mode()">
+            <input type="button" id="mindmap_mode_button" value="マインドマップ" onclick="change_mindmap_mode()">
+          </div> -->
+          <div id="content">
+            <div id="jsmind_area">
+              <div id="jsmind_container" oncontextmenu="return false;"></div>
+            </div>
+
+            <div id="logic_area">
+              <div id="mynetwork"></div>
+              <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.exportNetworkToPDF;">PDF</a></li>
+            </div>
+
+            <div id="logic_conmenu">
+              <ul>
+                <li class="category-header">三角ロジック</li>
+                <li class="subcategory">
+                  <ul>
+                    <!-- 統合: ボタンを1つに -->
+                    <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.openLogicDetailModal()">説明・葛藤</a></li>
+                  </ul>
+                </li>
+                <li class="category-header">Forest</li>
+                <li class="subcategory">
+                  <ul>
+                    <li><a href="javascript:void(0);" onClick="createNodeFromLogic()">Forestに反映</a></li>
+                  </ul>
+                </li>
+                <li class="category-header">論文シナリオ</li>
+                <li class="subcategory">
+                  <ul>
+                    <li><a href="javascript:void(0);" onClick="SetPurposeonChapterfromlogic()">章を作成</a></li>
+                    <li><a href="javascript:void(0);" onClick="SetPurposeonSectionfromlogic()">節を作成</a></li>
+                    <li><a href="javascript:void(0);" onClick="SetPurposefromLogic()">パラグラフを作成</a></li>
+                    <li><a href="javascript:void(0);" onClick="NodeAppendfromLogic()">パラグラフに追加</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <!-- 旧: 論理説明用モーダル（削除） -->
+            <!-- 旧: 論理葛藤用モーダル（削除） -->
+
+            <!-- 新: 説明・葛藤 統合モーダル -->
+            <div id="logicDetailModal" class="modal">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3 id="detailNodeTitle">説明・葛藤</h3>
+                  <span class="close" onclick="defaultLogicNetwork.closeLogicDetailModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                  <div style="margin-bottom:12px;">
+                    <p class="claimReason-prompt">なぜこの主張をしましたか？（説明）</p>
+                    <textarea id="detailClaimReasonTextarea" placeholder="この主張をした理由や根拠を詳しく説明してください..." rows="6"></textarea>
+                  </div>
+                  <div>
+                    <p class="conflict-prompt">どのような葛藤がありますか？</p>
+                    <textarea id="detailConflictTextarea" placeholder="この主張をする際の葛藤や迷い、対立する意見などを詳しく記録してください..." rows="6"></textarea>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-primary" onclick="defaultLogicNetwork.saveLogicDetail()">保存</button>
+                  <button type="button" class="btn btn-secondary" onclick="defaultLogicNetwork.closeLogicDetailModal()">キャンセル</button>
+                </div>
               </div>
             </div>
-            <div id="version_area" style="display:none;"></div>
 
-            <div class="Menu">Menu</div>
-            <!-- <div class="checkbox"> -->
-              <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
-              <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="">
-              <label for="checkbox" data-on-label="On" data-off-label="Off"></label>
-              <span class="checkbox_text">【プレゼン作成】</span>
-            </div> -->
-
-            <!-- <div class="changemode_button">
-              <input type="button" id="documentation_mode_button" value="プレゼン" onclick="change_documentation_mode()">
-              <input type="button" id="mindmap_mode_button" value="マインドマップ" onclick="change_mindmap_mode()">
-            </div> -->
-            <div id="content">
-              <div id="jsmind_area">
-                <div id="jsmind_container" oncontextmenu="return false;"></div>
-              </div>
-
-              <div id="logic_area">
-                <div id="mynetwork"></div>
-                <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.exportNetworkToPDF;">PDF</a></li>
-              </div>
-
-              <div id="logic_conmenu">
-                <ul>
-                  <li class="category-header">三角ロジック</li>
-                  <li class="subcategory">
-                    <ul>
-                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.completeLogic();">完了</a></li>
-                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.conflictLogic()">途中</a></li>
-                    </ul>
-                  </li>
-                  <li class="category-header">Forest</li>
-                  <li class="subcategory">
-                    <ul>
-                      <li><a href="javascript:void(0);" onClick="createNodeFromLogic()">Forestに反映</a></li>
-                    </ul>
-                  </li>
-                  <li class="category-header">論文シナリオ</li>
-                  <li class="subcategory">
-                    <ul>
-                      <li><a href="javascript:void(0);" onClick="SetPurposeonChapterfromlogic()">章を作成</a></li>
-                      <li><a href="javascript:void(0);" onClick="SetPurposeonSectionfromlogic()">節を作成</a></li>
-                      <li><a href="javascript:void(0);" onClick="SetPurposefromLogic()">パラグラフを作成</a></li>
-                      <li><a href="javascript:void(0);" onClick="NodeAppendfromLogic()">パラグラフに追加</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </div>
-
-              <!-- 論理説明用モーダル -->
-              <div id="logicClaimReasonModal" class="modal">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h3 id="claimReasonNodeTitle">論理の説明</h3>
-                    <span class="close" onclick="defaultLogicNetwork.closeLogicClaimReasonModal()">&times;</span>
-                  </div>
-                  <div class="modal-body">
-                    <p class="claimReason-prompt">なぜこの主張をしましたか？</p>
-                    <textarea id="claimReasonTextarea" placeholder="この主張をした理由や根拠を詳しく説明してください..." rows="8"></textarea>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="defaultLogicNetwork.saveLogicClaimReason()">保存</button>
-                    <button type="button" class="btn btn-secondary" onclick="defaultLogicNetwork.closeLogicClaimReasonModal()">キャンセル</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 論理葛藤用モーダル -->
-              <div id="logicConflictModal" class="modal">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h3 id="conflictNodeTitle">論理の葛藤</h3>
-                    <span class="close" onclick="defaultLogicNetwork.closeLogicConflictModal()">&times;</span>
-                  </div>
-                  <div class="modal-body">
-                    <p class="conflict-prompt">どのような葛藤がありますか？</p>
-                    <textarea id="conflictTextarea" placeholder="この主張をする際の葛藤や迷い、対立する意見などを詳しく記録してください..." rows="8"></textarea>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="defaultLogicNetwork.saveLogicConflict()">保存</button>
-                    <button type="button" class="btn btn-secondary" onclick="defaultLogicNetwork.closeLogicConflictModal()">キャンセル</button>
-                  </div>
-                </div>
-              </div>
-
-              <div id="presentation_conmenu">
-                <ul>
-                  <li class="category-header">三角ロジック</li>
-                  <li class="subcategory">
-                    <ul>
-                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.createTriangleFromScenario()">三角ロジックを作成</a></li>
-                      <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.applyPresentationToTriangle()">三角ロジックに反映</a></li>
-                    </ul>
-                  </li>
-                </ul>
+            <div id="presentation_conmenu">
+              <ul>
+                <li class="category-header">三角ロジック</li>
+                <li class="subcategory">
+                  <ul>
+                    <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.createTriangleFromScenario()">三角ロジックを作成</a></li>
+                    <li><a href="javascript:void(0);" onClick="defaultLogicNetwork.applyPresentationToTriangle()">三角ロジックに反映</a></li>
+                  </ul>
+                </li>
               </div>
 
               <div id="mindmap_conmenu">
@@ -555,5 +545,5 @@ $ai_output = '';
         <script type="text/javascript" src="js/logic_network.js"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="js/run_ai.js"></script>
-    </body>
+  </body>
 </html>
