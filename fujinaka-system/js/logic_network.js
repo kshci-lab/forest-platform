@@ -748,6 +748,10 @@ class LogicNetwork {
       console.error("選択されたノードが見つかりません");
       return;
     }
+    if (!this.isClaimNode(selectedNodeId)) {
+      alert("主張ノード（claim）を選択してください");
+      return;
+    }
     if (!selectedNode.label || selectedNode.label.trim() === "") {
       alert("まず、ノードに内容を入力してください");
       return;
@@ -842,6 +846,65 @@ class LogicNetwork {
   closeLogicDetailModal() {
     const modal = document.getElementById('logicDetailModal');
     if (modal) {
+      // 追加: 図形バッジ生成/削除（主張ノードのみ）
+      const nodeId = modal.dataset && modal.dataset.currentNodeId ? String(modal.dataset.currentNodeId) : null;
+      if (nodeId) {
+        try {
+          const isClaim =
+            (typeof this.isClaimNode === 'function') ? this.isClaimNode(nodeId) : true;
+          if (isClaim && this.nodes) {
+            const n = this.nodes.get(nodeId);
+            const has =
+              !!(n && ((n.claimReason && String(n.claimReason).trim().length) ||
+                       (n.conflict && String(n.conflict).trim().length)));
+
+            const badgeId = `ln_status_dot_${nodeId}`; // 既存IDを流用
+            const container = this._containerEl || document.getElementById('mynetwork') || document.body;
+
+            if (has) {
+              // 生成/更新（上向き三角形のバッジ）
+              let el = document.getElementById(badgeId);
+              if (!el) {
+                el = document.createElement('div');
+                el.id = badgeId;
+                el.style.position = 'absolute';
+                el.style.pointerEvents = 'none';
+                el.style.zIndex = '11';
+                el.title = '説明/葛藤あり';
+                container.appendChild(el);
+              }
+              // 三角形スタイル（幅高さ0 + ボーダーで描画）
+              el.style.width = '0';
+              el.style.height = '0';
+              el.style.background = 'transparent';
+              el.style.borderRadius = '0';
+              el.style.borderLeft = '7px solid transparent';
+              el.style.borderRight = '7px solid transparent';
+              el.style.borderBottom = '12px solid #ff8c00'; // オレンジ色の三角形
+
+              // 位置更新（右上）
+              try {
+                if (this.ownNetwork && typeof this.ownNetwork.getBoundingBox === 'function') {
+                  const bb = this.ownNetwork.getBoundingBox(nodeId);
+                  if (bb && typeof this.ownNetwork.canvasToDOM === 'function') {
+                    const pos = { x: bb.right + 2, y: bb.top - 2 };
+                    const dom = this.ownNetwork.canvasToDOM(pos);
+                    el.style.left = `${dom.x}px`;
+                    el.style.top = `${dom.y}px`;
+                    el.style.transform = 'translate(-100%, -100%)';
+                  }
+                }
+              } catch(_) {}
+            } else {
+              // 無ければ削除
+              const el = document.getElementById(badgeId);
+              if (el) { try { el.remove(); } catch(_) {} }
+            }
+          }
+        } catch(_) {}
+      }
+
+      // 既存の閉じ処理
       modal.style.display = 'none';
       modal.dataset.currentNodeId = '';
     }
@@ -1282,7 +1345,7 @@ class LogicNetwork {
   }
 
   // 三角(複数)をハイライト + 役割タグ表示（主張=下、事実/理由付け=上に分割）
-  highlightTriangles(triangles, clickedNodeId) {
+  highlightTriangles(triangles) {
     // 既存ハイライトとタグ解除
     this.clearTriangleHighlight();
 
@@ -1717,7 +1780,60 @@ class LogicNetwork {
     return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
   }
 
-  // ...existing code...
+  // 追加: 主張ノード判定（triangles の claim_id に含まれるか）
+  isClaimNode(nodeId) {
+    if (!Array.isArray(this.triangles) || this.triangles.length === 0) return false;
+    const id = String(nodeId);
+    return this.triangles.some(t => String(t.claim_id ?? t.claimId) === id);
+  }
+
+  // 主張ノードIDから三角IDを取得（saveLogicDetail 互換のため Promise 返却）
+  getTriangleIdByClaimId(claimNodeId) {
+    const id = String(claimNodeId);
+    if (!Array.isArray(this.triangles)) return Promise.resolve(null);
+    for (const t of this.triangles) {
+      const cid = t && (t.claim_id ?? t.claimId);
+      if (cid != null && String(cid) === id) {
+        const triId = t.triangle_id ?? t.triangleId ?? null;
+        return Promise.resolve(triId);
+      }
+    }
+    return Promise.resolve(null);
+  }
+
+  // 説明（claimReason）保存
+  saveClaimReasonToDatabase(triangleId, claimReason) {
+    try {
+      $.ajax({
+        url: "php/logic_maneger.php",
+        type: "POST",
+        data: {
+          purpose: 'update',
+          update_thing: 'claim_reason',
+          triangle_id: triangleId,
+          claim_reason: claimReason
+        },
+        dataType: "json"
+      });
+    } catch(_) {}
+  }
+
+  // 認知的葛藤（conflict）保存
+  saveConflictToDatabase(triangleId, conflict) {
+    try {
+      $.ajax({
+        url: "php/logic_maneger.php",
+        type: "POST",
+        data: {
+          purpose: 'update',
+          update_thing: 'conflict',
+          triangle_id: triangleId,
+          conflict: conflict
+        },
+        dataType: "json"
+      });
+    } catch(_) {}
+  }
 }
 
 class RecordLogicNetwork{
