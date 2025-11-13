@@ -386,7 +386,6 @@ class LogicNetwork {
 
     const triangle_id = this.generateUniqueNumberText();
     const claim_id = this.generateUniqueNumberText();
-    // 変更: 必ず fact_id < reason_id になるよう専用関数を使用
     const fact_id = this.generateFactId();
     const reason_id = this.generateReasonId();
 
@@ -394,10 +393,11 @@ class LogicNetwork {
     //三角形描画のため、ノードとエッジを追加
     this.addNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
     this.addNode(fact_id, "事実", null, null, false, factlevel);
-    this.addNode(reason_id, "理由", null, null, false, reasonlevel);
-    this.addEdge(fact_id, claim_id);
+    this.addNode(reason_id, "理由付け", null, null, false, reasonlevel);
+    // 向きを統一: claim→fact, claim→reason, fact→reason
+    this.addEdge(claim_id, fact_id);
     this.addEdge(claim_id, reason_id);
-    this.addEdge(reason_id, fact_id);
+    this.addEdge(fact_id, reason_id);
 
     // レイアウトを再適用（重なり回避）
     this.relayoutHierarchy(true);
@@ -405,7 +405,7 @@ class LogicNetwork {
     // DB記録（edited は bool -> 1/0 変換は送信側で実施）
     defaultRecordLogicNetwork.record_LogicNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
     defaultRecordLogicNetwork.record_LogicNode(fact_id, "事実", null, null, false, factlevel);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "理由 ", null, null, false, reasonlevel);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "理由付け", null, null, false, reasonlevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, fact_id, reason_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
@@ -453,18 +453,17 @@ class LogicNetwork {
     this.addNode(add_reason_id, "", null, null, false, newNodeLevel);
     this.addNode(add_fact_id, "", null, null, false, newNodeLevel);
 
-    // エッジ追加まで完了
+    // 向きを統一: claim→fact, claim→reason, fact→reason
+    this.addEdge(selectedNodeId, add_fact_id);
     this.addEdge(selectedNodeId, add_reason_id);
-    this.addEdge(add_reason_id, add_fact_id);
-    this.addEdge(add_fact_id, selectedNodeId);
+    this.addEdge(add_fact_id, add_reason_id);
 
     // レイアウトを再適用（重なり回避）
     this.relayoutHierarchy(true);
 
     // DB記録
-    // ここで保存ラベルが表示の役割と逆になっているなら入れ替える
-    defaultRecordLogicNetwork.record_LogicNode(add_reason_id, "", null, null, false, newNodeLevel);   // 旧: "Reason"
-    defaultRecordLogicNetwork.record_LogicNode(add_fact_id, "", null, null, false, newNodeLevel);   // 旧: "Fact"
+    defaultRecordLogicNetwork.record_LogicNode(add_reason_id, "", null, null, false, newNodeLevel);
+    defaultRecordLogicNetwork.record_LogicNode(add_fact_id, "", null, null, false, newNodeLevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, add_fact_id, add_reason_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
@@ -1135,11 +1134,10 @@ class LogicNetwork {
       if (!triples || triples.length === 0) return;
       for (const tri of triples) {
         const { reason_id, fact_id } = tri;
-        // 三角の3本の辺を追加
+        // 向きを統一: claim→fact, claim→reason, fact→reason
         addEdgeOnce(claimId, fact_id);
         addEdgeOnce(claimId, reason_id);
         addEdgeOnce(fact_id, reason_id);
-        // reason / fact が次の claim になっている場合は続けて再現
         if (claimIndex.has(fact_id)) dfs(fact_id);
         if (claimIndex.has(reason_id)) dfs(reason_id);
       }
@@ -1323,34 +1321,30 @@ class LogicNetwork {
   handleNodeClickHighlightTriangles(params) {
     try {
       if (!params || !Array.isArray(params.nodes)) return;
-
       if (params.nodes.length === 0) {
         this.clearTriangleHighlight();
         return;
       }
-
       const clickedId = String(params.nodes[0]);
       const tris = this.findTrianglesByNode(clickedId);
-
-      if (!tris.length) {
+      // null安全に
+      if (!tris || tris.length === 0) {
         this.clearTriangleHighlight();
         return;
       }
-
-      // クリックIDを渡し、主張レベル最小判定に基づく位置決定を行う
       this.highlightTriangles(tris, clickedId);
     } catch (e) {
       console.warn("handleNodeClickHighlightTriangles error:", e);
     }
   }
 
-  // 指定ノードを含む三角を抽出（claim/reason/fact いずれでも）
+  // 指定ノードを含む三角を抽出（常に配列を返す）
   findTrianglesByNode(nodeId) {
     if (!Array.isArray(this.triangles) || this.triangles.length === 0) return [];
     const res = [];
     for (const t of this.triangles) {
       const nt = this.normalizeTriangle(t);
-      if (!nt) return null;
+      if (!nt) continue; // 不正データはスキップ
       if (String(nt.claimId) === String(nodeId) ||
           String(nt.reasonId) === String(nodeId) ||
           String(nt.factId) === String(nodeId)) {
@@ -1404,6 +1398,7 @@ class LogicNetwork {
       nodeIds.add(nt.factId);
       nodeIds.add(nt.reasonId);
 
+      // 向きに合わせてハイライト対象エッジを統一
       edgeTriples.push([nt.claimId, nt.factId]);
       edgeTriples.push([nt.claimId, nt.reasonId]);
       edgeTriples.push([nt.factId, nt.reasonId]);
