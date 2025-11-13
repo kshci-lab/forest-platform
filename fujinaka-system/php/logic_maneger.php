@@ -29,13 +29,13 @@ if ($purpose === 'record') {
     if ($record_thing === 'triangle'){
         $triangle_id = $_POST["triangle_id"];
         $claim_id = $_POST["claim_id"];
-        $reason_id = $_POST["reason_id"];
         $fact_id = $_POST["fact_id"];
+        $reason_id = $_POST["reason_id"];
 
         $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-        $sql = "INSERT INTO logic_triangle (triangle_id, claim_id, reason_id, fact_id, sheet_id, user_id) 
-                VALUES ('$triangle_id', '$claim_id', '$reason_id', '$fact_id', '$sheet_id', '$user_id')";
+        $sql = "INSERT INTO logic_triangle (triangle_id, claim_id, fact_id, reason_id, sheet_id, user_id) 
+                VALUES ('$triangle_id', '$claim_id', '$fact_id', '$reason_id', '$sheet_id', '$user_id')";
 
         if ($mysqli->query($sql)) {
             echo json_encode(["status" => "success", "message" => "三角ロジックが記録されました", "triangle_id" => $triangle_id]);
