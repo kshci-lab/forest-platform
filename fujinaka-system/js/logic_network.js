@@ -121,6 +121,40 @@ class LogicNetwork {
     return `${new Date().getTime()}${Math.floor(1000000 * Math.random())}`;
   }
 
+  // 追加: fact用ID生成（必ず reason より小さいIDを返す）
+  generateFactId() {
+    const ts = Date.now().toString();
+    let a = Math.floor(Math.random() * 1e6);
+    let b = Math.floor(Math.random() * 1e6);
+    // 同値回避
+    while (a === b) b = Math.floor(Math.random() * 1e6);
+    // a < b に正規化
+    if (a > b) { const tmp = a; a = b; b = tmp; }
+    const fact = ts + String(a).padStart(6, '0');
+    const reason = ts + String(b).padStart(6, '0');
+    // 次回のreason要求に備えて保存
+    this._nextReasonIdFromFactPair = reason;
+    return fact;
+  }
+
+  // 追加: reason用ID生成（factより大きいIDを返す）
+  generateReasonId() {
+    // 直前の generateFactId で用意済みならそれを使う
+    if (this._nextReasonIdFromFactPair) {
+      const id = this._nextReasonIdFromFactPair;
+      this._nextReasonIdFromFactPair = null;
+      return id;
+    }
+    // 単独呼び出し時は自分で大きい方を生成
+    const ts = Date.now().toString();
+    let a = Math.floor(Math.random() * 1e6);
+    let b = Math.floor(Math.random() * 1e6);
+    while (a === b) b = Math.floor(Math.random() * 1e6);
+    if (a > b) { const tmp = a; a = b; b = tmp; }
+    return ts + String(b).padStart(6, '0');
+  }
+  
+
   //ネットワークを生成する
   generateLogicNetworkCanvas(mynetwork, nodes, edges) {
     return new vis.Network(
@@ -352,16 +386,16 @@ class LogicNetwork {
 
     const triangle_id = this.generateUniqueNumberText();
     const claim_id = this.generateUniqueNumberText();
-    const fact_id = this.generateUniqueNumberText();
-    const reason_id = this.generateUniqueNumberText();
+    // 変更: 必ず fact_id < reason_id になるよう専用関数を使用
+    const fact_id = this.generateFactId();
+    const reason_id = this.generateReasonId();
 
     // 主張ノードは整形済みラベルを使用
     //三角形描画のため、ノードとエッジを追加
-    //事実ノードを左下にしたいため、追加の順番を調整
     this.addNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
-    this.addNode(fact_id, "", null, null, false, factlevel);
+    this.addNode(fact_id, "事実", null, null, false, factlevel);
+    this.addNode(reason_id, "理由", null, null, false, reasonlevel);
     this.addEdge(fact_id, claim_id);
-    this.addNode(reason_id, "", null, null, false, reasonlevel);
     this.addEdge(claim_id, reason_id);
     this.addEdge(reason_id, fact_id);
 
@@ -370,8 +404,8 @@ class LogicNetwork {
 
     // DB記録（edited は bool -> 1/0 変換は送信側で実施）
     defaultRecordLogicNetwork.record_LogicNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "", null, null, false, factlevel);
-    defaultRecordLogicNetwork.record_LogicNode(reason_id, "", null, null, false, reasonlevel);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "事実", null, null, false, factlevel);
+    defaultRecordLogicNetwork.record_LogicNode(reason_id, "理由 ", null, null, false, reasonlevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, fact_id, reason_id, "", "");
 
     // 追加: メモリ上の三角一覧にも反映
@@ -1102,12 +1136,12 @@ class LogicNetwork {
       for (const tri of triples) {
         const { reason_id, fact_id } = tri;
         // 三角の3本の辺を追加
+        addEdgeOnce(claimId, fact_id);
         addEdgeOnce(claimId, reason_id);
-        addEdgeOnce(reason_id, fact_id);
-        addEdgeOnce(fact_id, claimId);
+        addEdgeOnce(fact_id, reason_id);
         // reason / fact が次の claim になっている場合は続けて再現
-        if (claimIndex.has(reason_id)) dfs(reason_id);
         if (claimIndex.has(fact_id)) dfs(fact_id);
+        if (claimIndex.has(reason_id)) dfs(reason_id);
       }
     };
 
@@ -1363,16 +1397,16 @@ class LogicNetwork {
       const nt = this.normalizeTriangle(t);
       if (!nt) continue;
       addRole(nt.claimId, "主張");
-      addRole(nt.reasonId, "事実");
-      addRole(nt.factId, "理由付け");
+      addRole(nt.factId, "事実");
+      addRole(nt.reasonId, "理由付け");
 
       nodeIds.add(nt.claimId);
-      nodeIds.add(nt.reasonId);
       nodeIds.add(nt.factId);
+      nodeIds.add(nt.reasonId);
 
+      edgeTriples.push([nt.claimId, nt.factId]);
       edgeTriples.push([nt.claimId, nt.reasonId]);
-      edgeTriples.push([nt.reasonId, nt.factId]);
-      edgeTriples.push([nt.factId, nt.claimId]);
+      edgeTriples.push([nt.factId, nt.reasonId]);
     }
 
     // ノードを強調（枠太・枠色オレンジ）
@@ -1837,15 +1871,15 @@ class LogicNetwork {
 }
 
 class RecordLogicNetwork{
-  record_LogicTriangle(triangle_id, claim_id, reason_id, fact_id){
+  record_LogicTriangle(triangle_id, claim_id, fact_id, reason_id){
     $.ajax({
       url: "php/logic_maneger.php",
       type: "POST",
       data: {
         triangle_id : triangle_id,
         claim_id : claim_id,
-        reason_id : reason_id,
         fact_id : fact_id,
+        reason_id : reason_id,
         purpose : 'record',
         record_thing : 'triangle'
       },
