@@ -1677,7 +1677,7 @@ const getLabelXMLMappings = function(){
     }
 }
 
-// ラベルの可視化適用（発話リストにバッジを付与/色分け）
+// ラベルの可視化適用（発話リストにCSSバッジを付与）
 const applyLabelsToUtteranceList = function(labelMap){
     try{
         if(!labelMap) return;
@@ -1694,14 +1694,14 @@ const applyLabelsToUtteranceList = function(labelMap){
                 default: return 'UNKNOWN';
             }
         };
-        // タイプ→色（要件に合わせて）
+        // 色（CSSのtype-XXXXを基本にしつつ、フォールバックとして同色を返す）
         var colorForType = function(tp){
             switch(tp){
-                case 1: return '#4fc3f7'; // SELF=青系
-                case 2: return '#81c784'; // OTHER=緑
-                case 3: return '#ffb74d'; // ORGANIZETION=オレンジ
-                case 4: return '#bdbdbd'; // UNKNOWN=グレー
-                default: return '#bdbdbd';
+                case 1: return '#B3E5FC'; // soft blue
+                case 2: return '#C8E6C9'; // soft green
+                case 3: return '#FFE0B2'; // soft orange
+                case 4: return '#E0E0E0'; // soft gray
+                default: return '#E0E0E0';
             }
         };
 
@@ -1712,23 +1712,34 @@ const applyLabelsToUtteranceList = function(labelMap){
             var tp = info.type;
             var badgeId = 'label-badge-' + String(id);
             var badge = document.getElementById(badgeId);
-            var color = colorForType(tp);
             if(!badge){
                 badge = document.createElement('span');
                 badge.id = badgeId;
-                badge.className = 'utter-label-badge';
-                badge.style.cssText = 'display:inline-block; margin-left:6px; padding:1px 4px; font-size:10px; border-radius:8px; background:'+color+'; color:#000;';
-                badge.textContent = labelOf(tp);
+                // CSSクラスで装飾を当てる（色は type-XXX で切替）
+                var typeName = labelOf(tp);
+                badge.className = 'label-badge type-' + typeName;
+                badge.textContent = typeName;
+                // フォールバック: もしCSSが適用されない環境でも色が出るように背景色を付与
+                try {
+                    badge.style.backgroundColor = colorForType(tp);
+                    badge.style.color = '#1f2937';
+                } catch(_) {}
                 // 先頭にバッジを挿入（タイトルの前）
                 try{
                     el.insertBefore(badge, el.firstChild);
                 }catch(_){ el.appendChild(badge); }
             } else {
-                badge.style.background = color;
-                badge.textContent = labelOf(tp);
+                var typeName2 = labelOf(tp);
+                // 既存クラスを置き換え
+                badge.className = 'label-badge type-' + typeName2;
+                badge.textContent = typeName2;
+                // フォールバック（上書き）
+                try {
+                    badge.style.backgroundColor = colorForType(tp);
+                    badge.style.color = '#1f2937';
+                } catch(_) {}
             }
-            // ボーダーの色も軽く変える
-            try{ el.style.borderColor = color; } catch(e){}
+            // ボーダー色は変更しない（デザインはCSSのバッジに集約）
         });
         try{ console.log('labels applied to list'); }catch(e){}
         // 何件反映できたか詳細

@@ -232,7 +232,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                              <div id="jsmind_nav">
                                 <div style="text-align: left">
                                     <!-- 【Edit】 -->
-                                    <button class="button4" onclick="add_Qnode();">
+                                    <!-- <button class="button4" onclick="add_Qnode();">
                                         問いノード追加
                                     </button>
                                     <button class="button4" onclick="add_Anode();">
@@ -240,31 +240,31 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </button>
                                     <button class="button4" onclick="add_Label('primary_label');">
                                         ラベル追加
-                                    </button>
+                                    </button> -->
                                     <!-- <li><button onclick="horisage();">掘り下げる</button></li>
                                         horisage()関数は現在存在しない-->
-                                    <button class="button4" onclick="remove_node();">
+                                    <!-- <button class="button4" onclick="remove_node();">
                                         ノードの削除
-                                    </button>
+                                    </button> -->
                                     <!--1つ前に消したノードを復元-->
                                     <!-- <button class="button4" onclick="return_node();">
                                         1つ前に戻る
                                         </button> -->
                                     <!-- 【Zoom】 -->
-                                    <button class="button3" id="zoom-in-button" onclick="zoomIn();">
+                                    <!-- <button class="button3" id="zoom-in-button" onclick="zoomIn();">
                                         拡大
                                     </button>
                                     <button class="button3" id="zoom-out-button" onclick="zoomOut();">
                                         縮小
                                     </button>
                                     <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
-                                        マップver更新 <!--hatakeyama-->
+                                        マップver更新 
                                     </button>
                                     
                                     【Screenshot】
                                     <button class="button4" style="width:80px" onclick="screen_shot();">
                                         screenshot
-                                    </button>
+                                    </button> -->
 
                                     <!-- presen_menu fin -->
                                 <!-- center-aligned shared tabs (表出化/連結化/内面化) -->
@@ -272,7 +272,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <div class="button-container">
                                     <button id="tab-externalization" class="button5">表出化</button>
                                     <button id="tab-combination" class="button5">連結化</button>
-                                    <button id="tab-internalization" class="button5">内面化</button>
+                                    <!-- <button id="tab-internalization" class="button5">内面化</button> -->
                                     </div>
                             
 
@@ -845,8 +845,10 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             <button id="discussion_log_xml_file_upload_button">アップロード</button>
                             <div id="uploaded_meeting_utterance_xml_concent_display_area" style="display: none"></div>
                             <hr style="margin:8px 0;">
-                            <div style="font-size: 15px;">ラベルXMLを選んでください（MessageData: id / sender_id / type）</div>
+                            <form id="uploadForm2" enctype="multipart/form-data">
+                            <div style="font-size: 15px;">ラベルXMLファイルを選んでください</div>
                             <input type="file" id="utteranceLabelXmlUploader" accept=".xml">
+                            </form>
                             <button id="utterance_label_xml_upload_button" onclick="try{ console.log('onclick: label apply'); if(window.applyLabelsFromCurrentXML){ window.applyLabelsFromCurrentXML(); } }catch(e){ console && console.error && console.error('inline onclick error', e); }">ラベルを適用</button>
                             <div id="uploaded_utterance_label_xml_display_area" style="display:none"></div>
                         </div>
@@ -888,14 +890,24 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                                 console.log('[label shim] save response:', res);
                                                                                 // 3) 表示（簡易バッジ）
                                                                                 try{
-                                                                                    var colorOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return '#4fc3f7'; if(tp===2)return '#81c784'; if(tp===3)return '#ffb74d'; if(tp===4)return '#bdbdbd'; return '#bdbdbd'; };
                                                                                     var labelOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return 'SELF'; if(tp===2)return 'OTHER'; if(tp===3)return 'ORGANIZETION'; if(tp===4)return 'UNKNOWN'; return 'UNKNOWN'; };
+                                                                                    var colorOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return '#B3E5FC'; if(tp===2)return '#C8E6C9'; if(tp===3)return '#FFE0B2'; if(tp===4)return '#E0E0E0'; return '#E0E0E0'; };
                                                                                     var applied=0; Object.keys(map).forEach(function(id){
                                                                                         var el=document.getElementById(String(id)); if(!el) return;
                                                                                         var badgeId='label-badge-'+String(id); var badge=document.getElementById(badgeId);
-                                                                                        var tp=map[id].type; var color=colorOf(tp);
-                                                                                        if(!badge){ badge=document.createElement('span'); badge.id=badgeId; badge.style.cssText='display:inline-block; margin-left:6px; padding:1px 4px; font-size:10px; border-radius:8px; color:#000;'; try{ el.insertBefore(badge, el.firstChild);}catch(_){ el.appendChild(badge);} }
-                                                                                        badge.textContent=labelOf(tp); badge.style.background=color; try{ el.style.borderColor=color; }catch(_){}
+                                                                                        var tp=map[id].type; var typeName=labelOf(tp);
+                                                                                        if(!badge){
+                                                                                            badge=document.createElement('span');
+                                                                                            badge.id=badgeId;
+                                                                                            badge.className='label-badge type-' + typeName;
+                                                                                            try{ el.insertBefore(badge, el.firstChild);}catch(_){ el.appendChild(badge);} 
+                                                                                        }
+                                                                                        // クラスを更新（色はCSS任せ）
+                                                                                        badge.className='label-badge type-' + typeName;
+                                                                                        badge.textContent=typeName;
+                                                                                        // フォールバックで背景色も直指定
+                                                                                        try { badge.style.backgroundColor = colorOf(tp); badge.style.color = '#1f2937'; } catch(_){ }
+                                                                                        // 枠線色は変更しない
                                                                                         applied++;
                                                                                     });
                                                                                     console.log('[label shim] badges applied=', applied);
@@ -958,7 +970,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <div id="node_version_log" class="node_version_log"></div> -->
                         <!--  hatakeyama  -->
 
-                        <div class="toi_list">
+                        <!-- <div class="toi_list">
                             <div id="mind_all">
                                 <input class="button5" type="button" onclick="showGeneration();" value="問い一覧">
                                 <b>マインドマップモード</b>
@@ -967,10 +979,10 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <input class="button5" type="button" onclick="P_showGeneration();" value="問い一覧">
                                 <b>資料作成モード</b>
                             </div>
-                        </div>
+                        </div> -->
 
                         <div id="mind" class="side">
-                            <div class="inquiry_area">
+                            <!-- <div class="inquiry_area">
                                 <div>【情報の表出化】</div>
                                 <div id="testxml"></div>
                                 <div id="ont"></div>
@@ -978,7 +990,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <div id="intention"></div>
                                 <div>【合理性】</div>
                                 <div id="rationality"></div>
-                            </div>
+                            </div> -->
                             <div id="ImageAddContent">
                                 <!-- <form id="ImageForm" method="POST" enctype="multipart/form-data"> -->
                                 <div class="deco-file">

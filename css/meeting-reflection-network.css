@@ -8,3 +8,43 @@
 	border-color: #f5a3b5;
 }
 
+/* === Discussion label badge styles (centralized) === */
+.utter_node_in_list {
+	position: relative; /* allow absolute-positioned badge inside */
+}
+
+.label-badge {
+	position: absolute;
+	top: 4px;
+	left: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 10px;
+	line-height: 1;
+	padding: 3px 8px;
+	border-radius: 9999px; /* かわいいピル形状 */
+	font-weight: 700;
+	color: #1f2937; /* 濃いめの文字色で読みやすく */
+	border: 1px solid rgba(0,0,0,0.08);
+	box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+	pointer-events: none;
+}
+
+.label-badge.type-SELF {
+	background: #B3E5FC; /* soft blue */
+	border-color: #90CAF9;
+}
+.label-badge.type-OTHER {
+	background: #C8E6C9; /* soft green */
+	border-color: #A5D6A7;
+}
+.label-badge.type-ORGANIZETION {
+	background: #FFE0B2; /* soft orange */
+	border-color: #FFCC80;
+}
+.label-badge.type-UNKNOWN {
+	background: #E0E0E0; /* soft gray */
+	border-color: #BDBDBD;
+}
+

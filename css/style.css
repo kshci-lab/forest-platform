@@ -2232,14 +2232,14 @@ select[name="user_list"] {
 
 .button-container {
     display: inline-block;
-	margin-left: 80px; /* 左側の余白を拡大して Screenshot とタブの間隔を調整 */
+	margin-left: 20px; /* 左側の余白を拡大して Screenshot とタブの間隔を調整 */
 }
 
 .button5 {
     background-color: #90B1AB; /* デフォルトの背景色 */
     color: #fff;
-    height: 25px;
-    font-size: 12px;
+    height: 30px;
+    font-size: 15px;
     margin-left: 1px;
 	margin-right: 1px;
 	margin-top: 5px;
