@@ -770,7 +770,7 @@ if($purpose === "select_meeting_utterance") {
      /*
      * 議論内省マップのノードデータと思考整理マップのノードの対応関係データを取得する処理
      */
-    $result_forest_node_and_discussionmap_node_relation = $mysqli->query("SELECT network_node_id, mindmap_node_id FROM network_mindmap_connect
+    $result_forest_node_and_discussionmap_node_relation = $mysqli->query("SELECT network_node_id, mindmap_node_id FROM network_mindmap_connects
               WHERE network_node_id IN (SELECT network_node_id FROM network_nodes WHERE network_map_id IN (SELECT network_map_id FROM network_maps WHERE map_id = '$map_id')) 
               AND time > '$result_discussionmap_create_start_time' AND time < '$first_load_flag' ORDER BY time DESC ");
     
@@ -844,7 +844,7 @@ if($purpose === "select_meeting_utterance") {
      /*
      * 議論内省マップのノードデータと思考整理マップのノードの対応関係データを取得する処理
      */
-    $result_forest_node_and_discussionmap_node_relation = $mysqli->query("SELECT network_node_id, mindmap_node_id FROM network_mindmap_connect
+    $result_forest_node_and_discussionmap_node_relation = $mysqli->query("SELECT network_node_id, mindmap_node_id FROM network_mindmap_connects
               WHERE network_node_id IN (SELECT network_node_id FROM network_nodes WHERE network_map_id IN (SELECT network_map_id FROM network_maps WHERE map_id = '$map_id')) 
               AND time > '$discussion_start_time' AND time < '$discussion_end_time' ORDER BY time DESC ");
     

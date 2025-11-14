@@ -56,29 +56,50 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
     $hasSelectedCol = ($res->num_rows > 0);
     $res->free();
   }
+  // カラム存在チェック: user_id（登録者のユーザー名を取得するため）
+  $hasUserIdCol = false;
+  if ($res = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'user_id'")) {
+    $hasUserIdCol = ($res->num_rows > 0);
+    $res->free();
+  }
 
   if ($kfragCol !== null) {
     // 値が NULL/空白のみを除外して取得（stage1/2/3 も合わせて取得）
     $orderBy = $hasExtIdCol ? " ORDER BY externalized_contents_id DESC" : "";
-    // SELECT 句を動的に構築（selected_contentsがある場合のみ取得）
-    $selectFields = "`{$kfragCol}` AS content, stage1, stage2, stage3";
-    if ($hasSelectedCol) { $selectFields .= ", selected_contents"; }
+    // SELECT 句を動的に構築（selected_contents / user_name を含める）
+    $selectFields = "ec.`{$kfragCol}` AS content, ec.stage1, ec.stage2, ec.stage3";
+    if ($hasSelectedCol) { $selectFields .= ", ec.selected_contents"; }
+    if ($hasUserIdCol) { $selectFields .= ", ec.user_id, u.name AS user_name"; }
+
+    // FROM 句と JOIN（user_idがある場合のみJOIN）
+    $fromJoin = $hasUserIdCol
+      ? "FROM externalized_contents ec LEFT JOIN users u ON u.user_id = ec.user_id"
+      : "FROM externalized_contents ec";
+
     $sql = "SELECT {$selectFields}
-              FROM externalized_contents
-             WHERE `{$kfragCol}` IS NOT NULL
-               AND LENGTH(TRIM(`{$kfragCol}`)) > 0" . $orderBy;
+              {$fromJoin}
+             WHERE ec.`{$kfragCol}` IS NOT NULL
+               AND LENGTH(TRIM(ec.`{$kfragCol}`)) > 0" . $orderBy;
     if ($stmt = $mysqli->prepare($sql)) {
       if ($stmt->execute()) {
         if ($result = $stmt->get_result()) {
           while ($row = $result->fetch_assoc()) {
             $__val = isset($row['content']) ? (string)$row['content'] : '';
             if (trim($__val) === '') { continue; }
+            // 行ごとのユーザー名（user_idがない場合/名前未設定時はログインユーザー名にフォールバック）
+            $__user_name = $__current_user_name;
+            if ($hasUserIdCol) {
+              if (isset($row['user_name']) && trim((string)$row['user_name']) !== '') {
+                $__user_name = (string)$row['user_name'];
+              }
+            }
             $__kfrag_list[] = [
               'content' => $__val,
               'stage1' => isset($row['stage1']) ? (string)$row['stage1'] : '',
               'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
               'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
-              'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : ''
+              'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
+              'user_name' => $__user_name
             ];
           }
           $result->free();
@@ -96,9 +117,10 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
         $__s1 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage1']) ? (string)$__kfrag_raw['stage1'] : '';
         $__s2 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage2']) ? (string)$__kfrag_raw['stage2'] : '';
         $__s3 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage3']) ? (string)$__kfrag_raw['stage3'] : '';
+        $__uname = is_array($__kfrag_raw) && isset($__kfrag_raw['user_name']) ? (string)$__kfrag_raw['user_name'] : $__current_user_name;
   ?>
     <div class="knowledge_fragment">
-      <div class="card-title"><?php echo htmlspecialchars($__current_user_name, ENT_QUOTES, 'UTF-8'); ?> さん</div>
+      <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>
       <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>
       <div class="card-detail" aria-hidden="true">
         <?php 

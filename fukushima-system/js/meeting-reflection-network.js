@@ -1655,6 +1655,27 @@ const getLabelXMLMappings = function(){
         if(!nodes || nodes.length === 0){
             console.warn('getLabelXMLMappings: no <MessageData> found. xml head:', (raw||'').substring(0,200));
         }
+        // 'SELF' や 'OTHER' など文字列/クォート付きも受け付ける正規化
+        var normalizeTypeCode = function(txt){
+            if (txt == null) return 4; // UNKNOWN
+            var s = String(txt).trim();
+            // クォート除去
+            if ((s.startsWith("'") && s.endsWith("'")) || (s.startsWith('"') && s.endsWith('"'))) {
+                s = s.slice(1, -1);
+            }
+            // 数値ならそのまま
+            if (/^\d+$/.test(s)) {
+                var n = parseInt(s, 10);
+                if (n>=1 && n<=4) return n;
+            }
+            // 文字列マッピング（誤綴りも吸収）
+            var u = s.toUpperCase();
+            if (u === 'SELF') return 1;
+            if (u === 'OTHER') return 2;
+            if (u === 'ORGANIZATION' || u === 'ORGANIZETION' || u === 'ORGNIZATION') return 3;
+            if (u === 'UNKNOWN') return 4;
+            return 4;
+        };
         nodes.each(function(_, n){
             var $n = $(n);
             var idTxt = ($n.find('id').first().text() || '').trim();
@@ -1665,7 +1686,7 @@ const getLabelXMLMappings = function(){
                 map[key] = {
                     id: key,
                     sender_id: senderTxt || '',
-                    type: typeTxt ? parseInt(typeTxt, 10) : null
+                    type: normalizeTypeCode(typeTxt)
                 };
             }
         });
@@ -1689,21 +1710,12 @@ const applyLabelsToUtteranceList = function(labelMap){
             switch(tp){
                 case 1: return 'SELF';
                 case 2: return 'OTHER';
-                case 3: return 'ORGANIZETION';
+                case 3: return 'ORGANIZATION';
                 case 4: return 'UNKNOWN';
                 default: return 'UNKNOWN';
             }
         };
-        // 色（CSSのtype-XXXXを基本にしつつ、フォールバックとして同色を返す）
-        var colorForType = function(tp){
-            switch(tp){
-                case 1: return '#B3E5FC'; // soft blue
-                case 2: return '#C8E6C9'; // soft green
-                case 3: return '#FFE0B2'; // soft orange
-                case 4: return '#E0E0E0'; // soft gray
-                default: return '#E0E0E0';
-            }
-        };
+        // 色指定はCSSの .label-badge.type-XXXX に統一（JSでは色を持たない）
 
         Object.keys(labelMap).forEach(function(id){
             var el = document.getElementById(String(id));
@@ -1719,11 +1731,7 @@ const applyLabelsToUtteranceList = function(labelMap){
                 var typeName = labelOf(tp);
                 badge.className = 'label-badge type-' + typeName;
                 badge.textContent = typeName;
-                // フォールバック: もしCSSが適用されない環境でも色が出るように背景色を付与
-                try {
-                    badge.style.backgroundColor = colorForType(tp);
-                    badge.style.color = '#1f2937';
-                } catch(_) {}
+                // 色はCSSクラスで適用（JSからのインライン指定は行わない）
                 // 先頭にバッジを挿入（タイトルの前）
                 try{
                     el.insertBefore(badge, el.firstChild);
@@ -1733,11 +1741,7 @@ const applyLabelsToUtteranceList = function(labelMap){
                 // 既存クラスを置き換え
                 badge.className = 'label-badge type-' + typeName2;
                 badge.textContent = typeName2;
-                // フォールバック（上書き）
-                try {
-                    badge.style.backgroundColor = colorForType(tp);
-                    badge.style.color = '#1f2937';
-                } catch(_) {}
+                // 色はCSSクラスで適用（JSからのインライン指定は行わない）
             }
             // ボーダー色は変更しない（デザインはCSSのバッジに集約）
         });
@@ -2412,27 +2416,28 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
 });
 
 // --- 知識思考エリア: フラグメントからノード生成（クリック or DnD） ---
+
 (function(){
-    // フラグメントカードをクリックでピンクカード（簡易ノード）を生成（thinking_area 内のカードは増殖防止のため除外）
-    $(document).on('click', '#shared_combination_overlay .knowledge_fragment', function(e){
-        // 操作系（詳細ボタン/詳細領域/フォーム類）でのクリックは無視してカード本体のみ反応
+    // フラグメントカードをクリックでピンクカード（簡易ノード）を生成（生成済ノードは除外）
+    $(document).on('click', '#shared_combination_overlay .knowledge_fragment, #knowledge_fragments_workspace .knowledge_fragment', function(e){
+        // 操作系（詳細ボタン/詳細領域/フォーム類）でのクリックは無視
         if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
-        // 既に思考エリア内にある複製カード（wrapper配下）は再複製しない
-        if ($(this).closest('#knowledge_thinking_area').length) return;
+        // 生成済ノード(thinking-node-wrapper配下)からのクリックは再複製しない
+        if ($(this).closest('.thinking-node-wrapper').length) return;
         var $card = $(this);
         createThinkingNodeFromCard($card, null, null);
     });
 
     // ドラッグ&ドロップ: フラグメントカードをドラッグ可能に
     function markFragmentsDraggable(){
-        $('#shared_combination_overlay .knowledge_fragment').attr('draggable', 'true');
+        $('#shared_combination_overlay .knowledge_fragment, #knowledge_fragments_workspace .knowledge_fragment').attr('draggable', 'true');
     }
     document.addEventListener('DOMContentLoaded', markFragmentsDraggable);
     // 念のためオーバーレイが表示されるたびに付与（タブ切替時など）
     window.addEventListener('focus', markFragmentsDraggable);
 
     // ドラッグ開始: 転送データにインデックスを埋める（なければ本文テキスト）
-    $(document).on('dragstart', '#shared_combination_overlay .knowledge_fragment', function(ev){
+    $(document).on('dragstart', '#shared_combination_overlay .knowledge_fragment, #knowledge_fragments_workspace .knowledge_fragment', function(ev){
         try{
             var dt = ev.originalEvent.dataTransfer;
             dt.setData('text/plain', $(this).find('.card-body').text().trim());
@@ -2440,9 +2445,9 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
     });
 
     // ドロップ受け側: 思考エリア
-    var $area = $('#knowledge_thinking_area');
-    $(document).on('dragover', '#knowledge_thinking_area', function(ev){ ev.preventDefault(); });
-    $(document).on('drop', '#knowledge_thinking_area', function(ev){
+    var $area = $('#knowledge_fragments_workspace');
+    $(document).on('dragover', '#knowledge_fragments_workspace', function(ev){ ev.preventDefault(); });
+    $(document).on('drop', '#knowledge_fragments_workspace', function(ev){
         ev.preventDefault();
         var oe = ev.originalEvent;
         var txt = '';
@@ -2464,7 +2469,7 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
 
     // ノード作成ヘルパ
     function createThinkingNodeFromCard($card, x, y){
-        var $area = $('#knowledge_thinking_area');
+        var $area = $('#knowledge_fragments_workspace');
         if ($area.length === 0 || $card.length === 0) return;
         // ユーザー名と本文だけをシンプルなピンクカードとして生成
         var title = ($card.find('.card-title').text() || '').trim();

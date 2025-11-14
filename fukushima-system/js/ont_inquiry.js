@@ -76,77 +76,73 @@ function c_disp(){
 
 								var $concept_id = $concept_tag[k].id; //id決定
 								var testxml = document.getElementById("intention");//問いの入れたい箇所　[理由・目的]
+								if(testxml){
+									var ultag = document.createElement("ul");
+									ultag.className = $concept_id;
+									ultag.state = "hide";
+									testxml.appendChild(ultag);
 
-								var ultag = document.createElement("ul");
-								ultag.className = $concept_id;
-								ultag.state = "hide";
-								//ultag.setAttribute("switch",false);
-								testxml.appendChild(ultag);
+									var imgtag = document.createElement("img");
+									imgtag.src = "image/list6.png";
+									imgtag.style.width = 15;
+									imgtag.style.height = 15;
+									ultag.appendChild(imgtag);
 
-								var imgtag = document.createElement("img");
-								imgtag.src = "image/list6.png";
-								imgtag.style.width = 15;
-								imgtag.style.height = 15;
-								//imgtag.onclick = switching;
-								ultag.appendChild(imgtag);
-
-								var atag = document.createElement("a");
-								atag.href = "#";
-								atag.id = $id;
-								atag.onclick = add_node;
-								atag.innerHTML = $inquiry_content;
-								ultag.appendChild(atag);
+									var atag = document.createElement("a");
+									atag.href = "#";
+									atag.id = $id;
+									atag.onclick = add_node;
+									atag.innerHTML = $inquiry_content;
+									ultag.appendChild(atag);
+								}
 
 							}else if($inquiry_content == "なぜこれらは合理的であるといえるのですか？"){
 
 								var $concept_id = $concept_tag[k].id;
 
 								var testxml = document.getElementById("rationality");	//問いの入れたい箇所　[合理性]
+								if(testxml){
+									var ultag = document.createElement("ul");
+									ultag.className = $concept_id;
+									testxml.appendChild(ultag);
 
-								var ultag = document.createElement("ul");
-								ultag.className = $concept_id;
-								// ultag.state = "hide";
-								//ultag.setAttribute("switch",false);
-								testxml.appendChild(ultag);	//[合理性]の下に<ul>タグを追加する
+									var imgtag = document.createElement("img");
+									imgtag.src = "image/list6.png";
+									imgtag.style.width = 15;
+									imgtag.style.height = 15;
+									ultag.appendChild(imgtag);
 
-								var imgtag = document.createElement("img");
-								imgtag.src = "image/list6.png";
-								imgtag.style.width = 15;
-								imgtag.style.height = 15;
-								//imgtag.onclick = switching;
-								ultag.appendChild(imgtag);	//追加した<ul>タグの中に<img>を追加する
-
-								var atag = document.createElement("a");
-								atag.href = "#";
-								atag.id = $id;
-								atag.onclick = add_node;
-								atag.innerHTML = $inquiry_content;
-								ultag.appendChild(atag);	//追加した<ul>タグの中に<a>を追加する
+									var atag = document.createElement("a");
+									atag.href = "#";
+									atag.id = $id;
+									atag.onclick = add_node;
+									atag.innerHTML = $inquiry_content;
+									ultag.appendChild(atag);
+								}
 
 							}else{
 								var $concept_id = $concept_tag[k].id;
 
 								var testxml = document.getElementById("testxml");
+								if(testxml){
+									var ultag = document.createElement("ul");
+									ultag.className = $concept_id;
+									ultag.state = "hide";
+									testxml.appendChild(ultag);
 
-								var ultag = document.createElement("ul");
-								ultag.className = $concept_id;
-								ultag.state = "hide";
-								//ultag.setAttribute("switch",false);
-								testxml.appendChild(ultag);
+									var imgtag = document.createElement("img");
+									imgtag.src = "image/list6.png";
+									imgtag.style.width = 15;
+									imgtag.style.height = 15;
+									ultag.appendChild(imgtag);
 
-								var imgtag = document.createElement("img");
-								imgtag.src = "image/list6.png";
-								imgtag.style.width = 15;
-								imgtag.style.height = 15;
-								//imgtag.onclick = switching;
-								ultag.appendChild(imgtag);
-
-								var atag = document.createElement("a");
-								atag.href = "#";
-								atag.id = $id;
-								atag.onclick = add_node;
-								atag.innerHTML = $inquiry_content;
-								ultag.appendChild(atag);
+									var atag = document.createElement("a");
+									atag.href = "#";
+									atag.id = $id;
+									atag.onclick = add_node;
+									atag.innerHTML = $inquiry_content;
+									ultag.appendChild(atag);
+								}
 
 							}
 						}

@@ -9,17 +9,28 @@ header('Content-Type: application/json; charset=utf-8');
 require_once(__DIR__ . '/connect_db.php');
 
 function map_type_enum($v){
-    // 1→SELF, 2→OTHER, 3→ORGANIZETION, 4→UNKNOWN  ※DBのENUM表記に合わせる（ORGANIZETION）
+    // 1→SELF, 2→OTHER, 3→ORGANIZATION, 4→UNKNOWN  ※DBのENUM表記に合わせる
     $n = null;
     if (is_numeric($v)) { $n = intval($v, 10); }
     else if (is_string($v)) {
-        // 文字列でも "1" 等で来る想定
-        if (ctype_digit($v)) { $n = intval($v, 10); }
+        $sv = trim($v);
+        // クォート除去
+        if ((substr($sv,0,1)==="'" && substr($sv,-1)==="'") || (substr($sv,0,1)=='"' && substr($sv,-1)=='"')) {
+            $sv = substr($sv,1,strlen($sv)-2);
+        }
+        if (ctype_digit($sv)) { $n = intval($sv, 10); }
+        else {
+            $u = strtoupper($sv);
+            if ($u === 'SELF') return 'SELF';
+            if ($u === 'OTHER') return 'OTHER';
+            if ($u === 'ORGANIZATION' || $u === 'ORGANIZETION' || $u === 'ORGNIZATION') return 'ORGANIZATION';
+            if ($u === 'UNKNOWN') return 'UNKNOWN';
+        }
     }
     switch ($n) {
         case 1: return 'SELF';
         case 2: return 'OTHER';
-        case 3: return 'ORGANIZETION';
+        case 3: return 'ORGANIZATION';
         case 4: return 'UNKNOWN';
         default: return 'UNKNOWN';
     }

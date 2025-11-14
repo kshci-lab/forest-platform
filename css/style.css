@@ -2242,7 +2242,7 @@ select[name="user_list"] {
     font-size: 15px;
     margin-left: 1px;
 	margin-right: 1px;
-	margin-top: 5px;
+	margin-top: 1px;
 	border:none;
     align-items: center; /* 垂直方向の中央寄せ */
     justify-content: center; /* 水平方向の中央寄せ */
@@ -2260,6 +2260,75 @@ select[name="user_list"] {
 .button5:hover {
     background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
 }
+
+/* ====== タブメニュー（共有知タブ用／UL-LI版） ====== */
+.button-container ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	gap: 0;
+	position: relative;
+}
+
+.button-container ul li {
+	flex: 1;
+	padding: 12px 20px;
+	text-align: center;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	background: #90B1AB; /* デフォルト色 */
+	color: #fff;
+	border-radius: 12px 12px 0 0;
+	margin-right: 4px;
+}
+
+.button-container ul li:last-child {
+	margin-right: 0;
+}
+
+/* mindmap.js は .active を付与するため .selected と両対応に */
+.button-container ul li.selected,
+.button-container ul li.active {
+	background: #99cccc; /* Active 色 */
+	color: #fff;
+	box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+	position: relative;
+	z-index: 2;
+}
+
+/* 吹き出し三角形 */
+.button-container ul li.selected::after,
+.button-container ul li.active::after {
+	content: '';
+	position: absolute;
+	bottom: -10px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 0;
+	height: 0;
+	border-left: 10px solid transparent;
+	border-right: 10px solid transparent;
+	border-top: 10px solid #99cccc; /* active 色 */
+}
+
+.button-container ul li:not(.selected):not(.active):hover {
+	background: #a0c1bc; /* hover 色 */
+	transform: translateY(-2px);
+}
+
+/* ====== タブ内容（任意。現在のページ切替はJSで制御） ====== */
+.tab-content {
+	display: none;
+	padding: 20px;
+	min-height: 120px;
+	background: #fff;
+	border: 2px solid #99cccc;
+	border-top: none;
+	border-radius: 0 0 12px 12px;
+}
+
+.tab-content.selected { display: block; }
 
 /*他者の問いノード表示*/
 .button_q {

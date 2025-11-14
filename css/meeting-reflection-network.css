@@ -11,12 +11,14 @@
 /* === Discussion label badge styles (centralized) === */
 .utter_node_in_list {
 	position: relative; /* allow absolute-positioned badge inside */
+	overflow: visible;   /* allow badge to overlap outside the box */
 }
+
 
 .label-badge {
 	position: absolute;
-	top: 4px;
-	left: 6px;
+	top: -10px;       /* overlap about half outside vertically */
+	left: -8px;      /* overlap about half outside horizontally on left */
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -29,6 +31,7 @@
 	border: 1px solid rgba(0,0,0,0.08);
 	box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 	pointer-events: none;
+	z-index: 10;    /* ensure badge is above the container border */
 }
 
 .label-badge.type-SELF {
@@ -39,7 +42,9 @@
 	background: #C8E6C9; /* soft green */
 	border-color: #A5D6A7;
 }
-.label-badge.type-ORGANIZETION {
+.label-badge.type-ORGANIZATION,
+.label-badge.type-ORGANIZETION,
+.label-badge.type-ORGNIZATION {
 	background: #FFE0B2; /* soft orange */
 	border-color: #FFCC80;
 }

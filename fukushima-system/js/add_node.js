@@ -3,6 +3,18 @@
 */
 
 async function loadNodesData() {
+	// jsMind が未初期化なら何もしない（共有知モード等）
+	if(!window._jm || typeof window._jm.add_node !== 'function'){
+		try{
+			var isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
+			if(isShared){
+				console.info('[add_node] shared mode — jsMind not initialized (expected).');
+			}else{
+				console.warn('[add_node] skip: jsMind instance not ready');
+			}
+		}catch(e){}
+		return;
+	}
 	const callData = (dataType) => {
 		return new Promise((resolve, reject) => {
 			$.ajax({
@@ -52,8 +64,11 @@ async function loadNodesData() {
 
 	const visualizeNode = (node_id) => {
 		// 親に当たるノードから再帰的に順番に表示していく
-		const node_info = getIndexedNodeData(findNodeIndex(node_id));
-		show_node(node_info.id, node_info.parent_id, node_info.content, node_info.concept_id, node_info.type, node_info.class);
+		const idx = findNodeIndex(node_id);
+		if(idx === undefined || idx === null){ return; }
+		const node_info = getIndexedNodeData(idx);
+		if(!node_info || !node_info.id){ return; }
+		try{ show_node(node_info.id, node_info.parent_id, node_info.content, node_info.concept_id, node_info.type, node_info.class); }catch(e){ console.error('[add_node] show_node failed', e); }
 
 		const children = findChildrenIndex(node_id);
 		if(children.length === 0) return;
@@ -64,13 +79,26 @@ async function loadNodesData() {
 		})
 	}
 
-	const rootChildren = findChildrenIndex("root").map(n => getIndexedNodeData(n).id);
-	rootChildren.map(n_id => {
-		visualizeNode(n_id);
-	});
+	// データ妥当性チェック
+	if(!Array.isArray(id_array) || id_array.length === 0){
+		console.warn('[add_node] empty node list from DB/API');
+		return;
+	}
+	const rootIdxList = findChildrenIndex("root");
+	if(!Array.isArray(rootIdxList) || rootIdxList.length === 0){
+		console.warn('[add_node] no root children to render');
+		return;
+	}
+	const rootChildren = rootIdxList.map(n => (getIndexedNodeData(n) || {}).id).filter(Boolean);
+	rootChildren.forEach(n_id => { visualizeNode(n_id); });
 }
 
 window.addEventListener('load', () => {
 	// HTML本体の描画が完了したら．JSMINDのノード情報をデータベースから取得して表示
+	try{
+		if(typeof window.ensureJsMindInitialized === 'function'){
+			window.ensureJsMindInitialized();
+		}
+	}catch(e){ console.warn('[add_node] ensure init warn', e); }
 	loadNodesData();
 });

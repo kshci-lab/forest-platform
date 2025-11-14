@@ -31,3 +31,15 @@ jQuery(function($){
       return false;
   }).filter(':eq(0)').click();
 });
+
+// 3) タブ切替時にoverlayを確実にトグル
+function activateSharedTab(id){
+  // 既存のタブ切替処理はそのまま
+  try{
+    var ov = document.getElementById('shared_combination_overlay');
+    if(ov){
+      if(id === 'tab-combination'){ ov.style.display = 'block'; }
+      else { ov.style.display = 'none'; }
+    }
+  }catch(e){ console && console.warn && console.warn('activateSharedTab overlay toggle failed', e); }
+}

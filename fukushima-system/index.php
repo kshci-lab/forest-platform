@@ -119,7 +119,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
             <form name="return" method="POST">
                 <span class="title_name">Forest</span>
                 <span><input class="button2" type="submit" name="logout" value="ログアウト"></span>
-                <span><input class="button1" type="submit" name="sheetbtn" value="シート選択画面に戻る"></span>
+                <!-- <span><input class="button1" type="submit" name="sheetbtn" value="シート選択画面に戻る"></span> -->
             </form>
         </div>
         <!-- <form name="return" method="POST">
@@ -144,7 +144,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
           <!-- <li><a href="#tab02">過去のマインドマップ</a></li>
               <li class="active"><a href="#tab03" >リフレクション</a></li>
               <li class="active"><a href="#record_tab" >履歴</a></li> -->
-          <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  <!--hatakeyama-->
+          <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  
          <!-- <li class="active"><a href="#tab05">共有知モード</a></li> -->
           
     
@@ -269,10 +269,12 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <!-- presen_menu fin -->
                                 <!-- center-aligned shared tabs (表出化/連結化/内面化) -->
                                 <!-- <div id="shared_mode_tabs_center" style="display:flex; justify-content:center; gap:8px; margin:8px 0;"> -->
-                                    <div class="button-container">
-                                    <button id="tab-externalization" class="button5">表出化</button>
-                                    <button id="tab-combination" class="button5">連結化</button>
-                                    <!-- <button id="tab-internalization" class="button5">内面化</button> -->
+                                    <div class="button-container tab-container">
+                                        <ul>
+                                            <li id="tab-externalization" class="selected">表出化</li>
+                                            <li id="tab-combination">連結化</li>
+                                            <!-- <li id="tab-internalization">内面化</li> -->
+                                        </ul>
                                     </div>
                             
 
@@ -578,13 +580,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <div class="comb-left" style="display:flex; flex-direction:column; flex:0 0 70%; box-sizing:border-box;">
                                         <!-- Left Top: FragmentList + Thinking Area (split vertically) -->
                                         <div class="comb-left-top" style="background:white; flex:1 1 0; overflow:hidden; display:flex; flex-direction:column;">
-                                            <div class="overlay-knowledge-fragments" style="flex:0 0 auto;">
-                                                <div class="overlay-title">知識フラグメント一覧</div>
-                                                <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
-                                            </div>
-                                            <div id="knowledge_thinking_area" class="knowledge_thinking_area" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
-                                                <div class="overlay-title" style="margin-bottom:0; padding-top:8px; padding-left:8px;">思考エリア</div>
-                                                <!-- ここにフラグメントから生成したノードを配置します -->
+                                            <!-- 統合エリア: フラグメント一覧 + ドラッグ可能ノード領域 -->
+                                            <div id="knowledge_fragments_workspace" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
+                                                <div class="overlay-title" style="margin-bottom:0; padding:8px 8px 0 8px;">知識フラグメント一覧</div>
+                                                <!-- 元フラグメント一覧 -->
+                                                <div id="knowledge_fragment_cards" style="position:relative;">
+                                                    <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
+                                                </div>
+                                                <!-- ここにフラグメントから生成したノードを配置します（従来 knowledge_thinking_area 機能） -->
                                             </div>
                                         </div>
                                         <!-- Left Bottom: InputArea -->
@@ -890,8 +893,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                                 console.log('[label shim] save response:', res);
                                                                                 // 3) 表示（簡易バッジ）
                                                                                 try{
-                                                                                    var labelOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return 'SELF'; if(tp===2)return 'OTHER'; if(tp===3)return 'ORGANIZETION'; if(tp===4)return 'UNKNOWN'; return 'UNKNOWN'; };
-                                                                                    var colorOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return '#B3E5FC'; if(tp===2)return '#C8E6C9'; if(tp===3)return '#FFE0B2'; if(tp===4)return '#E0E0E0'; return '#E0E0E0'; };
+                                                                                    var labelOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return 'SELF'; if(tp===2)return 'OTHER'; if(tp===3)return 'ORGANIZATION'; if(tp===4)return 'UNKNOWN'; return 'UNKNOWN'; };
                                                                                     var applied=0; Object.keys(map).forEach(function(id){
                                                                                         var el=document.getElementById(String(id)); if(!el) return;
                                                                                         var badgeId='label-badge-'+String(id); var badge=document.getElementById(badgeId);
@@ -905,8 +907,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                                         // クラスを更新（色はCSS任せ）
                                                                                         badge.className='label-badge type-' + typeName;
                                                                                         badge.textContent=typeName;
-                                                                                        // フォールバックで背景色も直指定
-                                                                                        try { badge.style.backgroundColor = colorOf(tp); badge.style.color = '#1f2937'; } catch(_){ }
+                                                                                        // 色はCSSクラスで適用（インラインstyleは設定しない）
                                                                                         // 枠線色は変更しない
                                                                                         applied++;
                                                                                     });
@@ -934,7 +935,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                     if(inp && inp.files && inp.files[0]){
                                                                         var reader = new FileReader();
                                                                         reader.onload = function(){ console.log('[label shim] read file bytes=', (reader.result||'').length); ensureHolder(reader.result); var map = (function(txt){ try{ var p=new DOMParser().parseFromString(txt,'text/xml'); var list=p.getElementsByTagName('MessageData'); if(!list||!list.length){ list=p.getElementsByTagName('messagedata'); }
-                                                                            var m={}; for(var i=0;i<list.length;i++){ var node=list[i]; var id=(node.getElementsByTagName('id')[0]||{}).textContent||''; var sid=(node.getElementsByTagName('sender_id')[0]||{}).textContent||''; var tp=(node.getElementsByTagName('type')[0]||{}).textContent||''; if(id){ m[String(id)]={id:String(id), sender_id:String(sid), type: tp?parseInt(tp,10):null }; } } return m; }catch(_){ return {}; } })(reader.result); done(map); };
+                                                                            var norm=function(s){ if(s==null)return 4; s=String(s).trim(); if((s[0]==="'"&&s[s.length-1]==="'")||(s[0]=='"'&&s[s.length-1]=='"')){ s=s.slice(1,-1);} if(/^\d+$/.test(s)){ var n=parseInt(s,10); if(n>=1&&n<=4) return n; } var u=s.toUpperCase(); if(u==='SELF')return 1; if(u==='OTHER')return 2; if(u==='ORGANIZATION'||u==='ORGANIZETION'||u==='ORGNIZATION')return 3; if(u==='UNKNOWN')return 4; return 4; };
+                                                                            var m={}; for(var i=0;i<list.length;i++){ var node=list[i]; var id=(node.getElementsByTagName('id')[0]||{}).textContent||''; var sid=(node.getElementsByTagName('sender_id')[0]||{}).textContent||''; var tp=(node.getElementsByTagName('type')[0]||{}).textContent||''; if(id){ m[String(id)]={id:String(id), sender_id:String(sid), type: norm(tp) }; } } return m; }catch(_){ return {}; } })(reader.result); done(map); };
                                                                         reader.readAsText(inp.files[0], 'UTF-8');
                                                                     } else {
                                                                         alert('先にラベルXMLファイルを選択してください');

@@ -1664,6 +1664,9 @@ function activateSharedTab(tabId){
       // jQueryのfadeIn(デフォルト約400ms)にも対応して追い計測
       setTimeout(recalc, 120);
       setTimeout(recalc, 420);
+      // レイアウトが遅延して確定するケース（フォント/画像）への追加追い計測
+      setTimeout(recalc, 800);
+      setTimeout(recalc, 1500);
       // 画面変化に追随
       attachOverlayAutoResize();
     } else {
@@ -1700,6 +1703,16 @@ function updateCombinationOverlayBounds(){
   var bottom = Math.max.apply(null, rects.map(function(r){ return r.bottom; }));
   var width = Math.max(0, right - left);
   var height = Math.max(0, bottom - top);
+  // スクロール復元時に top が負値になり上方向へ伸びる不具合への対策
+  if (top < 0) {
+    // 高さをその分縮め、表示開始位置は 0 に固定
+    height = Math.max(0, height + top); // top は負値
+    top = 0;
+  }
+  if (left < 0) {
+    width = Math.max(0, width + left);
+    left = 0;
+  }
   overlay.style.position = 'fixed';
   overlay.style.left = left + 'px';
   overlay.style.top = top + 'px';
@@ -1798,6 +1811,13 @@ document.addEventListener('DOMContentLoaded', function(){
 // ページ内の画像やフォント読み込み完了後にも最終調整（サイズ誤差の保険）
 window.addEventListener('load', function(){
   try { updateCombinationOverlayBounds(); } catch (e) {}
+  // 連結化タブがアクティブなら最終再計測（フォント遅延などの保険）
+  try {
+    var activeComb = document.getElementById('tab-combination');
+    if (activeComb && activeComb.classList.contains('active')) {
+      updateCombinationOverlayBounds();
+    }
+  } catch(e){}
 });
 
 
