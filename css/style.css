@@ -204,16 +204,18 @@ table[type] {
 
 /* --- Shared/Combination overlay (covers jsmind_container, utterance_area, mynetwork2) --- */
 #shared_combination_overlay {
-	position: fixed; /* we compute viewport rect and place it */
+	position: fixed; /* JSで上書きされる前提だがフォールバックで全面表示 */
 	left: 0;
 	top: 0;
-	width: 0;    /* will be set by JS */
-	height: 0;   /* will be set by JS */
+	width: 100vw; /* JS失敗時のフォールバック: 以前 0 だったため内容が全く表示されないケースを防止 */
+	height: 100vh; /* 同上 */
 	background: #ffffff;
 	opacity: 1;
 	pointer-events: auto;
 	z-index: 9999;
 	display: none; /* hidden unless combination tab is active */
+	overflow-y: auto; /* 下部フォーム(knowledge_register_area)が隠れないよう縦スクロール許可 */
+	overflow-x: hidden; /* 横は従来通り抑制 */
 }
 
 /* --- Scoped layout for Shared Combination Overlay --- */
@@ -227,7 +229,8 @@ table[type] {
 	display:flex;
 	height:100%;
 	flex-direction:column;
-	flex:0 0 70%; /* 70% width */
+	flex:1 1 70%; /* 親幅に対する70%を基準に伸縮（オーバーフローで右隠れを防止） */
+	min-width:0; /* 内側の横スクロール要素が幅を押し広げない */
 }
 #shared_combination_overlay .comb-left-top,
 #shared_combination_overlay .comb-left-bottom{
@@ -238,13 +241,15 @@ table[type] {
 	min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
 }
 #shared_combination_overlay .comb-right{
-	flex:0 0 30%; /* 30% width */
+	flex:1 1 30%; /* 親幅に対する30%を基準に伸縮 */
+	min-width:0;
 	overflow:auto;
 }
 #shared_combination_overlay .overlay-knowledge-fragments{
 	height:auto;              /* コンテンツに合わせて伸びる */
 	max-height:100%;         /* ただし親の上限は超えない */
-	width:985px;
+	width:100%;              /* 親幅に追従（固定幅を廃止） */
+	max-width:100%;
 	padding:12px;
 	box-sizing:border-box;
 	min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
@@ -460,7 +465,7 @@ table[type] {
 /* 「問いノード追加」等のボタンがある箇所 */
 #jsmind_nav {
 	width: 100%;
-	height:34px;
+	height:50px;
 	display: inline;
 	font-size: 1em;
 	border-bottom:double 2px #B3E0D8;

@@ -577,17 +577,16 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <!-- Shared Combination Overlay Layout (scoped CSS) -->
                                 <div class="comb-row" style="display:flex; flex-direction:row; width:100%; height:100%;">
                                     <!-- Left 70% -->
-                                    <div class="comb-left" style="display:flex; flex-direction:column; flex:0 0 70%; box-sizing:border-box;">
+                                    <div class="comb-left" style="box-sizing:border-box;">
                                         <!-- Left Top: FragmentList + Thinking Area (split vertically) -->
                                         <div class="comb-left-top" style="background:white; flex:1 1 0; overflow:hidden; display:flex; flex-direction:column;">
-                                            <!-- 統合エリア: フラグメント一覧 + ドラッグ可能ノード領域 -->
-                                            <div id="knowledge_fragments_workspace" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
-                                                <div class="overlay-title" style="margin-bottom:0; padding:8px 8px 0 8px;">知識フラグメント一覧</div>
-                                                <!-- 元フラグメント一覧 -->
-                                                <div id="knowledge_fragment_cards" style="position:relative;">
-                                                    <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
-                                                </div>
-                                                <!-- ここにフラグメントから生成したノードを配置します（従来 knowledge_thinking_area 機能） -->
+                                            <div class="overlay-knowledge-fragments" style="flex:0 0 auto;">
+                                                <div class="overlay-title">知識フラグメント一覧</div>
+                                                <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
+                                            </div>
+                                            <div id="knowledge_thinking_area" class="knowledge_thinking_area" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
+                                                <div class="overlay-title" style="margin-bottom:0; padding-top:8px; padding-left:8px;">思考エリア</div>
+                                                <!-- ここにフラグメントから生成したノードを配置します -->
                                             </div>
                                         </div>
                                         <!-- Left Bottom: InputArea -->
@@ -643,7 +642,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         </div>
                                     </div>
                                     <!-- Right 30%: KnowledgeTree -->
-                                    <div class="comb-right" style="background:white; flex:0 0 30%; overflow:auto; box-sizing:border-box;">
+                                    <div class="comb-right" style="background:white; box-sizing:border-box;">
                                         <div class="overlay-knowledge-tree">
                                             <div class="overlay-title">産出した知</div>
                                             <div id="overlay_knowledge_tree"></div>
@@ -893,7 +892,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                                 console.log('[label shim] save response:', res);
                                                                                 // 3) 表示（簡易バッジ）
                                                                                 try{
-                                                                                    var labelOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return 'SELF'; if(tp===2)return 'OTHER'; if(tp===3)return 'ORGANIZATION'; if(tp===4)return 'UNKNOWN'; return 'UNKNOWN'; };
+                                                                                    var labelOf = function(tp){ tp=parseInt(tp,10); if(tp===1)return 'SELF'; if(tp===2)return 'OTHER'; if(tp===3)return 'ORGANIZETION'; if(tp===4)return 'UNKNOWN'; return 'UNKNOWN'; };
                                                                                     var applied=0; Object.keys(map).forEach(function(id){
                                                                                         var el=document.getElementById(String(id)); if(!el) return;
                                                                                         var badgeId='label-badge-'+String(id); var badge=document.getElementById(badgeId);
@@ -935,8 +934,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                     if(inp && inp.files && inp.files[0]){
                                                                         var reader = new FileReader();
                                                                         reader.onload = function(){ console.log('[label shim] read file bytes=', (reader.result||'').length); ensureHolder(reader.result); var map = (function(txt){ try{ var p=new DOMParser().parseFromString(txt,'text/xml'); var list=p.getElementsByTagName('MessageData'); if(!list||!list.length){ list=p.getElementsByTagName('messagedata'); }
-                                                                            var norm=function(s){ if(s==null)return 4; s=String(s).trim(); if((s[0]==="'"&&s[s.length-1]==="'")||(s[0]=='"'&&s[s.length-1]=='"')){ s=s.slice(1,-1);} if(/^\d+$/.test(s)){ var n=parseInt(s,10); if(n>=1&&n<=4) return n; } var u=s.toUpperCase(); if(u==='SELF')return 1; if(u==='OTHER')return 2; if(u==='ORGANIZATION'||u==='ORGANIZETION'||u==='ORGNIZATION')return 3; if(u==='UNKNOWN')return 4; return 4; };
-                                                                            var m={}; for(var i=0;i<list.length;i++){ var node=list[i]; var id=(node.getElementsByTagName('id')[0]||{}).textContent||''; var sid=(node.getElementsByTagName('sender_id')[0]||{}).textContent||''; var tp=(node.getElementsByTagName('type')[0]||{}).textContent||''; if(id){ m[String(id)]={id:String(id), sender_id:String(sid), type: norm(tp) }; } } return m; }catch(_){ return {}; } })(reader.result); done(map); };
+                                                                            var m={}; for(var i=0;i<list.length;i++){ var node=list[i]; var id=(node.getElementsByTagName('id')[0]||{}).textContent||''; var sid=(node.getElementsByTagName('sender_id')[0]||{}).textContent||''; var tp=(node.getElementsByTagName('type')[0]||{}).textContent||''; if(id){ m[String(id)]={id:String(id), sender_id:String(sid), type: tp?parseInt(tp,10):null }; } } return m; }catch(_){ return {}; } })(reader.result); done(map); };
                                                                         reader.readAsText(inp.files[0], 'UTF-8');
                                                                     } else {
                                                                         alert('先にラベルXMLファイルを選択してください');

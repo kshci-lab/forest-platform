@@ -2416,28 +2416,27 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
 });
 
 // --- 知識思考エリア: フラグメントからノード生成（クリック or DnD） ---
-
 (function(){
-    // フラグメントカードをクリックでピンクカード（簡易ノード）を生成（生成済ノードは除外）
-    $(document).on('click', '#shared_combination_overlay .knowledge_fragment, #knowledge_fragments_workspace .knowledge_fragment', function(e){
-        // 操作系（詳細ボタン/詳細領域/フォーム類）でのクリックは無視
+    // フラグメントカードをクリックでピンクカード（簡易ノード）を生成（thinking_area 内のカードは増殖防止のため除外）
+    $(document).on('click', '#shared_combination_overlay .knowledge_fragment', function(e){
+        // 操作系（詳細ボタン/詳細領域/フォーム類）でのクリックは無視してカード本体のみ反応
         if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
-        // 生成済ノード(thinking-node-wrapper配下)からのクリックは再複製しない
-        if ($(this).closest('.thinking-node-wrapper').length) return;
+        // 既に思考エリア内にある複製カード（wrapper配下）は再複製しない
+        if ($(this).closest('#knowledge_thinking_area').length) return;
         var $card = $(this);
         createThinkingNodeFromCard($card, null, null);
     });
 
     // ドラッグ&ドロップ: フラグメントカードをドラッグ可能に
     function markFragmentsDraggable(){
-        $('#shared_combination_overlay .knowledge_fragment, #knowledge_fragments_workspace .knowledge_fragment').attr('draggable', 'true');
+        $('#shared_combination_overlay .knowledge_fragment').attr('draggable', 'true');
     }
     document.addEventListener('DOMContentLoaded', markFragmentsDraggable);
     // 念のためオーバーレイが表示されるたびに付与（タブ切替時など）
     window.addEventListener('focus', markFragmentsDraggable);
 
     // ドラッグ開始: 転送データにインデックスを埋める（なければ本文テキスト）
-    $(document).on('dragstart', '#shared_combination_overlay .knowledge_fragment, #knowledge_fragments_workspace .knowledge_fragment', function(ev){
+    $(document).on('dragstart', '#shared_combination_overlay .knowledge_fragment', function(ev){
         try{
             var dt = ev.originalEvent.dataTransfer;
             dt.setData('text/plain', $(this).find('.card-body').text().trim());
@@ -2445,9 +2444,9 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
     });
 
     // ドロップ受け側: 思考エリア
-    var $area = $('#knowledge_fragments_workspace');
-    $(document).on('dragover', '#knowledge_fragments_workspace', function(ev){ ev.preventDefault(); });
-    $(document).on('drop', '#knowledge_fragments_workspace', function(ev){
+    var $area = $('#knowledge_thinking_area');
+    $(document).on('dragover', '#knowledge_thinking_area', function(ev){ ev.preventDefault(); });
+    $(document).on('drop', '#knowledge_thinking_area', function(ev){
         ev.preventDefault();
         var oe = ev.originalEvent;
         var txt = '';
@@ -2469,7 +2468,7 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
 
     // ノード作成ヘルパ
     function createThinkingNodeFromCard($card, x, y){
-        var $area = $('#knowledge_fragments_workspace');
+        var $area = $('#knowledge_thinking_area');
         if ($area.length === 0 || $card.length === 0) return;
         // ユーザー名と本文だけをシンプルなピンクカードとして生成
         var title = ($card.find('.card-title').text() || '').trim();
@@ -2531,3 +2530,4 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
         $(document).on('mouseup.thinking', function(){ dragging = false; });
     }
 })();
+

@@ -1684,7 +1684,8 @@ function activateSharedTab(tabId){
 function updateCombinationOverlayBounds(){
   var overlay = document.getElementById('shared_combination_overlay');
   if(!overlay) return;
-  var ids = ['jsmind_container','utterance_area','mynetwork2'];
+  // 基準要素: 既存3対象 + ネットワーク全体コンテナを追加（幅が狭く計算される問題対策）
+  var ids = ['jsmind_container','network_container','utterance_area','mynetwork2'];
   var rects = ids
     .map(function(id){ var el = document.getElementById(id); return el ? el.getBoundingClientRect() : null; })
     .filter(Boolean);
@@ -1712,6 +1713,22 @@ function updateCombinationOverlayBounds(){
   if (left < 0) {
     width = Math.max(0, width + left);
     left = 0;
+  }
+  // 幅が極端に小さい場合（要素取得失敗や非表示状態）フォールバックで利用可能領域を確保
+  var viewportW = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+  // サイドメニューが右側に存在する場合は幅から除外して調整
+  var sideMenu = document.getElementById('side_menu');
+  var sideMenuRect = sideMenu ? sideMenu.getBoundingClientRect() : null;
+  var sideMenuWidth = sideMenuRect ? sideMenuRect.width : 0;
+  var centralMinWidth = viewportW - sideMenuWidth; // 共有知エリアが最低限確保すべき幅
+  if (width < centralMinWidth * 0.6) { // 60% 未満なら明らかに誤計測とみなす
+    left = 0;
+    width = centralMinWidth > 600 ? centralMinWidth : viewportW; // 最低 600px 相当を確保
+  }
+  // 高さが狭すぎる（誤計測）ならビューポート高をフォールバック
+  var viewportH = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+  if (height < viewportH * 0.5) { // 50% 未満は誤計測とみなし拡張
+    height = viewportH - top;
   }
   overlay.style.position = 'fixed';
   overlay.style.left = left + 'px';
