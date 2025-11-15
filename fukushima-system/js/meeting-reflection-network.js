@@ -2136,6 +2136,7 @@ function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
 // 初期ロード
 $(function(){
     fetchKnowledgeTree();
+    initializeDiscussionBoard();
 });
 
 // 発言をアップロードする関数
@@ -2631,5 +2632,36 @@ function enableFragmentDrag($node, $container){
         $node.css({ left: nl + 'px', top: nt + 'px' });
     });
     $(document).on('mouseup.kfrag', function(){ dragging = false; });
+}
+
+// === 掲示板: discussion_history_area ===
+function initializeDiscussionBoard(){
+    try{
+        var $board = $('#discussion_board');
+        if(!$board.length) return;
+        var $form = $('#discussion_post_form');
+        var $input = $('#discussion_input');
+        var $list = $('#discussion_message_list');
+        if(!$form.length || !$input.length || !$list.length) return;
+        if($form.data('bound')) return; // 二重バインド防止
+        $form.data('bound', true);
+        $form.on('submit', function(e){
+            e.preventDefault();
+            var text = ($input.val()||'').trim();
+            if(!text){ return; }
+            var user = $board.data('user-name') || 'ユーザー';
+            // 要素生成
+            var $card = $('<div class="message-card"></div>');
+            var $author = $('<div class="message-author"></div>').text(user + ' さん');
+            var $body = $('<div class="message-body"></div>').text(text);
+            $card.append($author).append($body);
+            $list.append($card);
+            // スクロールを末尾に
+            try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){}
+            // 入力欄リセット
+            $input.val('');
+            $input.focus();
+        });
+    }catch(ex){ try{ console.warn('initializeDiscussionBoard error', ex); }catch(_){}}
 }
 

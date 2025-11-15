@@ -593,7 +593,37 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                 <!-- 左右2分割: 左=ディスカッション履歴, 右=知識登録フォーム -->
                                                 <div id="discussion_history_area" class="discussion_history_area">
                                                     <div class="overlay-title" style="margin-bottom:8px;">ディスカッション履歴</div>
-                                                    <!-- TODO: 履歴リストをここに表示（将来実装） -->
+                                                    <?php
+                                                    // 掲示板用にログインユーザー名を取得
+                                                    $__board_user_name = 'ユーザー';
+                                                    try {
+                                                        if (session_status() !== PHP_SESSION_ACTIVE) { @session_start(); }
+                                                        if (isset($_SESSION['USERID']) && isset($mysqli) && ($mysqli instanceof mysqli)) {
+                                                            $uid = (int)$_SESSION['USERID'];
+                                                            if ($stB = $mysqli->prepare("SELECT name FROM users WHERE user_id=? LIMIT 1")) {
+                                                                $stB->bind_param('i', $uid);
+                                                                if ($stB->execute()) {
+                                                                    if ($rsB = $stB->get_result()) {
+                                                                        if ($rwB = $rsB->fetch_assoc()) {
+                                                                            if (isset($rwB['name']) && trim((string)$rwB['name']) !== '') {
+                                                                                $__board_user_name = (string)$rwB['name'];
+                                                                            }
+                                                                        }
+                                                                        $rsB->free();
+                                                                    }
+                                                                }
+                                                                $stB->close();
+                                                            }
+                                                        }
+                                                    } catch (Exception $eB) { /* no-op */ }
+                                                    ?>
+                                                    <div class="discussion-board" id="discussion_board" data-user-name="<?php echo htmlspecialchars($__board_user_name, ENT_QUOTES, 'UTF-8'); ?>">
+                                                        <div class="message-list" id="discussion_message_list" aria-live="polite"></div>
+                                                        <form id="discussion_post_form" class="post-form" action="javascript:void(0)">
+                                                            <textarea id="discussion_input" class="post-input" rows="2" placeholder="コメントを入力..."></textarea>
+                                                            <button type="submit" class="post-button">投稿</button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                                 <div id="knowledge_register_area" class="knowledge_register_area">
                                                     <form id="knowledge_register_form" method="POST" action="register_knowledge.php" onsubmit="window.onbeforeunload=null;">
