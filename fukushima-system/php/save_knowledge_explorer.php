@@ -17,7 +17,7 @@ if(!isset($mysqli) || !($mysqli instanceof mysqli)){
 // 入力値の取得（NULL許容の node_type は空なら NULL 扱い）
 $parent_node_id = isset($_POST['parent_node_id']) ? (int)$_POST['parent_node_id'] : null;
 $node_title = isset($_POST['node_title']) ? trim((string)$_POST['node_title']) : '';
-$content = isset($_POST['content']) ? trim((string)$_POST['content']) : '';
+$comment = isset($_POST['comment']) ? trim((string)$_POST['comment']) : '';
 $node_type = isset($_POST['node_type']) ? trim((string)$_POST['node_type']) : '';
 if($node_type===''){ $node_type = null; }
 
@@ -32,7 +32,7 @@ $table = 'knowledge_explorer';
 $colId = 'knowledge_node_id';
 $colParent = 'parent_node_id';
 $colTitle = 'node_title';
-$colContent = 'content';
+$colComment = 'comment';
 $colType = 'node_type';
 $colDeleted = 'deleted';
 if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
@@ -41,7 +41,7 @@ if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
         if(in_array($lf,['knowledge_node_id','node_id'])){ $colId = $f; }
         if(in_array($lf,['parent_node_id','parent_id'])){ $colParent = $f; }
         if(in_array($lf,['node_title','name','label'])){ $colTitle = $f; }
-        if(in_array($lf,['content','body','text'])){ $colContent = $f; }
+        if(in_array($lf,['comment','body','text'])){ $colComment = $f; }
         if(in_array($lf,['node_type','type','category'])){ $colType = $f; }
         if(in_array($lf,['deleted','is_deleted','flag_deleted'])){ $colDeleted = $f; }
     }
@@ -61,13 +61,13 @@ if($res = $mysqli->query("SELECT MAX($colId) AS max_id FROM $table")){
 
 // INSERT 実行（deleted=0, timestamps は NOW()）
 // 動的カラム名で INSERT 文構築
-$sql = "INSERT INTO $table ($colId, $colParent, $colTitle, $colContent, $colType, $colDeleted, created_at, updated_at) VALUES (?,?,?,?,?,0,NOW(),NOW())";
+$sql = "INSERT INTO $table ($colId, $colParent, $colTitle, $colComment, $colType, $colDeleted, created_at, updated_at) VALUES (?,?,?,?,?,0,NOW(),NOW())";
 $stmt = $mysqli->prepare($sql);
 if(!$stmt){
     echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]);
     exit;
 }
-$stmt->bind_param('iisss', $nextId, $parent_node_id, $node_title, $content, $node_type);
+$stmt->bind_param('iisss', $nextId, $parent_node_id, $node_title, $comment, $node_type);
 if(!$stmt->execute()){
     $msg = $stmt->error;
     $stmt->close();

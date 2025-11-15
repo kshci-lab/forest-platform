@@ -580,13 +580,11 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <div class="comb-left" style="box-sizing:border-box;">
                                         <!-- Left Top: FragmentList + Thinking Area (split vertically) -->
                                         <div class="comb-left-top" style="background:white; flex:1 1 0; overflow:hidden; display:flex; flex-direction:column;">
-                                            <div class="overlay-knowledge-fragments" style="flex:0 0 auto;">
-                                                <div class="overlay-title">知識フラグメント一覧</div>
+                                            <div id="knowledge_fragments_workspace" class="knowledge_fragments_workspace" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
+                                                <div class="overlay-title" style="margin-bottom:0; padding-top:8px; padding-left:8px;">知識フラグメント一覧</div>
                                                 <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
-                                            </div>
-                                            <div id="knowledge_thinking_area" class="knowledge_thinking_area" style="flex:1 1 auto; position:relative; overflow:auto; background:#fff; border-top:2px solid #ccc;">
-                                                <div class="overlay-title" style="margin-bottom:0; padding-top:8px; padding-left:8px;">思考エリア</div>
-                                                <!-- ここにフラグメントから生成したノードを配置します -->
+                                                <!-- PHPが出力する .knowledge-fragment-list 内の各 .knowledge_fragment を
+                                                     JSでノード化してこのワークスペース内に絶対配置します -->
                                             </div>
                                         </div>
                                         <!-- Left Bottom: InputArea -->
@@ -628,7 +626,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                         <!-- 下部：コメント -->
                                                         <div class="kra-row kra-comment">
                                                             <label for="kra_comment_input" class="kra-label">コメント:</label>
-                                                            <textarea id="kra_comment_input" name="comment" class="kra-control" rows="2" placeholder="任意のコメント"></textarea>
+                                                            <textarea id="kra_comment_input" name="comment" class="kra-control" rows="2" placeholder="任意のコメント(適用場面・記述理由など)"></textarea>
                                                         </div>
 
                                                         <!-- 右下：登録ボタン -->

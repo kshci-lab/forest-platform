@@ -155,6 +155,21 @@ if($purpose === "save_externalized_content") {
         }
     }
 
+    // knowledge_fragment テーブル側の本文カラム名（comment または knowledge_fragment_content）を検出
+    $kfTextCol = 'knowledge_fragment_content';
+    try {
+        if ($colKfA = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment LIKE 'comment'")) {
+            if ($colKfA->num_rows > 0) { $kfTextCol = 'comment'; }
+            $colKfA->close();
+        }
+        if ($kfTextCol === 'knowledge_fragment_content'){
+            if ($colKfB = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment LIKE 'knowledge_fragment_content'")) {
+                if ($colKfB->num_rows > 0) { $kfTextCol = 'knowledge_fragment_content'; }
+                $colKfB->close();
+            }
+        }
+    } catch(Exception $eKf){ /* noop */ }
+
     try {
         $ok = $stmt->execute();
         if ($ok) {
@@ -170,7 +185,8 @@ if($purpose === "save_externalized_content") {
                     }
                 }
                 $nextKfId = ($kfMax >= 11111) ? ($kfMax + 1) : 11111;
-                if ($stmtKf = $mysqli->prepare("INSERT INTO knowledge_fragment (knowledge_fragment_id, knowledge_fragment_content, externalized_contents_id) VALUES (?, ?, ?)")) {
+                $sqlKf = "INSERT INTO knowledge_fragment (knowledge_fragment_id, {$kfTextCol}, externalized_contents_id) VALUES (?, ?, ?)";
+                if ($stmtKf = $mysqli->prepare($sqlKf)) {
                     $stmtKf->bind_param("isi", $nextKfId, $knowledge_fragment_content, $newId);
                     @$stmtKf->execute();
                     @$stmtKf->close();
@@ -285,7 +301,8 @@ if($purpose === "save_externalized_content") {
             }
         }
         $nextKfId = ($kfMax >= 11111) ? ($kfMax + 1) : 11111;
-        if ($stmtKf = $mysqli->prepare("INSERT INTO knowledge_fragment (knowledge_fragment_id, knowledge_fragment_content, externalized_contents_id) VALUES (?, ?, ?)")) {
+        $sqlKf2 = "INSERT INTO knowledge_fragment (knowledge_fragment_id, {$kfTextCol}, externalized_contents_id) VALUES (?, ?, ?)";
+        if ($stmtKf = $mysqli->prepare($sqlKf2)) {
             $stmtKf->bind_param("isi", $nextKfId, $knowledge_fragment_content, $nextExtId);
             @$stmtKf->execute();
             @$stmtKf->close();

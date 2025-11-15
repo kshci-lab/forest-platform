@@ -226,7 +226,7 @@ table[type] {
 #shared_combination_overlay .comb-left{
 	display:flex;
 	flex-direction:column;
-	flex:0 0 70%; /* 70% width */
+	flex:0 0 75%; /* 75% width */
 }
 #shared_combination_overlay .comb-left-top,
 #shared_combination_overlay .comb-left-bottom{
@@ -238,7 +238,7 @@ table[type] {
 	min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
 }
 #shared_combination_overlay .comb-right{
-	flex:0 0 30%; /* 30% width */
+	flex:0 0 25%; /* 25% width */
 	overflow:auto;
 }
 #shared_combination_overlay .overlay-knowledge-fragments,
@@ -262,11 +262,42 @@ table[type] {
 }
 #overlay_knowledge_tree .kt-children {
 	margin-left: 14px;
-	border-left: 1px solid #ddd;
+	border-left: 1px solid #000; /* ツリーの縦線（黒） */
 	padding-left: 10px;
 }
-#overlay_knowledge_tree .kt-toggle {
+#overlay_knowledge_tree .kt-children > .kt-node {
+	position: relative;
+}
+/* 親の縦線からノードへ伸びる水平コネクタ（黒） */
+#overlay_knowledge_tree .kt-children > .kt-node::before {
+	content: '';
 	position: absolute;
+	left: -10px; /* 親 .kt-children の padding-left と同値 */
+#overlay_knowledge_tree .kt-node-title,
+#overlay_knowledge_tree .kt-content-title,
+#overlay_knowledge_tree .kt-title {
+	cursor: default;
+	font-size: 15px;
+}
+#overlay_knowledge_tree .kt-node-title.editing,
+#overlay_knowledge_tree .kt-content-title.editing,
+#overlay_knowledge_tree .kt-title.editing {
+	background: #f0f0f0;
+}
+#overlay_knowledge_tree .kt-node-title { font-weight: 600; font-size: 16px; }
+#overlay_knowledge_tree .kt-comment { margin-top: 4px; font-size: 13px; color: #333; white-space: pre-wrap; }
+#overlay_knowledge_tree .kt-updated { margin-top: 3px; font-size: 12px; color: #666; }
+#overlay_knowledge_tree .kt-comment {
+	margin-top: 4px;
+	font-size: 13px;
+	color: #333;
+	white-space: pre-wrap;
+}
+#overlay_knowledge_tree .kt-updated {
+	margin-top: 3px;
+	font-size: 12px;
+	color: #666;
+}
 	left: 0;
 	top: 0;
 	width: 16px;
@@ -275,9 +306,11 @@ table[type] {
 	user-select: none;
 	color: #666;
 }
+#overlay_knowledge_tree .kt-content-title,
 #overlay_knowledge_tree .kt-title {
 	cursor: default;
 }
+#overlay_knowledge_tree .kt-content-title.editing,
 #overlay_knowledge_tree .kt-title.editing {
 	background: #f0f0f0;
 }
@@ -385,7 +418,7 @@ table[type] {
 	border:1px solid #ccc;
 	border-radius:10px;
 	padding:12px;
-	width:260px;
+	width:180px;
 	box-sizing:border-box;
 	display:flex;
 	flex-direction:column;

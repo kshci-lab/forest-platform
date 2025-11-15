@@ -439,3 +439,4 @@ ArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArray2025-
 2025-11-14T03:18:57+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value
 2025-11-14T04:45:07+00:00 discussion_utterances execute exception: Duplicate entry '1127' for key 'PRIMARY'
 2025-11-14T04:45:07+00:00 discussion_utterances execute exception: Out of range value for column 'utterance_id' at row 1
+2025-11-14T15:52:14+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value

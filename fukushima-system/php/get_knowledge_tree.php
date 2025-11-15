@@ -45,6 +45,8 @@ $tbl->close();
 $colId = null;      // knowledge_node_id / node_id / id / knowledge_explorer_id
 $colParent = null;  // parent_id / parent / pid / parent_node_id
 $colTitle = null;   // node_title / title / name / label
+$colComment = null; // comment / comments / note / notes / memo
+$colUpdated = null; // updated_at / update_at / updated / modified_at
 $hasDeleted = false;
 $idIsAutoInc = false;
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
@@ -54,6 +56,8 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
         if($colId===null && in_array($lf, ['knowledge_node_id','node_id','id','knowledge_explorer_id'])){ $colId = $f; }
         if($colParent===null && in_array($lf, ['parent_id','parent','pid','parent_node_id'])){ $colParent = $f; }
         if($colTitle===null && in_array($lf, ['node_title','title','name','label'])){ $colTitle = $f; }
+        if($colComment===null && in_array($lf, ['comment','comments','note','notes','memo'])){ $colComment = $f; }
+        if($colUpdated===null && in_array($lf, ['updated_at','update_at','updated','modified_at'])){ $colUpdated = $f; }
         if($lf === 'deleted'){ $hasDeleted = true; }
         if($f === $colId && isset($c['Extra']) && stripos($c['Extra'], 'auto_increment') !== false){ $idIsAutoInc = true; }
     }
@@ -63,9 +67,9 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
 if($colTitle === null){
     // 最低限のフォールバック: DBスキーマが未整備でもトップレベルだけ返す
     $fallback = [
-        ['node_id'=>1, 'parent_id'=>null, 'node_title'=>'知識関連'],
-        ['node_id'=>2, 'parent_id'=>null, 'node_title'=>'研究方略関連'],
-        ['node_id'=>3, 'parent_id'=>null, 'node_title'=>'その他']
+        ['node_id'=>1, 'parent_id'=>null, 'node_title'=>'知識関連', 'comment'=>null, 'updated_at'=>null],
+        ['node_id'=>2, 'parent_id'=>null, 'node_title'=>'研究方略関連', 'comment'=>null, 'updated_at'=>null],
+        ['node_id'=>3, 'parent_id'=>null, 'node_title'=>'その他', 'comment'=>null, 'updated_at'=>null]
     ];
     echo json_encode(['status'=>'ok','nodes'=>$fallback]);
     exit;
@@ -120,20 +124,28 @@ $selectCols = [];
 if($colId){ $selectCols[] = "$colId AS node_id"; } else { $selectCols[] = "NULL AS node_id"; }
 if($colParent){ $selectCols[] = "$colParent AS parent_id"; } else { $selectCols[] = "NULL AS parent_id"; }
 $selectCols[] = "$colTitle AS node_title";
+if($colComment){ $selectCols[] = "$colComment AS comment"; } else { $selectCols[] = "NULL AS comment"; }
+if($colUpdated){ $selectCols[] = "$colUpdated AS updated_at"; } else { $selectCols[] = "NULL AS updated_at"; }
 $sqlAll = "SELECT ".implode(',', $selectCols)." FROM $table".($hasDeleted?" WHERE deleted=0":"")." ORDER BY ".($colId ? $colId : $colTitle)." ASC";
 if($resAll = $mysqli->query($sqlAll)){
     while($row = $resAll->fetch_assoc()){
         $nid = isset($row['node_id']) && $row['node_id']!==null ? (int)$row['node_id'] : null;
         $pid = isset($row['parent_id']) && $row['parent_id']!==null ? (int)$row['parent_id'] : null;
-        $nodes[] = [ 'node_id'=>$nid, 'parent_id'=>$pid, 'node_title'=>$row['node_title'] ];
+        $nodes[] = [
+            'node_id'=>$nid,
+            'parent_id'=>$pid,
+            'node_title'=>$row['node_title'],
+            'comment'=> isset($row['comment']) ? $row['comment'] : null,
+            'updated_at'=> isset($row['updated_at']) ? $row['updated_at'] : null
+        ];
     }
     $resAll->close();
 } else {
     // 取得失敗時もフォールバック（トップレベル3種）
     $nodes = [
-        ['node_id'=>1, 'parent_id'=>null, 'node_title'=>'知識関連'],
-        ['node_id'=>2, 'parent_id'=>null, 'node_title'=>'研究方略関連'],
-        ['node_id'=>3, 'parent_id'=>null, 'node_title'=>'その他']
+        ['node_id'=>1, 'parent_id'=>null, 'node_title'=>'知識関連', 'comment'=>null, 'updated_at'=>null],
+        ['node_id'=>2, 'parent_id'=>null, 'node_title'=>'研究方略関連', 'comment'=>null, 'updated_at'=>null],
+        ['node_id'=>3, 'parent_id'=>null, 'node_title'=>'その他', 'comment'=>null, 'updated_at'=>null]
     ];
 }
 $mysqli->close();

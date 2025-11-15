@@ -206,7 +206,7 @@ table[type] {
 #shared_combination_overlay {
 	position: fixed; /* JSで上書きされる前提だがフォールバックで全面表示 */
 	left: 0;
-	top: 0;
+	/* top: 0; */
 	width: 100vw; /* JS失敗時のフォールバック: 以前 0 だったため内容が全く表示されないケースを防止 */
 	height: 100vh; /* 同上 */
 	background: #ffffff;
@@ -229,7 +229,7 @@ table[type] {
 	display:flex;
 	height:100%;
 	flex-direction:column;
-	flex:1 1 70%; /* 親幅に対する70%を基準に伸縮（オーバーフローで右隠れを防止） */
+	flex:1 1 75%; /* 親幅に対する75%を基準に伸縮（オーバーフローで右隠れを防止） */
 	min-width:0; /* 内側の横スクロール要素が幅を押し広げない */
 }
 #shared_combination_overlay .comb-left-top,
@@ -241,7 +241,7 @@ table[type] {
 	min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
 }
 #shared_combination_overlay .comb-right{
-	flex:1 1 30%; /* 親幅に対する30%を基準に伸縮 */
+	flex:1 1 25%; /* 親幅に対する25%を基準に伸縮 */
 	min-width:0;
 	overflow:auto;
 }
@@ -265,18 +265,120 @@ table[type] {
 	padding:12px;
 	box-sizing:border-box;
 	min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
+	background:#fff; /* ツリー線のマスク色と揃える */
 }
+#overlay_knowledge_tree{
+	font-size:14px;
+}
+
+#overlay_knowledge_tree .kt-node{
+	position:relative;
+	padding-left:18px;
+	line-height:1.6;
+}
+/* 縦の幹（黒・太め） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children{
+	margin-left:14px;
+	border-left:2px solid #000 !important;
+	padding-left:10px;position:relative;
+}
+#overlay_knowledge_tree .kt-content-title,#overlay_knowledge_tree .kt-title{cursor:default;}
+#overlay_knowledge_tree .kt-content-title.editing,#overlay_knowledge_tree .kt-title.editing{background:#f0f0f0;}
+#overlay_knowledge_tree input.kt-edit{font:inherit;padding:2px 4px;width:calc(100% - 24px);} 
+/* 親の縦線から子ノードへ伸びる水平コネクタ（黒・太め） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children> .kt-node::before{
+	content:'';
+	position:absolute;
+	left:-10px;
+	top:0.9em;
+	width:12px;
+	border-top:2px solid #000;
+}
+/* 最後の子の下には縦線を描かない（白マスクで隠す） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children> .kt-node:last-child::after{
+	content:'';
+	position:absolute;
+	left:-11px;
+	top:calc(0.9em + 2px);
+	bottom:0;
+	width:2px;
+	background:#fff;
+}
+/* トグル等 */
+#overlay_knowledge_tree .kt-toggle{
+	position:absolute;
+	left:0;
+	top:0;
+	width:20px;
+	text-align:center;
+	cursor:pointer;
+	user-select:none;
+	color:#666;
+}
+#overlay_knowledge_tree .kt-node-title{
+	cursor:default;
+	font-size:16px;
+	font-weight:600;
+}
+#overlay_knowledge_tree .kt-content-title,
+#overlay_knowledge_tree .kt-title{
+	cursor:default;
+	font-size: 15px;
+}
+#overlay_knowledge_tree .kt-node-title.editing,
+#overlay_knowledge_tree .kt-content-title.editing,
+#overlay_knowledge_tree .kt-title.editing{
+	background:#f0f0f0;
+}
+#overlay_knowledge_tree .kt-comment{
+	margin-top:4px;
+	font-size:13px;
+	color:#333;
+	white-space:pre-wrap;
+}
+#overlay_knowledge_tree .kt-updated{
+	margin-top:3px;
+	font-size:12px;
+	color:#666;
+}
+#overlay_knowledge_tree input.kt-edit{
+	font:inherit;
+	padding:2px 4px;
+	width:calc(100% - 24px);
+} 
 #shared_combination_overlay .overlay-title{
 	font-size: 16px;
 	font-weight: 600;
 	margin-bottom: 8px;
 }
 
+/* === 統合ワークスペース（フラグメント=ノード） === */
+#shared_combination_overlay #knowledge_fragments_workspace{
+	position: relative;
+	overflow: auto;
+	overflow-x: auto; /* 下部の横スクロールを残す */
+	background: #fff;
+	min-height: 140px;
+}
+#shared_combination_overlay .fragment-node-wrapper{
+	position: absolute;
+	cursor: move;
+}
+/* ノードの見た目は既存の knowledge_fragment のカードスタイルを流用 */
+#shared_combination_overlay .knowledge_fragment{
+	background:#ffe6e6;
+	border:1px solid #ccc;
+	border-radius:10px;
+	padding:12px;
+	width:180px; /* 旧:200px さらに少し小さく */
+	box-sizing:border-box;
+}
+
 /* overlay-input-area を左右2分割 */
 #shared_combination_overlay .overlay-input-area{
 	display:flex;
 	flex-direction:row;
-	gap:12px;
+	gap:8px; /* 以前:12px → すき間を少し狭く */
 	align-items:stretch;
 	/* 余白は上の padding で確保済み */
 }
@@ -353,7 +455,7 @@ table[type] {
 	border:1px solid #ccc;
 	border-radius:10px;
 	padding:12px;
-	width:260px;
+	width:180px; /* 旧:200px */
 	box-sizing:border-box;
 	display:flex;
 	flex-direction:column;
@@ -644,7 +746,8 @@ input:checked+label::after {
 	/* height:80vh; */
 	/* height: 100%; */
 	margin-bottom:2vh;
- 	border:solid 5px #B3E0D8;
+ 	/* border:solid 5px #B3E0D8; */
+	border: none;
 	box-sizing: border-box;
  	background:#fff;
 	float:left;

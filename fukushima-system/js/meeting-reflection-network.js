@@ -1958,9 +1958,25 @@ function renderTreeNode(node, byParent){
         wrapper.appendChild(placeholder);
     }
     var titleSpan = document.createElement('span');
-    titleSpan.className = 'kt-title';
+    // 親が null ならトップレベル：タイトルは kt-node-title、子は kt-content-title
+    var isRoot = (node.parent_id === null || typeof node.parent_id === 'undefined');
+    titleSpan.className = isRoot ? 'kt-node-title' : 'kt-content-title';
     titleSpan.textContent = node.node_title;
     wrapper.appendChild(titleSpan);
+
+    // 追加情報: comment, updated_at をタイトルの下に表示
+    if(node && node.comment){
+        var commentDiv = document.createElement('div');
+        commentDiv.className = 'kt-comment';
+        commentDiv.textContent = node.comment;
+        wrapper.appendChild(commentDiv);
+    }
+    if(node && node.updated_at){
+        var updatedDiv = document.createElement('div');
+        updatedDiv.className = 'kt-updated';
+        updatedDiv.textContent = '更新日時: ' + formatJPDateTime(node.updated_at);
+        wrapper.appendChild(updatedDiv);
+    }
     if(hasChildren){
         var childrenBox = document.createElement('div');
         childrenBox.className = 'kt-children';
@@ -1971,6 +1987,31 @@ function renderTreeNode(node, byParent){
         wrapper.appendChild(childrenBox);
     }
     return wrapper;
+}
+
+function formatJPDateTime(v){
+    try{
+        // 期待形式: YYYY-MM-DD HH:MM:SS または ISO など
+        // 正規化して "YYYY年MM月DD日 HH:MM" に整形
+        var s = String(v);
+        var m = s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+        if(m){
+            var yy = m[1], mm = ('0'+m[2]).slice(-2), dd = ('0'+m[3]).slice(-2);
+            var HH = ('0'+m[4]).slice(-2), MM = m[5];
+            return yy + '年' + mm + '月' + dd + '日 ' + HH + ':' + MM;
+        }
+        // 数値タイムスタンプなどに対処
+        var d = new Date(v);
+        if(!isNaN(d.getTime())){
+            var yy2 = d.getFullYear();
+            var mm2 = ('0'+(d.getMonth()+1)).slice(-2);
+            var dd2 = ('0'+d.getDate()).slice(-2);
+            var HH2 = ('0'+d.getHours()).slice(-2);
+            var MM2 = ('0'+d.getMinutes()).slice(-2);
+            return yy2 + '年' + mm2 + '月' + dd2 + '日 ' + HH2 + ':' + MM2;
+        }
+        return s;
+    }catch(_){ return String(v); }
 }
 
 // トグル展開/折りたたみ
@@ -1990,7 +2031,8 @@ $(document).on('click', '.kt-toggle', function(){
 });
 
 // ダブルクリックで編集
-$(document).on('dblclick', '.kt-title', function(){
+// 新クラス名で編集可能。旧クラス名も後方互換で許容（トップ=kt-node-title, 子=kt-content-title）
+$(document).on('dblclick', '.kt-node-title, .kt-content-title, .kt-title', function(){
     var $span = $(this);
     if($span.hasClass('editing')){ return; }
     var oldText = $span.text();
@@ -2072,7 +2114,7 @@ function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
             data: {
                 parent_node_id: parentId,
                 node_title: nodeTitle,
-                content: commentText || '',
+                comment: commentText || '',
                 node_type: ''
             }
         }).done(function(res){
@@ -2365,6 +2407,7 @@ function showSharedCombinationOverlay() {
     $ov.addClass('is-active').css('display', 'block');
     // 安全のため、このタイミングでもフラグメントをドラッグ可能にしておく
     try { $('#shared_combination_overlay .knowledge_fragment').attr('draggable','true'); } catch (e) {}
+    try { initializeFragmentsWorkspace(); } catch (e) { console.warn('initializeFragmentsWorkspace failed', e); }
 }
 function hideSharedCombinationOverlay() {
   var $ov = $('#shared_combination_overlay');
@@ -2421,6 +2464,8 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
     $(document).on('click', '#shared_combination_overlay .knowledge_fragment', function(e){
         // 操作系（詳細ボタン/詳細領域/フォーム類）でのクリックは無視してカード本体のみ反応
         if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
+        // 新仕様: ワークスペースがある場合は複製せず（カード自体がノード）
+        if ($('#knowledge_fragments_workspace').length) return;
         // 既に思考エリア内にある複製カード（wrapper配下）は再複製しない
         if ($(this).closest('#knowledge_thinking_area').length) return;
         var $card = $(this);
@@ -2530,4 +2575,61 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
         $(document).on('mouseup.thinking', function(){ dragging = false; });
     }
 })();
+
+// === 統合ワークスペース: フラグメント自体をノード化して配置 ===
+function initializeFragmentsWorkspace(){
+    var $ws = $('#knowledge_fragments_workspace');
+    if ($ws.length === 0) return;
+    var $list = $ws.find('.knowledge-fragment-list');
+    if ($list.length === 0) return;
+    var gap = 10; // 以前:16 → すき間を少し狭く
+    // タイトルの下から配置開始
+    var baseTop = 0;
+    var $title = $ws.children('.overlay-title').first();
+    if ($title.length) {
+        try { baseTop = $title.outerHeight(true) + 8; } catch(e){ baseTop = 28; }
+    } else { baseTop = 28; }
+    var x = 12, y = baseTop;
+    // 既にノード化済みなら二重化を避ける
+    $ws.find('.fragment-node-wrapper').remove();
+    $list.find('.knowledge_fragment').each(function(){
+        var $card = $(this);
+        try { $card.removeAttr('draggable'); } catch(e){}
+        var $wrap = $('<div class="fragment-node-wrapper"></div>');
+        $wrap.css({ left: x + 'px', top: y + 'px' });
+        // 横並び初期配置のため現在の幅を参照
+        try { $card.css('width','180px'); } catch(e){}
+        $wrap.append($card.detach());
+        $ws.append($wrap);
+        enableFragmentDrag($wrap, $ws);
+        var w = 180;
+        try { w = Math.max(180, $card.outerWidth(true)); } catch(e){}
+        x += w + gap;
+    });
+    // 元のリストコンテナは不要なので削除
+    $list.remove();
+}
+
+function enableFragmentDrag($node, $container){
+    var dragging = false, sx=0, sy=0, startL=0, startT=0;
+    // クリック開始が操作系ならドラッグしない
+    $node.on('mousedown', function(e){
+        if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
+        dragging = true;
+        sx = e.clientX; sy = e.clientY;
+        var off = $node.position();
+        startL = off.left; startT = off.top;
+        e.preventDefault();
+    });
+    $(document).on('mousemove.kfrag', function(e){
+        if(!dragging) return;
+        var dx = e.clientX - sx, dy = e.clientY - sy;
+        var nl = startL + dx, nt = startT + dy;
+        // 左上は 0 以上に拘束。右/下方向はスクロール領域拡張のため拘束しない
+        nl = Math.max(0, nl);
+        nt = Math.max(0, nt);
+        $node.css({ left: nl + 'px', top: nt + 'px' });
+    });
+    $(document).on('mouseup.kfrag', function(){ dragging = false; });
+}
 
