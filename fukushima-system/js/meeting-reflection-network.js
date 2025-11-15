@@ -2645,22 +2645,71 @@ function initializeDiscussionBoard(){
         if(!$form.length || !$input.length || !$list.length) return;
         if($form.data('bound')) return; // 二重バインド防止
         $form.data('bound', true);
+
+        // 既存履歴ロード
+        $.ajax({
+            url: 'php/get_discussion_history.php',
+            type: 'GET',
+            dataType: 'json',
+            data: { limit: 100 }
+        }).done(function(res){
+            if(res && res.status === 'ok' && Array.isArray(res.items)){
+                res.items.forEach(function(item){
+                    var userName = $board.data('user-name') || 'ユーザー'; // 簡易: user_id を name解決しない（必要なら拡張）
+                    var $card = $('<div class="message-card"></div>');
+                    var $author = $('<div class="message-author"></div>').text(userName + ' さん');
+                    var $body = $('<div class="message-body"></div>').text(item.content || '');
+                    $card.append($author).append($body);
+                    if(item.posted_time){
+                        var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(item.posted_time);
+                        $card.append($time);
+                    }
+                    $list.append($card);
+                });
+                try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){}
+            } else {
+                console.warn('discussion_history 初期ロード失敗', res);
+            }
+        }).fail(function(xhr,st,err){
+            console.error('discussion_history 初期ロード通信失敗', st, err, xhr && xhr.responseText);
+        });
         $form.on('submit', function(e){
             e.preventDefault();
             var text = ($input.val()||'').trim();
             if(!text){ return; }
             var user = $board.data('user-name') || 'ユーザー';
-            // 要素生成
-            var $card = $('<div class="message-card"></div>');
-            var $author = $('<div class="message-author"></div>').text(user + ' さん');
-            var $body = $('<div class="message-body"></div>').text(text);
-            $card.append($author).append($body);
-            $list.append($card);
-            // スクロールを末尾に
-            try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){}
-            // 入力欄リセット
-            $input.val('');
-            $input.focus();
+            // まずサーバーへ保存要求 (DB挿入) → 成功時UI反映
+            $.ajax({
+                url: 'php/save_discussion_history.php',
+                type: 'POST',
+                dataType: 'json',
+                data: { content: text }
+            }).done(function(res){
+                if(res && res.status === 'ok'){
+                    var displayUser = user; // サーバーから user_id を使って再取得も可能だが現状はフロント名
+                    var bodyText = text; // DB反映された（切り詰め済みの場合は res.content を使用）
+                    if(res.content){ bodyText = res.content; }
+                    var $card = $('<div class="message-card"></div>');
+                    var $author = $('<div class="message-author"></div>').text(displayUser + ' さん');
+                    var $body = $('<div class="message-body"></div>').text(bodyText);
+                    $card.append($author).append($body);
+                    if(res.posted_time){
+                        var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(res.posted_time);
+                        $card.append($time);
+                    }
+                    $list.append($card);
+                    try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){}
+                    $input.val('').focus();
+                    console.log('discussion_history 保存OK', res);
+                } else {
+                    console.warn('discussion_history 保存失敗', res);
+                    // 失敗時も暫定的に表示するか選択可。ここでは失敗なら表示しない。
+                    if(window.alert){ alert('投稿の保存に失敗しました。'); }
+                }
+            }).fail(function(xhr,st,err){
+                console.error('discussion_history 保存通信失敗', st, err, xhr && xhr.responseText);
+                if(window.alert){ alert('通信エラーにより投稿できませんでした。'); }
+            });
         });
     }catch(ex){ try{ console.warn('initializeDiscussionBoard error', ex); }catch(_){}}
 }
