@@ -501,9 +501,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </div>
                                     <div id="t_Process_conmenu">
                                         <ul>
-                                            <li><a href="javascript:void(0);" id="process_conmenu1">概念をつける</a></li>
-                                            <li><a href="javascript:void(0);" id="process_conmenu2">マインドマップと対応付ける</a></li>
-                                            <li><a href="javascript:void(0);" id="process_conmenu3" style="display:none">採用/棄却をつける</a></li>
+                                            <li><a href="javascript:void(0);" id="process_conmenu1">組織へ共有</a></li>                                            </li>
                                             <li><a href="javascript:void(0);" id="process_conmenu4">キャンセル</a></li>
                                         </ul>
                                     </div>
@@ -825,7 +823,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
             <div id="tab05">
                 <div id="layout">
                     <div id="organizational_container">
-                        <div id="myOrganizationalnetwork2">
+                        <div id="myOrganizationalnetwork_area">
                             <div id="buttoncluster">
                                 <!-- <input type="button" class="Organizational_network_button"
                                         id="organizational_addNode" value="思考ノード追加" />
@@ -878,6 +876,28 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <input type="button" value="選択完了" id="p_recruit_select">
                             </div>
                             <div id="myOrganizationalnetwork"></div>
+                        </div>
+
+                    <div id="process_others_network_container" oncontextmenu="return false;" >
+                    
+                        <div id="othersProcessnetwork_area">
+                            <div id="buttoncluster">
+                                <input type="button" class="process_close" onclick="closeOthersThinkingProcessMap()"
+                                        id="process_close" value="×" />
+                                <input type="button" class="thinkingProcess_network_button"
+                                        id="process_ZoomIn" value="拡大" />
+                                <input type="button" class="thinkingProcess_network_button"
+                                        id="process_ZoomOut" value="縮小" />
+                                <div id="others_conceptdisplay">あああ</div>
+                                <!-- <div class="checkbox_process">
+                                    <input type="checkbox" id="checkbox_process" class="checkbox_process" name="check_process" onclick="ShowRelatedProcess('brother')">
+                                    <label for="checkbox_process" data-on-label="On" data-off-label="Off"></label>
+                                    <span class="checkbox_process_text">【兄弟ノード表示】<br></span>
+                                </div> -->
+                            </div>
+
+                            <div id="othersProcessnetwork"></div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -11,13 +11,17 @@ $map_id = $_SESSION['MAPID'];    //マップID
 //all...選択されたノードの変遷
 //brother...選択されているノードの兄弟ノードの変遷を追加
 $process_mode = $_POST['process_mode']; 
+$selected_node_id = $_POST["selected_node_id"]; //マインドマップで選択されたノードIDまたはユーザID（whoのみ）
+$selected_conID = null;
 
-$selected_conID = $_POST["selected_concept_id"]; //マインドマップで選択されたノードのconceptID
-$selected_node_id = $_POST["selected_node_id"]; //マインドマップで選択されたノードID
+// POST 配列のキーが無い場合の警告を避けるため isset を使う
+if (isset($_POST['selected_concept_id'])) {
+    $selected_conID = $_POST['selected_concept_id']; //マインドマップで選択されたノードのconceptID
+}
 
 $return_data = []; // DBアクセスの結果として返すキー・バリューのペア
 
-if($process_mode === "all" || $process_mode === "allRE" || $process_mode === "who"){
+if($process_mode === "all" || $process_mode === "allRE" ){
     if (isset($_POST['concept_ids'])) {
         $conIDs_base = $_POST['concept_ids'];
 
@@ -119,6 +123,7 @@ if($process_mode === "all" || $process_mode === "allRE" || $process_mode === "wh
         echo json_encode($return_data);
         return;
     }
+
 }else if($process_mode === "AddBrother"){
     //兄弟ノードの数を取得
     $result_brother_num = $mysqli->query("SELECT process_node_id, content, process_node_type, node_x, node_y FROM process_nodes
@@ -186,8 +191,76 @@ if($process_mode === "all" || $process_mode === "allRE" || $process_mode === "wh
         echo json_encode($return_data);
         return;
     }
-}
+}else if($process_mode === "who"){
+    
 
+    $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+
+    /*
+        * 思考過程表出化マップのノードデータの取得    	
+    */
+    $result_processmap_node = $mysqli->query("SELECT process_node_id, content, process_node_type, node_x, node_y FROM process_nodes
+            WHERE process_node_id = '".$selected_node_id."' AND deleted = 0");
+    $processmap_node = [];
+    while ($row = $result_processmap_node->fetch_assoc()) {
+        array_push($processmap_node, $row);
+    }
+    $return_data = array_merge($return_data, ['pnode' => $processmap_node]);
+
+    /*
+        * 思考過程表出化マップのエッジデータの取得
+        */
+    $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
+                WHERE ((edge_start = '".$selected_node_id."' AND deleted = 0) OR (edge_end = '".$selected_node_id."' AND deleted = 0)) AND deleted = 0");
+    $processmap_edge = [];
+    while ($row = $result_processmap_edge->fetch_assoc()) {
+        array_push($processmap_edge, $row);
+    }
+    $return_data = array_merge($return_data, ['pedge' => $processmap_edge]);
+
+    // ノードのバージョン情報を取得
+    $result_node_versions = $mysqli->query("SELECT node_version_id, parent_id, appeared_at, disappeared_at, content FROM node_versions WHERE node_id IN( SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') ORDER BY appeared_at ASC");
+    $node_versions = [];
+    while ($row = $result_node_versions->fetch_assoc()) {
+        array_push($node_versions, $row);
+    }
+    $return_data = array_merge($return_data, ['node_versions' => $node_versions]);
+
+    // triggerを取得
+    $result_trigger = $mysqli->query("SELECT * FROM triggers
+                            WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0) AND deleted = 0");
+    $trigger = [];
+    while ($row = $result_trigger->fetch_assoc()) {
+        array_push($trigger, $row);
+    }
+    $return_data = array_merge($return_data, ['trigger' => $trigger]);
+
+    $xml_data = simplexml_load_file('../js/hozo.xml'); //法造データ取り出し
+
+    // $selected_node_idのconcept_labelを取得する処理
+    $result_concept = $mysqli->query("SELECT concept_id FROM node_versions 
+                                        WHERE node_id = (
+                                            SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."' AND deleted = 0 LIMIT 1
+                                        ) AND disappeared_at IS NULL LIMIT 1");
+    if ($result_concept && $row_concept = $result_concept->fetch_assoc()) {
+        $selected_conID = $row_concept['concept_id'];
+    }
+    
+    if($selected_conID){
+        $conLABEL = $xml_data->xpath('W_CONCEPTS/CONCEPT[@id="'.$selected_conID.'"]/LABEL/text()');
+        $concept_name = !empty($conLABEL) ? (string)$conLABEL[0] : '';
+        $return_data = array_merge($return_data, ['selected_concept' => $concept_name]);
+    }
+
+
+    if (empty($return_data)) {
+        echo json_encode(["error" => "not"]);
+        return;
+    } else {
+        echo json_encode($return_data);
+        return;
+    }
+}
 
 
 ?>

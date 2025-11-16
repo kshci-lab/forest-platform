@@ -13,8 +13,9 @@
 	background:#fff;
 	overflow: hidden;
 	float:left;
-	resize: vertical;
 	overflow: hidden;
+	/* Flex により分割レイアウト対応 */
+	display: block;
 }
 #myOrganizationalnetwork {
 	position: relative;
@@ -27,18 +28,73 @@
 	background:#fff;
 	overflow: auto;
 }
-#myOrganizationalnetwork2{
+#myOrganizationalnetwork_area{
+	width: 100%;
+	min-width: 300px;
+	height: 100%;
+	min-height: 150px;
+	background:#fff;
+	overflow: auto;
+	flex: 1;
+	resize: vertical;
+}
+
+#process_others_network_container{
+	width: 100%;
+	min-width: 300px;
+	height: 40%;
+	min-height: 120px;
+	border-top:solid 5px #fbd393;
+	background:#fff;
+	overflow: hidden;
+	display: none;
+	flex: 0 0 auto;
+}
+#othersProcessnetwork {
+	position: relative;
 	width: calc(100vw - 350px);
 	min-width: 300px;
 	height:100%;
-	min-height: 100%;
-	/* margin-bottom:2vh; */
-	/* border-top:solid 5px #fbd393; */
+	min-height: 450px;
+	margin-bottom:2vh;
+	border-top:solid 1px #B3E0D8;
 	background:#fff;
 	overflow: auto;
 }
+#othersProcessnetwork_area{
+	width: 100%;
+	min-width: 300px;
+	height:100%;
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	/* border-top:solid 5px #B3E0D8; */
+	background:#fff;
+	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	padding: 5px;
+	box-sizing: border-box;
+	resize: vertical;
+}
 
-/* -------------------- ボタン類の設定 ---------------------- */
+/* 表示するエリア関連の設定 */
+#buttoncluster{
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 5px;
+	flex-wrap: wrap;
+	width: 100%;
+}
+
+#others_conceptdisplay{
+	float: right;
+    padding-right: 50px;
+    margin-top: 5px;
+    color: #553700;
+}
+
+/* ボタン関連 */
 .group_select_form{
 	margin-bottom: 10px;
 	float: right;

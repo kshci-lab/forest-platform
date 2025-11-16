@@ -62,7 +62,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             this.jmindex = [];
             this.addEventLister();
             // $(`#jsmind_container`).on('click',this.connect_mindmap.bind(this));
-            $(`#organizational_conmenu1`).on('click',this.view_otherprocessmap.bind(this));
+            // $(`#organizational_conmenu1`).on('click',this.view_otherprocessmap.bind(this));
             // $(`#organizational_conmenu2`).on('click',this.connect_network.bind(this));
             // $(`#organizational_conmenu3`).on('click',this.Recruit_Idea.bind(this));
             $(`#organizational_conmenu4`).on('click',this.ContentmenuCancel.bind(this));
@@ -539,7 +539,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             this.selectId = params.nodes[0];
             const pointerX = params.pointer.DOM.x;
             const pointerY = params.pointer.DOM.y;
-            const mynetPosition = document.getElementById("myOrganizationalnetwork2").getBoundingClientRect();
+            const mynetPosition = document.getElementById("myOrganizationalnetwork").getBoundingClientRect();
             this.BoxDisplay.x = pointerX + mynetPosition.left + 20;
             this.BoxDisplay.y = pointerY + mynetPosition.top + 20;
             NetworkMenu.style.left = this.BoxDisplay.x;
@@ -564,10 +564,31 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
     //概念をマップに追加（完了）
     view_otherprocessmap (){
         document.getElementById('t_Organizational_conmenu').style.display = "none";
-        const selectNodeId = this.ownNetwork.getSelection().nodes[0];
-        const who = defaultOrganizational.nodes.get(selectNodeId).user_id;
-        console.log(who);
-        showThinkingProcessMap(who);
+        // 右クリックで選択されたノードIDを優先して取得
+        let selectNodeId = this.selectId;
+        if (!selectNodeId) {
+            const sel = this.ownNetwork.getSelection();
+            selectNodeId = (sel && sel.nodes && sel.nodes.length) ? sel.nodes[0] : null;
+        }
+        if (!selectNodeId) return;
+
+        const others_node = defaultOrganizational.nodes.get(selectNodeId);
+        if (!others_node) return;
+
+        console.log('view_otherprocessmap -> node:', others_node);
+
+        // process_others_network_container を表示（存在すれば）
+        const procContainer = document.getElementById('process_others_network_container');
+        if (procContainer) {
+            procContainer.style.display = 'block';
+        }
+
+        // 他者の思考過程マップを開く（user_id が null の場合は既定動作に従う）
+        try {
+            showThinkingProcessMap(others_node);
+        } catch (e) {
+            console.error('showThinkingProcessMap error:', e);
+        }
     }
 
     // Recruit_Idea (){
@@ -879,7 +900,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
 class RecordOrganizational{
     //ノードの記録(完了)
     record_Node (id, label, node_type, x, y){
-        let selected_node_id = document.getElementById('conceptdisplay').getAttribute('nodeId');
+        let selected_node_id = document.getElementById('others_conceptdisplay').getAttribute('nodeId');
         $.ajax({
             url: "../php/organizational_edit_map_maneger.php",
             type: "POST",
@@ -1080,25 +1101,6 @@ const getOrganizationalMapDataFromDB = (callback) => {
     });
 }
 
-// const makeTriggerInList = (id, activity_type, concept_label, content, timestamp, trigger_on) => {
-//     // 左側の発話ノードのリストのところのノードのDOMを構成する
-//     let backColor = "white";
-//     let borderColor = "#67796b";
-//     let borderWidth = 1;
-//     if(trigger_on == 1){
-//         backColor = "#979997";
-//         borderWidth = 2;
-//     }
-//     return $(`(<div id="${id}"
-//                  style='border: solid "${borderWidth}"px "${borderColor}"; background: ${backColor};'
-//                  class='trigger_in_list'
-//                  trigger_content='${content}'
-//                  timestamp='${timestamp}'
-//                  trigger_on='${trigger_on}'
-//                  activity_type='${activity_type}'
-//             >【${timestamp}：${activity_type}】<br>${concept_label}：<br>${content}</div>`);
-// }
-
 // 組織知マップを表示
 const displayOrganizationalData = (mode, selected_group_id) => {
     organizational_mode = mode;
@@ -1176,6 +1178,24 @@ function showOrganizationalMap(){
     defaultOrganizational = new Organizational("myOrganizationalnetwork", "load");
     displayOrganizationalData("all", null);
   
+}
+
+function closeOthersThinkingProcessMap(){
+  
+    $('#process_others_network_container').css('display','none');
+    $('#organizational_container').css({
+        'display':'block',
+        'width':'calc(100vw - 350px)',
+        'height':'100%',
+        'flex':'none'
+    });
+    $('#myOrganizationalnetwork_area').css({
+        'height':'100%',
+        'flex':'none'
+    });
+    // スプリッターがあれば削除
+    const splitter = document.querySelector('.organizational-splitter');
+    if(splitter) splitter.remove();
 }
 
 // ロードした際の関数
