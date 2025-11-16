@@ -98,12 +98,24 @@ if ($resSel = $mysqli->prepare("SELECT posted_time FROM `$table` WHERE discussio
     }
     $resSel->close();
 }
+// 投稿者の表示名を取得（users テーブルがあれば照会）
+$user_name = '';
+if ($resName = $mysqli->prepare("SELECT name FROM `users` WHERE user_id=? LIMIT 1")) {
+    $resName->bind_param('i', $user_id);
+    if ($resName->execute()) {
+        $resName->bind_result($uname);
+        if ($resName->fetch()) { $user_name = $uname; }
+    }
+    $resName->close();
+}
+if (!$user_name && isset($_SESSION['USERNAME'])) { $user_name = $_SESSION['USERNAME']; }
 $mysqli->close();
 
 echo json_encode([
     'status' => 'ok',
     'discussion_history_id' => $nextId,
     'user_id' => $user_id,
+    'user_name' => $user_name,
     'content' => $content,
     'posted_time' => $posted
 ]);

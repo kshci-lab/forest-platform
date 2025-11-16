@@ -1906,25 +1906,25 @@ function fetchKnowledgeTree(){
     $.ajax({
         url: 'php/get_knowledge_tree.php',
         dataType: 'json'
-    }).done(function(res){
-        if(res && res.status==='ok' && Array.isArray(res.nodes)){
-            buildKnowledgeTree(res.nodes);
-        } else {
-            console.error('Tree取得失敗', res);
-        }
-    }).fail(function(xhr, st, err){
-        console.error('Tree通信失敗', st, err, xhr && xhr.responseText);
-    });
-}
-
-function buildKnowledgeTree(nodes){
-    var container = document.getElementById('overlay_knowledge_tree');
-    if(!container){ return; }
-    container.innerHTML = '';
-    // parent_id -> children
-    var byParent = {};
-    nodes.forEach(function(n){
-        var p = (n.parent_id===null ? 'root' : String(n.parent_id));
+        }).done(function(res){
+            if(res && res.status === 'ok' && Array.isArray(res.items)){
+                res.items.forEach(function(item){
+                    var userName = (item.user_name && item.user_name.length) ? item.user_name : ($board.data('user-name') || 'ユーザー');
+                    var $card = $('<div class="message-card"></div>');
+                    var $author = $('<div class="message-author"></div>').text(userName + ' さん');
+                    var $body = $('<div class="message-body"></div>').text(item.content || '');
+                    $card.append($author).append($body);
+                    if(item.posted_time){
+                        var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(item.posted_time);
+                        $card.append($time);
+                    }
+                    $list.append($card);
+                });
+                try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){ }
+            } else {
+                console.warn('discussion_history 初期ロード失敗', res);
+            }
+        }).fail(function(xhr,st,err){
         if(!byParent[p]){ byParent[p] = []; }
         byParent[p].push(n);
     });
@@ -2686,7 +2686,7 @@ function initializeDiscussionBoard(){
                 data: { content: text }
             }).done(function(res){
                 if(res && res.status === 'ok'){
-                    var displayUser = user; // サーバーから user_id を使って再取得も可能だが現状はフロント名
+                    var displayUser = (res.user_name && res.user_name.length) ? res.user_name : ($board.data('user-name') || 'ユーザー');
                     var bodyText = text; // DB反映された（切り詰め済みの場合は res.content を使用）
                     if(res.content){ bodyText = res.content; }
                     var $card = $('<div class="message-card"></div>');
@@ -2698,7 +2698,7 @@ function initializeDiscussionBoard(){
                         $card.append($time);
                     }
                     $list.append($card);
-                    try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){}
+                    try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){ }
                     $input.val('').focus();
                     console.log('discussion_history 保存OK', res);
                 } else {

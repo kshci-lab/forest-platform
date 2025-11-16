@@ -624,6 +624,82 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                             <button type="submit" class="post-button">投稿</button>
                                                         </form>
                                                     </div>
+                                                    <!-- フォールバック: メインの meeting-reflection-network.js が読み込めない/エラーで初期化されない場合でも
+                                                         掲示板の初期ロードと投稿ができるように、軽量なハンドラをここで追加します。 -->
+                                                    <script type="text/javascript">
+                                                    (function(){
+                                                        try{
+                                                            var board = document.getElementById('discussion_board');
+                                                            if(!board) return;
+                                                            var list = document.getElementById('discussion_message_list');
+                                                            var form = document.getElementById('discussion_post_form');
+                                                            var input = document.getElementById('discussion_input');
+                                                            var boardUser = board.getAttribute('data-user-name') || 'ユーザー';
+
+                                                            // 初期ロード（簡易）
+                                                            var xhr = new XMLHttpRequest();
+                                                            xhr.open('GET', 'php/get_discussion_history.php?limit=200', true);
+                                                            xhr.onreadystatechange = function(){
+                                                                if(xhr.readyState !== 4) return;
+                                                                try{
+                                                                    if(xhr.status === 200){
+                                                                        var res = JSON.parse(xhr.responseText || '{}');
+                                                                        if(res && res.status === 'ok' && Array.isArray(res.items)){
+                                                                            res.items.forEach(function(item){
+                                                                                var uname = (item.user_name && item.user_name.length) ? item.user_name : boardUser;
+                                                                                var card = document.createElement('div'); card.className = 'message-card';
+                                                                                var a = document.createElement('div'); a.className = 'message-author'; a.textContent = uname + ' さん';
+                                                                                var b = document.createElement('div'); b.className = 'message-body'; b.textContent = item.content || '';
+                                                                                card.appendChild(a); card.appendChild(b);
+                                                                                if(item.posted_time){ var t = document.createElement('div'); t.className='message-time'; t.style='margin-top:4px;font-size:11px;color:#888;'; t.textContent = item.posted_time; card.appendChild(t); }
+                                                                                list.appendChild(card);
+                                                                            });
+                                                                            try{ list.scrollTop = list.scrollHeight; }catch(e){}
+                                                                        }
+                                                                    }
+                                                                }catch(e){/* ignore */}
+                                                            };
+                                                            xhr.send(null);
+
+                                                            // 投稿ハンドラ（既存のハンドラと重複しても問題ないように名前付きで登録）
+                                                            if(form && input){
+                                                                form.addEventListener('submit', function(ev){
+                                                                    ev.preventDefault();
+                                                                    var text = (input.value||'').trim();
+                                                                    if(!text) return;
+                                                                    var x = new XMLHttpRequest();
+                                                                    var fd = new FormData(); fd.append('content', text);
+                                                                    x.open('POST', 'php/save_discussion_history.php', true);
+                                                                    x.onreadystatechange = function(){
+                                                                        if(x.readyState !== 4) return;
+                                                                        if(x.status === 200){
+                                                                            try{
+                                                                                var r = JSON.parse(x.responseText || '{}');
+                                                                                if(r && r.status === 'ok'){
+                                                                                    var displayUser = (r.user_name && r.user_name.length) ? r.user_name : boardUser;
+                                                                                    var card = document.createElement('div'); card.className = 'message-card';
+                                                                                    var a = document.createElement('div'); a.className = 'message-author'; a.textContent = displayUser + ' さん';
+                                                                                    var b = document.createElement('div'); b.className = 'message-body'; b.textContent = r.content || text;
+                                                                                    card.appendChild(a); card.appendChild(b);
+                                                                                    if(r.posted_time){ var t = document.createElement('div'); t.className='message-time'; t.style='margin-top:4px;font-size:11px;color:#888;'; t.textContent = r.posted_time; card.appendChild(t); }
+                                                                                    list.appendChild(card);
+                                                                                    try{ list.scrollTop = list.scrollHeight; }catch(e){}
+                                                                                    input.value = '';
+                                                                                } else {
+                                                                                    console && console.warn && console.warn('save_discussion failed', r);
+                                                                                    if(window.alert) alert('投稿の保存に失敗しました。');
+                                                                                }
+                                                                            }catch(e){ if(window.alert) alert('投稿時の応答処理でエラーが発生しました'); }
+                                                                        } else {
+                                                                            if(window.alert) alert('通信エラーにより投稿できませんでした。');
+                                                                        }
+                                                                    };
+                                                                    x.send(fd);
+                                                                }, false);
+                                                            }
+                                                        }catch(e){ console && console.warn && console.warn('discussion fallback init failed', e); }
+                                                    })();
+                                                    </script>
                                                 </div>
                                                 <div id="knowledge_register_area" class="knowledge_register_area">
                                                     <form id="knowledge_register_form" method="POST" action="register_knowledge.php" onsubmit="window.onbeforeunload=null;">

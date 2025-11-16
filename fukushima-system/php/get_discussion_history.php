@@ -28,7 +28,10 @@ if($tbl->num_rows === 0){
 }
 $tbl->close();
 
-$sql = "SELECT discussion_history_id, user_id, posted_time, content FROM `$table` ORDER BY discussion_history_id ASC LIMIT ?";
+// join users table to include the poster's display name (user_name)
+$sql = "SELECT dh.discussion_history_id, dh.user_id, dh.posted_time, dh.content, COALESCE(u.name,'') AS user_name " .
+  "FROM `$table` dh LEFT JOIN `users` u ON dh.user_id = u.user_id " .
+  "ORDER BY dh.discussion_history_id ASC LIMIT ?";
 if(!$stmt = $mysqli->prepare($sql)){
   echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]);
   exit;
@@ -46,7 +49,8 @@ while($row = $result->fetch_assoc()){
     'discussion_history_id' => (int)$row['discussion_history_id'],
     'user_id' => (int)$row['user_id'],
     'posted_time' => $row['posted_time'],
-    'content' => $row['content']
+    'content' => $row['content'],
+    'user_name' => isset($row['user_name']) ? $row['user_name'] : ''
   ];
 }
 $result->free();
