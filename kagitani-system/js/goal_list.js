@@ -11,7 +11,7 @@ function fetchObjectNodeInfo(nodeId) {
             },
             success: function(res) {
                 var rows = [];
-                if (res.success && res.data && res.data.length) {
+                if (res && res.success && Array.isArray(res.data) && res.data.length) {
                     res.data.forEach(function(row) {
                         rows.push({
                             object_node_id: row.object_node_id,
@@ -26,7 +26,8 @@ function fetchObjectNodeInfo(nodeId) {
                 }
                 resolve(rows);
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                console.error('get_object_node_info.php error:', status, error);
                 resolve([{ object_node_id: '', node_id: nodeId, content: '' }]);
             }
         });
@@ -34,6 +35,41 @@ function fetchObjectNodeInfo(nodeId) {
 }
 // --- 目標管理エリア（小・中・大目標） ---
 document.addEventListener('DOMContentLoaded', function() {
+    // ヘルパ: 現在の言語を取得（トグルの状態に依存）
+    function getCurrentLang() {
+        var toggle = document.getElementById('language-toggle');
+        return (toggle && toggle.checked) ? 'en' : 'ja';
+    }
+
+    // ヘルパ: 言語辞書からキーを取得、なければフォールバックを返す
+    var _fallbacks = {
+        'pleaseEnterDates': '開始日と終了日を入力してください',
+        'noWeeklyGoals': 'まだ小目標がありません',
+        'unlinked': '未リンク',
+        'edit': '編集',
+        'exportReport': 'レポート出力',
+        'delete': '削除',
+        'dash': 'ー',
+        'dateEditTitle': '日付編集',
+        'startLabel': '開始日:',
+        'endLabel': '終了日:',
+        'save': '保存',
+        'close': '閉じる',
+        'communicationError': '通信エラー',
+        'dbRegisterFail': 'DB登録失敗: '
+    };
+
+    function t(key) {
+        var lang = getCurrentLang();
+        try {
+            if (window.langDict && window.langDict[lang] && typeof window.langDict[lang][key] !== 'undefined') {
+                return window.langDict[lang][key];
+            }
+        } catch (e) {
+            // ignore
+        }
+        return _fallbacks[key] || key;
+    }
     // ページ表示時にDBから小目標を取得
     function fetchWeeklyGoalsFromDB() {
         $.ajax({
@@ -59,6 +95,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                     var goals = Object.values(goalMap);
+                    // 最新の目標を先頭に表示するため、開始日で降順ソート（新しいものを先頭に）
+                    goals.sort(function(a, b) {
+                        var da = new Date(a.start || a.start_date);
+                        var db = new Date(b.start || b.start_date);
+                        return db - da;
+                    });
                     localStorage.setItem('weeklyGoals', JSON.stringify(goals));
                     renderWeeklyGoals();
                 }
@@ -80,13 +122,19 @@ document.addEventListener('DOMContentLoaded', function() {
     var mediumInput = document.getElementById('mediumGoalText');
     var mediumListDiv = document.getElementById('mediumGoalsList');
 
+    // 大目標（要素が存在しない場合もあるので安全に取得）
+    var largeGoalYearSelect = document.getElementById('largeGoalYearSelect');
+    var largeInput = document.getElementById('largeGoalInput');
+    var largeListDiv = document.getElementById('largeGoalsList');
+    var addLargeBtn = document.getElementById('addLargeGoalBtn');
+
     // 小目標
     if (addWeeklyBtn) {
         addWeeklyBtn.onclick = function() {
             var startDate = weeklyStartInput.value;
             var endDate = weeklyEndInput.value;
             if (!startDate || !endDate) {
-                alert('開始日と終了日を入力してください');
+                alert(t('pleaseEnterDates'));
                 return;
             }
             var goal_type = 'weekly';
@@ -102,20 +150,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 dataType: 'json',
                 success: function(res) {
                     console.log('insert_object_goal.php response:', res);
-                    if (res.success) {
+                        if (res.success) {
                         var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
-                        goals.push({ start: startDate, end: endDate, createdAt: new Date().toISOString(), object_goal_id: res.object_goal_id });
+                        // 新規の小目標は一覧の先頭に追加する
+                        goals.unshift({ start: startDate, end: endDate, createdAt: new Date().toISOString(), object_goal_id: res.object_goal_id });
                         localStorage.setItem('weeklyGoals', JSON.stringify(goals));
                         weeklyStartInput.value = '';
                         weeklyEndInput.value = '';
                         renderWeeklyGoals();
                     } else {
-                        alert('DB登録失敗: ' + (res.error || '不明なエラー'));
+                        alert(t('dbRegisterFail') + (res.error || '不明なエラー'));
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX通信エラー:', status, error, xhr);
-                    alert('通信エラー');
+                    alert(t('communicationError'));
                 }
             });
         };
@@ -124,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
         if (!weeklyListDiv) return;
         if (goals.length === 0) {
-            weeklyListDiv.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">まだ小目標がありません</div>';
+            weeklyListDiv.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">' + t('noWeeklyGoals') + '</div>';
             return;
         }
         var html = '';
@@ -141,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '</div>';
                 }).join('');
             } else {
-                nodeHtml = '<div class="jmnode" style="' + jmnodeStyle + 'color:#888;">未リンク</div>';
+                nodeHtml = '<div class="jmnode" style="' + jmnodeStyle + 'color:#888;">' + t('unlinked') + '</div>';
             }
             var startDate = new Date(goal.start || goal.start_date);
             var endDate = new Date(goal.end || goal.finish_date);
@@ -150,14 +199,14 @@ document.addEventListener('DOMContentLoaded', function() {
             html += '<div style="background:#eafbe7;border:1.5px solid #28a745;border-radius:7px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:16px;">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
                 + '<span class="weekly-goal-date-range" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
-                + '<button class="edit-weekly-date-btn" data-idx="' + idx + '" id="editWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#ffc107;color:#333;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="editWeeklyGoalBtnText' + idx + '">編集</span></button>'
-                + '<button class="export-weekly-btn" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="exportWeeklyGoalBtnText' + idx + '">レポート出力</span></button>'
+                + '<button class="edit-weekly-date-btn" data-idx="' + idx + '" id="editWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#ffc107;color:#333;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="editWeeklyGoalBtnText' + idx + '">' + t('edit') + '</span></button>'
+                + '<button class="export-weekly-btn" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="exportWeeklyGoalBtnText' + idx + '">' + t('exportReport') + '</span></button>'
                 + '</div>'
                 + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
                 + '<div style="text-align:right;margin-top:8px;">'
-                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn" title="削除" id="deleteWeeklyGoalBtn' + idx + '" style="padding:4px 10px;background:#dc3545;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">'
+                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn" title="' + t('delete') + '" id="deleteWeeklyGoalBtn' + idx + '" style="padding:4px 10px;background:#dc3545;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">'
                 + '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>'
-                + ' <span id="deleteWeeklyGoalBtnText' + idx + '">ー</span></button>'
+                + ' <span id="deleteWeeklyGoalBtnText' + idx + '">' + t('dash') + '</span></button>'
                 + '</div>'
                 + '</div>';
         });
@@ -192,18 +241,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 modalContent.style.maxHeight = '80vh';
                 modalContent.style.overflowY = 'auto';
                 var title = document.createElement('h3');
-                title.textContent = '日付編集';
+                title.textContent = t('dateEditTitle');
                 title.style.marginBottom = '16px';
                 modalContent.appendChild(title);
                 var startLabel = document.createElement('label');
-                startLabel.textContent = '開始日:';
+                startLabel.textContent = t('startLabel');
                 startLabel.style.marginRight = '8px';
                 var startInput = document.createElement('input');
                 startInput.type = 'date';
                 startInput.value = (goal.start || goal.start_date) ? (goal.start || goal.start_date) : '';
                 startInput.style.marginBottom = '12px';
                 var endLabel = document.createElement('label');
-                endLabel.textContent = '終了日:';
+                endLabel.textContent = t('endLabel');
                 endLabel.style.marginRight = '8px';
                 var endInput = document.createElement('input');
                 endInput.type = 'date';
@@ -216,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 modalContent.appendChild(endInput);
                 modalContent.appendChild(document.createElement('br'));
                 var saveBtn = document.createElement('button');
-                saveBtn.textContent = '保存';
+                saveBtn.textContent = t('save');
                 saveBtn.style.marginTop = '18px';
                 saveBtn.style.padding = '8px 24px';
                 saveBtn.style.background = '#28a745';
@@ -631,8 +680,8 @@ addWeeklyGoal = function() {
     // 画面を即座に更新（localStorageに仮追加）
     var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
     if (goals.length > 0) {
-        // 最新の小目標にノード内容を追加
-        var latestGoal = goals[goals.length - 1];
+        // 最新の小目標にノード内容を追加（先頭が最新）
+        var latestGoal = goals[0];
         if (!latestGoal.contents) latestGoal.contents = [];
         // マインドマップからノード内容取得
         var selectedNode = _jm.get_selected_node();

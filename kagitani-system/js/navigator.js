@@ -192,6 +192,7 @@ class Navigator {
 
     // 現在表示中のアバターを更新
     updateCurrentAvatar(mood) {
+        /* navigator-greeting を無効化したため、ここでの直接操作もスキップします
         const currentGreeting = document.getElementById('navigator-greeting');
         if (currentGreeting) {
             const avatar = currentGreeting.querySelector('.navigator-avatar');
@@ -206,6 +207,7 @@ class Navigator {
                 }, 200);
             }
         }
+        */
 
         // その他のナビゲーターメッセージも更新
         const allMessages = document.querySelectorAll('[id^="navigator-message-"]');
@@ -329,6 +331,7 @@ class Navigator {
             return;
         }
         
+        /* navigator-greeting を無効化しました（表示しない）
         // 既存の挨拶メッセージがあれば削除
         this.hideGreeting();
         
@@ -348,6 +351,7 @@ class Navigator {
         }
         
         console.log(`ナビゲーターの挨拶を表示しました（${this.persistentMode ? '永続表示' : '3秒後自動消去'}）`);
+        */
     }
 
     // 永続表示モードの設定

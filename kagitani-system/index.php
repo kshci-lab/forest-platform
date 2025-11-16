@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         
         // タブ切り替え機能
-        function switchTab(tabId) {
+        function switchTab(tabId, evt) {
             // 全てのタブコンテンツを非表示
             const tabContents = document.querySelectorAll('.tabcontent > div');
             tabContents.forEach(tab => {
@@ -258,7 +258,23 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // クリックされたボタンをアクティブに
-            event.target.classList.add('active');
+            // inline onclick などで渡されたイベントを優先、未定義ならonclick属性で一致するボタンを探す
+            var activeButton = null;
+            if (evt && evt.target) {
+                activeButton = evt.target;
+            } else if (typeof event !== 'undefined' && event && event.target) {
+                activeButton = event.target;
+            } else {
+                // onclick="switchTab('tab01')" のようなボタンを探す
+                var buttons = document.querySelectorAll('.dropdown-tab-item');
+                buttons.forEach(function(btn) {
+                    var onclick = btn.getAttribute('onclick') || '';
+                    if (onclick.indexOf("switchTab('" + tabId + "')") !== -1 || onclick.indexOf('switchTab(\"' + tabId + '\"') !== -1) {
+                        activeButton = btn;
+                    }
+                });
+            }
+            if (activeButton && activeButton.classList) activeButton.classList.add('active');
             
             // メニューを閉じる
             const hamburgerMenu = document.querySelector('.hamburger-menu');
@@ -631,6 +647,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'lang-label-ja': '日本語',
                 'lang-label-en': 'English',
                 'addWeeklyGoalBtn': '小目標に追加',
+                'addWeeklyGoalMenuLabel': '小目標に追加',
                 'showThinkingProcessMapBtn': '目標手段階層マップ',
                 'sheetbtn': 'シート選択画面に戻る',
                 'logout': 'ログアウト',
@@ -690,6 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'mediumGoalTextPlaceholder': 'Enter medium goal',
                 'lang-label-en': 'English',
                 'addWeeklyGoalBtn': 'Add Weekly Goal',
+                'addWeeklyGoalMenuLabel': 'Add Weekly Goal',
                 'showThinkingProcessMapBtn': 'Goal Hierarchy Map',
                 'editWeeklyGoalBtnText': 'Edit',
                 'exportWeeklyGoalBtnText': 'Export Journal',
@@ -721,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'navigatorGreetingHeader': 'Hello!',
                 'navigatorGreetingSub': 'Welcome to the Goal Hierarchy Map',
                 'weeklyGoalTitle': 'Weekly Goal',
-                'weeklyGoalTooltip': 'Goal for the next week',
+                'weeklyGoalTooltip': '   --Goal for the next week',
                 'weeklyGoalStartLabel': 'Start Date',
                 'weeklyGoalEndLabel': 'End Date',
                 'addWeeklyGoalBtnText': 'Add',
@@ -1058,60 +1076,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                             </button>
                                         </li> -->
                                         <li>
-                                            <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();"><span id="addWeeklyGoalBtn">小目標に追加</span></button>
+                                            <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();"><span id="addWeeklyGoalMenuLabel">小目標に追加</span></button>
                                         </li>
                                         <li>
                                             <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();"><span id="showThinkingProcessMapBtn">目標手段階層マップ</span></button>
-        <script>
-        // 言語テキスト辞書（主要ボタン）
-        const langDict = {
-            ja: {
-                'lang-label-ja': '日本語',
-                'lang-label-en': 'English',
-                'addWeeklyGoalBtn': '小目標に追加',
-                'showThinkingProcessMapBtn': '目標手段階層マップ',
-                'sheetbtn': 'シート選択画面に戻る',
-                'logout': 'ログアウト',
-            },
-            en: {
-                'lang-label-ja': 'Japanese',
-                'lang-label-en': 'English',
-                'addWeeklyGoalBtn': 'Add Weekly Goal',
-                'showThinkingProcessMapBtn': 'Goal Hierarchy Map',
-                'sheetbtn': 'Back to Sheet Selection',
-                'logout': 'Logout',
-            }
-        };
-        function setLanguage(lang) {
-            document.getElementById('language-switching-message').style.display = 'block';
-            console.log('言語切り替え中・・・');
-            setTimeout(function() {
-                Object.keys(langDict[lang]).forEach(function(id) {
-                    var el = document.getElementById(id);
-                    if (el) {
-                        if (el.tagName === 'INPUT' && el.type === 'submit') {
-                            el.value = langDict[lang][id];
-                        } else {
-                            el.textContent = langDict[lang][id];
-                        }
-                    }
-                });
-                document.getElementById('language-switching-message').style.display = 'none';
-                console.log('言語切替完了: ' + (lang === 'ja' ? '日本語' : 'English'));
-            }, 700);
-        }
-        document.addEventListener('DOMContentLoaded', function() {
-            var toggle = document.getElementById('language-toggle');
-            setLanguage('ja');
-            toggle.checked = false;
-            toggle.addEventListener('change', function() {
-                if (toggle.checked) {
-                    setLanguage('en');
-                } else {
-                    setLanguage('ja');
-                }
-            });
-        });
+        <!-- Duplicate language dictionary removed to avoid redeclaration of `langDict`. Using the main `langDict` defined earlier. -->
         </script>
                                         </li>
                                        

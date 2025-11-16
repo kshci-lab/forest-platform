@@ -1508,6 +1508,19 @@ select[name="mttime_list"] {
 	background-color: #ff8c00;
 }
 
+/* Wider buttons for question/answer nodes: prevent wrapping and ensure enough width */
+#addQNodeBtn, #addAnodeBtn {
+	min-width: 140px;
+	padding: 8px 16px;
+	white-space: nowrap;
+}
+
+/* Ensure the inner span does not wrap */
+#addQNodeBtn span, #addAnodeBtn span {
+	display: inline-block;
+	white-space: nowrap;
+}
+
 .button5 {
 	background-color: #999;
 	color: #fff;
