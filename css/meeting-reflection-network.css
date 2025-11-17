@@ -54,18 +54,28 @@
 }
 
 /* === Discussion board (掲示板UI) inside #discussion_history_area === */
+
 #shared_combination_overlay #discussion_history_area{
+	/* 親コンテナは縦方向の flex として振る舞い、高さ制約を子へ伝えるために min-height:0 を指定 */
 	display: flex;
 	flex-direction: column;
+	min-height: 0;
+	height: 100%;
 }
 #shared_combination_overlay #discussion_history_area .discussion-board{
+	/* 全高を使って内部でスクロールを完結させる */
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+	height: 100%;
+	min-height: 0;
 }
 #shared_combination_overlay #discussion_history_area .message-list{
+	/* メッセージリストは伸縮して内部でスクロールさせる（はみ出さない） */
 	flex: 1 1 auto;
-	overflow: auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
 	background: #fafafa;
 	border: 1px solid #eee;
 	border-radius: 10px;
