@@ -1524,6 +1524,7 @@ function ModeChangeButtonClick() {
   SharedModeActive = true;
   // グローバル同期
   window.SharedModeActive = SharedModeActive;
+    try { document.body.classList.add('shared-mode'); } catch(e){}
     // 既存 vis ネットワークの破棄と DOM クリア
     try{
       if(defaultForestMRN && defaultForestMRN.ownNetwork && typeof defaultForestMRN.ownNetwork.destroy === 'function'){
@@ -1551,7 +1552,10 @@ function ModeChangeButtonClick() {
     $('#network_container_shared').show();
     // Mirror num==3 layout
     $('#network_container').show().css('display','flex');
-    $('#jsmind_container').css('width','40%');
+    // 共有知モードでは思考整理マップを非表示に
+    try{ $('#jsmind_container').hide(); }catch(e){}
+    try{ $('#jsmind_container').css('width',''); }catch(e){}
+    try{ $('#network_container').css('width','100%'); }catch(e){}
     $('#mind').css('height','90%');
     $('#document').hide();
     if(BeforeSelectModeNumber == 1){
@@ -1575,6 +1579,7 @@ function ModeChangeButtonClick() {
     // それ以外のモードでは共有フラグを落とし、表出化フォームを隠す
     SharedModeActive = false;
     window.SharedModeActive = SharedModeActive;
+    try { document.body.classList.remove('shared-mode'); } catch(e){}
     // 表出化フォームを元の場所へ戻し非表示に
     try{
       var $ext = $('#externalization_form_section');
@@ -1586,18 +1591,19 @@ function ModeChangeButtonClick() {
       }
     }catch(e){ console.log('error restoring ext form', e); }
   }
-  jump_node("root");
+  try { jump_node("root"); } catch(e){}
 }
 
 function jump_node(nodeid) {
   // 対象となる要素を取得
   const area = document.getElementById("jsmind_container");
+  if(!area){ return; }
   let elements = area.querySelectorAll("jmnode[nodeid='"+nodeid+"']");
   
   // NodeList を forEach で反復して処理
   elements.forEach(element => {
     console.log(element);
-    element.scrollIntoView({ block: "center", inline: "center"});
+    try { element.scrollIntoView({ block: "center", inline: "center"}); } catch(e){}
   });
 }
 
@@ -1635,11 +1641,33 @@ function activateSharedTab(tabId){
 
   // 外部化フォームの表示切替（mynetwork2 内のフォーム）
   var extForm = document.getElementById('externalization_form_section');
-  if(extForm){
-    if(tabId === 'tab-externalization'){
-      extForm.style.display = '';
+  if (extForm) {
+    if (tabId === 'tab-externalization') {
+      // 明示的に block 指定（空文字だと初期 inline style に引きずられるケースを回避）
+      try { extForm.style.display = 'block'; } catch (e) { /* no-op */ }
+      // 念のため、共有知モード中はフォームを #mynetwork 配下へ退避させて確実に可視領域へ
+      try {
+        if (window.SharedModeActive) {
+          var host = document.getElementById('mynetwork');
+          if (host && !host.contains(extForm)) {
+            host.appendChild(extForm);
+            if (window.console && console.debug) console.debug('activateSharedTab: externalization form re-appended to #mynetwork');
+          }
+        }
+      } catch (e) { /* no-op */ }
+      // 連結化オーバーレイが残っていたら強制で隠す
+      try {
+        var ov = document.getElementById('shared_combination_overlay');
+        if (ov) {
+          ov.style.display = 'none';
+          if (ov.classList) ov.classList.remove('is-active');
+        }
+      } catch (e) { /* no-op */ }
+      // ビューポート内へスクロール
+      try { extForm.scrollIntoView({block:'nearest'}); } catch (e) { /* no-op */ }
+      try { if (window.console && console.debug) console.debug('activateSharedTab: show externalization form (block)'); } catch (e) {}
     } else {
-      extForm.style.display = 'none';
+      try { extForm.style.display = 'none'; } catch (e) { /* no-op */ }
     }
   }
 

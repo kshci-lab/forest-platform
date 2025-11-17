@@ -623,8 +623,13 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
 
     // マインドマップのノードがクリックされたときの処理
     connect_mindmap (e) {
-        const Jsmind = new jsMind({container:'jsmind_container',
-                                editable: false});
+        // 共有知モードやマインドマップ非表示時は安全に中断
+        if (!document.getElementById('jsmind_container')) {
+            alert('現在、マインドマップは有効化されていません');
+            this.nodeConnectEnabled = false;
+            return;
+        }
+        const Jsmind = new jsMind({container:'jsmind_container', editable: false});
         if (!this.nodeConnectEnabled) {
             return;
         }else{
@@ -1138,7 +1143,7 @@ const makeUtteranceNodeInList = (utter_id, utter_content, speaker, JPNtime, netw
         backColor = "gray";
     }
     return $(`(<div id="${utter_id}"
-                 style='border: solid 2px #000; font-size: 11px; line-height: 11px; background: ${backColor}; margin-bottom: 5px;'
+                 style='border: solid 2px #000; font-size: 18px; line-height: 20px; background: ${backColor}; margin-bottom: 8px;'
                  class='utter_node_in_list'
                  speaker='${speaker}'
                  utterance='${utter_content}'

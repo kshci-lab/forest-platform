@@ -93,10 +93,11 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
     </head>
     <body id="all">
         <?php
-        // 共有知モードで起動指定がある場合、初期ロードで共有知モードに切り替えるスクリプトを埋め込む
-        if (!empty($_SESSION['SharedMode'])) {
+        // 共有知モードで起動指定（セッション or クエリ）がある場合、初期ロードで共有知モードに切り替えるスクリプトを埋め込む
+        $forceShared = !empty($_SESSION['SharedMode']) || (isset($_GET['mode']) && $_GET['mode'] === 'shared');
+        if ($forceShared) {
             // 一度使ったら破棄
-            unset($_SESSION['SharedMode']);
+            if (!empty($_SESSION['SharedMode'])) { unset($_SESSION['SharedMode']); }
             echo '<script type="text/javascript">';
             echo 'document.addEventListener("DOMContentLoaded", function(){';
             echo '  try {';
@@ -109,6 +110,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
             echo '    if (typeof activateSharedTab === "function") {';
             echo '      activateSharedTab("tab-externalization");';
             echo '    }';
+            echo '    try { document.body.classList.add("shared-mode"); } catch (e) {}';
             echo '  } catch(e) { console && console.warn && console.warn("Shared mode auto-start failed", e); }';
             echo '});';
             echo '</script>';
