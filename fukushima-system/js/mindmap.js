@@ -1679,6 +1679,8 @@ function activateSharedTab(tabId){
       try { updateCombinationOverlayBounds(); } catch (e) {}
       overlay.style.display = 'block';
       overlay.classList.add('is-active');
+      // 連結化オーバーレイを表示する際、フラグメントをノード化してドラッグ初期化する
+      try { if (typeof initializeFragmentsWorkspace === 'function') initializeFragmentsWorkspace(); } catch (e) { console && console.warn && console.warn('init fragments failed', e); }
       // レイアウト確定のタイミング差で誤差が出ないよう、複数回再計算
       var recalc = function(){ try { updateCombinationOverlayBounds(); } catch (e) {} };
       // レイアウト確定後（次フレーム）

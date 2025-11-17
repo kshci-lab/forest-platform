@@ -2742,11 +2742,12 @@ $(document).on('click', '#shared_combination_overlay .detail-button', function(e
 
 // === 統合ワークスペース: フラグメント自体をノード化して配置 ===
 function initializeFragmentsWorkspace(){
+    try { console && console.debug && console.debug('initializeFragmentsWorkspace called'); } catch(_){}
     var $ws = $('#knowledge_fragments_workspace');
     if ($ws.length === 0) return;
     var $list = $ws.find('.knowledge-fragment-list');
     if ($list.length === 0) return;
-    var gap = 16;
+    var gap = 10;
     // タイトルの下から配置開始
     var baseTop = 0;
     var $title = $ws.children('.overlay-title').first();
@@ -2761,12 +2762,12 @@ function initializeFragmentsWorkspace(){
         var $wrap = $('<div class="fragment-node-wrapper"></div>');
         $wrap.css({ left: x + 'px', top: y + 'px' });
         // 横並び初期配置のため現在の幅を参照
-        try { $card.css('width','260px'); } catch(e){}
+        try { $card.css('width','180px'); } catch(e){}
         $wrap.append($card.detach());
         $ws.append($wrap);
         enableFragmentDrag($wrap, $ws);
-        var w = 260;
-        try { w = Math.max(260, $card.outerWidth(true)); } catch(e){}
+        var w = 180;
+        try { w = Math.max(180, $card.outerWidth(true)); } catch(e){}
         x += w + gap;
     });
     // 元のリストコンテナは不要なので削除

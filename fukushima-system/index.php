@@ -142,11 +142,11 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
         <!--      タブメニュー Start        -->
         <ul div class="tabnav">
-          <li class="active"><a href="#tab01">思考整理支援システム</a></li>
+          <li class="active"><a href="#tab01">共有知モード</a></li>
           <!-- <li><a href="#tab02">過去のマインドマップ</a></li>
               <li class="active"><a href="#tab03" >リフレクション</a></li>
               <li class="active"><a href="#record_tab" >履歴</a></li> -->
-          <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  
+          <!-- <li class="active"><a href="#tab04">過去のマインドマップ</a></li>   -->
          <!-- <li class="active"><a href="#tab05">共有知モード</a></li> -->
           
     
