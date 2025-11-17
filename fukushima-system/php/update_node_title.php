@@ -61,6 +61,26 @@ if($res = $mysqli->query("SELECT MAX($colId) AS max_id FROM $table")){
 }
 
 // レコード挿入 deleted=0 (カラムがあれば)
+// まず既存レコードを論理削除（deleted=1）する
+if($hasDeleted){
+    if($upd = $mysqli->prepare("UPDATE $table SET deleted=1 WHERE $colId = ?")){
+        $upd->bind_param('i', $node_id);
+        @$upd->execute();
+        $upd->close();
+    }
+} else {
+    // deleted カラムが無ければ追加してから更新する
+    $alter = "ALTER TABLE $table ADD COLUMN deleted TINYINT(1) NOT NULL DEFAULT 0";
+    if($mysqli->query($alter)){
+        $hasDeleted = true;
+        if($upd = $mysqli->prepare("UPDATE $table SET deleted=1 WHERE $colId = ?")){
+            $upd->bind_param('i', $node_id);
+            @$upd->execute();
+            $upd->close();
+        }
+    }
+}
+
 if($parentId===null){
     $sqlIns = "INSERT INTO $table ($colId,$colParent,$colTitle".($hasDeleted?",deleted":"").",created_at,updated_at) VALUES (?,?,?".($hasDeleted?",0":"").",NOW(),NOW())";
     if(!$stmt = $mysqli->prepare($sqlIns)){ echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]); exit; }
@@ -79,4 +99,4 @@ if(!$stmt->execute()){
 $stmt->close();
 $mysqli->close();
 
-echo json_encode(['status'=>'ok','node_id'=>$nextId,'parent_id'=>$parent_id,'node_title'=>$new_title]);
+echo json_encode(['status'=>'ok','node_id'=>$nextId,'parent_id'=>$parentId,'node_title'=>$new_title]);

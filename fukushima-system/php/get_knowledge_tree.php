@@ -79,9 +79,22 @@ if($colTitle === null){
 if($colParent !== null && $colTitle !== null){
     $topTitles = ['知識関連','研究方略関連','その他'];
     $existing = [];
-    $sqlTop = "SELECT ".($colId ? "$colId" : "NULL")." AS node_id, $colTitle AS node_title FROM $table WHERE $colParent IS NULL".($hasDeleted?" AND deleted=0":"");
+    // 柔軟化：SQLで存在しないカラムを直接指定するとエラーになるため、SELECT * で取得し、PHP側でカラムの有無を確認する
+    $sqlTop = "SELECT * FROM $table WHERE ".($colParent ? "$colParent IS NULL" : "1=0").($hasDeleted?" AND deleted=0":"");
     if($resTop = $mysqli->query($sqlTop)){
-        while($r = $resTop->fetch_assoc()){ $existing[$r['node_title']] = isset($r['node_id']) ? (int)$r['node_id'] : null; }
+        while($r = $resTop->fetch_assoc()){
+            $titleVal = null;
+            if($colTitle && isset($r[$colTitle])){ $titleVal = $r[$colTitle]; }
+            elseif(isset($r['node_title'])){ $titleVal = $r['node_title']; }
+            elseif(isset($r['title'])){ $titleVal = $r['title']; }
+            if($titleVal !== null){
+                $idVal = null;
+                if($colId && isset($r[$colId])){ $idVal = (int)$r[$colId]; }
+                elseif(isset($r['node_id'])){ $idVal = (int)$r['node_id']; }
+                elseif(isset($r['id'])){ $idVal = (int)$r['id']; }
+                $existing[$titleVal] = $idVal;
+            }
+        }
         $resTop->close();
     }
     foreach($topTitles as $t){
@@ -120,23 +133,36 @@ if($colParent !== null && $colTitle !== null){
 
 // 全ノード取得（動的カラム名で取得）
 $nodes = [];
-$selectCols = [];
-if($colId){ $selectCols[] = "$colId AS node_id"; } else { $selectCols[] = "NULL AS node_id"; }
-if($colParent){ $selectCols[] = "$colParent AS parent_id"; } else { $selectCols[] = "NULL AS parent_id"; }
-$selectCols[] = "$colTitle AS node_title";
-if($colComment){ $selectCols[] = "$colComment AS comment"; } else { $selectCols[] = "NULL AS comment"; }
-if($colUpdated){ $selectCols[] = "$colUpdated AS updated_at"; } else { $selectCols[] = "NULL AS updated_at"; }
-$sqlAll = "SELECT ".implode(',', $selectCols)." FROM $table".($hasDeleted?" WHERE deleted=0":"")." ORDER BY ".($colId ? $colId : $colTitle)." ASC";
+// 全行取得: SELECT * を使い、PHP側でカラム存在を判定して nodes 配列を構築
+$sqlAll = "SELECT * FROM $table".($hasDeleted?" WHERE deleted=0":"");
 if($resAll = $mysqli->query($sqlAll)){
     while($row = $resAll->fetch_assoc()){
-        $nid = isset($row['node_id']) && $row['node_id']!==null ? (int)$row['node_id'] : null;
-        $pid = isset($row['parent_id']) && $row['parent_id']!==null ? (int)$row['parent_id'] : null;
+        // id
+        $nid = null;
+        if($colId && isset($row[$colId])){ $nid = (int)$row[$colId]; }
+        elseif(isset($row['node_id'])){ $nid = (int)$row['node_id']; }
+        elseif(isset($row['id'])){ $nid = (int)$row['id']; }
+        // parent
+        $pid = null;
+        if($colParent && array_key_exists($colParent, $row) && $row[$colParent]!==null){ $pid = (int)$row[$colParent]; }
+        elseif(array_key_exists('parent_id',$row) && $row['parent_id']!==null){ $pid = (int)$row['parent_id']; }
+        // title
+        $title = null;
+        if($colTitle && isset($row[$colTitle])){ $title = $row[$colTitle]; }
+        elseif(isset($row['node_title'])){ $title = $row['node_title']; }
+        elseif(isset($row['title'])){ $title = $row['title']; }
+        // comment/updated
+        $commentVal = null; $updatedVal = null;
+        if($colComment && array_key_exists($colComment,$row)) { $commentVal = $row[$colComment]; }
+        elseif(array_key_exists('comment',$row)) { $commentVal = $row['comment']; }
+        if($colUpdated && array_key_exists($colUpdated,$row)) { $updatedVal = $row[$colUpdated]; }
+        elseif(array_key_exists('updated_at',$row)) { $updatedVal = $row['updated_at']; }
         $nodes[] = [
             'node_id'=>$nid,
             'parent_id'=>$pid,
-            'node_title'=>$row['node_title'],
-            'comment'=> isset($row['comment']) ? $row['comment'] : null,
-            'updated_at'=> isset($row['updated_at']) ? $row['updated_at'] : null
+            'node_title'=>$title,
+            'comment'=> $commentVal !== null ? $commentVal : null,
+            'updated_at'=> $updatedVal !== null ? $updatedVal : null
         ];
     }
     $resAll->close();

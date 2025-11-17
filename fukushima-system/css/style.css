@@ -259,6 +259,8 @@ table[type] {
 	position: relative;
 	padding-left: 18px; /* for toggle */
 	line-height: 1.6;
+	z-index: 5; /* ensure kt-node is above overlays */
+	pointer-events: auto;
 }
 #overlay_knowledge_tree .kt-children {
 	margin-left: 14px;
@@ -287,6 +289,7 @@ table[type] {
 #overlay_knowledge_tree .kt-node-title { font-weight: 600; font-size: 16px; }
 #overlay_knowledge_tree .kt-comment { margin-top: 4px; font-size: 13px; color: #333; white-space: pre-wrap; }
 #overlay_knowledge_tree .kt-updated { margin-top: 3px; font-size: 12px; color: #666; }
+#overlay_knowledge_tree .kt-renamed{ background: #fffbdd; transition: background 0.5s ease; }
 #overlay_knowledge_tree .kt-comment {
 	margin-top: 4px;
 	font-size: 13px;

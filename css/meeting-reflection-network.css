@@ -109,18 +109,17 @@
 }
 #shared_combination_overlay #discussion_history_area .post-button{
 	flex: 0 0 auto;
-	background: #6699cc;
+	background: #4f46e5; /* indigo-600 */
 	color: #fff;
 	border: none;
 	border-radius: 10px;
 	padding: 0 14px;
-	min-width: 65px;
+	min-width: 84px;
 	cursor: pointer;
 	font-weight: 700;
 	font-size: 14px;
 }
 #shared_combination_overlay #discussion_history_area .post-button:hover{
-	background: #4f46e5; /* indigo-700 */
+	background: #4338ca; /* indigo-700 */
 }
 
-/* #4f46e5 */

@@ -700,6 +700,85 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                         }catch(e){ console && console.warn && console.warn('discussion fallback init failed', e); }
                                                     })();
                                                     </script>
+                                                <script type="text/javascript">
+                                                (function(){
+                                                    try{
+                                                        // フォールバックのコンテキストメニュー（meeting-reflection-network.js が未ロードの場合に代替）
+                                                        // もしフラグが立っているが要素が存在しない場合はフラグをクリアしてフォールバックを作る
+                                                        try{ if(window.ktNodeConmenu && !document.getElementById('kt-node-conmenu')){ try{ delete window.ktNodeConmenu; }catch(_){ window.ktNodeConmenu = false; } } }catch(_){ }
+                                                        if(window.ktNodeConmenu || document.getElementById('kt-node-conmenu')){ return; }
+                                                        window.ktNodeConmenu = true;
+                                                        var menu = document.createElement('div');
+                                                        menu.id = 'kt-node-conmenu';
+                                                        menu.style.position = 'absolute';
+                                                        menu.style.zIndex = 99999;
+                                                        menu.style.padding = '6px';
+                                                        menu.style.border = '1px solid #ccc';
+                                                        menu.style.background = '#fff';
+                                                        menu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)';
+                                                        menu.style.display = 'none';
+                                                        menu.style.fontSize = '13px';
+                                                        menu.style.borderRadius = '4px';
+                                                        var del = document.createElement('div'); del.id = 'kt-conmenu-delete'; del.textContent = '削除する'; del.style.padding='6px 10px'; del.style.cursor='pointer'; del.style.color='#b30000';
+                                                        var cancel = document.createElement('div'); cancel.id = 'kt-conmenu-cancel'; cancel.textContent = 'キャンセル'; cancel.style.padding='6px 10px'; cancel.style.cursor='pointer'; cancel.style.color='#333';
+                                                        menu.appendChild(del); menu.appendChild(cancel);
+                                                        document.body.appendChild(menu);
+
+                                                        function hide(){ menu.style.display='none'; menu._target=null; }
+
+                                                        document.addEventListener('mousedown', function(e){ if(menu.style.display==='block'){ if(e.target !== menu && !menu.contains(e.target)){ hide(); } } }, true);
+
+                                                        document.addEventListener('contextmenu', function(e){
+                                                            try{
+                                                                var el = e.target;
+                                                                while(el && el !== document){
+                                                                    if(el.classList && el.classList.contains && el.classList.contains('kt-node')){
+                                                                        e.preventDefault(); e.stopPropagation();
+                                                                        var id = el.getAttribute('data-node-id') || (el.dataset && el.dataset.nodeId);
+                                                                            if(!id) return;
+                                                                        menu.style.left = (e.pageX || (e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft))) + 'px';
+                                                                        menu.style.top = (e.pageY || (e.clientY + (document.documentElement.scrollTop||document.body.scrollTop))) + 'px';
+                                                                        menu.style.display = 'block';
+                                                                        menu._target = el;
+                                                                        return;
+                                                                    }
+                                                                    el = el.parentNode;
+                                                                }
+                                                            }catch(_){ }
+                                                        }, true);
+
+                                                        del.addEventListener('click', function(){
+                                                            try{
+                                                                var target = menu._target; if(!target){ hide(); return; }
+                                                                var idAttr = target.getAttribute('data-node-id');
+                                                                var id = (typeof idAttr !== 'undefined' && idAttr !== null && idAttr !== '') ? parseInt(idAttr,10) : null;
+                                                                if(!id || isNaN(id) || id <= 0){ alert('このノードは削除できません（ID不正）'); hide(); return; }
+                                                                if(!confirm('本当にこのノードを削除しますか？')){ hide(); return; }
+                                                                // 重複防止ロック
+                                                                window._ktNodeDeleteInProgress = window._ktNodeDeleteInProgress || {};
+                                                                if(window._ktNodeDeleteInProgress[id]){ alert('削除処理が進行中です'); hide(); return; }
+                                                                window._ktNodeDeleteInProgress[id] = true;
+                                                                var xhr = new XMLHttpRequest();
+                                                                var fd = new FormData(); fd.append('node_id', id);
+                                                                console && console.log && console.log('inline mark_delete send node_id=', id);
+                                                                xhr.open('POST', 'php/mark_delete_knowledge_node.php', true);
+                                                                xhr.onreadystatechange = function(){
+                                                                    if(xhr.readyState !== 4) return;
+                                                                    try{
+                                                                        if(xhr.status === 200){ var r = JSON.parse(xhr.responseText || '{}'); if(r && r.status === 'ok'){ try{ if(typeof fetchKnowledgeTree === 'function'){ fetchKnowledgeTree(); } else { target.parentNode && target.parentNode.removeChild(target); } }catch(_){ target.parentNode && target.parentNode.removeChild(target); } }
+                                                                            else { alert('削除に失敗しました: ' + (r && r.message ? r.message : '')); }
+                                                                        } else { alert('通信エラーで削除できませんでした'); }
+                                                                    }catch(e){ console && console.error && console.error('delete response parse error', e); }
+                                                                    window._ktNodeDeleteInProgress[id] = false;
+                                                                };
+                                                                xhr.send(fd);
+                                                            }catch(e){ console && console.error && console.error('delete click error', e); }
+                                                            hide();
+                                                        }, false);
+                                                        cancel.addEventListener('click', function(){ hide(); }, false);
+                                                    }catch(e){ console && console.warn && console.warn('inline conmenu fallback init failed', e); }
+                                                })();
+                                                </script>
                                                 </div>
                                                 <div id="knowledge_register_area" class="knowledge_register_area">
                                                     <form id="knowledge_register_form" method="POST" action="register_knowledge.php" onsubmit="window.onbeforeunload=null;">
@@ -750,6 +829,30 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         <div class="overlay-knowledge-tree">
                                             <div class="overlay-title">産出した知</div>
                                             <div id="overlay_knowledge_tree"></div>
+                                            <script type="text/javascript">
+                                            (function(){
+                                                try{
+                                                    console && console.log && console.log('inline-debug: index.php inline script loaded');
+                                                    document.addEventListener('contextmenu', function(e){
+                                                        try{ console && console.log && console.log('inline-debug: document contextmenu', e.target); }catch(_){ }
+                                                    }, true);
+                                                    var overlay = document.getElementById('overlay_knowledge_tree');
+                                                    if(overlay){
+                                                        overlay.addEventListener('contextmenu', function(e){ try{ console && console.log && console.log('inline-debug: overlay contextmenu', e.target); }catch(_){ } }, true);
+                                                        console && console.log && console.log('inline-debug: overlay found');
+                                                    } else {
+                                                        console && console.log && console.log('inline-debug: overlay NOT found');
+                                                    }
+                                                    setTimeout(function(){
+                                                        try{
+                                                            var nodes = document.querySelectorAll('#overlay_knowledge_tree .kt-node');
+                                                            console && console.log && console.log('inline-debug: kt-node count', nodes.length);
+                                                            nodes.forEach(function(n){ n.addEventListener('contextmenu', function(e){ try{ console && console.log && console.log('inline-debug: kt-node contextmenu', n.getAttribute('data-node-id')); }catch(_){ } }, true); });
+                                                        }catch(_){ }
+                                                    }, 500);
+                                                }catch(e){ console && console.error && console.error('inline-debug error', e); }
+                                            })();
+                                            </script>
                                         </div>
                                     </div>
                                 </div>

@@ -1,4 +1,9 @@
 // 議論内省マップに関する処理プログラム
+try{ console && console.log && console.log('meeting-reflection-network.js loaded'); }catch(_){ }
+// global error catcher to ensure runtime errors surface in console
+window.addEventListener && window.addEventListener('error', function(evt){
+    try{ console && console.error && console.error('JS error caught:', evt && (evt.message || evt.error)); }catch(_){ }
+});
 let defaultForestMRN;
 let defaultRecordForestMRN;
 let defaultShowForestMRN;
@@ -1903,42 +1908,43 @@ $(document).on('submit', '#knowledge_register_form', function(e){
 
 // --- Knowledge Tree Logic ---
 function fetchKnowledgeTree(){
+    var container = document.getElementById('overlay_knowledge_tree');
+    if(!container){ return; }
+    container.innerHTML = '';
     $.ajax({
         url: 'php/get_knowledge_tree.php',
         dataType: 'json'
-        }).done(function(res){
-            if(res && res.status === 'ok' && Array.isArray(res.items)){
-                res.items.forEach(function(item){
-                    var userName = (item.user_name && item.user_name.length) ? item.user_name : ($board.data('user-name') || 'ユーザー');
-                    var $card = $('<div class="message-card"></div>');
-                    var $author = $('<div class="message-author"></div>').text(userName + ' さん');
-                    var $body = $('<div class="message-body"></div>').text(item.content || '');
-                    $card.append($author).append($body);
-                    if(item.posted_time){
-                        var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(item.posted_time);
-                        $card.append($time);
-                    }
-                    $list.append($card);
-                });
-                try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){ }
-            } else {
-                console.warn('discussion_history 初期ロード失敗', res);
-            }
-        }).fail(function(xhr,st,err){
-        if(!byParent[p]){ byParent[p] = []; }
-        byParent[p].push(n);
+    }).done(function(res){
+        if(!(res && res.status === 'ok' && Array.isArray(res.nodes))){
+            console.warn('get_knowledge_tree レスポンス不正', res);
+            return;
+        }
+        var nodes = res.nodes;
+        var byParent = {};
+        nodes.forEach(function(n){
+            var pid = (n.parent_id === null || typeof n.parent_id === 'undefined') ? 'root' : String(n.parent_id);
+            if(!byParent[pid]){ byParent[pid] = []; }
+            byParent[pid].push(n);
+        });
+        // 子配列をタイトル順にソート
+        Object.keys(byParent).forEach(function(k){
+            byParent[k].sort(function(a,b){
+                if(a.node_title < b.node_title) return -1;
+                if(a.node_title > b.node_title) return 1;
+                return 0;
+            });
+        });
+        // トップレベルは parent_id null
+        var top = byParent['root'] || [];
+        // 指定順序で並び替え（優先的に表示したいもの）
+        var order = ['知識関連','研究方略関連','その他'];
+        top.sort(function(a,b){ return order.indexOf(a.node_title) - order.indexOf(b.node_title); });
+        var rootFrag = document.createDocumentFragment();
+        top.forEach(function(node){ rootFrag.appendChild(renderTreeNode(node, byParent)); });
+        container.appendChild(rootFrag);
+    }).fail(function(xhr,st,err){
+        console.error('fetchKnowledgeTree ajax fail', st, err, xhr && xhr.responseText);
     });
-    // トップレベルは parent_id null
-    var top = byParent['root'] || [];
-    // 指定順序で並び替え
-    var order = ['知識関連','研究方略関連','その他'];
-    top.sort(function(a,b){ return order.indexOf(a.node_title) - order.indexOf(b.node_title); });
-    // 初期表示は3つのトップレベルすべてを表示
-    var rootFrag = document.createDocumentFragment();
-    top.forEach(function(node){
-        rootFrag.appendChild(renderTreeNode(node, byParent));
-    });
-    container.appendChild(rootFrag);
 }
 
 function renderTreeNode(node, byParent){
@@ -2030,6 +2036,143 @@ $(document).on('click', '.kt-toggle', function(){
     }
 });
 
+// 右クリックメニュー（コンテキストメニュー）: ノード削除機能
+(function(){
+    // 重複初期化を防ぐフラグ
+    if(window.ktNodeConmenu){ return; }
+    // 軽量なコンテキストメニュー要素を用意
+    var $menu = $('<div id="kt-node-conmenu" style="position:absolute;z-index:9999;padding:6px;border:1px solid #ccc;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:none;font-size:13px;border-radius:4px;"></div>');
+    $menu.append('<div id="kt-conmenu-delete" style="padding:6px 10px;cursor:pointer;color:#b30000;">削除する</div>');
+    $menu.append('<div id="kt-conmenu-cancel" style="padding:6px 10px;cursor:pointer;color:#333;">キャンセル</div>');
+    $(document.body).append($menu);
+    // mark that menu was successfully appended
+    window.ktNodeConmenu = true;
+    console && console.debug && console.debug('kt-node-conmenu appended by main JS');
+
+    // キャプチャ段階で contextmenu を傍受して、親要素の oncontextmenu による阻害を回避
+    document.addEventListener('contextmenu', function(e){
+        try{
+            console && console.debug && console.debug('contextmenu event captured (capture phase)');
+            var el = e.target || e.srcElement;
+            while(el && el !== document){
+                if(el.classList && el.classList.contains && el.classList.contains('kt-node')){
+                    // 対象ノードを見つけたらカスタムメニューを表示
+                    console && console.debug && console.debug('contextmenu target is kt-node', el.tagName, el.className, el.getAttribute('data-node-id'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var nodeId = el.getAttribute('data-node-id') || (el.dataset && el.dataset.nodeId);
+                    if(!nodeId) return;
+                    var x = e.pageX || (e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft));
+                    var y = e.pageY || (e.clientY + (document.documentElement.scrollTop||document.body.scrollTop));
+                    $menu.css({ left: x + 'px', top: y + 'px' });
+                    $menu.data('target-node', nodeId);
+                    $menu.show();
+                    return;
+                }
+                el = el.parentNode;
+            }
+        }catch(err){ console && console.error && console.error('contextmenu capture handler error', err); }
+    }, true);
+
+    // メニューを閉じるユーティリティ
+    function hideMenu(){ $menu.hide(); $menu.data('target-node', null); }
+
+    // ドキュメントクリックでメニューを閉じる
+    $(document).on('mousedown', function(e){
+        if($menu.is(':visible')){
+            var t = e.target;
+            if(!$menu.is(t) && $menu.has(t).length===0){ hideMenu(); }
+        }
+    });
+
+    // kt-node の右クリックイベント
+    $(document).on('contextmenu', '.kt-node', function(e){
+        try{
+            e.preventDefault();
+            // event.target may be a child; find closest .kt-node to get attribute reliably
+            var $targetNode = $(e.target).closest('.kt-node');
+            if(!$targetNode.length) { return; }
+            var nodeIdAttr = $targetNode.attr('data-node-id');
+            var nodeId = (typeof nodeIdAttr !== 'undefined' && nodeIdAttr !== null && nodeIdAttr !== '') ? parseInt(nodeIdAttr, 10) : null;
+            if(!nodeId || isNaN(nodeId) || nodeId <= 0){
+                // 無効な node_id の場合はメニューを出さない
+                console && console.warn && console.warn('contextmenu on kt-node but node_id invalid', nodeIdAttr);
+                return;
+            }
+            // メニュー位置調整（画面端考慮）
+            var x = e.pageX || e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft);
+            var y = e.pageY || e.clientY + (document.documentElement.scrollTop||document.body.scrollTop);
+            $menu.css({ left: x + 'px', top: y + 'px' });
+            $menu.data('target-node', nodeId);
+            $menu.show();
+        }catch(err){ console && console.error && console.error('kt-node contextmenu handler error', err); }
+    });
+
+    // 削除ボタン（メインJSが生成したメニューの要素からのクリックのみ処理する）
+    $(document).on('click', '#kt-conmenu-delete', function(e){
+        try{
+            // このハンドラは document デリゲーションなので、同じ id を持つ別の要素（フォールバック）からのクリックも捕まえてしまう。
+            // そこで、実際にクリックされた要素が main の $menu 内にあるか確認する。
+            if(!$menu || !$menu.length){ return; }
+            var el = this;
+            if($menu[0] !== el && $.contains($menu[0], el) === false){
+                // main のメニュー要素以外からのクリックは無視
+                return;
+            }
+            var nodeId = $menu.data('target-node');
+            if(!nodeId){ hideMenu(); return; }
+            if(!confirm('本当にこのノードを削除しますか？（表示上は非表示になります）')){ return; }
+            // サーバーへ削除フラグを立てる
+            console && console.log && console.log('mark_delete send node_id=', nodeId);
+            // 重複送信防止ロック
+            window._ktNodeDeleteInProgress = window._ktNodeDeleteInProgress || {};
+            if(window._ktNodeDeleteInProgress[nodeId]){
+                console && console.warn && console.warn('mark_delete already in progress for', nodeId);
+                hideMenu();
+                return;
+            }
+            window._ktNodeDeleteInProgress[nodeId] = true;
+            $.ajax({
+                url: 'php/mark_delete_knowledge_node.php',
+                method: 'POST',
+                dataType: 'json',
+                data: { node_id: nodeId }
+            }).done(function(res){
+                if(res && res.status === 'ok'){
+                    // DOMから該当ノードを取り除く（または再取得）
+                    try{
+                        // 最終的に再取得で整合性を保つ
+                        fetchKnowledgeTree();
+                    }catch(_){
+                        $('.kt-node[data-node-id="'+nodeId+'"]').remove();
+                    }
+                } else {
+                    // エラー内容をログ表示
+                    console && console.error && console.error('mark_delete failed', res);
+                    if(res && res.message){ alert('ノード削除に失敗しました: ' + res.message); }
+                    else { alert('ノード削除に失敗しました。'); }
+                }
+            }).fail(function(xhr,st,err){
+                alert('通信エラーで削除できませんでした。');
+                console && console.error && console.error('mark_delete ajax fail', st, err, xhr && xhr.responseText);
+            }).always(function(){
+                window._ktNodeDeleteInProgress[nodeId] = false;
+                hideMenu();
+            });
+        }catch(err){ console && console.error && console.error('kt-conmenu-delete handler error', err); }
+    });
+
+    // キャンセル（main メニューの要素からのクリックのみ処理）
+    $(document).on('click', '#kt-conmenu-cancel', function(e){
+        try{
+            if(!$menu || !$menu.length) return;
+            var el = this;
+            if($menu[0] !== el && $.contains($menu[0], el) === false){ return; }
+            hideMenu();
+        }catch(err){ }
+    });
+})();
+
 // ダブルクリックで編集
 // 新クラス名で編集可能。旧クラス名も後方互換で許容（トップ=kt-node-title, 子=kt-content-title）
 $(document).on('dblclick', '.kt-node-title, .kt-content-title, .kt-title', function(){
@@ -2067,11 +2210,26 @@ function saveNodeTitleHistory(nodeId, newTitle){
         data: { node_id: nodeId, new_title: newTitle }
     }).done(function(res){
         if(res && res.status==='ok'){
-            fetchKnowledgeTree(); // 最新状態再取得
+            try{
+                // ノード位置を維持するため、全体再描画は避ける。
+                // DOM上の該当ノードだけタイトルを確実に更新し、ハイライトする。
+                var $node = $('.kt-node[data-node-id="'+nodeId+'"]');
+                if($node.length){
+                    $node.find('.kt-node-title, .kt-content-title, .kt-title').first().text(newTitle);
+                    $node.addClass('kt-renamed');
+                    setTimeout(function(){ $node.removeClass('kt-renamed'); }, 1200);
+                }
+                console.log('タイトル更新完了', nodeId, newTitle);
+            }catch(e){
+                console.log('タイトル更新: DOM更新中に例外', e);
+            }
         } else {
             console.error('タイトル履歴追加失敗', res);
+            // 失敗した場合はユーザへ通知し、必要なら全体再取得で整合性を取る
+            try{ alert('タイトルの保存に失敗しました。ページを再読み込みしてください。'); }catch(_){ }
         }
     }).fail(function(xhr,st,err){
+        try{ alert('タイトル更新通信でエラーが発生しました。'); }catch(_){ }
         console.error('タイトル履歴通信失敗', st, err, xhr && xhr.responseText);
     });
 }
