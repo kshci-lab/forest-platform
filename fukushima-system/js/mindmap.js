@@ -1675,16 +1675,12 @@ function activateSharedTab(tabId){
   var overlay = document.getElementById('shared_combination_overlay');
   if (overlay) {
     if (tabId === 'tab-combination') {
-      // グローバルのヘルパがあればそれを使用（なければフォールバック）
-      if (typeof window !== 'undefined' && typeof window.showSharedCombinationOverlay === 'function') {
-        window.showSharedCombinationOverlay();
-      } else {
-        overlay.style.display = 'block';
-      }
-      // 表示してから位置とサイズを計算
-      // タブのfadeInやレイアウト確定のタイミング差で誤計測になるのを避けるため、複数回再計算する
+      // 先に位置とサイズを計算してから表示（フルスクリーンで一瞬覆わないように）
+      try { updateCombinationOverlayBounds(); } catch (e) {}
+      overlay.style.display = 'block';
+      overlay.classList.add('is-active');
+      // レイアウト確定のタイミング差で誤差が出ないよう、複数回再計算
       var recalc = function(){ try { updateCombinationOverlayBounds(); } catch (e) {} };
-      recalc();
       // レイアウト確定後（次フレーム）
       if (typeof requestAnimationFrame === 'function') {
         requestAnimationFrame(recalc);
@@ -1698,11 +1694,8 @@ function activateSharedTab(tabId){
       // 画面変化に追随
       attachOverlayAutoResize();
     } else {
-      if (typeof window !== 'undefined' && typeof window.hideSharedCombinationOverlay === 'function') {
-        window.hideSharedCombinationOverlay();
-      } else {
-        overlay.style.display = 'none';
-      }
+      overlay.style.display = 'none';
+      overlay.classList.remove('is-active');
       detachOverlayAutoResize();
     }
   }
@@ -1712,57 +1705,51 @@ function activateSharedTab(tabId){
 function updateCombinationOverlayBounds(){
   var overlay = document.getElementById('shared_combination_overlay');
   if(!overlay) return;
-  // 基準要素: 既存3対象 + ネットワーク全体コンテナを追加（幅が狭く計算される問題対策）
-  var ids = ['jsmind_container','network_container','utterance_area','mynetwork2'];
-  var rects = ids
-    .map(function(id){ var el = document.getElementById(id); return el ? el.getBoundingClientRect() : null; })
-    .filter(Boolean);
-  if(rects.length === 0){
-    // 何もなければ全画面にしておく
+  // 仕様変更: 共有知オーバーレイは #network_container と同じ位置・大きさに重ねる
+  var base = document.getElementById('network_container');
+  if (base) {
+    var r = base.getBoundingClientRect();
+    var w = Math.max(0, r.width);
+    var h = Math.max(0, r.height);
+    // フォールバック: レイアウト確定前で rect が 0 になる場合、offsetWidth/Height を利用
+    if ((w < 10 || h < 10)) {
+      try {
+        w = Math.max(w, base.offsetWidth || 0);
+        h = Math.max(h, base.offsetHeight || 0);
+      } catch(_) {}
+    }
+    // さらに小さい時は既存エリアの合成で補正（旧方式の簡略版）
+    if (w < 10 || h < 10) {
+      var ids = ['jsmind_container','utterance_area','mynetwork2'];
+      var rects = ids.map(function(id){ var el = document.getElementById(id); return el ? el.getBoundingClientRect() : null; }).filter(Boolean);
+      if (rects.length) {
+        var left = Math.min.apply(null, rects.map(function(rr){ return rr.left; }));
+        var top = Math.min.apply(null, rects.map(function(rr){ return rr.top; }));
+        var right = Math.max.apply(null, rects.map(function(rr){ return rr.right; }));
+        var bottom = Math.max.apply(null, rects.map(function(rr){ return rr.bottom; }));
+        overlay.style.position = 'fixed';
+        overlay.style.left = left + 'px';
+        overlay.style.top = top + 'px';
+        overlay.style.width = Math.max(0, right - left) + 'px';
+        overlay.style.height = Math.max(0, bottom - top) + 'px';
+        try { if (console && console.debug) console.debug('overlay: fallback union rect used'); } catch(_){}
+        return;
+      }
+    }
     overlay.style.position = 'fixed';
-    overlay.style.left = '0px';
-    overlay.style.top = '0px';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
+    overlay.style.left = r.left + 'px';
+    overlay.style.top = r.top + 'px';
+    overlay.style.width = w + 'px';
+    overlay.style.height = h + 'px';
+    try { if (console && console.debug) console.debug('overlay: aligned to network_container', {w:w,h:h}); } catch(_){}
     return;
   }
-  var left = Math.min.apply(null, rects.map(function(r){ return r.left; }));
-  var top = Math.min.apply(null, rects.map(function(r){ return r.top; }));
-  var right = Math.max.apply(null, rects.map(function(r){ return r.right; }));
-  var bottom = Math.max.apply(null, rects.map(function(r){ return r.bottom; }));
-  var width = Math.max(0, right - left);
-  var height = Math.max(0, bottom - top);
-  // スクロール復元時に top が負値になり上方向へ伸びる不具合への対策
-  if (top < 0) {
-    // 高さをその分縮め、表示開始位置は 0 に固定
-    height = Math.max(0, height + top); // top は負値
-    top = 0;
-  }
-  if (left < 0) {
-    width = Math.max(0, width + left);
-    left = 0;
-  }
-  // 幅が極端に小さい場合（要素取得失敗や非表示状態）フォールバックで利用可能領域を確保
-  var viewportW = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-  // サイドメニューが右側に存在する場合は幅から除外して調整
-  var sideMenu = document.getElementById('side_menu');
-  var sideMenuRect = sideMenu ? sideMenu.getBoundingClientRect() : null;
-  var sideMenuWidth = sideMenuRect ? sideMenuRect.width : 0;
-  var centralMinWidth = viewportW - sideMenuWidth; // 共有知エリアが最低限確保すべき幅
-  if (width < centralMinWidth * 0.6) { // 60% 未満なら明らかに誤計測とみなす
-    left = 0;
-    width = centralMinWidth > 600 ? centralMinWidth : viewportW; // 最低 600px 相当を確保
-  }
-  // 高さが狭すぎる（誤計測）ならビューポート高をフォールバック
-  var viewportH = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-  if (height < viewportH * 0.5) { // 50% 未満は誤計測とみなし拡張
-    height = viewportH - top;
-  }
+  // フォールバック: 最低限、表示可能領域全体
   overlay.style.position = 'fixed';
-  overlay.style.left = left + 'px';
-  overlay.style.top = top + 'px';
-  overlay.style.width = width + 'px';
-  overlay.style.height = height + 'px';
+  overlay.style.left = '0px';
+  overlay.style.top = '0px';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
 }
 
 function attachOverlayAutoResize(){
@@ -1790,21 +1777,16 @@ document.addEventListener('DOMContentLoaded', function(){
     var els = document.querySelectorAll('#' + id);
     if(!els || els.length === 0) return;
     els.forEach(function(el){
-      // 連結化タブはページリロードで最新状態を反映する
-      if(id === 'tab-combination'){
-        el.addEventListener('click', function(e){
-          try {
-            // リロード後に「共有知モードの連結化タブ」を表示する意図を保存
-            var intent = { mode: 'shared', tab: 'tab-combination' };
-            sessionStorage.setItem('reloadIntent', JSON.stringify(intent));
-          } catch (err) {}
-          location.reload();
-        });
-      } else {
-        el.addEventListener('click', function(e){
+      el.addEventListener('click', function(e){
+        // 連結化タブは即時に共有知表示（リロード不要）
+        if (id === 'tab-combination') {
+          try { window.SharedModeActive = true; document.body.classList.add('shared-mode'); } catch(_){}
           activateSharedTab(id);
-        });
-      }
+          return;
+        }
+        // その他は通常動作
+        activateSharedTab(id);
+      });
     });
   });
 

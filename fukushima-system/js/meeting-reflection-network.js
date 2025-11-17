@@ -1143,7 +1143,7 @@ const makeUtteranceNodeInList = (utter_id, utter_content, speaker, JPNtime, netw
         backColor = "gray";
     }
     return $(`(<div id="${utter_id}"
-                 style='border: solid 2px #000; font-size: 18px; line-height: 20px; background: ${backColor}; margin-bottom: 8px;'
+                 style='border: solid 2px #000; font-size: 15px; line-height: 22px; background: ${backColor}; margin-bottom: 5px;'
                  class='utter_node_in_list'
                  speaker='${speaker}'
                  utterance='${utter_content}'
@@ -2746,7 +2746,7 @@ function initializeFragmentsWorkspace(){
     if ($ws.length === 0) return;
     var $list = $ws.find('.knowledge-fragment-list');
     if ($list.length === 0) return;
-    var gap = 10; // 以前:16 → すき間を少し狭く
+    var gap = 16;
     // タイトルの下から配置開始
     var baseTop = 0;
     var $title = $ws.children('.overlay-title').first();
@@ -2758,16 +2758,15 @@ function initializeFragmentsWorkspace(){
     $ws.find('.fragment-node-wrapper').remove();
     $list.find('.knowledge_fragment').each(function(){
         var $card = $(this);
-        try { $card.removeAttr('draggable'); } catch(e){}
         var $wrap = $('<div class="fragment-node-wrapper"></div>');
         $wrap.css({ left: x + 'px', top: y + 'px' });
         // 横並び初期配置のため現在の幅を参照
-        try { $card.css('width','180px'); } catch(e){}
+        try { $card.css('width','260px'); } catch(e){}
         $wrap.append($card.detach());
         $ws.append($wrap);
         enableFragmentDrag($wrap, $ws);
-        var w = 180;
-        try { w = Math.max(180, $card.outerWidth(true)); } catch(e){}
+        var w = 260;
+        try { w = Math.max(260, $card.outerWidth(true)); } catch(e){}
         x += w + gap;
     });
     // 元のリストコンテナは不要なので削除

@@ -1707,7 +1707,7 @@ select[name="user_list"] {
 }
 #utterance_area{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 270px;
+	min-width: 550px;
 	/* height:70vh; */
 	min-height: 450px;
 	/* margin-bottom:2vh; */
@@ -1716,7 +1716,7 @@ select[name="user_list"] {
 }
 #utterance_area2{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 250px;
+	min-width: 500px;
 	margin-bottom:2vh;
 	/* border-top:solid 2px #9bb7ba; */
 	background:#e6edf8;
@@ -1727,7 +1727,7 @@ select[name="user_list"] {
 }
 #mynetwork {
 	position: relative;
-	width: 100%;
+	width: 97%;
 	min-width: 300px;
 	/* height:70vh; */
 	min-height: 450px;

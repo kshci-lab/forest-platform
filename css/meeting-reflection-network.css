@@ -22,7 +22,7 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 10px;
+	font-size: 12px;
 	line-height: 1;
 	padding: 3px 8px;
 	border-radius: 9999px; /* かわいいピル形状 */

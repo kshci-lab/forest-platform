@@ -298,7 +298,7 @@ table[type] {
 #shared_combination_overlay #overlay_knowledge_tree .kt-children> .kt-node:last-child::after{
 	content:'';
 	position:absolute;
-	left:-11px;
+	left:-12px;
 	top:calc(0.9em + 2px);
 	bottom:0;
 	width:2px;
@@ -370,7 +370,7 @@ table[type] {
 	border:1px solid #ccc;
 	border-radius:10px;
 	padding:12px;
-	width:180px; /* 旧:200px さらに少し小さく */
+	width:260px;
 	box-sizing:border-box;
 }
 
@@ -1755,7 +1755,8 @@ select[name="user_list"] {
 	height:100%;
 	min-height: 450px;
 	/* margin-bottom:2vh; */
-	border:solid 5px #9bb7ba;
+	border:solid 3px #9bb7ba;
+	box-sizing: border-box;
 	background:#fff;
 	overflow: hidden;
 	/* float:right; */
@@ -1795,7 +1796,7 @@ select[name="user_list"] {
 }
 #utterance_area2{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 400px;
+	min-width: 500px;
 	margin-bottom:2vh;
 	/* border-top:solid 2px #9bb7ba; */
 	background:#e6edf8;
