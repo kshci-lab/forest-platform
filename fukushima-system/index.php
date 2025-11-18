@@ -788,8 +788,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                         <div class="kra-row kra-top">
                                                             <label for="kra_area_select" class="kra-label">追加する領域:</label>
                                                             <select id="kra_area_select" name="knowledge_area" class="kra-control">
-                                                                <option value="知識関連">知識関連</option>
-                                                                <option value="研究方略関連" selected>研究方略関連</option>
+                                                                <option value="知識関連" selected>知識関連</option>
+                                                                <option value="研究方略関連">研究方略関連</option>
                                                                 <option value="その他">その他</option>
                                                             </select>
                                                         </div>
