@@ -1141,23 +1141,53 @@ function CheckClick(){
   logic_check = document.getElementById("logicbox");
   check = document.getElementById("scenariobox");
   pre_check = document.getElementById("previewbox");
-  map_check = document.getElementById("plusmapbox");
   if (modetype == 0 ) {
-    //　三角ロジックボタンだけオン（マップと三角ロジックを表示）
-    if(logic_check.checked == true && check.checked == false && pre_check.checked == false){ 
-      $('#jsmind_container').css('width','50vw');
-      $('#map_menu').css('width','50vw');
-      $('#logic_area').css('width','49vw');
-      $('#logic_menu').css('width','49vw');
-
+    if(logic_check.checked == false && check.checked == false && pre_check.checked == false){ 
+      $('#jsmind_container').css('width','70%');
+      $('#map_menu').css('width','70%');
+      $('#side_menu').css('width','29%');
 
       $('#jsmind_container').show('fast');
       $('#map_menu').show('fast');
+      $('#side_menu').show('fast');
+      $('#logic_area').hide('fast');
+      $('#logic_menu').hide('fast');
+      $('#document_area').hide('fast');
+      $('#presen_menu').hide('fast');
+      $('#preview_area').hide('fast');
+    }
+    //　三角ロジックボタンだけオン（マップと三角ロジックを表示）
+    else if(logic_check.checked == true && check.checked == false && pre_check.checked == false){ 
+      $('#jsmind_container').css('width','50%');
+      $('#map_menu').css('width','50%');
+      $('#logic_area').css('width','49%');
+      $('#logic_menu').css('width','49%');
+
+      $('#jsmind_container').show('fast');
+      $('#map_menu').show('fast');
+      $('#side_menu').hide('fast');
       $('#logic_area').show('fast');
       $('#logic_menu').show('fast');
-      $('#mindmap_conmenu').hide('fast');
-      $('.Menu').hide('fast');
+      $('#document_area').hide('fast');
+      $('#presen_menu').hide('fast');
+      $('#preview_area').hide('fast');
+    }
+    // 論文シナリオだけオン（マップとシナリオを表示）
+    else if(logic_check.checked == false && check.checked == true && pre_check.checked == false){ 
+      $('#jsmind_container').css('width','50%');
+      $('#map_menu').css('width','50%');
+      $('#document_area').css('width','49%');
+      $('#presen_menu').css('width','49%');
+
+      $('#jsmind_container').show('fast');
+      $('#map_menu').show('fast');
       $('#side_menu').hide('fast');
+      $('#logic_area').hide('fast');
+      $('#logic_menu').hide('fast');
+      $('#document_area').show('fast');
+      $('#presen_menu').show('fast');
+      $('#preview_area').hide('fast');
+      $('#preview_btn').show('fast');
     }
     //　三角ロジックボタンとシナリオボタンがオン（マップと三角ロジックとシナリオを表示）
     else if(logic_check.checked == true && check.checked == true && pre_check.checked == false){ 
@@ -1170,41 +1200,34 @@ function CheckClick(){
 
       $('#jsmind_container').show('fast');
       $('#map_menu').show('fast');
-      $('#document_area').show('fast');
+      $('#side_menu').hide('fast');
+      $('#logic_area').show('fast');
       $('#logic_menu').show('fast');
       $('#document_area').show('fast');
       $('#presen_menu').show('fast');
       $('#preview_area').hide('fast');
-      $('#preview_menu').hide('fast');
-      $('#mindmap_conmenu').hide('fast');
-      $('.Menu').hide('fast');
-      $('#side_menu').hide('fast');
-
       $('#preview_btn').show('fast');
-      $('#plusmap_btn').hide('fast');
-      $('#finish1_btn').show('fast');
 
-      //　三角ロジックボタンとシナリオボタンとプレビューボタンがオン（シナリオとプレビューを表示）
-    }else if (check.checked == true && pre_check.checked == true && map_check.checked == false){ 
+      //　シナリオボタンとプレビューボタンがオン（シナリオとプレビューを表示）
+    }
+    else if (logic_check.checked == true &&check.checked == true && pre_check.checked == true){ 
       $('#document_area').css('width','45vw');
       $('#preview_area').css('width','calc(55vw - 350px)');
 
       $('#jsmind_container').hide('fast');
-      $('#document_area').show('fast');
-      $('#preview_area').show('fast');
-
       $('#map_menu').hide('fast');
+      $('#side_menu').hide('fast');
+      $('#logic_area').hide('fast');
+      $('#logic_menu').hide('fast');
+      $('#document_area').show('fast');
       $('#presen_menu').show('fast');
-      $('#preview_menu').show('fast');
-
-      $('#preview_btn').show('fast');
-      $('#plusmap_btn').show('fast');
-      $('#finish1_btn').show('fast');
+      $('#preview_area').show('fast');
 
       Create_preview()
 
       //　マップ表示ボタンと三角ロジックボタンとシナリオボタンとプレビューボタンがオン（マップとシナリオとプレビューを表示）
-    }else if (check.checked == true && pre_check.checked == true && map_check.checked == true){ // previewboxがチェックされている時の処理
+    }
+    else if (check.checked == true && pre_check.checked == true && map_check.checked == true){ // previewboxがチェックされている時の処理
       $('#jsmind_container').css('width', '25vw');
       $('#document_area').css('width', '27vw');
       $('#preview_area').css('width', 'calc(43vw - 350px)');
@@ -1493,6 +1516,7 @@ function Remove_section(data, b){ //節削除fujinaka
     });
   }
 }
+
 
 
 
@@ -1895,7 +1919,8 @@ function MoveSecond(){
         let label = "<div class='final_model'>"+
                       "● "+
                       ""+check[i].parentNode.parentNode.getAttribute("concept")+""+
-                    "</div>";
+                    "</div>"+
+                    "<br/>";
         subject_area.append(label);
       }else if(check[i].checked && check[i].value=="必要ない"){
         $first_advice_log.push(["", check[i].value, ""]);
@@ -1973,7 +1998,7 @@ function MoveFinish(){
                         "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);' checked>見直さない</span>"+
                         "<br/>"+
                         "<p>→ 見直さない理由をお書きください</p>"+
-                        "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'>"+$second_advice_log[i][2]+"</textarea>"+
+                        "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'></textarea>"+
                       "</div>"+
                       "<br/><br/>";
         }else{
@@ -2115,45 +2140,30 @@ function FinalReflection(){
   }
 
   for(var i=0; i<$second_advice_log.length; i++){
-    if($second_advice_log[i][1]=="見直す"){
+    if($second_advice_log[i][1]=="見直さない"){
       if($second_advice_log[i][2] == ""){
-        var label = "<div class='final_model'>"+
-                      "<p class='f_ref'><span class='ad_font'><span style ='font-weight:bold;'>"+$second_advice_log[i][0]+"</span>という助言に対して，見直すを選択しました．"+
-                      "この助言が出てきたときに，どのような気づきを得ましたか？</span></p>"+
-                      "<textarea class='t_ref' placeholder='助言を通じて得た気づき' style='width:600px; height:120px;'></textarea>"+
-                    "</div>"+
-                    "<br/>";
-        area.append(label);
-        f_count++;
+        // mtfile += $second_advice_log[i][0]+"」という助言に対して，見直さないを選択しました．\n\n";
         random_num = Math.random().toString(32).substring(2);
         s_mtfile += "<span class='disc'><input type='checkbox' onchange='Highlight(this);'>議論</span><br/>"+
                     "<div class='first_model'>"+
                       ""+s_advice_log[i]+"<br>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);' checked>見直す</span>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);'>見直さない</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);'>見直す</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);' checked>見直さない</span>"+
                       "<br/>"+
-                      "<p>→ 助言をもとにプレゼンシナリオを見直してみましょう．プレゼンシナリオを修正した場合は修正内容を記載してください</p>"+
-                      "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'>"+$second_advice_log[i][2]+"</textarea>"+
+                      "<p>→ 見直さない理由をお書きください</p>"+
+                      "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'></textarea>"+
                     "</div>"+
                     "<br/><br/>";
       }else{
-        var label = "<div class='final_model'>"+
-                      "<p class='f_ref'><span class='ad_font'><span style ='font-weight:bold;'>"+$second_advice_log[i][0]+"</span>という助言に対して，見直すを選択し,"+
-                      "「"+$second_advice_log[i][2]+"」という修正を加えました．"+
-                      "この助言が出てきたときに，どのような気づきを得ましたか？</span></p>"+
-                      "<textarea class='t_ref' placeholder='助言を通じて得た気づき' style='width:600px; height:120px;'></textarea>"+
-                    "</div>"+
-                    "<br/>";
-        area.append(label);
-        f_count++;
+        // mtfile += $second_advice_log[i][0]+"」という助言に対して，「"+$second_advice_log[i][2]+"」という理由で，見直さないを選択しました．\n\n";
         random_num = Math.random().toString(32).substring(2);
         s_mtfile += "<span class='disc'><input type='checkbox' onchange='Highlight(this);'>議論</span><br/>"+
                     "<div class='first_model'>"+
                       ""+s_advice_log[i]+"<br>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);' checked>見直す</span>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);'>見直さない</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);'>見直す</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);' checked>見直さない</span>"+
                       "<br/>"+
-                      "<p>→ 助言をもとにプレゼンシナリオを見直してみましょう．プレゼンシナリオを修正した場合は修正内容を記載してください</p>"+
+                      "<p>→ 見直さない理由をお書きください</p>"+
                       "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'>"+$second_advice_log[i][2]+"</textarea>"+
                     "</div>"+
                     "<br/><br/>";
@@ -2788,6 +2798,5 @@ function Save_feedback(feedbackId, answer){
   });
 
 }
-
 
 //----

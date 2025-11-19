@@ -387,9 +387,14 @@ input:checked+label::after {
 	background:#fff;
 	float:left;
 	position: relative;
-	border-right: #B3E0D8;
-
+	/* 無効指定の修正＋二重スクロール回避のためのレイアウト改善 */
+	border-right: 5px solid #B3E0D8; /* fix: 正しい指定形式 */
+	display: flex;                   /* 内部を1カラムで伸縮 */
+	flex-direction: column;
+	overflow: hidden;                /* スクロールは内側(#jsmind_container)に集約 */
+	float: none;                     /* flexに委ねる */
 }
+
 #area{
 	width: 85vw;
 	height:98vh;
@@ -407,12 +412,30 @@ input:checked+label::after {
 	height: 100%;
  
     background:#fff;
-	overflow: scroll;
-	float:left;
-	overflow-x: scroll;
-	box-sizing: border-box;
-	resize: horizontal;
-	
+	/* スクロール最適化と見やすさ改善 */
+	overflow: auto;                       /* 余分な二重指定を整理 */
+	overscroll-behavior: contain;         /* 外側へのスクロール伝播を防止 */
+	-webkit-overflow-scrolling: touch;    /* iOS慣性スクロール */
+	touch-action: pan-x pan-y;            /* タッチ操作の意図しない阻害を防止 */
+	scrollbar-gutter: stable both-edges;  /* スクロールバー表示でのレイアウトズレを抑制 */
+
+	/* Firefox 用スクロールバー */
+	scrollbar-width: thin;
+	scrollbar-color: #c7dedd #f3f3f3;
+}
+#jsmind_container::-webkit-scrollbar{
+	width: 8px;
+	height: 8px;
+}
+#jsmind_container::-webkit-scrollbar-track{
+	background: #f3f3f3;
+}
+#jsmind_container::-webkit-scrollbar-thumb{
+	background: #c7dedd;
+	border-radius: 8px;
+}
+#jsmind_container::-webkit-scrollbar-thumb:hover{
+	background: #9fc7c2;
 }
 #jsmind_container2_menu{
 	width: 100%;
@@ -1051,6 +1074,22 @@ h3 {
 	margin-bottom: 30px;
 	font-size: 14px;
 	text-align: left;
+	width: 100% !important;
+	float: none !important;
+	display: block;
+	box-sizing: border-box;
+	margin-bottom: 12px;
+	max-height: 40vh;
+	overflow-y: auto;
+	line-height: 1.4;
+}
+
+/* ずれ防止: 内部のブロック要素初期化 */
+.inquiry_area > div {
+  display: block;
+  margin: 4px 8px;
+  box-sizing: border-box;
+  word-break: break-all;
 }
 
 #side_menu .other_annotation {
@@ -2042,47 +2081,41 @@ display: none;
 }
 
 
-/* ==== チェックボックス簡略化（装飾ラベル除去） ==== */
-#checkbox_area .checkbox input[type="checkbox"][name="check"] {
-  display: inline-block !important;
-  width: auto;
-  height: auto;
-  position: static;
-  margin: 0 4px 0 0;
-  cursor: pointer;
-}
-#checkbox_area .checkbox label {
-  display: none !important;
-}
-#checkbox_area .checkbox input+label::before,
-#checkbox_area .checkbox input+label::after {
-  content: none !important;
-}
-#checkbox_area {
+/* === Side menu & mindmap horizontal layout fix === */
+#content {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  /* 余白が原因で折り返さないように */
   width: 100%;
-  /* 不正な float:center の代替 */
-  justify-content: flex-start;
+  box-sizing: border-box;
 }
-#checkbox_area .checkbox {
-  float: none;
-  flex-direction: row;
-  display: flex;
-  align-items: center;
-  margin-top: 0;
-  margin-bottom: 0;
+#jsmind_area {
+  float: none !important;
+  width: auto !important;
+  flex: 1 1 auto;
+  min-width: 0; /* 縮小許可 */
 }
-#checkbox_area .checkbox label {
-  margin-right: 4px;
+#side_menu {
+  float: none !important;
+  flex: 0 0 15vw;
+  min-width: 250px;
+  box-sizing: border-box;
+  height: auto; /* 高さ強制で折り返し回避 */
 }
-#checkbox_area .checkbox .checkbox_text {
-  float: none;
-  margin: 0;
-  font-size: 18px;
-  white-space: nowrap;
+.inquiry_area {
+  width: 100% !important;
+  float: none !important;
+}
+
+/* 折り返し発生時の非常用（極端に狭い画面） */
+@media (max-width: 1100px) {
+  #side_menu { flex: 0 0 260px; }
+}
+@media (max-width: 900px) {
+  #content { flex-wrap: wrap; }
+  #side_menu { width: 100%; flex: 0 0 100%; order: 2; }
+  #jsmind_area { order: 1; }
 }
 
 
