@@ -2400,4 +2400,24 @@ display: none;
     background-color: #3998DB;
 }
 
+/* 画面下部にAI出力を固定表示 */
+#ai_output_panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
+  padding: 12px 16px;
+  margin: 0;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+
+/* AI本文が長い場合のスクロール */
+#ai_output_panel #ai_output {
+  max-height: 26vh;
+  overflow-y: auto;
+}
+
 

@@ -111,14 +111,14 @@ $ai_output = '';
             <span class="checkbox_text">【マップも表示】</span>
           </div>
         </div>
-
-        <form name="target_mode" class="select_form" action="">
+        <!-- 20251119 yamashitaは添削を考えていないため削除 -->
+        <!-- <form name="target_mode" class="select_form" action="">
             <select class="cp_ipselect2 cp_sl02"name="Select1">
               <option>論文執筆モード</option>
               <option>論文推敲モード</option>
             </select>
             <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
-        </form>
+        </form> -->
       </div>
       <!-- <div class="Menu">Menu</div> -->
 
@@ -216,8 +216,6 @@ $ai_output = '';
             </div>
           </div>
           <div id="version_area" style="display:none;"></div>
-
-          <div class="Menu">Menu</div>
           <!-- <div class="checkbox"> -->
             <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
             <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="">
