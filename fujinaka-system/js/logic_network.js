@@ -34,7 +34,7 @@ class LogicNetwork {
           color: 'black', // エッジの色（黒）
         },
         width: 1
-      },
+      }
     };
     // ノード配置用の簡易グリッド（三角作成時の初期位置）
     this.triIndex = 0;
@@ -1677,125 +1677,6 @@ class LogicNetwork {
       alert("文章の出力に失敗しました");
     }
   }
-
-  // collectTriangleLogic を使って文章を作成。無ければ this.triangles + this.nodes で生成
-  buildTriangleTextReport() {
-    const header = () => {
-      const ts = this._buildTimestamp();
-      return [
-        "=== 三角ロジック エクスポート ===",
-        `Exported: ${ts}`,
-        ""
-      ].join("\n");
-    };
-
-    // 1) 外部collectTriangleLogicを優先
-    try {
-      const external = (typeof this.collectTriangleLogic === "function")
-        ? this.collectTriangleLogic()
-        : (typeof window.collectTriangleLogic === "function")
-          ? window.collectTriangleLogic()
-          : null;
-
-      if (external) {
-        // 文字列ならそのまま
-        if (typeof external === "string") {
-          return header() + external;
-        }
-        // オブジェクト/配列なら整形
-        const body = this._formatTrianglesFromExternal(external);
-        if (body && body.trim() !== "") {
-          return header() + body;
-        }
-      }
-    } catch (e) {
-      console.warn("collectTriangleLogic 呼び出しに失敗:", e);
-    }
-
-    // 2) フォールバック: this.triangles と nodes から構築
-    if (!Array.isArray(this.triangles) || this.triangles.length === 0) {
-      return "";
-    }
-
-    const lines = [header()];
-    let idx = 1;
-    for (const t of this.triangles) {
-      const triId = String(t.triangle_id ?? t.triangleId ?? idx);
-      const claimId = String(t.claim_id ?? t.claimId ?? "");
-      const reasonId = String(t.reason_id ?? t.reasonId ?? "");
-      const factId = String(t.fact_id ?? t.factId ?? "");
-
-      // ラベル取得（boxノードの label から改行を除去）
-      const claim = this._getCleanLabel(this.nodes.get(claimId));
-      const reason = this._getCleanLabel(this.nodes.get(reasonId));
-      const fact = this._getCleanLabel(this.nodes.get(factId));
-
-      // 役割の表記はハイライト時の定義に合わせる（reason=事実, fact=理由付け）
-      const claimReason = (t.claimReason ?? this.nodes.get(claimId)?.claimReason ?? "") || "";
-      const conflict = (t.conflict ?? this.nodes.get(claimId)?.conflict ?? "") || "";
-
-      lines.push(
-        `#${idx}`,
-        `三角ID: ${triId}`,
-        `主張: ${claim || "(空)"}`,
-        `理由付け: ${fact || "(空)"}`,
-        `事実: ${reason || "(空)"}`,
-        `説明: ${claimReason || "-"}`,
-        `葛藤: ${conflict || "-"}`,
-        ""
-      );
-      idx++;
-    }
-
-    return lines.join("\n");
-  }
-
-  // 外部データ（collectTriangleLogicの戻り値）をできるだけ賢く整形
-  _formatTrianglesFromExternal(external) {
-    const arr = Array.isArray(external)
-      ? external
-      : (external && Array.isArray(external.triangles))
-        ? external.triangles
-        : null;
-
-    if (!arr || arr.length === 0) return "";
-
-    const lines = [];
-    let idx = 1;
-    for (const t of arr) {
-      // さまざまなキー名に対応
-      const triId = String(t.triangle_id ?? t.triangleId ?? idx);
-      const claim = String(
-        t.claim ?? t.Claim ?? t.claim_text ?? t.claimLabel ?? ""
-      ).trim();
-      // 役割名の揺れにも対応（reason/factの意味は既存UIに合わせて表示を入替）
-      const reasonText = String(
-        t.reason ?? t.Reason ?? t.reason_text ?? t.reasonLabel ?? ""
-      ).trim();
-      const factText = String(
-        t.fact ?? t.Fact ?? t.fact_text ?? t.factLabel ?? ""
-      ).trim();
-
-      const claimReason = String(
-        t.claimReason ?? t.ClaimReason ?? t.explain ?? ""
-      ).trim();
-      const conflict = String(t.conflict ?? t.Conflict ?? "").trim();
-
-      lines.push(
-        `#${idx}`,
-        `三角ID: ${triId}`,
-        `主張: ${claim || "(空)"}`,
-        `理由付け: ${factText || "(空)"}`, // 表示は UI と同じく fact→理由付け
-        `事実: ${reasonText || "(空)"}`,
-        `説明: ${claimReason || "-"}`,
-        `葛藤: ${conflict || "-"}`,
-        ""
-      );
-      idx++;
-    }
-    return lines.join("\n");
-  }
-
   // ノードの label を改行除去して取得（未定義や空も安全に処理）
   _getCleanLabel(node) {
     if (!node || typeof node.label !== "string") return "";
@@ -1904,9 +1785,8 @@ class RecordLogicNetwork{
         label: label,
         f_node_id: f_node_id,
         p_node_id: p_node_id,
-        // bool -> 1/0 に変換して送信
         edited: edited ? 1 : 0,
-        level: node_level,
+        level: node_level
       },
       dataType: "json",
       success: function(response) {
