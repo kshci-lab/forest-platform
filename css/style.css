@@ -618,7 +618,7 @@ input:checked+label::after {
   #recruit_reason{
 	display: none;
   }
-/*ここまで大槻修正*/;
+/*ここまで大槻修正*/
 
 #labelselect{
 	width:200px;
@@ -2042,382 +2042,47 @@ display: none;
 }
 
 
-/*他者の問いノード表示*/
-.b_que {
-	display: flex;
-	position: relative;
-    width: 100%;
-    margin: 0 auto;
-    padding: .3em .7em;
-    border: none;
-    border-bottom: 2px solid #ffb862;
-    background-color: transparent;
-    color: #333;
-    font-weight: 200;
-    font-size: 1em;
-	text-align: left;
+/* ==== チェックボックス簡略化（装飾ラベル除去） ==== */
+#checkbox_area .checkbox input[type="checkbox"][name="check"] {
+  display: inline-block !important;
+  width: auto;
+  height: auto;
+  position: static;
+  margin: 0 4px 0 0;
+  cursor: pointer;
 }
-
-.b_que:hover {
-	background-color: #eee;
+#checkbox_area .checkbox label {
+  display: none !important;
 }
-.other{
-	display: none;
+#checkbox_area .checkbox input+label::before,
+#checkbox_area .checkbox input+label::after {
+  content: none !important;
 }
-.ref{
-	display: none;
+#checkbox_area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  /* 不正な float:center の代替 */
+  justify-content: flex-start;
 }
-
-#crit{
-	display: none;
+#checkbox_area .checkbox {
+  float: none;
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  margin-top: 0;
+  margin-bottom: 0;
 }
-
-.resizable-textbox {
-	resize: vertical;
-	overflow: auto;
-	min-height: 50px;
-	min-width: 100px;
-	border: 2px solid #ffa8ba;
-	padding: 5px;
+#checkbox_area .checkbox label {
+  margin-right: 4px;
 }
-
-#submit_summary{
-	background-color: #ffdfe6;
-	color: #be4b43;
-	border: 1px solid #ffa8ba;
-	width: 100px;
-	height: 25px;
-	font-size: 14px;
-	margin-top: 5px;
-	overflow: auto;
-}
-#submit_summary:hover{
-	background-color: #f8b7c5;
-}
-
-
-.side_commentarea{
-	margin-top: 10px;
-	width: 100%;
-	height: 100px;
-	overflow: scroll;
-	box-sizing: border-box;
-	resize: vertical;
-	line-height: 1;
-}
-
-.border-radius {
-	background-color: #ffbaa1;
-	border-radius: 30px;
-	color:#000000;
-	text-align: center;
-	word-break: break-all;
-	padding: 10px;
-  }
-
-
-#summary_area{
-	border: solid #000000 3px;
-}
-
-
-
-#floatingImage {
-	display: none;
-	position: absolute;
-	top: 10px;
-	left: 10px;
-	width: 200px;
-	height: 100px;	
-	padding: 23px;
-	size: 10px;
-	color: #fff;
-	cursor: pointer;
-	z-index: 3;
-}
-
-
-#floatingImage img {
-	max-width: 100%;
-	height: auto;
-}
-
-
-/*presentation*/
-
-.slide_detail:after {
-    content: none;
-}
-.slide_detail:before {
-    content: none;
-}
-#node_slide{
-	display: none;
-	text-align: center;
-}
-#ImageAddContent{
-	display: none;
-	text-align: center;
-}
-#document_slide{
-	display: none;
-	text-align: center;
-}
-#clear_run{
-	text-align: center;
-}
-
-
-.micro_text{
-	width: 600px;
-	height: 70px;
-}
-
-.box2 {
-    font-weight: bold;
-    color: #6091d3;/*文字色*/
-    background: #FFF;
-    border: solid 3px #6091d3;/*線*/
-    border-radius: 10px;/*角の丸み*/
-}
-
-.slideTag {
-	background-color: red;
-	width: 100px;
-	float: left;
-}
-
-.select-box {
-  background: #FFFDF4;
-  border: 2px solid #D2BA85;
-  border-radius: 5px;
-  color: #0C2245;
-  font-size: 14px;
-  height: 30px;
-  line-height: 30px;
-  text-align: left;
-  text-indent: 5px;
-  vertical-align: middle;
-  width: 150px;
-}
-
-#gouri{
-	width:250px;
-	height:100px;
-	margin-left: 15px;
-	resize: none;
-	cursor: default;
-	font-size: 15px;
-	border:solid 5px #ccc;
-}
-
-#sinario{
-	width:250px;
-	height:100px;
-	margin-left: 15px;
-	resize: none;
-	cursor: default;
-	font-size: 15px;
-	border:solid 5px #ccc;
-}
-
-
-#macro_feedback_area{
-	/* width: 100vw; */
-	width: 35%;
-	height: auto;
-	/* height:calc(100% - 200px); */
-	text-align: left;
-	font-size:14px;
-	background-color: #F9F9F9;
-	margin-left: 10px;
-	padding-top: 200px;
-}
-
-#presen_menu{
-	display : none;
-	text-align:right;
-	float:right;
-	margin-right:15px;
-}
-
-/* 聴衆の観点追加フォーム */
-#input_plural {
-    margin: 1px;
-}
-
-#input_plural input.form-control {
-    display: inline-block;
-    width: 80%;
-    height: 34px;
-    padding: 6px 12px;
-    font-size: 14px;
-    color: #555;
-}
-
-#input_plural input.pluralBtn {
-    width: 30px;
-    height: 30px;
-    border: 1px solid #FAF6F1	;
-    background: #fff;
-    border-radius: 5px;
-    padding: 0;
-    margin: 0;
-}
-/* -ーーーーーーーーーースライド関連ーーーーーーーーーーーー */
-
-.cspan{
-	font-size:15px;
-	background-color:#ffffff;
-	border-radius:10px;
-	margin-bottom:5px;
-	/* margin-left: 20px; */
-	display:inline-block;
-	text-indent: 0.5em;
-	/* height:25px; */
-	white-space: pre-wrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.text_border{
-	border: solid 1px #008080;
-	/* font-size:15px; */
-	margin-bottom:3px;
-	/* resize:none; */
-	/* min-height: 30px; */
-	border-radius: 0.67em;
-	display:none;
-	/* height:auto; */
-}
-
-.tspan{
-	font-size:20px;
-	background-color:transparent;
-	width:90%;
-	margin-bottom:0px;
-	display:inline-block;
-	height:35px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	color: #010F29;
-	font-weight:  bold;
-}
-
-
-.title_slide{
-	font-size:20px;
-	width:90%;
-	margin-bottom:10px;
-	resize:none;
-	height:35px;
-	display:none;
-}
-.content_delete{
-	/* width:25px;
-	height:25px; */
-	font-size:15px;
-	float:right;
-	background-color:transparent;
-	border:none;
-	outline:none;
-	/* position: absolute; */
-	/* right: 10px; */
-}
-
-.scenario_content{
-	/* position: relative; */
-}
-
-.under_line {
-	font-size: 15px;
-  border-bottom: solid 3px #87CEFA;
-	margin-bottom: 10px;
-	font-family: 'Noto Sans JP', sans-serif;
-}
-
-.ad_font{
-	font-family: 'Noto Sans JP', sans-serif;
-	font-size: 15px;
-	font-weight: 500;
-	background: linear-gradient(transparent 70%, #CCCCCC 90%);
-}
-
-.nor_font{
-	font-family: 'Noto Sans JP', sans-serif;
-	font-size: 15px;
-}
-
-.presen-btn {
-  display: inline-block;
-  padding: 0.5em 1em;
-  text-decoration: none;
-  background: #FBC362;/*ボタン色*/
-  color: #FFF;
-  border-bottom: solid 4px #FBC362;
-  border-radius: 3px;
-	cursor: pointer;
-}
-
-.presen-btn:active {
-  /*ボタンを押したとき*/
-  -webkit-transform: translateY(4px);
-  transform: translateY(4px);/*下に動く*/
-  border-bottom: none;/*線を消す*/
-}
-
-
-
-.simple_btn{
-	box-shadow: 0.5px 0.5px 1px gray;
-	margin: 0.2px;
-}
-
-.cspan:focus {
-  outline: none;
-}
-
-.tspan:focus {
-  outline: none;
-}
-
-/* 2022-12 shimizu バッジ表現 */
-
-.badge {
-    display: inline-block;
-    color: #fff;
-    padding: 0.125rem 0.3rem;
-    border-radius: 1rem;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    text-align: center;
-    white-space: nowrap;
-}
-
-/* 合理性 */
-.bg-blue {
-    background-color: #3998DB;
-}
-
-/* 画面下部にAI出力を固定表示 */
-#ai_output_panel {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1001;
-  padding: 12px 16px;
+#checkbox_area .checkbox .checkbox_text {
+  float: none;
   margin: 0;
-  background: #fff;
-  border-top: 1px solid #ddd;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
-}
-
-/* AI本文が長い場合のスクロール */
-#ai_output_panel #ai_output {
-  max-height: 26vh;
-  overflow-y: auto;
+  font-size: 18px;
+  white-space: nowrap;
 }
 
 
