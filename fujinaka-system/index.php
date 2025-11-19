@@ -331,14 +331,23 @@ $ai_output = '';
               </div>
               <div id="preview_area"></div>
 
-              <!-- 追加: 出力領域 -->
+              <!-- 追加: 出力領域（折りたたみ対応） -->
               <div id="ai_output_panel" style="margin:14px 0; padding:12px; border:1px solid #ddd; border-radius:8px; background:#fff;">
-                <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
-                  <div style="font-weight:bold;">AI出力</div>
-                  <button id="run_ai_btn" type="button" class="button4" onclick="runAi()">実行</button>
+                <div id="ai_output_header"
+                     style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; user-select:none;"
+                     onclick="toggleAiPanel()"
+                     aria-expanded="false">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="ai_toggle_icon" aria-hidden="true">▶</span>
+                    <div style="font-weight:bold;">AI出力</div>
+                  </div>
+                  <button id="run_ai_btn" type="button" class="button4"
+                          onclick="event.stopPropagation(); runAi();">実行</button>
                 </div>
-                <div id="ai_output" style="white-space:pre-wrap; line-height:1.6; font-size:0.95em; min-height:2em; color:#333;">
-                  <?php echo htmlspecialchars($ai_output ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                <div id="ai_output_body" style="display:none; margin-top:8px;">
+                  <div id="ai_output" style="white-space:pre-wrap; line-height:1.6; font-size:0.95em; min-height:2em; color:#333;">
+                    <?php echo htmlspecialchars($ai_output ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                  </div>
                 </div>
               </div>
             </div>
@@ -541,5 +550,31 @@ $ai_output = '';
         <script type="text/javascript" src="js/logic_network.js"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="js/run_ai.js"></script>
-  </body>
+        <script>
+// 折りたたみトグル（デフォルト閉じ）
+function toggleAiPanel() {
+  var body = document.getElementById('ai_output_body');
+  var icon = document.getElementById('ai_toggle_icon');
+  var header = document.getElementById('ai_output_header');
+  if (!body || !icon || !header) return;
+  var isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  icon.textContent = isOpen ? '▶' : '▼';
+  header.setAttribute('aria-expanded', String(!isOpen));
+}
+// 念のため初期化（閉じ）
+(function initAiPanel(){
+  try {
+    var body = document.getElementById('ai_output_body');
+    var icon = document.getElementById('ai_toggle_icon');
+    var header = document.getElementById('ai_output_header');
+    if (body && icon && header) {
+      body.style.display = 'none';
+      icon.textContent = '▶';
+      header.setAttribute('aria-expanded', 'false');
+    }
+  } catch(e) {}
+})();
+        </script>
+      </body>
 </html>
