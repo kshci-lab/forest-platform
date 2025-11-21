@@ -1,6 +1,7 @@
 <?php
 // Save knowledge_explorer record on KRA submit
 header('Content-Type: application/json; charset=UTF-8');
+session_start();
 require_once __DIR__ . '/connect_db.php';
 if($_SERVER['REQUEST_METHOD']!=='POST'){
     http_response_code(405);
@@ -35,6 +36,7 @@ $colTitle = 'node_title';
 $colComment = 'comment';
 $colType = 'node_type';
 $colDeleted = 'deleted';
+$colUpdatedBy = null; // updated_by カラム存在時に格納
 if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
     while($c = $cols->fetch_assoc()){
         $f = $c['Field']; $lf = strtolower($f);
@@ -44,6 +46,7 @@ if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
         if(in_array($lf,['comment','body','text'])){ $colComment = $f; }
         if(in_array($lf,['node_type','type','category'])){ $colType = $f; }
         if(in_array($lf,['deleted','is_deleted','flag_deleted'])){ $colDeleted = $f; }
+        if($lf==='updated_by'){ $colUpdatedBy = $f; }
     }
     $cols->close();
 }
@@ -61,13 +64,21 @@ if($res = $mysqli->query("SELECT MAX($colId) AS max_id FROM $table")){
 
 // INSERT 実行（deleted=0, timestamps は NOW()）
 // 動的カラム名で INSERT 文構築
-$sql = "INSERT INTO $table ($colId, $colParent, $colTitle, $colComment, $colType, $colDeleted, created_at, updated_at) VALUES (?,?,?,?,?,0,NOW(),NOW())";
+$sql = "INSERT INTO $table ($colId, $colParent, $colTitle, $colComment, $colType, $colDeleted".
+    ($colUpdatedBy?", $colUpdatedBy":"").", created_at, updated_at) VALUES (?,?,?,?,?,0".
+    ($colUpdatedBy?", ?":"").",NOW(),NOW())";
 $stmt = $mysqli->prepare($sql);
 if(!$stmt){
     echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]);
     exit;
 }
-$stmt->bind_param('iisss', $nextId, $parent_node_id, $node_title, $comment, $node_type);
+// Bind (updated_by があれば userID も)
+$userId = isset($_SESSION['USERID']) ? (int)$_SESSION['USERID'] : null;
+if($colUpdatedBy){
+    $stmt->bind_param('iisssi', $nextId, $parent_node_id, $node_title, $comment, $node_type, $userId);
+} else {
+    $stmt->bind_param('iisss', $nextId, $parent_node_id, $node_title, $comment, $node_type);
+}
 if(!$stmt->execute()){
     $msg = $stmt->error;
     $stmt->close();

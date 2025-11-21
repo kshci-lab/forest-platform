@@ -698,6 +698,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                     };
                                                                     x.send(fd);
                                                                 }, false);
+                                                                // mark as bound so the main JS won't double-bind if it initializes later
+                                                                try{
+                                                                    if(window.jQuery){
+                                                                        try{ jQuery(form).data('bound', true); }catch(_){ form.setAttribute('data-bound','true'); }
+                                                                    } else {
+                                                                        form.setAttribute('data-bound','true');
+                                                                    }
+                                                                }catch(_){ try{ form.setAttribute('data-bound','true'); }catch(_){} }
                                                             }
                                                         }catch(e){ console && console.warn && console.warn('discussion fallback init failed', e); }
                                                     })();
@@ -1258,7 +1266,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             <h3 class="externalization-title">選択された発言についての思考整理</h3>
                                             <div class="externalization-main-section">
                                             <label class="externalization-label">あなたが選択した発言とその要約：</label>
-                                            <textarea id="externalization-main" class="externalization-main" placeholder="ここに選択した発言を記入"></textarea>
+                                            <textarea id="externalization-main" class="externalization-main" placeholder="選択する発言をクリック(内容が表示されます)"></textarea>
                                             </div>
 
                                             <div class="qa-pairs">

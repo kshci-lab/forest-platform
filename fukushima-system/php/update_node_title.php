@@ -2,6 +2,7 @@
 // update_node_title.php
 // タイトル更新ではなく履歴を積むため、新しいレコードをINSERT（knowledge_node_id 手動採番, deleted=0）
 header('Content-Type: application/json; charset=UTF-8');
+session_start();
 require_once __DIR__ . '/connect_db.php';
 if($_SERVER['REQUEST_METHOD']!=='POST'){
     http_response_code(405);
@@ -27,6 +28,7 @@ $table = 'knowledge_explorer';
 $colId = 'knowledge_node_id';
 $colParent = 'parent_id';
 $colTitle = 'node_title';
+$colUpdatedBy = null; // updated_by 検出
 $hasDeleted = false;
 if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
     while($c = $cols->fetch_assoc()){
@@ -35,6 +37,7 @@ if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
         if(in_array($lf,['parent_node_id','parent_id','parent','pid'])){ $colParent = $f; }
         if(in_array($lf,['node_title','title','name','label'])){ $colTitle = $f; }
         if($lf==='deleted'){ $hasDeleted = true; }
+        if($lf==='updated_by'){ $colUpdatedBy = $f; }
     }
     $cols->close();
 }
@@ -81,15 +84,37 @@ if($hasDeleted){
     }
 }
 
+// 新規履歴レコード挿入 (updated_by も含める)
+$userId = isset($_SESSION['USERID']) ? (int)$_SESSION['USERID'] : null;
 if($parentId===null){
-    $sqlIns = "INSERT INTO $table ($colId,$colParent,$colTitle".($hasDeleted?",deleted":"").",created_at,updated_at) VALUES (?,?,?".($hasDeleted?",0":"").",NOW(),NOW())";
+    $sqlIns = "INSERT INTO $table (".$colId.",".$colParent.",".$colTitle.
+             ($hasDeleted?",deleted":"").
+             ($colUpdatedBy?",".$colUpdatedBy:"").
+             ",created_at,updated_at) VALUES (?,?,?".
+             ($hasDeleted?",0":"").
+             ($colUpdatedBy?",?":"").
+             ",NOW(),NOW())";
     if(!$stmt = $mysqli->prepare($sqlIns)){ echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]); exit; }
     $nullParent = null;
-    $stmt->bind_param('iis',$nextId,$nullParent,$new_title);
+    if($colUpdatedBy){
+        $stmt->bind_param('iisi',$nextId,$nullParent,$new_title,$userId);
+    }else{
+        $stmt->bind_param('iis',$nextId,$nullParent,$new_title);
+    }
 } else {
-    $sqlIns = "INSERT INTO $table ($colId,$colParent,$colTitle".($hasDeleted?",deleted":"").",created_at,updated_at) VALUES (?,?,?".($hasDeleted?",0":"").",NOW(),NOW())";
+    $sqlIns = "INSERT INTO $table (".$colId.",".$colParent.",".$colTitle.
+             ($hasDeleted?",deleted":"").
+             ($colUpdatedBy?",".$colUpdatedBy:"").
+             ",created_at,updated_at) VALUES (?,?,?".
+             ($hasDeleted?",0":"").
+             ($colUpdatedBy?",?":"").
+             ",NOW(),NOW())";
     if(!$stmt = $mysqli->prepare($sqlIns)){ echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]); exit; }
-    $stmt->bind_param('iis',$nextId,$parentId,$new_title);
+    if($colUpdatedBy){
+        $stmt->bind_param('iisi',$nextId,$parentId,$new_title,$userId);
+    }else{
+        $stmt->bind_param('iis',$nextId,$parentId,$new_title);
+    }
 }
 if(!$stmt->execute()){
     echo json_encode(['status'=>'error','message'=>'INSERT失敗: '.$stmt->error]);

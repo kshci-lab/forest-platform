@@ -1669,10 +1669,12 @@ const getLabelXMLMappings = function(){
         var normalizeTypeCode = function(txt){
             if (txt == null) return 4; // UNKNOWN
             var s = String(txt).trim();
-            // クォート除去
-            if ((s.startsWith("'") && s.endsWith("'")) || (s.startsWith('"') && s.endsWith('"'))) {
-                s = s.slice(1, -1);
-            }
+            // クォート除去（先頭と末尾がシングル/ダブルクォートなら取り除く）
+            try{
+                if ((s.charAt(0) === "'" && s.charAt(s.length-1) === "'") || (s.charAt(0) === '"' && s.charAt(s.length-1) === '"')){
+                    s = s.slice(1, -1);
+                }
+            }catch(_){ }
             // 数値ならそのまま
             if (/^\d+$/.test(s)) {
                 var n = parseInt(s, 10);
@@ -1715,7 +1717,7 @@ const applyLabelsToUtteranceList = function(labelMap){
         // グローバルにも保持して、後からリスト再描画しても適用できるようにする
         try { window.UtteranceTypeMap = labelMap; } catch(e) {}
 
-        // 数値→文字列タイプ
+        // 数値→文字列タイプ（内部クラス名用）
         var labelOf = function(tp){
             switch(tp){
                 case 1: return 'SELF';
@@ -1724,6 +1726,13 @@ const applyLabelsToUtteranceList = function(labelMap){
                 case 4: return 'UNKNOWN';
                 default: return 'UNKNOWN';
             }
+        };
+        // 表示ラベル（日本語）: 内部クラス名は上の labelOf を利用しつつ、見た目は日本語で表示する
+        var displayNameMap = {
+            'SELF': '自身',
+            'OTHER': '他者',
+            'ORGANIZATION': '組織',
+            'UNKNOWN': 'その他'
         };
         // 色指定はCSSの .label-badge.type-XXXX に統一（JSでは色を持たない）
 
@@ -1740,7 +1749,7 @@ const applyLabelsToUtteranceList = function(labelMap){
                 // CSSクラスで装飾を当てる（色は type-XXX で切替）
                 var typeName = labelOf(tp);
                 badge.className = 'label-badge type-' + typeName;
-                badge.textContent = typeName;
+                badge.textContent = (displayNameMap[typeName] || typeName);
                 // 色はCSSクラスで適用（JSからのインライン指定は行わない）
                 // 先頭にバッジを挿入（タイトルの前）
                 try{
@@ -1750,7 +1759,7 @@ const applyLabelsToUtteranceList = function(labelMap){
                 var typeName2 = labelOf(tp);
                 // 既存クラスを置き換え
                 badge.className = 'label-badge type-' + typeName2;
-                badge.textContent = typeName2;
+                badge.textContent = (displayNameMap[typeName2] || typeName2);
                 // 色はCSSクラスで適用（JSからのインライン指定は行わない）
             }
             // ボーダー色は変更しない（デザインはCSSのバッジに集約）
@@ -1886,13 +1895,7 @@ $(document).on('submit', '#knowledge_register_form', function(e){
                         $form.find('textarea[name="comment"]').val('');
                     }
                 } catch(_){ }
-                // ツリーへノード追加（knowledge_explorer）
-                if(contentVal){
-                    addKnowledgeNodeToTree(areaVal, contentVal);
-                }
-
-                // 追加要件: knowledge_explorer テーブルへも保存
-                // 親IDはセレクト値に応じて固定マッピング
+                // knowledge_explorer へ保存（コメント有無含め一回だけ実行し、成功時にツリーを再取得）
                 try {
                     saveToKnowledgeExplorer(areaVal, contentVal, commentVal);
                 } catch(ex2){ console && console.warn && console.warn('saveToKnowledgeExplorer error', ex2); }
@@ -1975,7 +1978,7 @@ function renderTreeNode(node, byParent){
     titleSpan.textContent = node.node_title;
     wrapper.appendChild(titleSpan);
 
-    // 追加情報: comment, updated_at をタイトルの下に表示
+    // 追加情報: comment, updated_at, updated_by_name をタイトルの下に表示
     if(node && node.comment){
         var commentDiv = document.createElement('div');
         commentDiv.className = 'kt-comment';
@@ -1985,7 +1988,11 @@ function renderTreeNode(node, byParent){
     if(node && node.updated_at){
         var updatedDiv = document.createElement('div');
         updatedDiv.className = 'kt-updated';
-        updatedDiv.textContent = '更新日時: ' + formatJPDateTime(node.updated_at);
+        var baseText = '更新日時: ' + formatJPDateTime(node.updated_at);
+        if(node.updated_by_name){
+            baseText += ' 更新ユーザー: ' + node.updated_by_name;
+        }
+        updatedDiv.textContent = baseText;
         wrapper.appendChild(updatedDiv);
     }
     if(hasChildren){
@@ -2283,6 +2290,7 @@ function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
         }).done(function(res){
             if(res && res.status === 'ok'){
                 console.log('knowledge_explorer 保存OK', res);
+                try{ fetchKnowledgeTree(); }catch(_){ }
             } else {
                 console.error('knowledge_explorer 保存失敗', res);
                 if(window.alert){ alert('knowledge_explorer への保存に失敗しました。'); }

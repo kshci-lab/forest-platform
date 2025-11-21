@@ -47,6 +47,7 @@ $colParent = null;  // parent_id / parent / pid / parent_node_id
 $colTitle = null;   // node_title / title / name / label
 $colComment = null; // comment / comments / note / notes / memo
 $colUpdated = null; // updated_at / update_at / updated / modified_at
+$colUpdatedBy = null; // updated_by （ユーザID）
 $hasDeleted = false;
 $idIsAutoInc = false;
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
@@ -58,6 +59,7 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
         if($colTitle===null && in_array($lf, ['node_title','title','name','label'])){ $colTitle = $f; }
         if($colComment===null && in_array($lf, ['comment','comments','note','notes','memo'])){ $colComment = $f; }
         if($colUpdated===null && in_array($lf, ['updated_at','update_at','updated','modified_at'])){ $colUpdated = $f; }
+        if($colUpdatedBy===null && in_array($lf, ['updated_by'])){ $colUpdatedBy = $f; }
         if($lf === 'deleted'){ $hasDeleted = true; }
         if($f === $colId && isset($c['Extra']) && stripos($c['Extra'], 'auto_increment') !== false){ $idIsAutoInc = true; }
     }
@@ -134,7 +136,11 @@ if($colParent !== null && $colTitle !== null){
 // 全ノード取得（動的カラム名で取得）
 $nodes = [];
 // 全行取得: SELECT * を使い、PHP側でカラム存在を判定して nodes 配列を構築
-$sqlAll = "SELECT * FROM $table".($hasDeleted?" WHERE deleted=0":"");
+if($colUpdatedBy){
+    $sqlAll = "SELECT ke.*, u.name AS updated_by_name FROM $table ke LEFT JOIN users u ON ke.$colUpdatedBy = u.user_id".($hasDeleted?" WHERE ke.deleted=0":"");
+} else {
+    $sqlAll = "SELECT * FROM $table".($hasDeleted?" WHERE deleted=0":"");
+}
 if($resAll = $mysqli->query($sqlAll)){
     while($row = $resAll->fetch_assoc()){
         // id
@@ -157,12 +163,17 @@ if($resAll = $mysqli->query($sqlAll)){
         elseif(array_key_exists('comment',$row)) { $commentVal = $row['comment']; }
         if($colUpdated && array_key_exists($colUpdated,$row)) { $updatedVal = $row[$colUpdated]; }
         elseif(array_key_exists('updated_at',$row)) { $updatedVal = $row['updated_at']; }
+        $updatedById = null; $updatedByName = null;
+        if($colUpdatedBy && array_key_exists($colUpdatedBy,$row)) { $updatedById = $row[$colUpdatedBy]; }
+        if(array_key_exists('updated_by_name',$row)) { $updatedByName = $row['updated_by_name']; }
         $nodes[] = [
             'node_id'=>$nid,
             'parent_id'=>$pid,
             'node_title'=>$title,
             'comment'=> $commentVal !== null ? $commentVal : null,
-            'updated_at'=> $updatedVal !== null ? $updatedVal : null
+            'updated_at'=> $updatedVal !== null ? $updatedVal : null,
+            'updated_by'=> $updatedById !== null ? (int)$updatedById : null,
+            'updated_by_name'=> $updatedByName !== null ? $updatedByName : null
         ];
     }
     $resAll->close();
