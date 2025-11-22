@@ -364,6 +364,27 @@ table[type] {
 	position: absolute;
 	cursor: move;
 }
+
+/* fragment node number badge (left-top) */
+#shared_combination_overlay .fragment-node-wrapper .fragment-number-badge{
+	position: absolute;
+	left: -4px;
+	top: -8px;
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	text-align: center;
+	/* background: #ffffff; */
+	/* background: #00000000;
+	border: 1px solid #d0d0d0; */
+	/* border-radius: 50%; */
+	font-weight: 700;
+	color: #333;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+	z-index: 10;
+	font-size: 20px;
+	pointer-events: none; /* バッジはドラッグ操作を妨げない */
+}
 /* ノードの見た目は既存の knowledge_fragment のカードスタイルを流用 */
 #shared_combination_overlay .knowledge_fragment{
 	background:#ffe6e6;
@@ -446,14 +467,24 @@ table[type] {
 	scrollbar-width: thin;       /* Firefox: 細いスクロールバー */
 }
 /* WebKit系: スクロールバーの視認性を少し上げる */
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{height:10px}
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-track{background:#f1f1f1}
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb{background:#c9c9c9;border-radius:8px}
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb:hover{background:#b0b0b0}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{
+	height:10px
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-track{
+	background:#f1f1f1
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb{
+	background:#c9c9c9;
+	border-radius:8px
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb:hover{
+	background:#b0b0b0
+}
 #shared_combination_overlay .knowledge_fragment{
 	background:#ffe6e6; /* pale pink */
 	border:1px solid #ccc;
 	border-radius:10px;
+	margin-top: 20px;
 	padding:12px;
 	width:180px; /* 旧:200px */
 	box-sizing:border-box;

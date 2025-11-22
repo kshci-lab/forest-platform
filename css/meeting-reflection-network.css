@@ -17,21 +17,21 @@
 
 .label-badge {
 	position: absolute;
-	top: -9px;       /* overlap about half outside vertically */
-	left: -8px;      /* overlap about half outside horizontally on left */
+	top: -12px;       /* slightly larger overlap to accommodate bigger badge */
+	left: -12px;      /* default left-overlap; some contexts may position it differently */
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 12px;
+	font-size: 14px; /* increased size */
 	line-height: 1;
-	padding: 3px 8px;
-	border-radius: 9999px; /* かわいいピル形状 */
+	padding: 6px 10px; /* larger hit area and visual size */
+	border-radius: 9999px; /* pill shape */
 	font-weight: 700;
 	color: #1f2937; /* 濃いめの文字色で読みやすく */
 	border: 1px solid rgba(0,0,0,0.08);
-	box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+	box-shadow: 0 1px 3px rgba(0,0,0,0.10);
 	pointer-events: none;
-	z-index: 10;    /* ensure badge is above the container border */
+	z-index: 12;    /* ensure badge is above most UI */
 }
 
 .label-badge.type-SELF {

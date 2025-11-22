@@ -2765,10 +2765,27 @@ function initializeFragmentsWorkspace(){
     var x = 12, y = baseTop;
     // 既にノード化済みなら二重化を避ける
     $ws.find('.fragment-node-wrapper').remove();
-    $list.find('.knowledge_fragment').each(function(){
-        var $card = $(this);
+    // フラグメント要素を配列化（PHP側は新しい順で返すため、表示はそのまま新しい順）
+    var cardEls = $list.find('.knowledge_fragment').toArray();
+    var totalCards = cardEls.length;
+
+    // circled numbers mapping for 1..20; fallback to plain number string
+    var circled = [null,'①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+
+    cardEls.forEach(function(cardEl, idx){
+        var $card = $(cardEl);
+        // PHP が新しい順で返す前提のため、表示順はそのままにしつつ
+        // 番号は古いノードから 1,2,3... と割り当てる。
+        // したがって、現在のインデックス idx (0=最新) に対する番号は totalCards - idx
+        var num = totalCards - idx;
+        var displayNum = (num > 0 && num < circled.length) ? circled[num] : String(num);
+
         var $wrap = $('<div class="fragment-node-wrapper"></div>');
         $wrap.css({ left: x + 'px', top: y + 'px' });
+        // 番号バッジを左上に追加
+        var $badge = $('<div class="fragment-number-badge" aria-hidden="true"></div>').text(displayNum);
+        $wrap.append($badge);
+
         // 横並び初期配置のため現在の幅を参照
         try { $card.css('width','180px'); } catch(e){}
         $wrap.append($card.detach());
