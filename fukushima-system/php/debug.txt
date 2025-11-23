@@ -487,3 +487,4 @@ ArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArray2025-
     [knowledge_fragment_content] => テスト２
 )
 
+2025-11-23T16:51:04+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value
