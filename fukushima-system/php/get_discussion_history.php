@@ -15,6 +15,9 @@ if(!isset($mysqli) || !($mysqli instanceof mysqli)){
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
 if($limit <= 0 || $limit > 500){ $limit = 100; }
 
+// optional fragment filter (knowledge_fragment_id)
+$fragmentId = isset($_GET['fragment_id']) && $_GET['fragment_id'] !== '' ? (int)$_GET['fragment_id'] : null;
+
 $table = 'discussion_history';
 $tbl = $mysqli->query("SHOW TABLES LIKE '".$mysqli->real_escape_string($table)."'");
 if(!$tbl){
@@ -28,15 +31,27 @@ if($tbl->num_rows === 0){
 }
 $tbl->close();
 
-// join users table to include the poster's display name (user_name)
 $sql = "SELECT dh.discussion_history_id, dh.user_id, dh.posted_time, dh.content, COALESCE(u.name,'') AS user_name " .
-  "FROM `$table` dh LEFT JOIN `users` u ON dh.user_id = u.user_id " .
-  "ORDER BY dh.discussion_history_id ASC LIMIT ?";
+  "FROM `$table` dh LEFT JOIN `users` u ON dh.user_id = u.user_id ";
+// apply fragment filter if provided
+if($fragmentId !== null){
+  $sql .= " WHERE dh.knowledge_fragment_id = ? ";
+}
+$sql .= " ORDER BY dh.discussion_history_id ASC LIMIT ?";
 if(!$stmt = $mysqli->prepare($sql)){
   echo json_encode(['status'=>'error','message'=>'prepare失敗: '.$mysqli->error]);
   exit;
 }
-$stmt->bind_param('i',$limit);
+// bind params depending on fragment filter
+if($fragmentId !== null){
+  if($stmt->bind_param('ii', $fragmentId, $limit) === false){
+    echo json_encode(['status'=>'error','message'=>'bind_param失敗: '.$stmt->error]); exit;
+  }
+} else {
+  if($stmt->bind_param('i', $limit) === false){
+    echo json_encode(['status'=>'error','message'=>'bind_param失敗: '.$stmt->error]); exit;
+  }
+}
 if(!$stmt->execute()){
   $err = $stmt->error; $stmt->close();
   echo json_encode(['status'=>'error','message'=>'SELECT失敗: '.$err]);

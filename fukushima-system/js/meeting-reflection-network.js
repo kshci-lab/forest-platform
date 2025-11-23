@@ -4,6 +4,8 @@ try{ console && console.log && console.log('meeting-reflection-network.js loaded
 window.addEventListener && window.addEventListener('error', function(evt){
     try{ console && console.error && console.error('JS error caught:', evt && (evt.message || evt.error)); }catch(_){ }
 });
+// currently selected fragment id for discussion posts (null = general board)
+window.activeKnowledgeFragmentId = null;
 let defaultForestMRN;
 let defaultRecordForestMRN;
 let defaultShowForestMRN;
@@ -2774,10 +2776,13 @@ function initializeFragmentsWorkspace(){
 
     cardEls.forEach(function(cardEl, idx){
         var $card = $(cardEl);
+        // If server provided numeric fragment id (data-kfrag-num), prefer it so client/server numbering match
+        var serverNum = null;
+        try{ serverNum = parseInt($card.attr('data-kfrag-num'), 10); if(isNaN(serverNum)) serverNum = null; }catch(_){ serverNum = null; }
         // PHP が新しい順で返す前提のため、表示順はそのままにしつつ
         // 番号は古いノードから 1,2,3... と割り当てる。
         // したがって、現在のインデックス idx (0=最新) に対する番号は totalCards - idx
-        var num = totalCards - idx;
+        var num = (serverNum !== null) ? serverNum : (totalCards - idx);
         var displayNum = (num > 0 && num < circled.length) ? circled[num] : String(num);
 
         var $wrap = $('<div class="fragment-node-wrapper"></div>');
@@ -2785,6 +2790,9 @@ function initializeFragmentsWorkspace(){
         // 番号バッジを左上に追加
         var $badge = $('<div class="fragment-number-badge" aria-hidden="true"></div>').text(displayNum);
         $wrap.append($badge);
+
+        // persist fragment id & display string on wrapper/card for later selection
+        try{ $wrap.data('knowledge-fragment-id', num); $wrap.data('knowledge-fragment-display', displayNum); }catch(e){}
 
         // 横並び初期配置のため現在の幅を参照
         try { $card.css('width','180px'); } catch(e){}
@@ -2797,6 +2805,24 @@ function initializeFragmentsWorkspace(){
     });
     // 元のリストコンテナは不要なので削除
     $list.remove();
+
+    // Click handler: selecting a fragment should target discussion to that fragment
+    $(document).off('click.kfragselect', '.fragment-node-wrapper .knowledge_fragment, .fragment-node-wrapper');
+    $(document).on('click.kfragselect', '.fragment-node-wrapper .knowledge_fragment, .fragment-node-wrapper', function(e){
+        if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
+        var $wrap = $(this).closest('.fragment-node-wrapper');
+        if (!$wrap.length) return;
+        var kfid = $wrap.data('knowledge-fragment-id') || null;
+        var disp = $wrap.data('knowledge-fragment-display') || kfid;
+        window.activeKnowledgeFragmentId = kfid;
+        try{
+            var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
+            if($dtitle && $dtitle.length){
+                $dtitle.text(disp + ' に関してのディスカッション履歴');
+            }
+        }catch(_){ }
+        try{ fetchDiscussionHistory(kfid); }catch(_){ }
+    });
 }
 
 function enableFragmentDrag($node, $container){
@@ -2820,6 +2846,41 @@ function enableFragmentDrag($node, $container){
         $node.css({ left: nl + 'px', top: nt + 'px' });
     });
     $(document).on('mouseup.kfrag', function(){ dragging = false; });
+}
+
+// Fetch discussion history for optional fragmentId (null => global board)
+function fetchDiscussionHistory(fragmentId){
+    try{ console && console.debug && console.debug('fetchDiscussionHistory', fragmentId); }catch(_){ }
+    var $list = $('#discussion_message_list');
+    if(!$list || !$list.length) return;
+    $list.empty();
+    var data = { limit: 200 };
+    if(typeof fragmentId !== 'undefined' && fragmentId !== null){ data.fragment_id = fragmentId; }
+    $.ajax({
+        url: 'php/get_discussion_history.php',
+        type: 'GET',
+        dataType: 'json',
+        data: data
+    }).done(function(res){
+        if(res && res.status === 'ok' && Array.isArray(res.items)){
+            var $board = $('#discussion_board');
+            var boardUser = $board.data('user-name') || 'ユーザー';
+            res.items.forEach(function(item){
+                var uname = (item.user_name && item.user_name.length) ? item.user_name : boardUser;
+                var $card = $('<div class="message-card"></div>');
+                var $author = $('<div class="message-author"></div>').text(uname + ' さん');
+                var $body = $('<div class="message-body"></div>').text(item.content || '');
+                $card.append($author).append($body);
+                if(item.posted_time){ var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(item.posted_time); $card.append($time); }
+                $list.append($card);
+            });
+            try{ $list.scrollTop($list.prop('scrollHeight')); }catch(_){ }
+        } else {
+            console.warn('fetchDiscussionHistory failed', res);
+        }
+    }).fail(function(xhr,st,err){
+        console.error('fetchDiscussionHistory通信失敗', st, err, xhr && xhr.responseText);
+    });
 }
 
 // === 掲示板: discussion_history_area ===
@@ -2867,11 +2928,13 @@ function initializeDiscussionBoard(){
             if(!text){ return; }
             var user = $board.data('user-name') || 'ユーザー';
             // まずサーバーへ保存要求 (DB挿入) → 成功時UI反映
+            var postData = { content: text };
+            try{ if(window.activeKnowledgeFragmentId) { postData.knowledge_fragment_id = window.activeKnowledgeFragmentId; } }catch(_){ }
             $.ajax({
                 url: 'php/save_discussion_history.php',
                 type: 'POST',
                 dataType: 'json',
-                data: { content: text }
+                data: postData
             }).done(function(res){
                 if(res && res.status === 'ok'){
                     var displayUser = (res.user_name && res.user_name.length) ? res.user_name : ($board.data('user-name') || 'ユーザー');
@@ -2899,6 +2962,8 @@ function initializeDiscussionBoard(){
                 if(window.alert){ alert('通信エラーにより投稿できませんでした。'); }
             });
         });
+        // if a fragment is already active, load its history
+        try{ if(window.activeKnowledgeFragmentId){ fetchDiscussionHistory(window.activeKnowledgeFragmentId); } }catch(_){ }
     }catch(ex){ try{ console.warn('initializeDiscussionBoard error', ex); }catch(_){}}
 }
 

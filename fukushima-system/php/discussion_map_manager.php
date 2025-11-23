@@ -16,6 +16,8 @@ $first_load_flag = isset($_POST["first_load_flag"]) ? $_POST["first_load_flag"] 
 // 外部化フォームの保存処理（プリペアドステートメント使用）: 最優先で実行して他のSELECTを回避
 if($purpose === "save_externalized_content") {
     header('Content-Type: application/json; charset=utf-8');
+    // デバッグ: 受信POSTをログ出力（再現時のみ有効）
+    @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content POST: " . print_r($_POST, true) . "\n", FILE_APPEND);
     // 必要な値を受け取る
     // remarked_utterance_id: 複数対応（CSV優先）
     $remarked_utterance_ids = isset($_POST['remarked_utterance_ids']) ? $_POST['remarked_utterance_ids'] : null;
@@ -83,7 +85,23 @@ if($purpose === "save_externalized_content") {
         return;
     }
 
-    // まずは外部キー（PK）を指定せずにINSERT（AUTO_INCREMENTを期待）
+    // まずは外部キー（PK）を指定せずにINSERT（通常は AUTO_INCREMENT を期待）
+    // ただし環境によっては externalized_contents_id が AUTO_INCREMENT でない場合がある。
+    // その場合は例外を待たずに最初から明示的なIDを割り当ててINSERTする（ログを減らし確実に挿入するため）。
+    $extIdAuto = false;
+    try {
+        if ($colExt = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'externalized_contents_id'")) {
+            $rowCol = $colExt->fetch_assoc();
+            if ($rowCol && isset($rowCol['Extra']) && stripos($rowCol['Extra'], 'auto_increment') !== false) {
+                $extIdAuto = true;
+            }
+            $colExt->close();
+        }
+    } catch (Exception $_ex) {
+        // ignore and assume not auto
+    }
+
+    $use_explicit_id_from_start = !$extIdAuto;
     $deleted = 0;
     if ($hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
@@ -113,6 +131,111 @@ if($purpose === "save_externalized_content") {
     if(!$stmt){
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (no pk): " . $mysqli->error . "\n", FILE_APPEND);
         echo json_encode(["status" => "error", "error" => $mysqli->error]);
+        return;
+    }
+
+    // 明示IDモードの場合は、ここでは prepare した $stmt を使わず、最初から explicit ID を付けたINSERTへ切り替える。
+    if ($use_explicit_id_from_start) {
+        // クローズして後続の explicit-insert を呼び出すためのフラグ経路へ進める
+        @$stmt->close();
+        // compute next explicit id (same logic as fallback)
+        $res = $mysqli->query("SELECT MAX(externalized_contents_id) AS max_id FROM externalized_contents");
+        $row = $res ? $res->fetch_assoc() : null;
+        $currentMax = ($row && isset($row['max_id']) && $row['max_id'] !== null) ? intval($row['max_id'], 10) : 14; // start 15
+        $nextExtId = $currentMax + 1; // 15 スタート
+
+        // prepare explicit-insert statement (reuse fallback variants)
+        if ($hasUsedCol && $hasKFragCol) {
+            if ($hasUserCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            }
+        } elseif ($hasUsedCol && !$hasKFragCol) {
+            if ($hasUserCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
+        } elseif (!$hasUsedCol && $hasKFragCol) {
+            if ($hasUserCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
+        } else {
+            if ($hasUserCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            }
+        }
+        if(!$stmt2){
+            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content prepare error (explicit id): " . $mysqli->error . "\n", FILE_APPEND);
+            echo json_encode(["status" => "error", "error" => $mysqli->error]);
+            return;
+        }
+        // bind for explicit-insert
+        if ($hasUsedCol && $hasKFragCol) {
+            if ($hasUserCol) {
+                $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+                $stmt2->bind_param("issssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val2, $deleted);
+            } else {
+                $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+            }
+        } elseif ($hasUsedCol && !$hasKFragCol) {
+            if ($hasUserCol) {
+                $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+                $stmt2->bind_param("isssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val2, $deleted);
+            } else {
+                $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+            }
+        } elseif (!$hasUsedCol && $hasKFragCol) {
+            if ($hasUserCol) {
+                $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+                $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val2, $deleted);
+            } else {
+                $stmt2->bind_param("issssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+            }
+        } else {
+            if ($hasUserCol) {
+                $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
+                $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val2, $deleted);
+            } else {
+                $stmt2->bind_param("isssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+            }
+        }
+        if(!$stmt2->execute()){
+            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content execute error (explicit id): " . $stmt2->error . "\n", FILE_APPEND);
+            echo json_encode(["status" => "error", "error" => $stmt2->error]);
+            $stmt2->close();
+            return;
+        }
+        $stmt2->close();
+
+        // knowledge_fragment 挿入（explicit）
+        if ($knowledge_fragment_content !== '') {
+            $kfMax = 0;
+            if ($resKf = $mysqli->query("SELECT MAX(knowledge_fragment_id) AS max_id FROM {$kfragTable}")) {
+                $rowKf = $resKf->fetch_assoc();
+                if ($rowKf && isset($rowKf['max_id']) && $rowKf['max_id'] !== null) {
+                    $kfMax = intval($rowKf['max_id'], 10);
+                }
+            }
+            $nextKfId = ($kfMax >= 15) ? ($kfMax + 1) : 15;
+            $sqlKf2 = "INSERT INTO {$kfragTable} (knowledge_fragment_id, {$kfTextCol}, externalized_contents_id) VALUES (?, ?, ?)";
+            if ($stmtKf = $mysqli->prepare($sqlKf2)) {
+                $stmtKf->bind_param("isi", $nextKfId, $knowledge_fragment_content, $nextExtId);
+                if (!@$stmtKf->execute()) {
+                    @file_put_contents(__DIR__ . '/debug.txt', date('c') . " knowledge_fragment ({$kfragTable}) insert failed (explicit): " . $stmtKf->error . "\n", FILE_APPEND);
+                }
+                @$stmtKf->close();
+            } else {
+                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " knowledge_fragment ({$kfragTable}) prepare failed (explicit): " . $mysqli->error . "\n", FILE_APPEND);
+            }
+        }
+
+        echo json_encode(["status" => "ok", "id" => $nextExtId]);
         return;
     }
 
@@ -155,15 +278,30 @@ if($purpose === "save_externalized_content") {
         }
     }
 
-    // knowledge_fragment テーブル側の本文カラム名（comment または knowledge_fragment_content）を検出
+    // knowledge_fragment(s) テーブル名と本文カラム名を検出
+    $kfragTable = null;
+    try {
+        if ($resA = $mysqli->query("SHOW TABLES LIKE 'knowledge_fragments'")) {
+            if ($resA->num_rows > 0) { $kfragTable = 'knowledge_fragments'; }
+            $resA->close();
+        }
+        if ($kfragTable === null) {
+            if ($resB = $mysqli->query("SHOW TABLES LIKE 'knowledge_fragment'")) {
+                if ($resB->num_rows > 0) { $kfragTable = 'knowledge_fragment'; }
+                $resB->close();
+            }
+        }
+    } catch (Exception $_ex) { /* noop */ }
+    if ($kfragTable === null) { $kfragTable = 'knowledge_fragment'; }
+
     $kfTextCol = 'knowledge_fragment_content';
     try {
-        if ($colKfA = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment LIKE 'comment'")) {
+        if ($colKfA = $mysqli->query("SHOW COLUMNS FROM {$kfragTable} LIKE 'comment'")) {
             if ($colKfA->num_rows > 0) { $kfTextCol = 'comment'; }
             $colKfA->close();
         }
         if ($kfTextCol === 'knowledge_fragment_content'){
-            if ($colKfB = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment LIKE 'knowledge_fragment_content'")) {
+            if ($colKfB = $mysqli->query("SHOW COLUMNS FROM {$kfragTable} LIKE 'knowledge_fragment_content'")) {
                 if ($colKfB->num_rows > 0) { $kfTextCol = 'knowledge_fragment_content'; }
                 $colKfB->close();
             }
@@ -178,18 +316,23 @@ if($purpose === "save_externalized_content") {
             // knowledge_fragment にも保存（空の場合はスキップ）
             if ($knowledge_fragment_content !== '') {
                 $kfMax = 0;
-                if ($resKf = $mysqli->query("SELECT MAX(knowledge_fragment_id) AS max_id FROM knowledge_fragment")) {
+                if ($resKf = $mysqli->query("SELECT MAX(knowledge_fragment_id) AS max_id FROM {$kfragTable}")) {
                     $rowKf = $resKf->fetch_assoc();
                     if ($rowKf && isset($rowKf['max_id']) && $rowKf['max_id'] !== null) {
                         $kfMax = intval($rowKf['max_id'], 10);
                     }
                 }
-                $nextKfId = ($kfMax >= 11111) ? ($kfMax + 1) : 11111;
-                $sqlKf = "INSERT INTO knowledge_fragment (knowledge_fragment_id, {$kfTextCol}, externalized_contents_id) VALUES (?, ?, ?)";
+                // 採番初期値は 15 からスタート（要件）
+                $nextKfId = ($kfMax >= 15) ? ($kfMax + 1) : 15;
+                $sqlKf = "INSERT INTO {$kfragTable} (knowledge_fragment_id, {$kfTextCol}, externalized_contents_id) VALUES (?, ?, ?)";
                 if ($stmtKf = $mysqli->prepare($sqlKf)) {
                     $stmtKf->bind_param("isi", $nextKfId, $knowledge_fragment_content, $newId);
-                    @$stmtKf->execute();
+                    if (!@$stmtKf->execute()) {
+                        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " knowledge_fragment ({$kfragTable}) insert failed (post-insert): " . $stmtKf->error . "\n", FILE_APPEND);
+                    }
                     @$stmtKf->close();
+                } else {
+                    @file_put_contents(__DIR__ . '/debug.txt', date('c') . " knowledge_fragment ({$kfragTable}) prepare failed (post-insert): " . $mysqli->error . "\n", FILE_APPEND);
                 }
             }
             echo json_encode(["status" => "ok", "id" => $newId]);
@@ -294,18 +437,23 @@ if($purpose === "save_externalized_content") {
     // knowledge_fragment にも保存（空の場合はスキップ）
     if ($knowledge_fragment_content !== '') {
         $kfMax = 0;
-        if ($resKf = $mysqli->query("SELECT MAX(knowledge_fragment_id) AS max_id FROM knowledge_fragment")) {
+        if ($resKf = $mysqli->query("SELECT MAX(knowledge_fragment_id) AS max_id FROM {$kfragTable}")) {
             $rowKf = $resKf->fetch_assoc();
             if ($rowKf && isset($rowKf['max_id']) && $rowKf['max_id'] !== null) {
                 $kfMax = intval($rowKf['max_id'], 10);
             }
         }
-        $nextKfId = ($kfMax >= 11111) ? ($kfMax + 1) : 11111;
-        $sqlKf2 = "INSERT INTO knowledge_fragment (knowledge_fragment_id, {$kfTextCol}, externalized_contents_id) VALUES (?, ?, ?)";
+        // 採番初期値は 15 からスタート
+        $nextKfId = ($kfMax >= 15) ? ($kfMax + 1) : 15;
+        $sqlKf2 = "INSERT INTO {$kfragTable} (knowledge_fragment_id, {$kfTextCol}, externalized_contents_id) VALUES (?, ?, ?)";
         if ($stmtKf = $mysqli->prepare($sqlKf2)) {
             $stmtKf->bind_param("isi", $nextKfId, $knowledge_fragment_content, $nextExtId);
-            @$stmtKf->execute();
+            if (!@$stmtKf->execute()) {
+                @file_put_contents(__DIR__ . '/debug.txt', date('c') . " knowledge_fragment ({$kfragTable}) insert failed (fallback): " . $stmtKf->error . "\n", FILE_APPEND);
+            }
             @$stmtKf->close();
+        } else {
+            @file_put_contents(__DIR__ . '/debug.txt', date('c') . " knowledge_fragment ({$kfragTable}) prepare failed (fallback): " . $mysqli->error . "\n", FILE_APPEND);
         }
     }
 

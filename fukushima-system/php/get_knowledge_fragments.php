@@ -111,15 +111,21 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
 }
 ?>
 <div class="knowledge-fragment-list">
-  <?php if (!empty($__kfrag_list)) { foreach ($__kfrag_list as $__kfrag_raw) { 
-        $__tmp = is_array($__kfrag_raw) && isset($__kfrag_raw['content']) ? trim((string)$__kfrag_raw['content']) : (is_string($__kfrag_raw) ? trim($__kfrag_raw) : '');
-        if ($__tmp === '') { continue; }
-        $__s1 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage1']) ? (string)$__kfrag_raw['stage1'] : '';
-        $__s2 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage2']) ? (string)$__kfrag_raw['stage2'] : '';
-        $__s3 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage3']) ? (string)$__kfrag_raw['stage3'] : '';
-        $__uname = is_array($__kfrag_raw) && isset($__kfrag_raw['user_name']) ? (string)$__kfrag_raw['user_name'] : $__current_user_name;
+  <?php if (!empty($__kfrag_list)) {
+        // PHP側で総数を取得しておき、JSの表示と一致する "番号" (古い->1) を埋め込みます。
+        $totalK = count($__kfrag_list);
+        for ($i = 0; $i < $totalK; $i++) {
+            $__kfrag_raw = $__kfrag_list[$i];
+            $__tmp = is_array($__kfrag_raw) && isset($__kfrag_raw['content']) ? trim((string)$__kfrag_raw['content']) : (is_string($__kfrag_raw) ? trim($__kfrag_raw) : '');
+            if ($__tmp === '') { continue; }
+            $__s1 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage1']) ? (string)$__kfrag_raw['stage1'] : '';
+            $__s2 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage2']) ? (string)$__kfrag_raw['stage2'] : '';
+            $__s3 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage3']) ? (string)$__kfrag_raw['stage3'] : '';
+            $__uname = is_array($__kfrag_raw) && isset($__kfrag_raw['user_name']) ? (string)$__kfrag_raw['user_name'] : $__current_user_name;
+            // PHPでは配列は新しい順(new->old)で格納されています。表示順はこのままに、番号は古い->1 に合わせる。
+            $num = $totalK - $i; // 例: latest idx=0 -> num=total, oldest idx=total-1 -> num=1
   ?>
-    <div class="knowledge_fragment">
+    <div class="knowledge_fragment" data-kfrag-num="<?php echo intval($num,10); ?>">
       <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>
       <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>
       <div class="card-detail" aria-hidden="true">

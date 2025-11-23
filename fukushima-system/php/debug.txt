@@ -472,3 +472,18 @@ ArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArray2025-
 2025-11-21T05:31:08+00:00 discussion_utterances execute exception: Duplicate entry '1283' for key 'PRIMARY'
 2025-11-21T05:31:08+00:00 discussion_utterances execute exception: Duplicate entry '1284' for key 'PRIMARY'
 2025-11-21T05:31:08+00:00 discussion_utterances execute exception: Duplicate entry '1285' for key 'PRIMARY'
+2025-11-22T16:26:15+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value
+2025-11-23T16:09:52+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value
+2025-11-23T16:32:39+00:00 save_externalized_content execute exception (no pk insert): Field 'externalized_contents_id' doesn't have a default value
+2025-11-23T16:46:00+00:00 save_externalized_content POST: Array
+(
+    [purpose] => save_externalized_content
+    [remarked_utterance_id] => 1259
+    [remarked_utterance_ids] => 1259
+    [selected_contents] => 先生、今回の分析では、学習者の発言データから思考過程を推定したいと考えております。
+    [stage1] => ｂれｄしｌ
+    [stage2] => btrunis
+    [stage3] => gruejos
+    [knowledge_fragment_content] => テスト２
+)
+

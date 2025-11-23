@@ -1,0 +1,25 @@
+[2025-11-23T16:14:37+00:00] save_discussion_history called
+[2025-11-23T16:14:37+00:00] Array
+(
+    [REMOTE_ADDR] => ::1
+    [REQUEST_METHOD] => POST
+)
+
+[2025-11-23T16:33:16+00:00] save_discussion_history called
+[2025-11-23T16:33:16+00:00] Array
+(
+    [REMOTE_ADDR] => ::1
+    [REQUEST_METHOD] => POST
+)
+
+[2025-11-23T16:33:16+00:00] knowledge_fragment_id column NOT NULL but no fragment provided; coercing to 0
+[2025-11-23T16:33:16+00:00] save_discussion_history succeeded: id=55565 user=1700000000 kfrag=0
+[2025-11-23T16:33:33+00:00] save_discussion_history called
+[2025-11-23T16:33:33+00:00] Array
+(
+    [REMOTE_ADDR] => ::1
+    [REQUEST_METHOD] => POST
+)
+
+[2025-11-23T16:33:33+00:00] knowledge_fragment_id column NOT NULL but no fragment provided; coercing to 0
+[2025-11-23T16:33:33+00:00] save_discussion_history succeeded: id=55566 user=1700000000 kfrag=0
