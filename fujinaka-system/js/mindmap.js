@@ -1210,7 +1210,7 @@ function CheckClick(){
 
       //　シナリオボタンとプレビューボタンがオン（シナリオとプレビューを表示）
     }
-    else if (logic_check.checked == true &&check.checked == true && pre_check.checked == true){ 
+    else if (logic_check.checked == false &&check.checked == true && pre_check.checked == true){ 
       $('#document_area').css('width','45vw');
       $('#preview_area').css('width','calc(55vw - 350px)');
 
