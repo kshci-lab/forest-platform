@@ -35,6 +35,8 @@ if($purpose === "save_externalized_content") {
     $stage3 = isset($_POST['stage3']) ? $_POST['stage3'] : '';
     $used_flag = 1; // 登録時は使用済み=1
     $knowledge_fragment_content = isset($_POST['knowledge_fragment_content']) ? $_POST['knowledge_fragment_content'] : '';
+    // discussed カラムの初期値
+    $discussed_val = 'YET';
 
     // カラム存在チェック: knowledge_fragments_content（推奨）/ knowledge_fragment_content（旧）
     $kfragColName = null; // 実際に使うカラム名
@@ -77,6 +79,17 @@ if($purpose === "save_externalized_content") {
         @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content SHOW COLUMNS (user_id) error: " . $exColU->getMessage() . "\n", FILE_APPEND);
     }
 
+    // カラム存在チェック: discussed が外部DBに存在するか（新規追加）
+    $hasDiscussedCol = false;
+    try {
+        if ($colResD = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'discussed'")) {
+            $hasDiscussedCol = ($colResD->num_rows > 0);
+            $colResD->close();
+        }
+    } catch (Exception $exColD) {
+        @file_put_contents(__DIR__ . '/debug.txt', date('c') . " save_externalized_content SHOW COLUMNS (discussed) error: " . $exColD->getMessage() . "\n", FILE_APPEND);
+    }
+
     // バリデーション
     if ($selected_contents === '') {
         echo json_encode(["status" => "error", "error" => "selected_contents が空です"]);
@@ -87,27 +100,59 @@ if($purpose === "save_externalized_content") {
     $deleted = 0;
     if ($hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         }
     } elseif ($hasUsedCol && !$hasKFragCol) {
         if ($hasUserCol) {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            }
         }
     } elseif (!$hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            }
         }
     } else {
         if ($hasUserCol) {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO externalized_contents (remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?)");
+            }
         }
     }
     if(!$stmt){
@@ -121,37 +166,69 @@ if($purpose === "save_externalized_content") {
         if ($hasUserCol) {
             // s s s s s s i i i
             $uid_val = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt->bind_param("ssssssiii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("ssssssiisi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("ssssssiii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val, $deleted);
+            }
         } else {
             // s s s s s s i i
-            $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("ssssssisi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+            }
         }
     } elseif ($hasUsedCol && !$hasKFragCol) {
         if ($hasUserCol) {
             // s s s s s i i i
             $uid_val = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt->bind_param("sssssiii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("sssssiisi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("sssssiii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val, $deleted);
+            }
         } else {
             // s s s s s i i
-            $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("sssssisi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+            }
         }
     } elseif (!$hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
             // s s s s s s i i
             $uid_val = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("ssssssisi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("ssssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val, $deleted);
+            }
         } else {
             // s s s s s s i
-            $stmt->bind_param("ssssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("sssssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("ssssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+            }
         }
     } else {
         if ($hasUserCol) {
             // s s s s s i i
             $uid_val = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("sssssisi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("sssssii", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val, $deleted);
+            }
         } else {
             // s s s s s i
-            $stmt->bind_param("sssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt->bind_param("ssssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $discussed_val, $deleted);
+            } else {
+                $stmt->bind_param("sssssi", $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+            }
         }
     }
 
@@ -238,27 +315,59 @@ if($purpose === "save_externalized_content") {
 
     if ($hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         }
     } elseif ($hasUsedCol && !$hasKFragCol) {
         if ($hasUserCol) {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, used_remarked_utterance, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         }
     } elseif (!$hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, {$kfragColName}, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         }
     } else {
         if ($hasUserCol) {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, user_id, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            }
         } else {
-            $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if ($hasDiscussedCol) {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, discussed, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            } else {
+                $stmt2 = $mysqli->prepare("INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, selected_contents, stage1, stage2, stage3, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            }
         }
     }
     if(!$stmt2){
@@ -270,37 +379,69 @@ if($purpose === "save_externalized_content") {
         if ($hasUserCol) {
             // i s s s s s s i i i
             $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt2->bind_param("issssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val2, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("issssssiisi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val2, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("issssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $uid_val2, $deleted);
+            }
         } else {
             // i s s s s s s i i
-            $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("issssssisi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $used_flag, $deleted);
+            }
         }
     } elseif ($hasUsedCol && !$hasKFragCol) {
         if ($hasUserCol) {
             // i s s s s s i i i
             $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt2->bind_param("isssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val2, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("isssssiisi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val2, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("isssssiii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $uid_val2, $deleted);
+            }
         } else {
             // i s s s s s i i
-            $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("isssssisi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $used_flag, $deleted);
+            }
         }
     } elseif (!$hasUsedCol && $hasKFragCol) {
         if ($hasUserCol) {
             // i s s s s s s i i
             $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val2, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("issssssisi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val2, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("issssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $uid_val2, $deleted);
+            }
         } else {
             // i s s s s s s i
-            $stmt2->bind_param("issssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("issssssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("issssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $knowledge_fragment_content, $deleted);
+            }
         }
     } else {
         if ($hasUserCol) {
             // i s s s s s i i
             $uid_val2 = ($user_id !== null) ? (int)$user_id : 0;
-            $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val2, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("isssssisi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val2, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("isssssii", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $uid_val2, $deleted);
+            }
         } else {
             // i s s s s s i
-            $stmt2->bind_param("isssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+            if ($hasDiscussedCol) {
+                $stmt2->bind_param("issssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $discussed_val, $deleted);
+            } else {
+                $stmt2->bind_param("isssssi", $nextExtId, $remarked_ids_str, $selected_contents, $stage1, $stage2, $stage3, $deleted);
+            }
         }
     }
     if(!$stmt2->execute()){
