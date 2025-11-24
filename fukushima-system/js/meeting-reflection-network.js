@@ -4,6 +4,19 @@ try{ console && console.log && console.log('meeting-reflection-network.js loaded
 window.addEventListener && window.addEventListener('error', function(evt){
     try{ console && console.error && console.error('JS error caught:', evt && (evt.message || evt.error)); }catch(_){ }
 });
+
+// Save fragment positions to server when KRA is submitted (separate from discussed->DONE)
+$(document).on('click', '#kra-submit', function(){
+    try{
+        savePositionsToServer(function(res){
+            if(res && res.status === 'ok'){
+                console && console.log && console.log('fragment positions saved', res);
+            } else {
+                console && console.warn && console.warn('fragment positions save failed', res);
+            }
+        });
+    }catch(e){ console && console.error && console.error('save positions on kra-submit error', e); }
+});
 // currently selected fragment id for discussion posts (null = general board)
 window.activeKnowledgeFragmentId = null;
 let defaultForestMRN;
@@ -2888,6 +2901,33 @@ function initializeFragmentsWorkspace(){
         x += w + gap;
     });
     // 元のリストコンテナは不要なので削除
+    // After nodes created, attempt to load saved positions from server (by externalized id)
+    try{
+        var ids = [];
+        $ws.find('.fragment-node-wrapper').each(function(){
+            var ext = $(this).data('externalized-id');
+            if(typeof ext !== 'undefined' && ext !== null && String(ext).length){ ids.push(parseInt(ext,10)); }
+        });
+        if(ids.length){
+            loadPositionsFromServerForIds(ids, function(res){
+                if(res && res.status === 'ok' && Array.isArray(res.items)){
+                    // apply positions
+                    res.items.forEach(function(it){
+                        try{
+                            var $w = $ws.find('.fragment-node-wrapper').filter(function(){ return $(this).data('externalized-id') === it.externalized_contents_id; }).first();
+                            if($w && $w.length){
+                                $w.css({ left: (parseInt(it.x,10)||0) + 'px', top: (parseInt(it.y,10)||0) + 'px' });
+                            }
+                        }catch(_){ }
+                    });
+                }
+                // capture initial snapshot after apply
+                try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); updateKFragHistoryButtons(); }catch(_){ }
+            });
+        } else {
+            try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); updateKFragHistoryButtons(); }catch(_){ }
+        }
+    }catch(_){ try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); updateKFragHistoryButtons(); }catch(__){} }
     $list.remove();
 
     // Click handler: selecting a fragment should target discussion to that fragment
@@ -2934,14 +2974,45 @@ function initializeFragmentsWorkspace(){
             }
         }catch(__){ }
     });
+
+    // Add Reset / Undo / Redo buttons to workspace title area
+    try{
+        var $title = $ws.children('.overlay-title').first();
+        if($title && $title.length){
+            if(!$title.find('#kfrag-reset').length){
+                var $btnReset = $('<button type="button" id="kfrag-reset" class="kfrag-action-btn">Reset</button>');
+                var $btnUndo = $('<button type="button" id="kfrag-undo" class="kfrag-action-btn" disabled>Undo</button>');
+                var $btnRedo = $('<button type="button" id="kfrag-redo" class="kfrag-action-btn" disabled>Redo</button>');
+                var $wrapBtns = $('<div class="kfrag-action-group" style="display:inline-block;margin-left:10px;"></div>');
+                $wrapBtns.append($btnReset).append($btnUndo).append($btnRedo);
+                $title.append($wrapBtns);
+            }
+        }
+    }catch(_){ }
+
+    // Button handlers
+    $(document).off('click.kfrag_reset', '#kfrag-reset').on('click.kfrag_reset', '#kfrag-reset', function(){
+        try{
+            if(window.kfrag_positions_history && window.kfrag_positions_history.initial){
+                // push current into undo
+                var cur = kfrag_capture_snapshot();
+                window.kfrag_positions_history.undo.push(cur);
+                kfrag_apply_snapshot(window.kfrag_positions_history.initial);
+                window.kfrag_positions_history.redo = [];
+                updateKFragHistoryButtons();
+            }
+        }catch(e){ console && console.error && console.error('kfrag reset err', e); }
+    });
+    $(document).off('click.kfrag_undo', '#kfrag-undo').on('click.kfrag_undo', '#kfrag-undo', function(){ kfrag_undo(); });
+    $(document).off('click.kfrag_redo', '#kfrag-redo').on('click.kfrag_redo', '#kfrag-redo', function(){ kfrag_redo(); });
 }
 
 function enableFragmentDrag($node, $container){
-    var dragging = false, sx=0, sy=0, startL=0, startT=0;
+    var dragging = false, isDraggingThis = false, sx=0, sy=0, startL=0, startT=0;
     // クリック開始が操作系ならドラッグしない
     $node.on('mousedown', function(e){
         if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
-        dragging = true;
+        dragging = true; isDraggingThis = true;
         sx = e.clientX; sy = e.clientY;
         var off = $node.position();
         startL = off.left; startT = off.top;
@@ -2956,7 +3027,106 @@ function enableFragmentDrag($node, $container){
         nt = Math.max(0, nt);
         $node.css({ left: nl + 'px', top: nt + 'px' });
     });
-    $(document).on('mouseup.kfrag', function(){ dragging = false; });
+    $(document).on('mouseup.kfrag', function(){
+        // if this node was being dragged, capture a snapshot for undo
+        if(isDraggingThis){
+            try{ kfrag_capture_and_push_snapshot(); }catch(_){ }
+        }
+        dragging = false; isDraggingThis = false;
+    });
+}
+
+// --- Fragment positions history utilities ---
+window.kfrag_positions_history = window.kfrag_positions_history || { undo: [], redo: [], max: 40, initial: null };
+
+function kfrag_capture_snapshot(){
+    var snaps = [];
+    $('.fragment-node-wrapper').each(function(){
+        var $w = $(this);
+        var ext = $w.data('externalized-id');
+        if(typeof ext === 'undefined' || ext === null){
+            // try attribute on inner node (fallback)
+            try{ var s = $w.find('.knowledge_fragment').attr('data-ext-id'); if(typeof s !== 'undefined') ext = parseInt(s,10); }catch(_){ ext = null; }
+        }
+        if(ext === null || typeof ext === 'undefined' || isNaN(parseInt(ext,10))) return;
+        var pos = $w.position();
+        snaps.push({ externalized_contents_id: parseInt(ext,10), x: Math.round(pos.left), y: Math.round(pos.top) });
+    });
+    return snaps;
+}
+
+function kfrag_apply_snapshot(snaps){
+    if(!Array.isArray(snaps)) return;
+    snaps.forEach(function(it){
+        try{
+            var targetId = parseInt(it.externalized_contents_id,10);
+            var $w = $('.fragment-node-wrapper').filter(function(){ return parseInt($(this).data('externalized-id'),10) === targetId; }).first();
+            if($w && $w.length){
+                $w.css({ left: (parseInt(it.x,10)||0) + 'px', top: (parseInt(it.y,10)||0) + 'px' });
+            }
+        }catch(_){ }
+    });
+}
+
+function kfrag_capture_and_push_snapshot(){
+    try{
+        var snap = kfrag_capture_snapshot();
+        if(!snap || snap.length === 0) return;
+        // push into undo stack
+        window.kfrag_positions_history.undo.push(snap);
+        if(window.kfrag_positions_history.undo.length > window.kfrag_positions_history.max){
+            window.kfrag_positions_history.undo.shift();
+        }
+        // clear redo on new action
+        window.kfrag_positions_history.redo = [];
+        // (optional) update undo/redo button enabled state
+        updateKFragHistoryButtons();
+    }catch(_){ }
+}
+
+function updateKFragHistoryButtons(){
+    try{
+        $('#kfrag-undo').prop('disabled', window.kfrag_positions_history.undo.length === 0);
+        $('#kfrag-redo').prop('disabled', window.kfrag_positions_history.redo.length === 0);
+    }catch(_){ }
+}
+
+function kfrag_undo(){
+    if(window.kfrag_positions_history.undo.length === 0) return;
+    var snap = window.kfrag_positions_history.undo.pop();
+    // push current to redo
+    var cur = kfrag_capture_snapshot();
+    window.kfrag_positions_history.redo.push(cur);
+    kfrag_apply_snapshot(snap);
+    updateKFragHistoryButtons();
+}
+
+function kfrag_redo(){
+    if(window.kfrag_positions_history.redo.length === 0) return;
+    var snap = window.kfrag_positions_history.redo.pop();
+    var cur = kfrag_capture_snapshot();
+    window.kfrag_positions_history.undo.push(cur);
+    kfrag_apply_snapshot(snap);
+    updateKFragHistoryButtons();
+}
+
+function savePositionsToServer(cb){
+    try{
+        var snaps = kfrag_capture_snapshot();
+        if(!snaps || snaps.length === 0){ if(cb) cb({status:'ok',items:[]}); return; }
+        try{ console && console.debug && console.debug('savePositionsToServer: sending', snaps.length, 'items', snaps); }catch(_){ }
+        $.ajax({
+            url: 'php/save_positions.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { positions: JSON.stringify(snaps) }
+        }).done(function(res){ if(cb) cb(res); }).fail(function(xhr,st,err){ if(cb) cb({status:'error',error:st}); });
+    }catch(e){ if(cb) cb({status:'error',error:e.message}); }
+}
+
+function loadPositionsFromServerForIds(ids, cb){
+    if(!ids || !ids.length){ if(cb) cb({status:'ok',items:[]}); return; }
+    $.ajax({ url: 'php/get_positions.php', type: 'GET', dataType: 'json', data: { ids: ids.join(',') } }).done(function(res){ if(cb) cb(res); }).fail(function(xhr,st,err){ if(cb) cb({status:'error',error:st}); });
 }
 
 // Fetch discussion history for optional fragmentId (null => global board)
