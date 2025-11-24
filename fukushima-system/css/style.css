@@ -2319,6 +2319,32 @@ body.shared-mode #network_container.threecol{
     margin-left: 20px;
 }
 
+/* Tab container: place tabs and the show-button on one horizontal line */
+.tab-container{
+	display:flex;
+	align-items:center;
+	gap:8px;
+}
+.tab-container > ul{
+	display:flex;
+	margin:0;
+	padding:0;
+	list-style:none;
+}
+.tab-container > ul > li{
+	display:inline-flex;
+	align-items:center;
+	padding:8px 10px;
+	margin-right:4px;
+	cursor:pointer;
+	background:#ddd;
+	border-radius:5px 5px 0 0;
+}
+.tab-container > ul > li.selected{
+	background: #00473E;
+	color:#fff;
+}
+
 .button5 {
     background-color: #90B1AB; /* デフォルトの背景色 */
     color: #fff;

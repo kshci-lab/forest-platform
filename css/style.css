@@ -2497,7 +2497,7 @@ select[name="user_list"] {
 }
 
 /* 吹き出し三角形 */
-.button-container ul li.selected::after,
+/* .button-container ul li.selected::after,
 .button-container ul li.active::after {
 	content: '';
 	position: absolute;
@@ -2509,7 +2509,7 @@ select[name="user_list"] {
 	border-left: 10px solid transparent;
 	border-right: 10px solid transparent;
 	border-top: 10px solid #99cccc; /* active 色 */
-}
+} */
 
 .button-container ul li:not(.selected):not(.active):hover {
 	background: #a0c1bc; /* hover 色 */

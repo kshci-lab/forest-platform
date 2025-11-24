@@ -1773,6 +1773,47 @@ function detachOverlayAutoResize(){
 
 // 初期化：DOMが使えるようになったらイベントをバインド
 document.addEventListener('DOMContentLoaded', function(){
+  // 初期化: jsmind_nav 内の連結化タブを非表示にし、代わりに表示ボタンを設置する
+  try{
+    var jnav = document.getElementById('jsmind_nav');
+    if(jnav){
+      // 複数ある場合に備え、jsmind_nav 内だけを非表示にする
+      var combTabs = Array.prototype.slice.call(jnav.querySelectorAll('#tab-combination')) || [];
+      combTabs.forEach(function(el){ try{ el.style.display = 'none'; }catch(_){}});
+
+      // 表示用ボタンを作成してタブコンテナに追加
+      var showBtn = document.createElement('button');
+      showBtn.id = 'show-tab-combination';
+      showBtn.className = 'button5';
+      showBtn.type = 'button';
+      showBtn.textContent = '連結化タブ表示';
+      // ユーザ指定: ボタンは `#mind.side` コンテナ内に移動する
+      var mindSide = document.querySelector('#mind.side') || document.getElementById('mind');
+      try{
+        if(mindSide){
+          // place at the end of mind side container
+          mindSide.appendChild(showBtn);
+        } else {
+          var tabContainer = jnav.querySelector('.tab-container') || jnav;
+          tabContainer.appendChild(showBtn);
+        }
+      }catch(_){
+        try{ jnav.appendChild(showBtn); }catch(__){}
+      }
+
+      // ボタン押下で連結化タブを表示し、タブをアクティブ化する
+      showBtn.addEventListener('click', function(){
+        try{
+          combTabs.forEach(function(el){ try{ el.style.display = ''; }catch(_){}});
+          // 共有知モードに切り替えつつタブを有効化
+          try{ window.SharedModeActive = true; document.body.classList.add('shared-mode'); }catch(_){ }
+          activateSharedTab('tab-combination');
+          // 自身は不要になるので非表示に
+          try{ showBtn.style.display = 'none'; }catch(_){ }
+        }catch(e){ console && console.warn && console.warn('show-tab-combination click failed', e); }
+      });
+    }
+  }catch(e){ console && console.warn && console.warn('jsmind_nav show-tab init failed', e); }
   var tabIds = ['tab-externalization','tab-combination','tab-internalization'];
   tabIds.forEach(function(id){
     // 同一IDが複数存在するレガシー構造に対応（すべてにハンドラを付与）
