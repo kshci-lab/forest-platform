@@ -1671,84 +1671,159 @@ class LogicNetwork {
   // ネットワークキャンバスをPDF保存（jsPDF使用、未読込時はPNG保存にフォールバック）
   exportNetworkToPDF(filename) {
     try {
-      // 変更: 認知的葛藤付き三角のみ
-      const reportText = this.buildConflictTrianglesReport();
-      if (!reportText || reportText.trim() === "") {
+      const conflictReport = this.buildConflictTrianglesReport();
+      if (!conflictReport || !conflictReport.trim()) {
         alert("認知的葛藤が言語化された三角ロジックがありません");
         return;
       }
+      const scenarioReport = this.buildScenarioReport();
+      const combined = [conflictReport, '', scenarioReport].join('\n');
 
       const ts = this._buildTimestamp();
-      const outName = filename || `logic_conflicts_${ts}.pdf`;
+      const outName = filename || `logic_conflicts_with_scenario_${ts}.pdf`;
 
       const JSPDFCtor =
         (window.jspdf && (window.jspdf.jsPDF || window.jspdf.default)) ||
         window.jsPDF;
 
       if (!JSPDFCtor) {
-        const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
+        const blob = new Blob([combined], { type: "text/plain;charset=utf-8" });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = (outName.replace(/\.pdf$/i, '') + ".txt");
+        a.download = outName.replace(/\.pdf$/i, '') + ".txt";
         a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        setTimeout(() => URL.revokeObjectURL(a.href), 800);
         return;
       }
 
-      const pdf = new JSPDFCtor({
-        orientation: 'portrait',
-        unit: 'pt',
-        format: 'a4'
-      });
-
+      const pdf = new JSPDFCtor({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const ps = pdf.internal && pdf.internal.pageSize ? pdf.internal.pageSize : {};
       const pageW = (typeof ps.getWidth === 'function') ? ps.getWidth() : (ps.width || 595.28);
       const pageH = (typeof ps.getHeight === 'function') ? ps.getHeight() : (ps.height || 841.89);
-
       const margin = 36;
       const maxW = pageW - margin * 2;
       const lineH = 14;
 
       pdf.setFontSize(12);
-      pdf.text("認知的葛藤付き三角ロジック出力", margin, 20);
+      pdf.text("認知的葛藤付き三角ロジック + 論文シナリオ", margin, 20);
       pdf.setFontSize(9);
       pdf.text(`Exported: ${ts}`, pageW - margin - 140, 20);
-
       pdf.setFontSize(11);
-      const simpleWrap = (text, maxChars = 60) => {
-        const result = [];
-        const para = String(text).split('\n');
-        for (let p = 0; p < para.length; p++) {
-          const t = para[p];
-            if (t.length <= maxChars) { result.push(t); continue; }
-          for (let i = 0; i < t.length; i += maxChars) {
-            result.push(t.substr(i, maxChars));
+
+      const wrap = (text, maxChars = 70) => {
+        const arr = [];
+        const ls = String(text).split('\n');
+        ls.forEach(l => {
+          if (l.length <= maxChars) { arr.push(l); return; }
+          for (let i = 0; i < l.length; i += maxChars) {
+            arr.push(l.slice(i, i + maxChars));
           }
-        }
-        return result;
+        });
+        return arr;
       };
       const lines = (typeof pdf.splitTextToSize === 'function')
-        ? pdf.splitTextToSize(reportText, maxW)
-        : simpleWrap(reportText, 80);
+        ? pdf.splitTextToSize(combined, maxW)
+        : wrap(combined, 90);
 
       let y = 46;
-      for (const line of lines) {
+      lines.forEach(line => {
         if (y > pageH - margin) {
           pdf.addPage();
           y = margin;
         }
         pdf.text(line, margin, y);
         y += lineH;
-      }
+      });
 
       pdf.save(outName);
     } catch (e) {
-      console.error("exportNetworkToPDF (conflict mode) error:", e && (e.stack || e));
+      console.error("exportNetworkToPDF error:", e);
       alert("PDF出力に失敗しました");
     }
   }
 
-  // 追加: 認知的葛藤入り三角ロジックのみを抽出してテキスト化
+  // 追加: 論文シナリオ全文レポート生成
+  buildScenarioReport() {
+    try {
+      const titleEl = document.getElementById('scenario_title');
+      const title = titleEl ? String(titleEl.value || '').trim() : '';
+      const chapters = document.querySelectorAll('.chapter');
+      const lines = [];
+      lines.push('=== 論文シナリオ構成 ===', '');
+      if (title) lines.push(`【タイトル】${title}`, '');
+
+      if (!chapters.length) {
+        lines.push('（章が未作成です）');
+        return lines.join('\n');
+      }
+
+      chapters.forEach(ch => {
+        const chTitle = (ch.querySelector('textarea.title_slide')?.value ||
+                         ch.querySelector('span.tspan')?.textContent || '章タイトル未設定').trim();
+        lines.push(`章: ${chTitle}`);
+
+        const sections = ch.querySelectorAll('.section');
+        if (!sections.length) {
+          lines.push('  （節が未作成）');
+          return;
+        }
+
+        sections.forEach(sec => {
+          const secTitle = (sec.querySelector('textarea.title_slide')?.value ||
+                            sec.querySelector('span.tspan')?.textContent || '節タイトル未設定').trim();
+          lines.push(`  節: ${secTitle}`);
+
+          const threads = sec.querySelectorAll('.thread');
+          if (!threads.length) {
+            lines.push('    （パラグラフなし）');
+            return;
+          }
+
+          threads.forEach(th => {
+            const paraTitle = (th.querySelector('textarea.title_slide')?.value ||
+                               th.querySelector('span.tspan')?.textContent || 'パラグラフタイトル未設定').trim();
+            lines.push(`    パラグラフ: ${paraTitle}`);
+
+            // Quill本文取得（存在しなければ editor_ 要素内テキスト）
+            let bodyText = '';
+            try {
+              const tid = th.id;
+              if (window.quills && window.quills[tid]) {
+                bodyText = String(window.quills[tid].root.textContent || '').trim();
+              } else {
+                const ed = document.getElementById(`editor_${tid}`);
+                if (ed) bodyText = String(ed.textContent || '').trim();
+              }
+            } catch(_) {}
+            if (bodyText) {
+              bodyText.split('\n').forEach(line => {
+                const clean = line.trim();
+                if (clean) lines.push(`      本文: ${clean}`);
+              });
+            }
+
+            // scenario_content ノード
+            const contents = th.querySelectorAll('.scenario_content .cspan');
+            contents.forEach(sp => {
+              const raw = (sp.textContent || '').trim();
+              if (!raw) return;
+              const type = sp.getAttribute('type') === 'toi' ? '問い' : '答え';
+              const indentLevel = parseInt(sp.getAttribute('name') || '0', 10);
+              const indentPad = ' '.repeat(Math.min(indentLevel, 3) * 2);
+              lines.push(`      ${indentPad}${type}: ${raw}`);
+            });
+          });
+        });
+        lines.push('');
+      });
+
+      return lines.join('\n');
+    } catch (e) {
+      return `=== 論文シナリオ取得失敗 ===\n${e.message || e}`;
+    }
+  }
+
+  // 追加: 認知的葛藤入り三角ロジックのみを抽出
   buildConflictTrianglesReport() {
     if (!Array.isArray(this.triangles) || this.triangles.length === 0) return "";
     let out = [];
@@ -1763,61 +1838,57 @@ class LogicNetwork {
           conflictText = String(claimNodeForConflict.conflict).trim();
         }
       }
-      if (!conflictText) continue; // 葛藤無しは除外
-
+      if (!conflictText) continue;
       const claimNode = this.nodes.get(tri.claimId);
       const factNode  = this.nodes.get(tri.factId);
       const reasonNode = this.nodes.get(tri.reasonId);
-
       const claimLabel  = this._getCleanLabel(claimNode);
       const factLabel   = this._getCleanLabel(factNode);
       const reasonLabel = this._getCleanLabel(reasonNode);
-
       out.push(
         `【${index}】\n主張: ${claimLabel || "(未入力)"}\n事実: ${factLabel || "(未入力)"}\n理由付け: ${reasonLabel || "(未入力)"}\n認知的葛藤: ${conflictText}\n`
       );
       index++;
     }
-    if (out.length === 0) return "";
+    if (!out.length) return "";
     const header = "=== 認知的葛藤が言語化された三角ロジック一覧 ===\n\n";
     return header + out.join("\n");
   }
 
-  // ノードの label を改行除去して取得（未定義や空も安全に処理）
+  // 追加: ラベル整形
   _getCleanLabel(node) {
     if (!node || typeof node.label !== "string") return "";
     return node.label.replace(/\n/g, "").trim();
   }
 
-  // 足りていないと例外になるため追加（タイムスタンプ: YYYYMMDD_HHMM）
+  // 追加: タイムスタンプ
   _buildTimestamp() {
     const d = new Date();
     const z = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
+    return `${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
   }
 
-  // 追加: 主張ノード判定（triangles の claim_id に含まれるか）
+  // 追加: 主張ノード判定
   isClaimNode(nodeId) {
-    if (!Array.isArray(this.triangles) || this.triangles.length === 0) return false;
+    if (!Array.isArray(this.triangles) || !this.triangles.length) return false;
     const id = String(nodeId);
     return this.triangles.some(t => String(t.claim_id ?? t.claimId) === id);
   }
 
-  // 主張ノードIDから三角IDを取得（saveLogicDetail 互換のため Promise 返却）
+  // 追加: 主張ノード→三角ID取得
   getTriangleIdByClaimId(claimNodeId) {
     const id = String(claimNodeId);
     if (!Array.isArray(this.triangles)) return Promise.resolve(null);
     for (const t of this.triangles) {
       const cid = t && (t.claim_id ?? t.claimId);
       if (cid != null && String(cid) === id) {
-        const triId = t.triangle_id ?? t.triangleId ?? null;
-        return Promise.resolve(triId);
+        return Promise.resolve(t.triangle_id ?? t.triangleId ?? null);
       }
     }
     return Promise.resolve(null);
   }
 
-  // 説明（claimReason）保存
+  // 追加: 説明保存
   saveClaimReasonToDatabase(triangleId, claimReason) {
     try {
       $.ajax({
@@ -1834,7 +1905,7 @@ class LogicNetwork {
     } catch(_) {}
   }
 
-  // 認知的葛藤（conflict）保存
+  // 追加: 葛藤保存
   saveConflictToDatabase(triangleId, conflict) {
     try {
       $.ajax({
