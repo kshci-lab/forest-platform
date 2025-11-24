@@ -3102,3 +3102,53 @@ $(document).on('click', '#fragment-discussed-toggle', function(){
     });
 });
 
+// KRA 登録ボタン押下時: 議論を終了して表示を '議論終了' に変更し、外部化テーブルを DONE に更新
+$(document).on('click', '#kra-submit', function(){
+    try{
+        // find the currently active fragment wrapper using global activeKnowledgeFragmentId
+        if(!window.activeKnowledgeFragmentId){ return; }
+        var $wrap = $('.fragment-node-wrapper').filter(function(){ return $(this).data('knowledge-fragment-id') === window.activeKnowledgeFragmentId; }).first();
+        if(!$wrap.length) return;
+        var extId = $wrap.data('externalized-id');
+        if(!extId) return;
+
+        // Only proceed if current status is UNDERWAY (議論中)
+        var current = ($wrap.data('discussed-status') || '').trim();
+        if(current !== 'UNDERWAY'){
+            // still update UI to '議論終了' if desired even when not UNDERWAY? skip by default
+            return;
+        }
+
+        $.ajax({
+            url: 'php/update_discussed_status.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { externalized_contents_id: extId, status: 'DONE' }
+        }).done(function(res){
+            if(res && res.status === 'ok'){
+                // update wrapper data and badge text
+                $wrap.data('discussed-status', 'DONE');
+                var $ind = $wrap.find('.fragment-discussed-indicator');
+                if($ind.length){
+                    $ind.text('議論終了');
+                } else {
+                    $ind = $('<div class="fragment-discussed-indicator" aria-hidden="true">議論終了</div>');
+                    $wrap.append($ind);
+                }
+                // update toggle button appearance if present
+                try{
+                    var $btn = $('#fragment-discussed-toggle');
+                    if($btn.length){
+                        $btn.text('議論開始');
+                        $btn.removeClass('is-discussing');
+                    }
+                }catch(_){ }
+            } else {
+                console && console.warn && console.warn('update discussed to DONE failed', res);
+            }
+        }).fail(function(xhr,st,err){
+            console && console.error && console.error('update discussed to DONE ajax fail', st, err, xhr && xhr.responseText);
+        });
+    }catch(e){ console && console.error && console.error('kra-submit discussed->DONE handler error', e); }
+});
+
