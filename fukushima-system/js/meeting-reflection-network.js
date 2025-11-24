@@ -2908,6 +2908,8 @@ function initializeFragmentsWorkspace(){
             var ext = $(this).data('externalized-id');
             if(typeof ext !== 'undefined' && ext !== null && String(ext).length){ ids.push(parseInt(ext,10)); }
         });
+        // capture the ORIGINAL initial snapshot (before applying saved server positions)
+        try{ window.kfrag_positions_history.originalInitial = kfrag_capture_snapshot(); }catch(_){ }
         if(ids.length){
             loadPositionsFromServerForIds(ids, function(res){
                 if(res && res.status === 'ok' && Array.isArray(res.items)){
@@ -2921,13 +2923,13 @@ function initializeFragmentsWorkspace(){
                         }catch(_){ }
                     });
                 }
-                // capture initial snapshot after apply
+                // capture current initial snapshot after applying server positions
                 try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); updateKFragHistoryButtons(); }catch(_){ }
             });
         } else {
-            try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); updateKFragHistoryButtons(); }catch(_){ }
+            try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); window.kfrag_positions_history.originalInitial = window.kfrag_positions_history.initial; updateKFragHistoryButtons(); }catch(_){ }
         }
-    }catch(_){ try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); updateKFragHistoryButtons(); }catch(__){} }
+    }catch(_){ try{ window.kfrag_positions_history.initial = kfrag_capture_snapshot(); window.kfrag_positions_history.originalInitial = window.kfrag_positions_history.initial; updateKFragHistoryButtons(); }catch(__){} }
     $list.remove();
 
     // Click handler: selecting a fragment should target discussion to that fragment
@@ -2993,11 +2995,19 @@ function initializeFragmentsWorkspace(){
     // Button handlers
     $(document).off('click.kfrag_reset', '#kfrag-reset').on('click.kfrag_reset', '#kfrag-reset', function(){
         try{
-            if(window.kfrag_positions_history && window.kfrag_positions_history.initial){
+            // Reset to the original initial layout (before any server-saved positions were applied)
+            var target = null;
+            if(window.kfrag_positions_history && window.kfrag_positions_history.originalInitial){
+                target = window.kfrag_positions_history.originalInitial;
+            } else if(window.kfrag_positions_history && window.kfrag_positions_history.initial){
+                // fallback
+                target = window.kfrag_positions_history.initial;
+            }
+            if(target){
                 // push current into undo
                 var cur = kfrag_capture_snapshot();
                 window.kfrag_positions_history.undo.push(cur);
-                kfrag_apply_snapshot(window.kfrag_positions_history.initial);
+                kfrag_apply_snapshot(target);
                 window.kfrag_positions_history.redo = [];
                 updateKFragHistoryButtons();
             }
