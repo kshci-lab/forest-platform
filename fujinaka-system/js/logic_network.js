@@ -52,6 +52,7 @@ class LogicNetwork {
     this._highlightedEdgeIds = new Set();
     // 役割タグDOMの管理（ノードID+位置キーで複数タグを保持）
     this._roleTagEls = new Map();
+    this._conflictTagEls = new Map(); // 追加: 葛藤タグ管理
 
     this.ownNetwork = this.generateLogicNetworkCanvas(container, this.nodes, this.edges);
     if (!this.ownNetwork) {
@@ -68,7 +69,10 @@ class LogicNetwork {
       // 追加: 三角ロジック全体のハイライト
       this.ownNetwork.on('click', this.handleNodeClickHighlightTriangles.bind(this));
       // 再描画ごとに役割タグの位置を更新
-      this.ownNetwork.on('afterDrawing', this.updateRoleTagPositions.bind(this));
+      this.ownNetwork.on('afterDrawing', () => {
+        this.updateRoleTagPositions();
+        this.updateConflictTagPositions(); // 追加: 葛藤タグ位置更新
+      });
     }
     // 追加: タグ配置のため、コンテナを相対配置に
     try {
@@ -864,6 +868,12 @@ class LogicNetwork {
           conflict: conflict,
           hasConflict: conflict.length > 0
         });
+        // 追加: 葛藤タグ更新
+        if (conflict.length > 0) {
+          this.createOrUpdateConflictTag(nodeId);
+        } else {
+          this.removeConflictTag(nodeId);
+        }
       }
 
       // DB保存（既存のAPIを順に呼ぶ）
@@ -1087,7 +1097,11 @@ class LogicNetwork {
         }
         if (updates.length) {
           this.nodes.update(updates);
-          console.log("[Restore] applied claimReason/conflict to nodes:", updates.map(u => u.id));
+          // 追加: 葛藤タグ反映
+          updates.forEach(u => {
+            if (u.hasConflict) this.createOrUpdateConflictTag(u.id);
+            else this.removeConflictTag(u.id);
+          });
         } else {
           console.log("[Restore] no claimReason/conflict updates required");
         }
@@ -1590,26 +1604,88 @@ class LogicNetwork {
     } catch(_) {}
   }
 
+  // 葛藤タグ生成/更新
+  createOrUpdateConflictTag(nodeId) {
+    try {
+      if (!this._containerEl || !this.ownNetwork) return;
+      const node = this.nodes.get(nodeId);
+      if (!node || !node.conflict || !String(node.conflict).trim()) {
+        this.removeConflictTag(nodeId);
+        return;
+      }
+      let el = this._conflictTagEls.get(nodeId);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'ln-conflict-tag';
+        el.style.position = 'absolute';
+        el.style.pointerEvents = 'none';
+        el.style.zIndex = '10';
+        el.style.fontSize = '13px';
+        el.style.lineHeight = '1.3';
+        el.style.whiteSpace = 'nowrap';
+        el.style.color = '#dc143c';
+        el.style.background = 'rgba(220,20,60,0.12)';
+        el.style.border = '1px solid #dc143c';
+        el.style.borderRadius = '4px';
+        el.style.padding = '0 6px';
+        el.dataset.nodeId = String(nodeId);
+        this._containerEl.appendChild(el);
+        this._conflictTagEls.set(nodeId, el);
+      }
+      el.textContent = '葛藤';
+      this.updateSingleConflictTagPosition(nodeId, el);
+    } catch(_) {}
+  }
+
+  // 葛藤タグ削除
+  removeConflictTag(nodeId) {
+    try {
+      const el = this._conflictTagEls.get(nodeId);
+      if (el) { el.remove(); }
+      this._conflictTagEls.delete(nodeId);
+    } catch(_) {}
+  }
+
+  // 全葛藤タグ位置更新
+  updateConflictTagPositions() {
+    if (!this._conflictTagEls || this._conflictTagEls.size === 0) return;
+    this._conflictTagEls.forEach((el, nodeId) => {
+      this.updateSingleConflictTagPosition(nodeId, el);
+    });
+  }
+
+  // 単一葛藤タグ位置計算（右上外側）
+  updateSingleConflictTagPosition(nodeId, el) {
+    try {
+      if (!this.ownNetwork) return;
+      const bb = this.ownNetwork.getBoundingBox(nodeId);
+      if (!bb) return;
+      const pos = { x: bb.right + 8, y: bb.top - 6 };
+      const dom = this.ownNetwork.canvasToDOM(pos);
+      el.style.left = `${dom.x}px`;
+      el.style.top = `${dom.y}px`;
+      el.style.transform = 'translate(-0%, -100%)';
+    } catch(_) {}
+  }
+
   // ネットワークキャンバスをPDF保存（jsPDF使用、未読込時はPNG保存にフォールバック）
   exportNetworkToPDF(filename) {
     try {
-      // 1) レポート本文を作成（collectTriangleLogic 優先）
-      const reportText = this.buildTriangleTextReport();
+      // 変更: 認知的葛藤付き三角のみ
+      const reportText = this.buildConflictTrianglesReport();
       if (!reportText || reportText.trim() === "") {
-        alert("出力する三角ロジックが見つかりません");
+        alert("認知的葛藤が言語化された三角ロジックがありません");
         return;
       }
 
       const ts = this._buildTimestamp();
-      const outName = filename || `logic_triangles_${ts}.pdf`;
+      const outName = filename || `logic_conflicts_${ts}.pdf`;
 
-      // 2) jsPDF 検出（旧/新両対応）
       const JSPDFCtor =
         (window.jspdf && (window.jspdf.jsPDF || window.jspdf.default)) ||
         window.jsPDF;
 
       if (!JSPDFCtor) {
-        // TXT フォールバック
         const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -1619,14 +1695,12 @@ class LogicNetwork {
         return;
       }
 
-      // PDF 出力
       const pdf = new JSPDFCtor({
         orientation: 'portrait',
         unit: 'pt',
         format: 'a4'
       });
 
-      // 旧API互換: getWidth/getHeight が無い環境に対応
       const ps = pdf.internal && pdf.internal.pageSize ? pdf.internal.pageSize : {};
       const pageW = (typeof ps.getWidth === 'function') ? ps.getWidth() : (ps.width || 595.28);
       const pageH = (typeof ps.getHeight === 'function') ? ps.getHeight() : (ps.height || 841.89);
@@ -1635,22 +1709,18 @@ class LogicNetwork {
       const maxW = pageW - margin * 2;
       const lineH = 14;
 
-      // ヘッダー
       pdf.setFontSize(12);
-      pdf.text("三角ロジック エクスポート", margin, 20);
+      pdf.text("認知的葛藤付き三角ロジック出力", margin, 20);
       pdf.setFontSize(9);
       pdf.text(`Exported: ${ts}`, pageW - margin - 140, 20);
 
-      // 本文
       pdf.setFontSize(11);
-
-      // splitTextToSize が無い場合のフォールバック
       const simpleWrap = (text, maxChars = 60) => {
         const result = [];
         const para = String(text).split('\n');
         for (let p = 0; p < para.length; p++) {
           const t = para[p];
-          if (t.length <= maxChars) { result.push(t); continue; }
+            if (t.length <= maxChars) { result.push(t); continue; }
           for (let i = 0; i < t.length; i += maxChars) {
             result.push(t.substr(i, maxChars));
           }
@@ -1661,7 +1731,7 @@ class LogicNetwork {
         ? pdf.splitTextToSize(reportText, maxW)
         : simpleWrap(reportText, 80);
 
-      let y = 36 + 10;
+      let y = 46;
       for (const line of lines) {
         if (y > pageH - margin) {
           pdf.addPage();
@@ -1673,10 +1743,46 @@ class LogicNetwork {
 
       pdf.save(outName);
     } catch (e) {
-      console.error("exportNetworkToPDF text-mode error:", e && (e.stack || e));
-      alert("文章の出力に失敗しました");
+      console.error("exportNetworkToPDF (conflict mode) error:", e && (e.stack || e));
+      alert("PDF出力に失敗しました");
     }
   }
+
+  // 追加: 認知的葛藤入り三角ロジックのみを抽出してテキスト化
+  buildConflictTrianglesReport() {
+    if (!Array.isArray(this.triangles) || this.triangles.length === 0) return "";
+    let out = [];
+    let index = 1;
+    for (const raw of this.triangles) {
+      const tri = this.normalizeTriangle(raw);
+      if (!tri) continue;
+      let conflictText = (tri.conflict || "").trim();
+      if (!conflictText) {
+        const claimNodeForConflict = this.nodes.get(tri.claimId);
+        if (claimNodeForConflict && claimNodeForConflict.conflict) {
+          conflictText = String(claimNodeForConflict.conflict).trim();
+        }
+      }
+      if (!conflictText) continue; // 葛藤無しは除外
+
+      const claimNode = this.nodes.get(tri.claimId);
+      const factNode  = this.nodes.get(tri.factId);
+      const reasonNode = this.nodes.get(tri.reasonId);
+
+      const claimLabel  = this._getCleanLabel(claimNode);
+      const factLabel   = this._getCleanLabel(factNode);
+      const reasonLabel = this._getCleanLabel(reasonNode);
+
+      out.push(
+        `【${index}】\n主張: ${claimLabel || "(未入力)"}\n事実: ${factLabel || "(未入力)"}\n理由付け: ${reasonLabel || "(未入力)"}\n認知的葛藤: ${conflictText}\n`
+      );
+      index++;
+    }
+    if (out.length === 0) return "";
+    const header = "=== 認知的葛藤が言語化された三角ロジック一覧 ===\n\n";
+    return header + out.join("\n");
+  }
+
   // ノードの label を改行除去して取得（未定義や空も安全に処理）
   _getCleanLabel(node) {
     if (!node || typeof node.label !== "string") return "";
