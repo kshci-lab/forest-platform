@@ -279,16 +279,6 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         </ul>
                                     </div>
                             
-
-                                    <!-- 【Reason】
-                                        <button class="button4" onclick="add_edit_reason();">
-                                        修正理由の追加
-                                        </button> -->
-                                    <!-- 【Screenshot】
-                                        <button class="button4" style="width:80px" onclick="screen_shot();">
-                                        screenshot
-                                        </button> -->
-                                    <!-- <label><input type="checkbox" name="Difference" id="Difference" onClick="Difference();">以前のマップとの差分</label> -->
                                     
                                     <div id="comment_balloon2"class="comment two" hidden><!--hatakeyama -->
                                         <p>緑にハイライトされたノードは合理性を考えるべきノードです．<br/>このノードの考えを変えた際には，関連したノードも考え直す必要はないか考えてみましょう！</p>
@@ -1310,6 +1300,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             </div>
 
                                             <div class="externalization-actions" style="margin-top:10px;">
+                                                <button type="button" id="show-other-labels" class="button6" style="margin-right:8px;">他者のラベルを表示</button>
                                                 <input id="externalization_register" type="button" class="button3" value="登録" onclick="handleExternalizationRegister();" />
                                                 <!-- <input id="externalization_upload" type="button" class="button3" value="アップロード" onclick="uploadMeetingUtteranceXML();" /> -->
                                             </div>

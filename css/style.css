@@ -2508,7 +2508,7 @@ select[name="user_list"] {
 	height: 0;
 	border-left: 10px solid transparent;
 	border-right: 10px solid transparent;
-	border-top: 10px solid #99cccc; /* active 色 */
+	border-top: 10px solid #99cccc; 
 } */
 
 .button-container ul li:not(.selected):not(.active):hover {
@@ -2594,8 +2594,9 @@ select[name="user_list"] {
 */
 .button6 {
 	background-color: #90B1AB;
+	border:none;
 	color: #fff;
-	width: 100%;
+	width: 20%;
 	height: 25px;
 }
 .button6:hover {

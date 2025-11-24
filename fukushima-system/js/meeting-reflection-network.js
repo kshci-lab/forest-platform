@@ -2370,6 +2370,84 @@ function OpenNetwork(start_time, end_time) {
     });
 }
 
+// Show other users' labels on utterance list: fetch remarked_utterances excluding current user
+$(document).on('click', '#show-other-labels', function(){
+    try{
+        var btn = this;
+        // toggle: if icons already present, remove them
+        var existing = document.querySelectorAll('.utter_node_in_list .other-label-icon');
+        if(existing && existing.length){
+            existing.forEach(function(n){ n.parentNode && n.parentNode.removeChild(n); });
+            try{ btn.textContent = '他者のラベルを表示'; }catch(_){ }
+            return;
+        }
+
+        // collect utter ids displayed
+        var els = document.querySelectorAll('.utter_node_in_list');
+        var ids = Array.prototype.slice.call(els).map(function(el){ return el.getAttribute('id'); }).filter(Boolean);
+        if(!ids.length) { alert('発話が見つかりません'); return; }
+
+        // send to server
+        $.ajax({
+            url: 'php/get_other_remarks.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { utter_ids: JSON.stringify(ids) }
+        }).done(function(res){
+            if(!res || res.status !== 'ok' || !Array.isArray(res.items)){
+                console && console.warn && console.warn('get_other_remarks failed', res);
+                alert('他者ラベルの取得に失敗しました');
+                return;
+            }
+            // place a grey icon at top-right of each matched utter_node_in_list
+            var placed = 0;
+            res.items.forEach(function(row){
+                try{
+                    var uid = row['utterance_id'];
+                    var el = document.getElementById(String(uid));
+                    if(!el) return;
+                    // avoid duplicate icons
+                    if(el.querySelector('.other-label-icon')) return;
+                    var ic = document.createElement('span');
+                    // normalize type string
+                    var t = (row['type'] || 'UNKNOWN') + '';
+                    t = t.toUpperCase().trim();
+                    // map numeric types (1..4) to enum names if necessary
+                    if (/^\d+$/.test(t)){
+                        switch(parseInt(t,10)){
+                            case 1: t = 'SELF'; break;
+                            case 2: t = 'OTHER'; break;
+                            case 3: t = 'ORGANIZATION'; break;
+                            case 4: t = 'UNKNOWN'; break;
+                            default: t = 'UNKNOWN'; break;
+                        }
+                    }
+                    ic.className = 'other-label-icon type-' + t.replace(/[^A-Z0-9_-]/g,'');
+                    ic.setAttribute('aria-hidden','true');
+                    // display a short glyph in Japanese to indicate type
+                    var glyph = '?';
+                    try{
+                        if(t === 'SELF') glyph = '自身';
+                        else if(t === 'OTHER') glyph = '他者';
+                        else if(t === 'ORGANIZATION') glyph = '組織';
+                        else glyph = 'その他';
+                    }catch(_){ glyph = 'その他'; }
+                    ic.textContent = glyph;
+                    // tooltip to explain
+                    try{ ic.title = (t === 'SELF' ? '自身のラベル' : (t === 'OTHER' ? '他者のラベル' : (t === 'ORGANIZATION' ? '組織のラベル' : 'その他のラベル'))); }catch(_){ }
+                    // append to element (positioned absolutely by CSS)
+                    el.appendChild(ic);
+                    placed++;
+                }catch(e){ /* ignore per-item errors */ }
+            });
+            try{ if(placed > 0) btn.textContent = '他者ラベル非表示'; }catch(_){ }
+        }).fail(function(xhr,st,err){
+            console && console.error && console.error('get_other_remarks ajax fail', st, err, xhr && xhr.responseText);
+            alert('通信エラーで取得できませんでした');
+        });
+    }catch(e){ console && console.error && console.error('show-other-labels handler error', e); }
+});
+
 // 過去のマインドマップを選んだ際の関数
 const select_time = () => {
     const selectiontime = document.getElementById('selectiontime');

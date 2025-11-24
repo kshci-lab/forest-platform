@@ -53,6 +53,30 @@
 	border-color: #BDBDBD;
 }
 
+/* Grey icon shown when other users labeled an utterance: top-right of utter_node_in_list */
+.other-label-icon {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	min-width: 20px; /* allow horizontal expansion */
+	height: 20px;
+	padding: 0 8px; /* horizontal padding to make pill shape */
+	border-radius: 12px; /* pill */
+	background: #999; /* grey */
+	color: #fff;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	line-height: 1;
+	pointer-events: none;
+	z-index: 30;
+	opacity: 0.95;
+	white-space: nowrap; /* prevent wrapping */
+	box-sizing: border-box;
+}
+
+
 /* === Discussion board (掲示板UI) inside #discussion_history_area === */
 
 #shared_combination_overlay #discussion_history_area{
@@ -119,7 +143,7 @@
 }
 #shared_combination_overlay #discussion_history_area .post-button{
 	flex: 0 0 auto;
-	background: #4f46e5; /* indigo-600 */
+	background: #6366f1; /* lighter indigo (was #4f46e5) #52A59B*/
 	color: #fff;
 	border: none;
 	border-radius: 10px;
@@ -130,6 +154,6 @@
 	font-size: 14px;
 }
 #shared_combination_overlay #discussion_history_area .post-button:hover{
-	background: #4338ca; /* indigo-700 */
+	background: #4f46e5; /* previous base as hover */
 }
 
