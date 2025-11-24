@@ -62,6 +62,18 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
     $hasUserIdCol = ($res->num_rows > 0);
     $res->free();
   }
+  // カラム存在チェック: discussed（議論状態 YET/UNDERWAY/DONE）
+  $hasDiscussedCol = false;
+  if ($res = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'discussed'")) {
+    $hasDiscussedCol = ($res->num_rows > 0);
+    $res->free();
+  }
+  // PKカラム externalized_contents_id（後で data-ext-id に埋め込む）
+  $hasExtContentsIdCol = false;
+  if ($res = $mysqli->query("SHOW COLUMNS FROM externalized_contents LIKE 'externalized_contents_id'")) {
+    $hasExtContentsIdCol = ($res->num_rows > 0);
+    $res->free();
+  }
 
   if ($kfragCol !== null) {
     // 値が NULL/空白のみを除外して取得（stage1/2/3 も合わせて取得）
@@ -70,6 +82,8 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
     $selectFields = "ec.`{$kfragCol}` AS content, ec.stage1, ec.stage2, ec.stage3";
     if ($hasSelectedCol) { $selectFields .= ", ec.selected_contents"; }
     if ($hasUserIdCol) { $selectFields .= ", ec.user_id, u.name AS user_name"; }
+    if ($hasDiscussedCol) { $selectFields .= ", ec.discussed"; }
+    if ($hasExtContentsIdCol) { $selectFields .= ", ec.externalized_contents_id"; }
 
     // FROM 句と JOIN（user_idがある場合のみJOIN）
     $fromJoin = $hasUserIdCol
@@ -99,7 +113,9 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
               'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
               'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
               'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
-              'user_name' => $__user_name
+              'user_name' => $__user_name,
+              'discussed' => $hasDiscussedCol && isset($row['discussed']) ? (string)$row['discussed'] : '',
+              'externalized_contents_id' => $hasExtContentsIdCol && isset($row['externalized_contents_id']) ? (int)$row['externalized_contents_id'] : null
             ];
           }
           $result->free();
@@ -125,7 +141,12 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
             // PHPでは配列は新しい順(new->old)で格納されています。表示順はこのままに、番号は古い->1 に合わせる。
             $num = $totalK - $i; // 例: latest idx=0 -> num=total, oldest idx=total-1 -> num=1
   ?>
-    <div class="knowledge_fragment" data-kfrag-num="<?php echo intval($num,10); ?>">
+    <div class="knowledge_fragment" data-kfrag-num="<?php echo intval($num,10); ?>"<?php 
+      $disc = isset($__kfrag_raw['discussed']) ? trim($__kfrag_raw['discussed']) : ''; 
+      if($disc!==''){ echo ' data-discussed="'.htmlspecialchars($disc,ENT_QUOTES,'UTF-8').'"'; }
+      $extId = isset($__kfrag_raw['externalized_contents_id']) ? intval($__kfrag_raw['externalized_contents_id'],10) : 0;
+      if($extId>0){ echo ' data-ext-id="'.$extId.'"'; }
+    ?>>
       <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>
       <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>
       <div class="card-detail" aria-hidden="true">

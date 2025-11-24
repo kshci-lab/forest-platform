@@ -2784,6 +2784,8 @@ function initializeFragmentsWorkspace(){
         // したがって、現在のインデックス idx (0=最新) に対する番号は totalCards - idx
         var num = (serverNum !== null) ? serverNum : (totalCards - idx);
         var displayNum = (num > 0 && num < circled.length) ? circled[num] : String(num);
+        var discussedStatus = ($card.attr('data-discussed') || '').trim();
+        var extId = parseInt($card.attr('data-ext-id'),10); if(isNaN(extId)) extId = null;
 
         var $wrap = $('<div class="fragment-node-wrapper"></div>');
         $wrap.css({ left: x + 'px', top: y + 'px' });
@@ -2791,8 +2793,12 @@ function initializeFragmentsWorkspace(){
         var $badge = $('<div class="fragment-number-badge" aria-hidden="true"></div>').text(displayNum);
         $wrap.append($badge);
 
-        // persist fragment id & display string on wrapper/card for later selection
-        try{ $wrap.data('knowledge-fragment-id', num); $wrap.data('knowledge-fragment-display', displayNum); }catch(e){}
+        // persist fragment id & display string & discussed status & externalized id
+        try{ $wrap.data('knowledge-fragment-id', num); $wrap.data('knowledge-fragment-display', displayNum); $wrap.data('discussed-status', discussedStatus); if(extId!==null){ $wrap.data('externalized-id', extId); } }catch(e){}
+        if(discussedStatus === 'UNDERWAY'){
+            var $ind = $('<div class="fragment-discussed-indicator" aria-hidden="true">議論中</div>');
+            $wrap.append($ind);
+        }
 
         // 横並び初期配置のため現在の幅を参照
         try { $card.css('width','180px'); } catch(e){}
@@ -2818,10 +2824,30 @@ function initializeFragmentsWorkspace(){
         try{
             var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
             if($dtitle && $dtitle.length){
-                $dtitle.text(disp + ' に関してのディスカッション履歴');
+                // 保持されているボタンを上書きして消さないよう、.title-text に表示文言を設定する
+                if($dtitle.find('.title-text').length){
+                    $dtitle.find('.title-text').text(disp + ' に関してのディスカッション履歴');
+                } else {
+                    // もし .title-text が無ければ従来通り text() する
+                    $dtitle.text(disp + ' に関してのディスカッション履歴');
+                }
             }
         }catch(_){ }
         try{ fetchDiscussionHistory(kfid); }catch(_){ }
+        // ボタン状態同期（トグル式、無効化はしない）
+        try{
+            var st = ($wrap.data('discussed-status')||'').trim();
+            var $btn = $('#fragment-discussed-toggle');
+            if($btn.length){
+                if(st === 'UNDERWAY'){
+                    $btn.text('議論中');
+                    $btn.addClass('is-discussing');
+                } else {
+                    $btn.text('議論開始');
+                    $btn.removeClass('is-discussing');
+                }
+            }
+        }catch(__){ }
     });
 }
 
@@ -2892,8 +2918,36 @@ function initializeDiscussionBoard(){
         var $input = $('#discussion_input');
         var $list = $('#discussion_message_list');
         if(!$form.length || !$input.length || !$list.length) return;
-        if($form.data('bound')) return; // 二重バインド防止
-        $form.data('bound', true);
+
+        // 二重バインド防止: ただし既にバウンド済でもボタンが未作成ならボタンだけ追加する
+        var alreadyBound = !!$form.data('bound');
+        var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
+        var hasBtn = $dtitle.length && $dtitle.find('#fragment-discussed-toggle').length;
+        if(alreadyBound && hasBtn) return;
+        if(!alreadyBound){ $form.data('bound', true); }
+
+        // 議論開始ボタン追加（初回のみ／バウンド済でボタン未作成の場合も追加）
+        try{
+            if($dtitle.length && !$dtitle.find('#fragment-discussed-toggle').length){
+                // 既存テキストを壊さないよう、タイトルテキストを .title-text スパンでラップする
+                if(!$dtitle.find('.title-text').length){
+                    // wrap only text nodes into span.title-text
+                    var nodes = $dtitle.contents().filter(function(){ return this.nodeType === 3 && this.nodeValue.trim().length > 0; });
+                    if(nodes.length){
+                        nodes.each(function(){
+                            var $s = $('<span class="title-text"></span>');
+                            $s.text($(this).text());
+                            $(this).replaceWith($s);
+                        });
+                    } else {
+                        // fallback: create empty span
+                        $dtitle.prepend('<span class="title-text"></span>');
+                    }
+                }
+                var $btn = $('<button type="button" id="fragment-discussed-toggle" class="fragment-discussed-btn">議論開始</button>');
+                $dtitle.append($btn);
+            }
+        }catch(__){ }
 
         // 既存履歴ロード
         $.ajax({
@@ -2966,4 +3020,49 @@ function initializeDiscussionBoard(){
         try{ if(window.activeKnowledgeFragmentId){ fetchDiscussionHistory(window.activeKnowledgeFragmentId); } }catch(_){ }
     }catch(ex){ try{ console.warn('initializeDiscussionBoard error', ex); }catch(_){}}
 }
+
+// 議論開始ボタンクリック: discussed をトグル (UNDERWAY <-> YET)
+$(document).on('click', '#fragment-discussed-toggle', function(){
+    var $btn = $(this);
+    if(!window.activeKnowledgeFragmentId){ alert('フラグメントを選択してください'); return; }
+    var $wrap = $('.fragment-node-wrapper').filter(function(){ return $(this).data('knowledge-fragment-id') === window.activeKnowledgeFragmentId; }).first();
+    if(!$wrap.length){ alert('対象フラグメントが見つかりません'); return; }
+    var extId = $wrap.data('externalized-id');
+    if(!extId){ alert('外部化IDが取得できません'); return; }
+
+    var current = ($wrap.data('discussed-status') || '').trim();
+    var targetStatus = (current === 'UNDERWAY') ? 'YET' : 'UNDERWAY';
+
+    $.ajax({
+        url: 'php/update_discussed_status.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { externalized_contents_id: extId, status: targetStatus }
+    }).done(function(res){
+        if(res && res.status === 'ok'){
+            $wrap.data('discussed-status', targetStatus);
+            var $ind = $wrap.find('.fragment-discussed-indicator');
+            if(targetStatus === 'UNDERWAY'){
+                if(!$ind.length){
+                    $ind = $('<div class="fragment-discussed-indicator" aria-hidden="true">議論中</div>');
+                    $wrap.append($ind);
+                } else {
+                    $ind.text('議論中').show();
+                }
+                $btn.text('議論中');
+                $btn.addClass('is-discussing');
+            } else {
+                if($ind.length){ $ind.remove(); }
+                $btn.text('議論開始');
+                $btn.removeClass('is-discussing');
+            }
+        } else {
+            alert('更新に失敗しました');
+            console.warn('update_discussed_status response error', res);
+        }
+    }).fail(function(xhr,st,err){
+        alert('通信エラー: ' + st);
+        console.error('update_discussed_status fail', st, err, xhr && xhr.responseText);
+    });
+});
 

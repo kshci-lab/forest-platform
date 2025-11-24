@@ -365,6 +365,23 @@ table[type] {
 	cursor: move;
 }
 
+/* 議論状態インジケータ（右上） */
+#shared_combination_overlay .fragment-node-wrapper .fragment-discussed-indicator{
+	position:absolute;
+	top:4px;
+	right:4px;
+	background:#d9534f;
+	color:#fff;
+	font-size:11px;
+	font-weight:700;
+	padding:4px 8px;
+	border-radius:14px;
+	line-height:1;
+	box-shadow:0 1px 3px rgba(0,0,0,0.25);
+	pointer-events:none;
+	z-index:15;
+}
+
 /* fragment node number badge (left-top) */
 #shared_combination_overlay .fragment-node-wrapper .fragment-number-badge{
 	position: absolute;
@@ -398,6 +415,48 @@ table[type] {
 /* overlay-input-area を左右2分割 */
 #shared_combination_overlay .overlay-input-area{
 	display:flex;
+
+/* ディスカッション履歴タイトル行: ボタン右寄せ配置 */
+#discussion_history_area .overlay-title{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:8px;
+	position:relative;
+}
+
+/* 議論開始ボタン */
+#fragment-discussed-toggle.fragment-discussed-btn{
+	/* より柔らかいオレンジ: 暖かく薄めの色合い */
+	background: #ff9a4d;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 6px 14px;
+	font-size: 13px;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+}
+#fragment-discussed-toggle.fragment-discussed-btn:hover{
+	/* hover は少し濃くして識別しやすく。元のオレンジ系を踏襲しつつ濃くする */
+	background: #ff7f3f;
+}
+#fragment-discussed-toggle.fragment-discussed-btn:disabled{
+	background:#999;
+	opacity:0.6;
+	cursor:default;
+}
+/* 議論中の見た目（グレー背景）: ボタンはクリック可能なまま見た目だけ灰色にする */
+#fragment-discussed-toggle.fragment-discussed-btn.is-discussing{
+	background: #999 !important;
+	color: #fff;
+	opacity: 0.9;
+}
+#fragment-discussed-toggle.fragment-discussed-btn.is-discussing:hover{
+	/* hover 時も同系の濃いグレーに留める */
+	background: #7f7f7f !important;
+}
 	flex-direction:row;
 	gap:8px; /* 以前:12px → すき間を少し狭く */
 	align-items:stretch;
