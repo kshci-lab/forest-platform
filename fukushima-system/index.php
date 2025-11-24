@@ -648,8 +648,12 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                         var res = JSON.parse(xhr.responseText || '{}');
                                                                         if(res && res.status === 'ok' && Array.isArray(res.items)){
                                                                             res.items.forEach(function(item){
+                                                                                try{
+                                                                                    if(item.discussion_history_id && list.querySelector('[data-discussion-id="'+item.discussion_history_id+'"]')){ return; }
+                                                                                }catch(_){ }
                                                                                 var uname = (item.user_name && item.user_name.length) ? item.user_name : boardUser;
                                                                                 var card = document.createElement('div'); card.className = 'message-card';
+                                                                                try{ card.setAttribute('data-discussion-id', item.discussion_history_id || ''); }catch(_){ }
                                                                                 var a = document.createElement('div'); a.className = 'message-author'; a.textContent = uname + ' さん';
                                                                                 var b = document.createElement('div'); b.className = 'message-body'; b.textContent = item.content || '';
                                                                                 card.appendChild(a); card.appendChild(b);
@@ -671,6 +675,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                     if(!text) return;
                                                                     var x = new XMLHttpRequest();
                                                                     var fd = new FormData(); fd.append('content', text);
+                                                                    try{
+                                                                        // 優先して externalized_contents_id を送る（meeting-reflection-network がセットしている想定）
+                                                                        if(typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null){
+                                                                            fd.append('knowledge_fragment_id', window.activeExternalizedId);
+                                                                        } else if(typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null){
+                                                                            fd.append('knowledge_fragment_id', window.activeKnowledgeFragmentId);
+                                                                        }
+                                                                    }catch(_){ }
                                                                     x.open('POST', 'php/save_discussion_history.php', true);
                                                                     x.onreadystatechange = function(){
                                                                         if(x.readyState !== 4) return;
@@ -678,8 +690,15 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                                             try{
                                                                                 var r = JSON.parse(x.responseText || '{}');
                                                                                 if(r && r.status === 'ok'){
+                                                                                    try{
+                                                                                        if(r.discussion_history_id && list.querySelector('[data-discussion-id="'+r.discussion_history_id+'"]')){
+                                                                                            input.value = '';
+                                                                                            return;
+                                                                                        }
+                                                                                    }catch(_){ }
                                                                                     var displayUser = (r.user_name && r.user_name.length) ? r.user_name : boardUser;
                                                                                     var card = document.createElement('div'); card.className = 'message-card';
+                                                                                    try{ card.setAttribute('data-discussion-id', r.discussion_history_id || ''); }catch(_){ }
                                                                                     var a = document.createElement('div'); a.className = 'message-author'; a.textContent = displayUser + ' さん';
                                                                                     var b = document.createElement('div'); b.className = 'message-body'; b.textContent = r.content || text;
                                                                                     card.appendChild(a); card.appendChild(b);

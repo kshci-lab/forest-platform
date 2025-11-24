@@ -2821,6 +2821,8 @@ function initializeFragmentsWorkspace(){
         var kfid = $wrap.data('knowledge-fragment-id') || null;
         var disp = $wrap.data('knowledge-fragment-display') || kfid;
         window.activeKnowledgeFragmentId = kfid;
+        // 外部化テーブルのID（externalized_contents_id）があればグローバルに保持
+        try{ window.activeExternalizedId = $wrap.data('externalized-id') || null; }catch(_){ window.activeExternalizedId = null; }
         try{
             var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
             if($dtitle && $dtitle.length){
@@ -2833,7 +2835,12 @@ function initializeFragmentsWorkspace(){
                 }
             }
         }catch(_){ }
-        try{ fetchDiscussionHistory(kfid); }catch(_){ }
+        try{
+            var fetchId = null;
+            try{ fetchId = $wrap.data('externalized-id') || null; }catch(_){ fetchId = null; }
+            if(fetchId === null) fetchId = kfid;
+            fetchDiscussionHistory(fetchId);
+        }catch(_){ }
         // ボタン状態同期（トグル式、無効化はしない）
         try{
             var st = ($wrap.data('discussed-status')||'').trim();
@@ -2892,8 +2899,14 @@ function fetchDiscussionHistory(fragmentId){
             var $board = $('#discussion_board');
             var boardUser = $board.data('user-name') || 'ユーザー';
             res.items.forEach(function(item){
+                // prevent duplicate rendering if the same discussion_history row already exists in the list
+                try{
+                    if(item.discussion_history_id && $list.find('[data-discussion-id="'+item.discussion_history_id+'"]').length){
+                        return; // already rendered
+                    }
+                }catch(_){ }
                 var uname = (item.user_name && item.user_name.length) ? item.user_name : boardUser;
-                var $card = $('<div class="message-card"></div>');
+                var $card = $('<div class="message-card"></div>').attr('data-discussion-id', item.discussion_history_id || '');
                 var $author = $('<div class="message-author"></div>').text(uname + ' さん');
                 var $body = $('<div class="message-body"></div>').text(item.content || '');
                 $card.append($author).append($body);
@@ -2924,7 +2937,6 @@ function initializeDiscussionBoard(){
         var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
         var hasBtn = $dtitle.length && $dtitle.find('#fragment-discussed-toggle').length;
         if(alreadyBound && hasBtn) return;
-        if(!alreadyBound){ $form.data('bound', true); }
 
         // 議論開始ボタン追加（初回のみ／バウンド済でボタン未作成の場合も追加）
         try{
@@ -2957,17 +2969,23 @@ function initializeDiscussionBoard(){
             data: { limit: 100 }
         }).done(function(res){
             if(res && res.status === 'ok' && Array.isArray(res.items)){
-                res.items.forEach(function(item){
-                    var userName = $board.data('user-name') || 'ユーザー'; // 簡易: user_id を name解決しない（必要なら拡張）
-                    var $card = $('<div class="message-card"></div>');
-                    var $author = $('<div class="message-author"></div>').text(userName + ' さん');
-                    var $body = $('<div class="message-body"></div>').text(item.content || '');
-                    $card.append($author).append($body);
-                    if(item.posted_time){
-                        var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(item.posted_time);
-                        $card.append($time);
-                    }
-                    $list.append($card);
+                    res.items.forEach(function(item){
+                        // skip if this item already rendered (prevent duplicate display)
+                        try{
+                            if(item.discussion_history_id && $list.find('[data-discussion-id="'+item.discussion_history_id+'"]').length){
+                                return; // already present
+                            }
+                        }catch(_){ }
+                        var userName = $board.data('user-name') || 'ユーザー'; // 簡易: user_id を name解決しない（必要なら拡張）
+                        var $card = $('<div class="message-card"></div>').attr('data-discussion-id', item.discussion_history_id || '');
+                        var $author = $('<div class="message-author"></div>').text(userName + ' さん');
+                        var $body = $('<div class="message-body"></div>').text(item.content || '');
+                        $card.append($author).append($body);
+                        if(item.posted_time){
+                            var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(item.posted_time);
+                            $card.append($time);
+                        }
+                        $list.append($card);
                 });
                 try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){}
             } else {
@@ -2976,46 +2994,64 @@ function initializeDiscussionBoard(){
         }).fail(function(xhr,st,err){
             console.error('discussion_history 初期ロード通信失敗', st, err, xhr && xhr.responseText);
         });
-        $form.on('submit', function(e){
-            e.preventDefault();
-            var text = ($input.val()||'').trim();
-            if(!text){ return; }
-            var user = $board.data('user-name') || 'ユーザー';
-            // まずサーバーへ保存要求 (DB挿入) → 成功時UI反映
-            var postData = { content: text };
-            try{ if(window.activeKnowledgeFragmentId) { postData.knowledge_fragment_id = window.activeKnowledgeFragmentId; } }catch(_){ }
-            $.ajax({
-                url: 'php/save_discussion_history.php',
-                type: 'POST',
-                dataType: 'json',
-                data: postData
-            }).done(function(res){
-                if(res && res.status === 'ok'){
-                    var displayUser = (res.user_name && res.user_name.length) ? res.user_name : ($board.data('user-name') || 'ユーザー');
-                    var bodyText = text; // DB反映された（切り詰め済みの場合は res.content を使用）
-                    if(res.content){ bodyText = res.content; }
-                    var $card = $('<div class="message-card"></div>');
-                    var $author = $('<div class="message-author"></div>').text(displayUser + ' さん');
-                    var $body = $('<div class="message-body"></div>').text(bodyText);
-                    $card.append($author).append($body);
-                    if(res.posted_time){
-                        var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(res.posted_time);
-                        $card.append($time);
+        if(!alreadyBound){
+            $form.on('submit', function(e){
+                e.preventDefault();
+                var text = ($input.val()||'').trim();
+                if(!text){ return; }
+                var user = $board.data('user-name') || 'ユーザー';
+                // まずサーバーへ保存要求 (DB挿入) → 成功時UI反映
+                var postData = { content: text };
+                try{
+                    // 優先して externalized_contents_id を送る（サーバ側 discussion_history.knowledge_fragment_id に格納される）
+                    if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
+                        postData.knowledge_fragment_id = window.activeExternalizedId;
+                    } else if (window.activeKnowledgeFragmentId) {
+                        postData.knowledge_fragment_id = window.activeKnowledgeFragmentId;
                     }
-                    $list.append($card);
-                    try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){ }
-                    $input.val('').focus();
-                    console.log('discussion_history 保存OK', res);
-                } else {
-                    console.warn('discussion_history 保存失敗', res);
-                    // 失敗時も暫定的に表示するか選択可。ここでは失敗なら表示しない。
-                    if(window.alert){ alert('投稿の保存に失敗しました。'); }
-                }
-            }).fail(function(xhr,st,err){
-                console.error('discussion_history 保存通信失敗', st, err, xhr && xhr.responseText);
-                if(window.alert){ alert('通信エラーにより投稿できませんでした。'); }
+                }catch(_){ }
+                $.ajax({
+                    url: 'php/save_discussion_history.php',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: postData
+                }).done(function(res){
+                    if(res && res.status === 'ok'){
+                        var displayUser = (res.user_name && res.user_name.length) ? res.user_name : ($board.data('user-name') || 'ユーザー');
+                        var bodyText = text; // DB反映された（切り詰め済みの場合は res.content を使用）
+                        if(res.content){ bodyText = res.content; }
+                        try{
+                            if(res.discussion_history_id && $list.find('[data-discussion-id="'+res.discussion_history_id+'"]').length){
+                                // already present (race), skip appending
+                                $input.val('').focus();
+                                return;
+                            }
+                        }catch(_){ }
+                        var $card = $('<div class="message-card"></div>').attr('data-discussion-id', res.discussion_history_id || '');
+                        var $author = $('<div class="message-author"></div>').text(displayUser + ' さん');
+                        var $body = $('<div class="message-body"></div>').text(bodyText);
+                        $card.append($author).append($body);
+                        if(res.posted_time){
+                            var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(res.posted_time);
+                            $card.append($time);
+                        }
+                        $list.append($card);
+                        try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){ }
+                        $input.val('').focus();
+                        console.log('discussion_history 保存OK', res);
+                    } else {
+                        console.warn('discussion_history 保存失敗', res);
+                        // 失敗時も暫定的に表示するか選択可。ここでは失敗なら表示しない。
+                        if(window.alert){ alert('投稿の保存に失敗しました。'); }
+                    }
+                }).fail(function(xhr,st,err){
+                    console.error('discussion_history 保存通信失敗', st, err, xhr && xhr.responseText);
+                    if(window.alert){ alert('通信エラーにより投稿できませんでした。'); }
+                });
             });
-        });
+            // mark as bound to avoid duplicate binding later
+            $form.data('bound', true);
+        }
         // if a fragment is already active, load its history
         try{ if(window.activeKnowledgeFragmentId){ fetchDiscussionHistory(window.activeKnowledgeFragmentId); } }catch(_){ }
     }catch(ex){ try{ console.warn('initializeDiscussionBoard error', ex); }catch(_){}}
