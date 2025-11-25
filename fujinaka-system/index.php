@@ -197,6 +197,9 @@ $ai_output = '';
               <button class="button4" onclick="Unreflected_node();">
                 未反映ノード
               </button>
+              <button class="button4" onclick="window.finalizeScenarioAndShowAI();">
+                論文シナリオ構成終了
+              </button>
               <!-- <button class="button4" onclick="recommend_xmlLoad();">
                 test
               </button> -->
@@ -332,7 +335,7 @@ $ai_output = '';
               <div id="preview_area"></div>
 
               <!-- 追加: 出力領域（折りたたみ対応） -->
-              <div id="ai_output_panel" style="margin:14px 0; padding:12px; border:1px solid #ddd; border-radius:8px; background:#fff;">
+              <div id="ai_output_panel" style="display:none; margin:14px 0; padding:12px; border:1px solid #ddd; border-radius:8px; background:#fff;">
                 <div id="ai_output_header"
                      style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; user-select:none;"
                      onclick="toggleAiPanel()"
@@ -575,6 +578,8 @@ function toggleAiPanel() {
     }
   } catch(e) {}
 })();
-        </script>
+
+// 旧 finalizeScenarioAndShowAI は削除（run_ai.js の実装を使用）
+</script>
       </body>
 </html>

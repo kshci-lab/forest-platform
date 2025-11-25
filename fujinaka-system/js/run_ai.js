@@ -116,6 +116,41 @@ function runAi() {
   .finally(() => { btn.disabled = false; btn.textContent = org; });
 }
 
+// 追加/更新: 「論文シナリオ構成終了」押下時にAIパネルを表示して実行
+function finalizeScenarioAndShowAI() {
+  try {
+    var panel  = document.getElementById('ai_output_panel');
+    var body   = document.getElementById('ai_output_body');
+    var icon   = document.getElementById('ai_toggle_icon');
+    var header = document.getElementById('ai_output_header');
+
+    if (panel) {
+      // パネル自体を表示
+      if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+      }
+    }
+    if (panel && body && icon && header) {
+      // 本文を開く
+      var isClosed = (body.style.display === 'none' || body.style.display === '');
+      if (isClosed) {
+        body.style.display = 'block';
+        icon.textContent = '▼';
+        header.setAttribute('aria-expanded', 'true');
+      }
+      // パネルへスクロール
+      try { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+    }
+  } catch (e) {
+    // noop
+  }
+  // 必ずAI実行
+  runAi();
+}
+
+// グローバルへ公開（ボタンから呼べるように）
+window.finalizeScenarioAndShowAI = finalizeScenarioAndShowAI;
+
 open_empty();
 getData();
 rebuild_version_area();
