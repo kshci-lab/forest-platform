@@ -3383,8 +3383,9 @@
 
             // logic_networkのノードラベルを取得・整理
             let cleanLabel = nodeData.label || "新しいノード";
-            if (typeof cleanLabel === 'string' && cleanLabel.includes('\n')) {
-                cleanLabel = cleanLabel.split('\n')[0]; // 改行がある場合は最初の行のみ使用
+            // 改行や連続空白を1つの空白に正規化し、1行化する
+            if (typeof cleanLabel === 'string') {
+              cleanLabel = cleanLabel.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
             }
             
             // 選択されたjsMindノードの内容を更新
