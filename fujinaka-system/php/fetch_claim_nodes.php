@@ -19,13 +19,13 @@ try {
     }
     $sheet_id = $_SESSION['SHEETID'];
 
-    // 1) 主張ノードに紐づくconcept_idを取得（JOINキー修正: ln.logic_node_id）
-    $sqlClaim = "
-        SELECT DISTINCT n.concept_id
+    // 1) 主張ノードに紐づくconcept_idを取得（対象ユーザ＆シート）
+    $sqlClaim = "SELECT DISTINCT n.concept_id
         FROM logic_triangle t
         INNER JOIN logic_node ln ON ln.logic_node_id = t.claim_id
         INNER JOIN nodes n       ON n.id = ln.f_node_id
         WHERE t.sheet_id = ?
+          AND n.user_id = ?
           AND ln.f_node_id IS NOT NULL
           AND n.concept_id IS NOT NULL
           AND n.concept_id <> ''
@@ -34,7 +34,7 @@ try {
     if (!$stmt) {
         throw new Exception('SQLプリペア失敗(sqlClaim): ' . $mysqli->error);
     }
-    $stmt->bind_param("s", $sheet_id);
+    $stmt->bind_param("ss", $sheet_id, $user_id);
     $stmt->execute();
     $res = $stmt->get_result();
     $claimConceptIds = [];
@@ -43,11 +43,11 @@ try {
     }
     $stmt->close();
 
-    // 2) 思考整理マップのconcept_idを取得（toiを除外）
-    $sqlMap = "
-        SELECT DISTINCT concept_id
+    // 2) 思考整理マップのconcept_idを取得（toiを除外、対象ユーザ＆シート）
+    $sqlMap = "SELECT DISTINCT concept_id
         FROM nodes
         WHERE sheet_id = ?
+          AND user_id = ?
           AND concept_id IS NOT NULL
           AND concept_id <> ''
           AND type <> 'toi'
@@ -56,7 +56,7 @@ try {
     if (!$stmt2) {
         throw new Exception('SQLプリペア失敗(sqlMap): ' . $mysqli->error);
     }
-    $stmt2->bind_param("s", $sheet_id);
+    $stmt2->bind_param("ss", $sheet_id, $user_id);
     $stmt2->execute();
     $res2 = $stmt2->get_result();
     $mapConceptIds = [];
@@ -65,11 +65,11 @@ try {
     }
     $stmt2->close();
 
-    // 2.5) concept_id => contents[] のマップを作成（toiを除外）
-    $sqlAllContents = "
-        SELECT concept_id, content
+    // 2.5) concept_id => contents[] のマップを作成（toiを除外、対象ユーザ＆シート）
+    $sqlAllContents = "SELECT concept_id, content
         FROM nodes
         WHERE sheet_id = ?
+          AND user_id = ?
           AND concept_id IS NOT NULL
           AND concept_id <> ''
           AND type <> 'toi'
@@ -78,7 +78,7 @@ try {
     if (!$stmtC) {
         throw new Exception('SQLプリペア失敗(sqlAllContents): ' . $mysqli->error);
     }
-    $stmtC->bind_param("s", $sheet_id);
+    $stmtC->bind_param("ss", $sheet_id, $user_id);
     $stmtC->execute();
     $resC = $stmtC->get_result();
     $conceptIdToContents = [];
