@@ -43,13 +43,14 @@ try {
     }
     $stmt->close();
 
-    // 2) 思考整理マップのconcept_idを取得
+    // 2) 思考整理マップのconcept_idを取得（toiを除外）
     $sqlMap = "
         SELECT DISTINCT concept_id
         FROM nodes
         WHERE sheet_id = ?
           AND concept_id IS NOT NULL
           AND concept_id <> ''
+          AND type <> 'toi'
     ";
     $stmt2 = $mysqli->prepare($sqlMap);
     if (!$stmt2) {
@@ -64,13 +65,14 @@ try {
     }
     $stmt2->close();
 
-    // 2.5) concept_id => contents[] のマップを作成（nodes 全体から抽出）
+    // 2.5) concept_id => contents[] のマップを作成（toiを除外）
     $sqlAllContents = "
         SELECT concept_id, content
         FROM nodes
         WHERE sheet_id = ?
           AND concept_id IS NOT NULL
           AND concept_id <> ''
+          AND type <> 'toi'
     ";
     $stmtC = $mysqli->prepare($sqlAllContents);
     if (!$stmtC) {

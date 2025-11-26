@@ -363,6 +363,12 @@ $ai_output = '';
                   </div>
                 </div>
               </div>
+
+              <!-- 追加: 助言表示エリア -->
+              <div id="advice_panel" style="display:none; margin:14px 0; padding:12px; border:1px solid #ddd; border-radius:8px; background:#fff;">
+                <div style="font-weight:bold; margin-bottom:6px;">助言</div>
+                <div id="advice_output" style="white-space:pre-wrap; line-height:1.6; font-size:0.95em; min-height:2em; color:#333;"></div>
+              </div>
             </div>
             <div id="elab_jsmind_container" style="display:none;" oncontextmenu="return false;" ></div>
             <div id="elab_map_conmenu" class="elab_conmenu">
@@ -566,32 +572,32 @@ $ai_output = '';
         <!-- 追加: 主張ノード取得スクリプト（ES Moduleとして読み込み） -->
         <script type="module" src="js/ont_claim.js"></script>
         <script>
-// 折りたたみトグル（デフォルト閉じ）
-function toggleAiPanel() {
-  var body = document.getElementById('ai_output_body');
-  var icon = document.getElementById('ai_toggle_icon');
-  var header = document.getElementById('ai_output_header');
-  if (!body || !icon || !header) return;
-  var isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  icon.textContent = isOpen ? '▶' : '▼';
-  header.setAttribute('aria-expanded', String(!isOpen));
-}
-// 念のため初期化（閉じ）
-(function initAiPanel(){
-  try {
-    var body = document.getElementById('ai_output_body');
-    var icon = document.getElementById('ai_toggle_icon');
-    var header = document.getElementById('ai_output_header');
-    if (body && icon && header) {
-      body.style.display = 'none';
-      icon.textContent = '▶';
-      header.setAttribute('aria-expanded', 'false');
-    }
-  } catch(e) {}
-})();
+        // 折りたたみトグル（デフォルト閉じ）
+        function toggleAiPanel() {
+          var body = document.getElementById('ai_output_body');
+          var icon = document.getElementById('ai_toggle_icon');
+          var header = document.getElementById('ai_output_header');
+          if (!body || !icon || !header) return;
+          var isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'block';
+          icon.textContent = isOpen ? '▶' : '▼';
+          header.setAttribute('aria-expanded', String(!isOpen));
+        }
+        // 念のため初期化（閉じ）
+        (function initAiPanel(){
+          try {
+            var body = document.getElementById('ai_output_body');
+            var icon = document.getElementById('ai_toggle_icon');
+            var header = document.getElementById('ai_output_header');
+            if (body && icon && header) {
+              body.style.display = 'none';
+              icon.textContent = '▶';
+              header.setAttribute('aria-expanded', 'false');
+            }
+          } catch(e) {}
+        })();
 
-// 旧 finalizeScenarioAndShowAI は削除（run_ai.js の実装を使用）
-</script>
+        // 旧 finalizeScenarioAndShowAI は削除（run_ai.js の実装を使用）
+        </script>
       </body>
 </html>

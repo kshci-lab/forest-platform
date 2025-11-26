@@ -89,8 +89,8 @@ function renderDiffConceptLabels(containerSelector) {
 	const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	getDiffConceptLabels()
 		.done(function(res){
-			// 文言を指定形式に変更
-			const line = (p) => `ラベルとして${esc(p.label)} あなたは${esc(p.content)}と考えていますがそれを主張する必要はありませんか`;
+			// 助言1行フォーマット: 「ラベルコンテンツこれを主張する必要はないですか」
+			const line = (p) => `「${esc(p.label)}」「${esc(p.content)}」これを主張する必要はないですか`;
 			const section = (title, arr) => {
 				const items = (arr || []).map(p => `<li>${line(p)}</li>`).join('');
 				return `<h4>${esc(title)}</h4><ul>${items}</ul>`;
@@ -110,26 +110,10 @@ function renderDiffConceptLabels(containerSelector) {
 		});
 }
 
-// 追加: 差分のLABELとcontentをコンソールに出力（「LABEL, content」形式）
+// 追加: 差分の出力先を「助言エリア」に変更（ボタン押下時の挙動）
 window.logDiffConceptLabels = function() {
-	getDiffConceptLabels()
-		.done(function(res){
-			console.group('Diff Concept Labels');
-			const logGroup = (title, arr) => {
-				console.group(title);
-				(arr || []).forEach(p => {
-					console.log(`${p.label} , ${p.content}`);
-				});
-				console.groupEnd();
-			};
-			logGroup('claim - map', res.claimMinusMap);
-			logGroup('map - claim', res.mapMinusClaim);
-			logGroup('intersection', res.intersection);
-			console.groupEnd();
-		})
-		.fail(function(err){
-			console.error('差分取得エラー', err);
-		});
+	try { $('#advice_panel').show(); } catch (e) {}
+	renderDiffConceptLabels('#advice_output');
 };
 
 // 簡易利用例（必要に応じてUIに反映してください）
