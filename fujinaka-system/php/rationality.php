@@ -75,8 +75,8 @@ try {
         $stmtD = $mysqli->prepare($sqlContents);
         if (!$stmtD) throw new Exception('SQLプリペア失敗(sqlContents): ' . $mysqli->error);
 
-        // sheet_id, user_id（文字列）+ node_id群（整数）をバインド
-        $types = 'ss' . str_repeat('i', count($diffRationalityMinusLogic));
+        // 型をすべて文字列で扱う（node_idが数値でないケースに対応）
+        $types = 'ss' . str_repeat('s', count($diffRationalityMinusLogic));
         $bindValues = array_merge([$sheet_id, $user_id], $diffRationalityMinusLogic);
 
         $bindParams = [];
@@ -90,7 +90,8 @@ try {
         $resD = $stmtD->get_result();
         while ($row = $resD->fetch_assoc()) {
             $diffRationalityMinusLogicDetailed[] = [
-                'node_id' => (int)$row['node_id'],
+                // 数値化せずそのまま返す（0化防止）
+                'node_id' => $row['node_id'],
                 'content' => $row['content'] ?? ''
             ];
         }
