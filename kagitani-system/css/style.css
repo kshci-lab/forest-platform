@@ -367,8 +367,24 @@ input:checked+label::before {
 	margin-bottom: 0;
 	border:solid 5px #ccc;
 	background:#F0F0F0;
-	overflow: scroll;
+	/* スクロールを無効化（ホイールやタッチでのスクロールを防ぐ） */
+	overflow: hidden;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: auto;
 	float:left;
+}
+
+/* --- Hide duplicate jsMind containers to keep only the main one visible --- */
+/* Non-destructive: hides extra containers while preserving markup and JS that may reference them. */
+#jsmind_container2,
+#jsmind_container3,
+#jsmind_container4,
+#jsmind_container_mrn2,
+#jsmind_container_mrn3,
+#jsmind_container_mrn4,
+#jsmind_container2_wrapper,
+#jsmind_container3_wrapper {
+    display: none !important;
 }
 
 /* マインドマップ上で右クリックしたときのメニュー */

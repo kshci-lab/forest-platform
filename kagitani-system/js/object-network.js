@@ -408,6 +408,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //エッジ編集できるか切り替え
     SelectEditEdge(){
+        if (this.isViewingPastData) {
+            console.log('過去データ表示中のため、エッジ編集モードの切替は無効化されています');
+            return;
+        }
         this.edgeEditMode = !this.edgeEditMode;
         if(this.edgeEditMode){
             this.enableEditEdge();
@@ -1069,11 +1073,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //未完成　ノード追加
     addNewNode() {
+        if (this.isViewingPastData) {
+            console.log('過去データ表示中のため、新しいノードの追加は無効化されています');
+            return;
+        }
         this.addNode(this.generateUniqueNumberText(), "newNode", "step", this.latest_selected_node_info.x, this.latest_selected_node_info.y);
     }
 
     //ノードのラベル編集(完了)
     editNode(node_id, node_content) {
+        if (this.isViewingPastData) {
+            console.log('過去データ表示中のため、ノード編集は無効化されています');
+            return;
+        }
         //ノードのラベルの編集
         const node = this.nodes.get(node_id);
         if (node) { // IDに相当するノードがある場合の中身を編集
@@ -1091,6 +1103,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //エッジのラベル編集
     editEdgeLabel(edge_id, label_content) {
+        if (this.isViewingPastData) {
+            console.log('過去データ表示中のため、エッジ編集は無効化されています');
+            return;
+        }
         console.log(`エッジ ${edge_id} のラベルを "${label_content}" に編集中...`);
         
         // エッジが存在するかチェック
@@ -1178,6 +1194,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     // ノード削除(完了)
     deleteNode (){
+        if (this.isViewingPastData) {
+            console.log('過去データ表示中のため、ノード削除は無効化されています');
+            return;
+        }
         const selectNodeId = this.ownNetwork.getSelection().nodes[0];
         if(selectNodeId !== undefined){
             console.log(defaultThinkingProcess.nodes.get(selectNodeId));
@@ -2599,7 +2619,22 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         });
 
         // クリックイベント
+        // 過去表示中はクリックを無効化
+        if (this.isViewingPastData) {
+            addButton.disabled = true;
+            addButton.setAttribute('aria-disabled', 'true');
+            addButton.title = '過去表示では操作できません';
+            addButton.style.opacity = '0.45';
+            addButton.style.cursor = 'not-allowed';
+        }
+
         addButton.addEventListener('click', (e) => {
+            // 過去表示モードでは何もしない
+            if (this.isViewingPastData) {
+                e.stopPropagation();
+                console.log('過去データ表示中のため、ノード追加ボタンは無効です');
+                return;
+            }
             e.stopPropagation();
             this.addChildNode(nodeId);
             this.hideAddNodeButton();
@@ -2666,13 +2701,38 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // 今後の処理のためにエッジIDを保存
         button.setAttribute('data-edge-id', edgeId);
-        
-        // クリックイベントリスナーを追加
+
+        // 過去表示モード中は見た目を変えて無効にする
+        if (this.isViewingPastData) {
+            button.disabled = true;
+            button.setAttribute('aria-disabled', 'true');
+            button.title = '過去表示では操作できません';
+            button.style.opacity = '0.45';
+            button.style.cursor = 'not-allowed';
+        }
+
+        // クリックイベントリスナーを追加（過去表示時は無効化）
         button.addEventListener('click', (event) => {
-            event.stopPropagation(); // イベントの伝播を防止
-            this.addNodeBetweenEdge(edgeId);
+            // 過去データ表示モードでは操作を無効化
+            if (this.isViewingPastData) {
+                event.stopPropagation();
+                console.log('過去データ表示中のため、エッジ追加ボタンは無効です');
+                return;
+            }
+
+            // 通常時はエッジ間にノードを追加する処理へ
+            const targetEdgeId = button.getAttribute('data-edge-id') || edgeId;
+            if (targetEdgeId) {
+                try {
+                    this.addNodeBetweenEdge(targetEdgeId);
+                } catch (e) {
+                    console.error('エッジ間ノード追加でエラー:', e);
+                }
+            } else {
+                console.warn('data-edge-id が設定されていません');
+            }
         });
-        
+
         console.log('Edge plus button displayed for edge:', edgeId);
     }
 
@@ -3536,6 +3596,34 @@ const getPassDataFromDB = (selected_date) => {
                     if (typeof defaultThinkingProcess !== 'undefined') {
                         defaultThinkingProcess.isViewingPastData = true;
                         console.log("過去データ表示モードを有効化しました");
+                        try {
+                            // ノードをすべて固定して移動できなくする
+                            const allNodes = defaultThinkingProcess.nodes.get();
+                            if (Array.isArray(allNodes) && allNodes.length > 0) {
+                                defaultThinkingProcess.nodes.update(allNodes.map(n => ({
+                                    id: n.id,
+                                    fixed: true,
+                                    color: n.color,
+                                    shape: n.shape,
+                                    font: n.font,
+                                    size: n.size,
+                                    borderWidth: n.borderWidth,
+                                    borderWidthSelected: n.borderWidthSelected,
+                                    image: n.image,
+                                    group: n.group
+                                })));
+                            }
+                            // vis.Network のノードドラッグを無効化
+                            if (defaultThinkingProcess.ownNetwork && typeof defaultThinkingProcess.ownNetwork.setOptions === 'function') {
+                                defaultThinkingProcess.ownNetwork.setOptions({ interaction: { dragNodes: false } });
+                            }
+                            // キーボードによる削除操作も無効化
+                            if (typeof defaultThinkingProcess.removeKeyboardListeners === 'function') {
+                                defaultThinkingProcess.removeKeyboardListeners();
+                            }
+                        } catch (e) {
+                            console.error('過去表示モード切替処理でエラー:', e);
+                        }
                     }
                     
                     // 過去データ表示の視覚的フィードバック
@@ -3900,6 +3988,34 @@ const displayTriggerData = (mode, display_target_area_id) => {
                         if (typeof defaultThinkingProcess !== 'undefined') {
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました（最新データ選択）");
+                            try {
+                                // ノード固定を解除（ただしタグノードなどは固定のまま）
+                                const allNodes = defaultThinkingProcess.nodes.get();
+                                if (Array.isArray(allNodes) && allNodes.length > 0) {
+                                    defaultThinkingProcess.nodes.update(allNodes.map(n => ({
+                                        id: n.id,
+                                        fixed: n.group === 'topic-tag' ? true : false,
+                                        color: n.color,
+                                        shape: n.shape,
+                                        font: n.font,
+                                        size: n.size,
+                                        borderWidth: n.borderWidth,
+                                        borderWidthSelected: n.borderWidthSelected,
+                                        image: n.image,
+                                        group: n.group
+                                    })));
+                                }
+                                // vis.Network のノードドラッグを有効化
+                                if (defaultThinkingProcess.ownNetwork && typeof defaultThinkingProcess.ownNetwork.setOptions === 'function') {
+                                    defaultThinkingProcess.ownNetwork.setOptions({ interaction: { dragNodes: true } });
+                                }
+                                // キーボードリスナーを復元
+                                if (typeof defaultThinkingProcess.setupKeyboardListeners === 'function') {
+                                    defaultThinkingProcess.setupKeyboardListeners();
+                                }
+                            } catch (e) {
+                                console.error('過去表示解除処理でエラー:', e);
+                            }
                         }
                         
                         // 過去表示インジケーターを非表示
@@ -3935,6 +4051,34 @@ const displayTriggerData = (mode, display_target_area_id) => {
                         if (typeof defaultThinkingProcess !== 'undefined') {
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました");
+                            try {
+                                // ノード固定を解除（ただしタグノードなどは固定のまま）
+                                const allNodes = defaultThinkingProcess.nodes.get();
+                                if (Array.isArray(allNodes) && allNodes.length > 0) {
+                                    defaultThinkingProcess.nodes.update(allNodes.map(n => ({
+                                        id: n.id,
+                                        fixed: n.group === 'topic-tag' ? true : false,
+                                        color: n.color,
+                                        shape: n.shape,
+                                        font: n.font,
+                                        size: n.size,
+                                        borderWidth: n.borderWidth,
+                                        borderWidthSelected: n.borderWidthSelected,
+                                        image: n.image,
+                                        group: n.group
+                                    })));
+                                }
+                                // vis.Network のノードドラッグを有効化
+                                if (defaultThinkingProcess.ownNetwork && typeof defaultThinkingProcess.ownNetwork.setOptions === 'function') {
+                                    defaultThinkingProcess.ownNetwork.setOptions({ interaction: { dragNodes: true } });
+                                }
+                                // キーボードリスナーを復元
+                                if (typeof defaultThinkingProcess.setupKeyboardListeners === 'function') {
+                                    defaultThinkingProcess.setupKeyboardListeners();
+                                }
+                            } catch (e) {
+                                console.error('過去表示解除処理でエラー:', e);
+                            }
                         }
                         
                         // 現在表示に戻った時の視覚的フィードバック

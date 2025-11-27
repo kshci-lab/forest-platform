@@ -1647,33 +1647,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none; width: 100%; overflow: auto; box-sizing: border-box;">
-                            <!-- ノード数表示エリア -->
-                            <div id="node_count_display" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px; margin-bottom: 10px; font-weight: bold; color: #495057;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <span id="nodeCountLabel">📊 現在のノード数: </span>
-                                        <span id="current_node_count" style="color: #007bff; font-size: 16px;">0</span>
-                                        <span id="nodeCountUnit"> 個</span>
-                                    </div>
-                                    <button onclick="refreshNodeCount()" style="background: #007bff; color: white; border: none; border-radius: 3px; padding: 4px 8px; font-size: 12px; cursor: pointer;" title="ノード数を更新">
-                                        <span id="refreshNodeCountIcon">🔄</span>
-                                    </button>
-                                </div>
-                                
-                                <!-- ステータス別ノード数表示エリア -->
-                                <div id="status_stats_display" style="margin-top: 8px; font-size: 12px; border-top: 1px solid #dee2e6; padding-top: 6px;">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px;">
-                                        <div style="color: #28a745;">✅ <span id="completedLabel">完了</span>: <span id="completed_count">0</span></div>
-                                        <div style="color: #17a2b8;">🔄 <span id="inProgressLabel">実行中</span>: <span id="inProgress_count">0</span></div>
-                                        <div style="color: #ffc107;">⏸️ <span id="pausedLabel">中断</span>: <span id="paused_count">0</span></div>
-                                        <div style="color: #6c757d;">📝 <span id="notStartedLabel">未着手</span>: <span id="not_started_count">0</span></div>
-                                    </div>
-                                </div>
-                                
-                                <div id="node_count_debug" style="font-size: 10px; color: #6c757d; margin-top: 4px;">
-                               
-                                </div>
-                            </div>
                             
                             <!-- メモ機能エリア削除済み -->
                             
@@ -1700,7 +1673,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div id="weeklyGoalsList" style="margin-top:8px;"></div>
                                 </div>
                                 <!-- 中・大目標（横並び・控えめ） -->
-                                <div id="midlong_goal_area" style="display: flex; gap: 18px; justify-content: flex-start;">
+                                <!-- <div id="midlong_goal_area" style="display: flex; gap: 18px; justify-content: flex-start;">
                                     <div style="flex:1; background: #f4f4f4; border: 1.5px solid #6f42c1; border-radius: 7px; padding: 12px; min-width: 220px;">
                                         <div style="font-weight: bold; color: #6f42c1; font-size: 14px; margin-bottom: 7px;">📅 <span id="mediumGoalTitle">中目標（半年〜1年目標）</span></div>
                                         <form id="mediumGoalForm" style="display: flex; flex-direction: column; gap: 7px; margin-bottom: 7px;">
@@ -1717,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </form>
                                         <div id="largeGoalsList"></div>
                                     </div> -->
-                                </div>
+                                </div> 
                             </div>
                         </div>
                         <div id="xml_upload_area" style="display: none">
