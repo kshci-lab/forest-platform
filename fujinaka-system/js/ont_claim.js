@@ -45,8 +45,8 @@ function getDiffConceptLabels() {
 			(arrDetailed || []).forEach((item) => {
 				const cid = item.concept_id ?? item.conceptId ?? item.cid;
 				const cc = idToOutputCC[cid] || '';
+				if (!cc || cc.trim() === '') return; // 空のclass_constraintは除外
 				const contents = Array.isArray(item.contents) ? item.contents.filter(c => c !== null && c !== '') : [''];
-				if (contents.length === 0) contents.push('');
 				contents.forEach((c) => out.push({ concept_id: cid, class_constraint: cc, content: c }));
 			});
 			return out;
@@ -54,11 +54,9 @@ function getDiffConceptLabels() {
 
 		const claimMinusMap = flattenDetailed(diff.diffClaimMinusMapDetailed || []);
 		const mapMinusClaim = flattenDetailed(diff.diffMapMinusClaimDetailed || []);
-		const intersection = (diff.intersection || []).map((cid) => ({
-			concept_id: cid,
-			class_constraint: idToOutputCC[cid] || '',
-			content: ''
-		}));
+		const intersection = (diff.intersection || [])
+			.map((cid) => ({ concept_id: cid, class_constraint: idToOutputCC[cid] || '', content: '' }))
+			.filter(p => p.class_constraint && p.class_constraint.trim() !== ''); // 空は除外
 
 		return {
 			ok: true,
@@ -97,7 +95,10 @@ function renderDiffConceptLabels(containerSelector) {
 		.done(function(res){
 			const line = (p) => `「${esc(p.class_constraint)}」「${esc(p.content)}」これを主張する必要はないですか`;
 			const section = (title, arr) => {
-				const items = (arr || []).map(p => `<li>${line(p)}</li>`).join('');
+				// 念のため表示直前でも空のclass_constraintを除外
+				const items = (arr || [])
+					.filter(p => p.class_constraint && p.class_constraint.trim() !== '')
+					.map(p => `<li>${line(p)}</li>`).join('');
 				return `<h4>${esc(title)}</h4><ul>${items}</ul>`;
 			};
 			const html = [

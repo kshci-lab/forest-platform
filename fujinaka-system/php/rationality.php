@@ -16,24 +16,48 @@ try {
     }
     $sheet_id = $_SESSION['SHEETID'];
 
-    // 1) rationality_nodes から node_id を取得（対象ユーザ＆シート）
-    $sqlR = "SELECT DISTINCT rn.node_id
+    // 1) rationality_nodes を rationality_id ごとに取得し、2つの node_id をペア化
+    $sqlR = "SELECT rn.rationality_id, rn.node_id
         FROM rationality_nodes rn
         INNER JOIN nodes n ON n.id = rn.node_id
         WHERE n.sheet_id = ?
           AND n.user_id = ?
           AND rn.node_id IS NOT NULL
+          AND rn.rationality_id IS NOT NULL
     ";
     $stmtR = $mysqli->prepare($sqlR);
     if (!$stmtR) throw new Exception('SQLプリペア失敗(sqlR): ' . $mysqli->error);
     $stmtR->bind_param("ss", $sheet_id, $user_id);
     $stmtR->execute();
     $resR = $stmtR->get_result();
-    $rationalityNodeIds = [];
-    while ($row = $resR->fetch_row()) {
-        $rationalityNodeIds[] = $row[0];
+
+    // rationality_id => [node_id, node_id]
+    $pairsByRid = [];
+    while ($row = $resR->fetch_assoc()) {
+        $rid = (string)$row['rationality_id'];
+        $nid = $row['node_id'];
+        if (!$nid) continue;
+        if (!isset($pairsByRid[$rid])) $pairsByRid[$rid] = [];
+        // 重複防止
+        if (!in_array($nid, $pairsByRid[$rid], true)) {
+            $pairsByRid[$rid][] = $nid;
+        }
     }
     $stmtR->close();
+
+    // 2件ペアに整形（余剰があっても先頭2件に丸める）
+    $rationalityPairs = [];
+    $rationalityNodeIds = [];
+    foreach ($pairsByRid as $rid => $nodes) {
+        if (count($nodes) < 2) continue; // 2つ揃っていないものは除外
+        $pair = array_slice($nodes, 0, 2);
+        $rationalityPairs[] = [
+            'rationality_id' => $rid,
+            'node_ids' => $pair,
+        ];
+        // 既存処理用に node_id 集合も作成
+        $rationalityNodeIds = array_merge($rationalityNodeIds, $pair);
+    }
 
     // 2) logic_node から f_node_id を取得（対象ユーザ＆シート）
     $sqlL = "SELECT DISTINCT ln.f_node_id
@@ -62,7 +86,59 @@ try {
     $diffLogicMinusRationality = array_values(array_diff($lSet, $rSet));
     $intersection = array_values(array_intersect($rSet, $lSet));
 
-    // 3.5) 差分（rationality - logic）のnode_idに紐づくcontentを取得（rationality_nodesにあるnode_idを参照し、nodesからcontentを取得）
+    // 3.1) ペア×logic のクロス分類
+    // 片方のみlogicにある / 両方ない / 両方ある
+    $logicSet = [];
+    foreach ($lSet as $id) {
+        $logicSet[(string)$id] = true;
+    }
+
+    $pairStatus = [
+        'oneInLogic'   => [], // 片方のみlogicにある
+        'noneInLogic'  => [], // 両方logicにない
+        'bothInLogic'  => [], // 両方logicにある
+    ];
+    foreach ($rationalityPairs as $pair) {
+        $nidA = (string)$pair['node_ids'][0];
+        $nidB = (string)$pair['node_ids'][1];
+        $inA  = isset($logicSet[$nidA]);
+        $inB  = isset($logicSet[$nidB]);
+
+        $entry = [
+            'rationality_id' => $pair['rationality_id'],
+            'node_ids'       => [$nidA, $nidB],
+            'in_logic'       => [$inA, $inB],
+        ];
+
+        if ($inA && $inB) {
+            $pairStatus['bothInLogic'][] = $entry;
+        } elseif ($inA || $inB) {
+            $pairStatus['oneInLogic'][] = $entry;
+        } else {
+            $pairStatus['noneInLogic'][] = $entry;
+        }
+    }
+
+    // oneInLogic の各要素について、logictriangle から役割/カラムを全件取得して付与
+    if (!empty($pairStatus['oneInLogic'])) {
+        foreach ($pairStatus['oneInLogic'] as &$e) {
+            $nidA = (string)$e['node_ids'][0];
+            $nidB = (string)$e['node_ids'][1];
+            $inA  = isset($logicSet[$nidA]);
+            $presentIndex = $inA ? 0 : 1;
+            $presentNodeId = $e['node_ids'][$presentIndex];
+
+            $matches = findLogicTriangleRoles($mysqli, $presentNodeId);
+            $e['logicDetail'] = [
+                'presentIndex' => $presentIndex, // 0 or 1
+                'node_id'      => $presentNodeId,
+                'matches'      => $matches,      // [{ role: 'claim'|'fact'|'reason', column: 'claim_id'|'fact_id'|'reason_id' }, ...]
+            ];
+        }
+        unset($e);
+    }
+
+    // 3.5) 差分（rationality - logic）のnode_idに紐づくcontentを取得
     $diffRationalityMinusLogicDetailed = [];
     if (!empty($diffRationalityMinusLogic)) {
         $placeholders = implode(',', array_fill(0, count($diffRationalityMinusLogic), '?'));
@@ -101,12 +177,13 @@ try {
     echo json_encode([
         'ok' => true,
         'sheetId' => $sheet_id,
+        'rationalityPairs' => $rationalityPairs,
+        'pairStatus' => $pairStatus,
         'rationalityNodeIds' => $rSet,
         'logicNodeFIds' => $lSet,
         'diffRationalityMinusLogic' => $diffRationalityMinusLogic,
         'diffLogicMinusRationality' => $diffLogicMinusRationality,
         'intersection' => $intersection,
-        // 追加: 差分のnode_idに対応するcontent
         'diffRationalityMinusLogicDetailed' => $diffRationalityMinusLogicDetailed,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
@@ -116,4 +193,33 @@ try {
         'ok' => false,
         'error' => $e->getMessage(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * logictriangle を nodeId で照会し、該当する全行分の役割/カラムを返す
+ * 返り値: [ { role: 'claim'|'fact'|'reason', column: 'claim_id'|'fact_id'|'reason_id' }, ... ]
+ */
+function findLogicTriangleRoles(mysqli $mysqli, string $nodeId): array {
+    $out = [];
+    $targets = [
+        ['role' => 'claim',  'col' => 'claim_id'],
+        ['role' => 'fact',   'col' => 'fact_id'],
+        ['role' => 'reason', 'col' => 'reason_id'],
+    ];
+    foreach ($targets as $t) {
+        $sql = "SELECT {$t['col']} FROM logictriangle WHERE {$t['col']} = ?";
+        $stmt = $mysqli->prepare($sql);
+        if (!$stmt) continue;
+        $stmt->bind_param("s", $nodeId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res) {
+            // 同一 node_id が複数行に該当する場合、行数分追加
+            while ($res->fetch_row()) {
+                $out[] = ['role' => $t['role'], 'column' => $t['col']];
+            }
+        }
+        $stmt->close();
+    }
+    return $out;
 }
