@@ -19,19 +19,16 @@ function recommend_xmlLoad(){
 	renderDiffConceptLabels('#testxml');
 }
 
-// 差分とXMLラベルをマージして取得するPromise
+// hozo.xml の role="出力" の class_constraint を差分に付与して返す
 function getDiffConceptLabels() {
-	// 1) PHPから差分を取得
+	// 差分とXMLの取得
 	const diffReq = $.getJSON('php/fetch_claim_nodes.php');
-	// 2) XMLを取得
-	const xmlReq = $.ajax({ url: 'js/hozo.xml', type: 'get', dataType: 'xml', timeout: 2000 });
+	const xmlReq = $.ajax({ url: 'js/hozo.xml', type: 'get', dataType: 'xml', timeout: 4000 });
 
 	return $.when(diffReq, xmlReq).then(function (diffResp, xmlResp) {
-		// jQueryの$.whenは [data, status, jqXHR] で渡す
 		const diff = diffResp && diffResp[0] ? diffResp[0] : diffResp;
 		const xml = xmlResp && xmlResp[0] ? xmlResp[0] : xmlResp;
 
-		// 安全チェック
 		if (!diff || diff.ok !== true) {
 			return $.Deferred().reject({ message: '差分の取得に失敗しました', detail: diff }).promise();
 		}
@@ -39,49 +36,58 @@ function getDiffConceptLabels() {
 			return $.Deferred().reject({ message: 'XMLの取得に失敗しました' }).promise();
 		}
 
-		// 3) XMLから id -> LABEL のマップを作成
-		const idToLabel = {};
-		$(xml).find('CONCEPT').each(function () {
-			const id = $(this).attr('id');
-			const label = $(this).children('LABEL').first().text();
-			if (id) idToLabel[id] = label || '';
-		});
+		// id -> (直下SLOTS 内 role="出力" の) class_constraint
+		const idToOutputCC = buildIdToOutputCC(xml);
 
-		// 4) 詳細差分（contents付き）を content単位に展開（1コンテンツ=1レコード）
+		// 詳細差分を content 単位に展開し、class_constraint を付与
 		const flattenDetailed = (arrDetailed) => {
 			const out = [];
 			(arrDetailed || []).forEach((item) => {
 				const cid = item.concept_id ?? item.conceptId ?? item.cid;
-				const label = idToLabel[cid] || '';
-				if (!label) return;
-				const contents = Array.isArray(item.contents) ? item.contents.filter(c => c !== null && c !== '') : [];
-				if (contents.length === 0) {
-					// contentが無い場合は空文字で1件にするか、必要なければスキップ
-					out.push({ concept_id: cid, label, content: '' });
-				} else {
-					contents.forEach((c) => out.push({ concept_id: cid, label, content: c }));
-				}
+				const cc = idToOutputCC[cid] || '';
+				const contents = Array.isArray(item.contents) ? item.contents.filter(c => c !== null && c !== '') : [''];
+				if (contents.length === 0) contents.push('');
+				contents.forEach((c) => out.push({ concept_id: cid, class_constraint: cc, content: c }));
 			});
 			return out;
 		};
 
 		const claimMinusMap = flattenDetailed(diff.diffClaimMinusMapDetailed || []);
 		const mapMinusClaim = flattenDetailed(diff.diffMapMinusClaimDetailed || []);
-		// intersectionはcontentsが無い可能性あり → 空contentで展開
-		const intersection = (diff.intersection || [])
-			.map((cid) => ({ concept_id: cid, label: idToLabel[cid] || '', content: '' }))
-			.filter((p) => p.label !== '');
+		const intersection = (diff.intersection || []).map((cid) => ({
+			concept_id: cid,
+			class_constraint: idToOutputCC[cid] || '',
+			content: ''
+		}));
 
-		const result = {
+		return {
 			ok: true,
 			sheetId: diff.sheetId,
 			claimMinusMap,
 			mapMinusClaim,
 			intersection
 		};
-
-		return result;
 	});
+}
+
+// id -> (直下SLOTS 内 role="出力" の) class_constraint を作成
+function buildIdToOutputCC(xml) {
+	const map = {};
+	$(xml).find('CONCEPT').each(function () {
+		const id = $(this).attr('id');
+		if (!id) return;
+		let cc = '';
+		const $slots = $(this).children('SLOTS').children('SLOT');
+		$slots.each(function () {
+			const role = ($(this).attr('role') || '').trim();
+			if (role === '出力') {
+				const v = ($(this).attr('class_constraint') || '').trim();
+				if (v) { cc = v; return false; } // 最初の出力SLOTを採用
+			}
+		});
+		map[id] = cc;
+	});
+	return map;
 }
 
 // 追加: 差分結果を指定要素に描画（指定形式で表示）
@@ -89,8 +95,7 @@ function renderDiffConceptLabels(containerSelector) {
 	const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	getDiffConceptLabels()
 		.done(function(res){
-			// 助言1行フォーマット: 「ラベルコンテンツこれを主張する必要はないですか」
-			const line = (p) => `「${esc(p.label)}」「${esc(p.content)}」これを主張する必要はないですか`;
+			const line = (p) => `「${esc(p.class_constraint)}」「${esc(p.content)}」これを主張する必要はないですか`;
 			const section = (title, arr) => {
 				const items = (arr || []).map(p => `<li>${line(p)}</li>`).join('');
 				return `<h4>${esc(title)}</h4><ul>${items}</ul>`;
