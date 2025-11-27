@@ -680,6 +680,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 'weeklyGoalStartLabel': '開始日',
                 'weeklyGoalEndLabel': '終了日',
                 'addWeeklyGoalBtnText': '追加',
+                'exportWeeklyGoalBtnText': 'レポート出力',
+                'editWeeklyGoalBtnText': '編集',
+                'deleteWeeklyGoalBtnText': '削除',
             },
             en: {
                 'processMenuTitle': 'Node Actions',
@@ -700,8 +703,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'showQuestionsBtnText': 'Inquiry List',
                 'inquiryAreaTitle': '[Information Expression]',
                 'editWeeklyGoalBtnText': '編集',
-                'exportWeeklyGoalBtnText': 'レポート出力',
-                'deleteWeeklyGoalBtnText': '削除',
                 'mediumGoalTitle': 'Medium Goal (6 months - 1 year)',
                 'addMediumGoalBtnText': 'Add',
                 'mediumGoalTextPlaceholder': 'Enter medium goal',
@@ -739,7 +740,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'navigatorGreetingHeader': 'Hello!',
                 'navigatorGreetingSub': 'Welcome to the Goal Hierarchy Map',
                 'weeklyGoalTitle': 'Weekly Goal',
-                'weeklyGoalTooltip': '   --Goal for the next week',
                 'weeklyGoalStartLabel': 'Start Date',
                 'weeklyGoalEndLabel': 'End Date',
                 'addWeeklyGoalBtnText': 'Add',
@@ -1687,7 +1687,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 <!-- 小目標（大きく・使いやすく） -->
                                 <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
-                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 <span id="weeklyGoalTitle">小目標</span><span class="goal-tooltip-text" id="weeklyGoalTooltip">次のMTの１週間の目標</span></div>
+                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 <span id="weeklyGoalTitle">小目標</span>
                                     <form id="weeklyGoalForm" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
                                         <div style="display: flex; flex-direction: column; gap: 8px;">
                                             <label for="weeklyGoalStart" style="font-size: 15px; color: #28a745;"><span id="weeklyGoalStartLabel">開始日</span></label>

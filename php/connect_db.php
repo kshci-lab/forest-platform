@@ -1,7 +1,7 @@
 <?php
 
 	
-	// $db_host = "10.240.187.201";  // DBサーバのurl
+	// $db_host = "10.240.187.*";  // DBサーバのurl
 	// $db_port = 8889;  // ポート番号
 	// $db_user = "root";
 	// $db_password = "your_password";

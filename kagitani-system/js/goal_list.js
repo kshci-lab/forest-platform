@@ -182,7 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var nodeHtml = '';
             if (goal.contents && goal.contents.length) {
                 nodeHtml = goal.contents.map(function(content, cidx) {
-                    return '<div class="jmnode" style="' + jmnodeStyle + '">' +
+                    // data 属性を付与して後でイベントバインドしやすくする
+                    return '<div class="jmnode" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" style="' + jmnodeStyle + '">' +
                         '<span>' + content + '</span>' +
                         '<button onclick="deleteGoalNode(' + idx + ',' + cidx + ')" class="goal-delete-btn" title="削除">' +
                         '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>' +
@@ -211,6 +212,160 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '</div>';
         });
         weeklyListDiv.innerHTML = html;
+        // 生成された .jmnode 要素にクリックリスナを登録（削除ボタンのクリックは除外）
+        try {
+            var jmnodes = weeklyListDiv.querySelectorAll('.jmnode');
+            jmnodes.forEach(function(el) {
+                // remove existing listener if any (defensive)
+                el.removeEventListener('click', el._goalClickHandler);
+                var handler = function(e) {
+                    // 削除ボタンがクリックされた場合は無視
+                    if (e.target.closest('.goal-delete-btn')) return;
+                    var gidx = el.getAttribute('data-goal-idx');
+                    var cidx = el.getAttribute('data-content-idx');
+                    var text = (el.querySelector('span') ? el.querySelector('span').textContent.trim() : '');
+
+                    // mindmap の jmnode 要素から nodeid を探すヘルパ
+                    function findMindmapNodeIdByText(targetText) {
+                        if (!targetText) return null;
+                        try {
+                            var jmnodes = document.getElementsByTagName('jmnode');
+                            var normTarget = targetText.replace(/\s+/g, ' ').trim().toLowerCase();
+                            for (var i = 0; i < jmnodes.length; i++) {
+                                var node = jmnodes[i];
+                                var nodeText = (node.textContent || node.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                                if (!nodeText) continue;
+                                // 完全一致を優先、その後に包含チェックを行う
+                                if (nodeText === normTarget || nodeText.indexOf(normTarget) !== -1 || normTarget.indexOf(nodeText) !== -1) {
+                                    var nid = node.getAttribute('nodeid') || node.getAttribute('id') || null;
+                                    if (nid) return nid;
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('findMindmapNodeIdByText failed', err);
+                        }
+                        return null;
+                    }
+
+                    var nodeId = findMindmapNodeIdByText(text);
+                    console.log('クリックした', { goalIndex: gidx, contentIndex: cidx, text: text, nodeId: nodeId });
+
+                    // 優先: マインドマップ上で対応するノードを選択して、
+                    // そのノードのアイコン（.node-icon-wrapper）をプログラム的にクリックする。
+                    // アイコンが見つからない場合は既存のフォールバック処理を実行。
+                    (function openProcessMapForNode(nodeId) {
+                        // 保存用（process map 側で参照できるように）
+                        try {
+                            if (nodeId) sessionStorage.setItem('processMap_targetNodeId', nodeId);
+                            sessionStorage.setItem('processMap_targetText', text);
+                        } catch (err) {
+                            window.processMap_targetNodeId = nodeId;
+                            window.processMap_targetText = text;
+                        }
+
+                        // 1) jsMind の選択を明示的にセット
+                        try {
+                            if (typeof _jm !== 'undefined' && _jm && typeof _jm.select_node === 'function' && nodeId) {
+                                try {
+                                    _jm.select_node(nodeId);
+                                } catch (selErr) {
+                                    console.warn('select_node failed', selErr);
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('select_node check failed', err);
+                        }
+
+                        // 2) 対応する jmnode 要素を探してアイコンクリックを発火
+                        try {
+                            if (nodeId) {
+                                var jmElem = document.querySelector('jmnode[nodeid="' + nodeId + '"]');
+                                if (!jmElem) {
+                                    // 試しに id 属性でも検索
+                                    jmElem = document.querySelector('jmnode[id="' + nodeId + '"]');
+                                }
+                                if (jmElem) {
+                                    var iconWrapper = jmElem.querySelector('.node-icon-wrapper');
+                                    if (iconWrapper) {
+                                        // dispatch a real click event
+                                        try {
+                                            iconWrapper.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                                            return; // 成功したらここで終わり
+                                        } catch (evErr) {
+                                            try { iconWrapper.click(); return; } catch(e){/* fallthrough */}
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('icon wrapper click failed', err);
+                        }
+
+                        // フォールバック: アイコンが無ければ既存の処理（ナビ挨拶＋マップ表示）を実行
+                        try {
+                            if (typeof showNavigatorGreeting === 'function') {
+                                try { showNavigatorGreeting(); } catch(e){ console.warn('showNavigatorGreeting error', e); }
+                            }
+                        } catch(e){/* ignore */}
+
+                        try {
+                            if (typeof showThinkingProcessMap === 'function') {
+                                showThinkingProcessMap();
+                            } else {
+                                console.warn('showThinkingProcessMap 関数が見つかりません');
+                            }
+                        } catch (err) {
+                            console.error('showThinkingProcessMap 呼出しエラー', err);
+                        }
+                    })(nodeId);
+                };
+                el._goalClickHandler = handler;
+                el.addEventListener('click', handler);
+            });
+        } catch (e) {
+            console.error('jmnode click bind error', e);
+        }
+        // 表示済みのボタンラベルを現在の言語に合わせて更新（setLanguageが先に実行されている/されていない場合に備える）
+        try {
+            var currentLang = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked) ? 'en' : 'ja';
+            var dict = (window.langDict && window.langDict[currentLang]) ? window.langDict[currentLang] : null;
+            // 編集ボタン
+            var editBtnsText = weeklyListDiv.querySelectorAll('[id^="editWeeklyGoalBtnText"]');
+            editBtnsText.forEach(function(el) {
+                if (dict && typeof dict['editWeeklyGoalBtnText'] !== 'undefined') {
+                    el.textContent = dict['editWeeklyGoalBtnText'];
+                } else if (dict && typeof dict['edit'] !== 'undefined') {
+                    el.textContent = dict['edit'];
+                } else {
+                    el.textContent = t('edit');
+                }
+            });
+            // レポート出力ボタン
+            var exportBtnsText = weeklyListDiv.querySelectorAll('[id^="exportWeeklyGoalBtnText"]');
+            exportBtnsText.forEach(function(el) {
+                if (dict && typeof dict['exportWeeklyGoalBtnText'] !== 'undefined') {
+                    el.textContent = dict['exportWeeklyGoalBtnText'];
+                } else if (dict && typeof dict['exportReport'] !== 'undefined') {
+                    el.textContent = dict['exportReport'];
+                } else {
+                    el.textContent = t('exportReport');
+                }
+            });
+            // 削除ボタン
+            var deleteBtnsText = weeklyListDiv.querySelectorAll('[id^="deleteWeeklyGoalBtnText"]');
+            deleteBtnsText.forEach(function(el) {
+                if (dict && typeof dict['deleteWeeklyGoalBtnText'] !== 'undefined') {
+                    el.textContent = dict['deleteWeeklyGoalBtnText'];
+                } else if (dict && typeof dict['delete'] !== 'undefined') {
+                    el.textContent = dict['delete'];
+                } else {
+                    el.textContent = t('delete');
+                }
+            });
+        } catch (e) {
+            // ignore.localization errors
+            console.error('update weekly button texts error', e);
+        }
         // 編集ボタンのイベントリスナー追加（innerHTML後に）
         var editBtns = weeklyListDiv.querySelectorAll('.edit-weekly-date-btn');
         editBtns.forEach(function(btn) {

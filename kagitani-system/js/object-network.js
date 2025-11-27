@@ -714,11 +714,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         if (purpose && purpose.trim() !== '') {
             tooltip += '\n\n理由: ' + purpose;
         }
-        if (action_reason || completion_reason || challenges_learnings) {
+            if (action_reason || completion_reason || challenges_learnings) {
             tooltip += '\n\n内省情報:';
-            tooltip += '\nAction Intention: ' + (action_reason || '未記入');
-            tooltip += '\nCompletion Criteria: ' + (completion_reason || '未記入');
-            tooltip += '\nLearnings: ' + (challenges_learnings || '未記入');
+            tooltip += '\n行動意図: ' + (action_reason || '未記入');
+            tooltip += '\n完了基準: ' + (completion_reason || '未記入');
+            tooltip += '\n学び: ' + (challenges_learnings || '未記入');
         }
 
         // ノード作成
@@ -806,7 +806,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             setTimeout(() => {
                 const nodeBoundingBox = defaultThinkingProcess.ownNetwork.getBoundingBox(`${node_id}`);
                 const reflectionTagId = `reflection-tag-${node_id}`;
-                const reflectionTitle = `Action Intention: ${action_reason || "未記入"}\nCompletion Criteria: ${completion_reason || "未記入"}\nLearnings: ${challenges_learnings || "未記入"}`;
+                const reflectionTitle = `行動評価: ${action_reason || "未記入"}\n原因分析: ${completion_reason || "未記入"}\n学び: ${challenges_learnings || "未記入"}`;
                 const reflectionTag = {
                     id: reflectionTagId,
                     label: '💭',
@@ -2308,20 +2308,20 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         tooltip.innerHTML = `
         <div style="border: 2px solid #888; border-radius: 8px; background: white; box-shadow: 2px 2px 8px rgba(0,0,0,0.3);">
     <div id="feedbackTooltipHeader" style="cursor: move; background: #ccc; padding: 5px; border-bottom: 1px solid #888;">
-        <strong>【Reflection Note】</strong>
+        <strong>【内省メモ】</strong>
     </div>
     <div style="padding: 10px;">
         <form id="formFeedbackInput">
-            <label for="actionReason">Evaluation: What went well and what did not go well in this activity?</label><br>
-            <textarea id="actionReason" name="actionReason" rows="3" placeholder="e.g., The literature review was thorough, but it took longer than expected. Some sources were difficult to access." style="width: 100%;"></textarea><br><br>
+            <label for="actionReason">評価：この活動でうまくいった点、うまくいかなかった点は何ですか？</label><br>
+            <textarea id="actionReason" name="actionReason" rows="3" placeholder="例：文献レビューは網羅的だったが、想定より時間がかかった。入手困難な資料があった。" style="width: 100%;"></textarea><br><br>
 
-            <label for="completionReason">Attribution: Why do you think those results occurred?</label><br>
-            <textarea id="completionReason" name="completionReason" rows="3" placeholder="e.g., The delay was due to not having a clear search strategy initially. Success in finding key papers came from using specific keywords." style="width: 100%;"></textarea><br><br>
+            <label for="completionReason">原因分析：その結果が生じた理由は何だと考えますか？</label><br>
+            <textarea id="completionReason" name="completionReason" rows="3" placeholder="例：検索戦略が不十分だったため時間を要した。特定のキーワードを用いたことで重要な論文を見つけられた。" style="width: 100%;"></textarea><br><br>
 
-            <label for="challengesAndLearnings">Application: What would you change next time in a similar situation?</label><br>
-            <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="4" placeholder="e.g., Next time, I will create a structured search plan before starting and set up institutional access in advance." style="width: 100%;"></textarea><br><br>
+            <label for="challengesAndLearnings">学び：この活動を経て，どのような学びがありましたか？</label><br>
+            <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="4" placeholder="例：次回は事前に検索プランを作成し、必要なアクセス権を確認する。" style="width: 100%;"></textarea><br><br>
 
-            <button type="button" id="btnSaveFeedback">Save</button>
+            <button type="button" id="btnSaveFeedback">保存</button>
         </form>
     </div>
 </div>
@@ -2359,9 +2359,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
                     // ノードの title を更新（入力内容を簡略化して表示）
                     const title = `
-                        Action Intention: ${actionReason || "未記入"}\n
-                        Completion Criteria: ${completionReason || "未記入"}\n
-                        Learnings: ${challengesAndLearnings || "未記入"}
+                        行動意図: ${actionReason || "未記入"}\n
+                        完了基準: ${completionReason || "未記入"}\n
+                        学び: ${challengesAndLearnings || "未記入"}
                     `;
                     this.nodes.update({
                         id: this.selectId,
@@ -2373,7 +2373,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     if (actionReason || completionReason || challengesAndLearnings) {
                         const nodeBoundingBox = this.ownNetwork.getBoundingBox(this.selectId);
                         const reflectionTagId = `reflection-tag-${this.selectId}`;
-                        const reflectionTitle = `Action Intention: ${actionReason || "未記入"}\nCompletion Criteria: ${completionReason || "未記入"}\nLearnings: ${challengesAndLearnings || "未記入"}`;
+                        const reflectionTitle = `行動意図: ${actionReason || "未記入"}\n完了基準: ${completionReason || "未記入"}\n学び: ${challengesAndLearnings || "未記入"}`;
                         
                         // 既存の内省タグがあるかチェック
                         const existingReflectionTag = this.nodes.get(reflectionTagId);
