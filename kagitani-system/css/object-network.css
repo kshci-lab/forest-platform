@@ -365,6 +365,68 @@ input[type="checkbox"][name="check_process"]{
     opacity: 1;
 }
 
+/* jsmind_nav と jsmind_nav2 を .control-panel と同様の見た目に合わせる（位置は既存のレイアウトを尊重） */
+#jsmind_nav,
+#jsmind_nav2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: var(--background-white);
+    border-radius: 5px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 1px 3px var(--shadow-light);
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+    pointer-events: auto;
+    /* 横長のナビは内部で横スクロールさせることがあるので、必要ならoverflow-xは維持 */
+    position: relative;
+    z-index: 30; /* container より前面に表示 */
+    /* 下方向に少し重なるようにマージンで次要素を引き上げる */
+    margin-bottom: -40px;
+    /* 横スクロールを禁止し、ボタンは折り返して表示する（スクロール不可） */
+    overflow-x: hidden;
+    overflow-y: visible;
+    flex-wrap: wrap;
+}
+
+#jsmind_nav:hover,
+#jsmind_nav2:hover {
+    opacity: 1;
+}
+
+/* ナビ内の標準ボタン（.button3/.button4）をボタンクラスターのスタイルに合わせる */
+#jsmind_nav .button4,
+#jsmind_nav .button3,
+#jsmind_nav2 .button4,
+#jsmind_nav2 .button3 {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 10px; /* 縦パディングを減らして高さを短くする */
+    min-width: 80px;
+    height: 30px; /* 少し短く */
+    border: none;
+    border-radius: 6px;
+    background: #4a90e2;
+    color: white !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 13px;
+}
+
+#jsmind_nav .button4:hover,
+#jsmind_nav .button3:hover,
+#jsmind_nav2 .button4:hover,
+#jsmind_nav2 .button3:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    filter: brightness(1.05);
+}
+
 /* ボタンクラスター全体のスタイル */
 #buttoncluster {
     display: flex;
@@ -386,9 +448,9 @@ input[type="checkbox"][name="check_process"]{
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 6px 12px;
+    padding: 4px 10px; /* 縦パディングを小さく */
     min-width: 80px;
-    height: 36px;
+    height: 30px; /* 少し短く */
     border: none;
     border-radius: 6px;
     background: #4a90e2;
@@ -513,7 +575,7 @@ input[type="checkbox"][name="check_process"]{
     .process_close,
     .thinkingProcess_network_button {
         min-width: 60px;
-        height: 50px;
+        height: 42px; /* 少し短く調整 */
         padding: 6px 8px;
     }
     
@@ -567,19 +629,24 @@ input[type="checkbox"][name="check_process"]{
     background: #8e44ad !important;
 }
 
-#process_ZoomIn {
-    background: #17a2b8 !important;
-}
-
-#process_ZoomIn:hover {
-    background: #138496 !important;
-}
-
-#process_ZoomOut {
+#process_ZoomIn,
+#mrnb_ZoomIn {
+    /* 拡大ボタンを縮小ボタンと同じ灰色系に統一 */
     background: #6c757d !important;
 }
 
-#process_ZoomOut:hover {
+#process_ZoomIn:hover,
+#mrnb_ZoomIn:hover {
+    background: #5a6268 !important;
+}
+
+#process_ZoomOut,
+#mrnb_ZoomOut {
+    background: #6c757d !important;
+}
+
+#process_ZoomOut:hover,
+#mrnb_ZoomOut:hover {
     background: #5a6268 !important;
 }
 
@@ -593,7 +660,7 @@ input[type="checkbox"][name="check_process"]{
     .process_close,
     .thinkingProcess_network_button {
         min-width: 70px;
-        height: 32px;
+        height: 28px; /* 少し短く */
         padding: 4px 8px;
         gap: 4px;
     }

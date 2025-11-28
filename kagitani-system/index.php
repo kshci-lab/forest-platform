@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         マップver更新 
                                     </button> -->
                                     <!-- <span id="screenshotLabel">【Screenshot】</span> -->
-                                    <button class="button4" id="screenshotBtn" style="width:80px" onclick="screen_shot();"><span id="screenshotText">screenshot</span></button>
+                                    <!-- <button class="button4" id="screenshotBtn" onclick="screen_shot();"><span id="screenshotText">screenshot</span></button> -->
                                     <!-- 【Reason】
                                         <button class="button4" onclick="add_edit_reason();">
                                         修正理由の追加
@@ -1230,15 +1230,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <!-- ボタンとシークバーを横並びに配置 -->
                                     <div class="control-panel">
                                         <div id="buttoncluster">
-                                            <button type="button" class="process_close" onclick="closeThinkingProcessMap()"
-                                                    id="process_close" title="閉じる">
-                                                <span class="button-icon">✕</span>
-                                                <span class="button-text" id="processCloseText">閉じる</span>
-                                            </button>
+                                            <!-- `process_close` button removed as it's not needed -->
                                             <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_addNode" title="ノード追加">
+                                                    id="process_addNode" title="手段追加">
                                                 <span class="button-icon">＋</span>
-                                                <span class="button-text" id="processAddNodeText">ノード追加</span>
+                                                <span class="button-text" id="processAddNodeText">手段追加</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_startEditEdge" title="エッジ追加">
@@ -1660,7 +1656,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 <!-- 小目標（大きく・使いやすく） -->
                                 <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
-                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 <span id="weeklyGoalTitle">小目標</span>
+                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 <span id="weeklyGoalTitle">SRL Journal</span>
                                     <form id="weeklyGoalForm" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
                                         <div style="display: flex; flex-direction: column; gap: 8px;">
                                             <label for="weeklyGoalStart" style="font-size: 15px; color: #28a745;"><span id="weeklyGoalStartLabel">開始日</span></label>

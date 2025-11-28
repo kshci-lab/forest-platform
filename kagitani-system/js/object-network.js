@@ -488,11 +488,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const moveOptions = network.getViewPosition();
             
             // スクロール量に基づいてパン（マップを押して動かす感覚）
+            // NOTE: 垂直方向を上下反転しているのに加え、水平も左右反転する（ユーザ要望）
             const panSensitivity = 2; // パンの感度調整
             network.moveTo({
                 position: {
-                    x: moveOptions.x - deltaX * panSensitivity,
-                    y: moveOptions.y - deltaY * panSensitivity
+                    // Xを反転: 以前は moveOptions.x - deltaX * ... だったが、左右反転のため + に変更
+                    x: moveOptions.x + deltaX * panSensitivity,
+                    // Yは既に上下反転されている
+                    y: moveOptions.y + deltaY * panSensitivity
                 },
                 animation: false // スムーズな移動のためアニメーションを無効化
             });
@@ -1143,6 +1146,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //ダブルクリック時編集(完了)
     doubleclick (params) {
+        // デバッグ: doubleclick イベントの発火を確認
+        try {
+            console.log('doubleclick event params:', params);
+        } catch (e) {
+            /* ignore */
+        }
+
         // 過去データ表示時は操作を無効化
         if (this.isViewingPastData) {
             console.log('過去データ表示中のため、ノード編集が無効化されています');
@@ -1150,20 +1160,53 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
         
         // ノードがダブルクリックされた場合
-        const clickedNodeId = params.nodes[0];
+        let clickedNodeId = params.nodes[0];
+        // params.nodes が空のときは、pointer の位置からノードを探すフォールバックを行う
+        if (clickedNodeId === undefined || (Array.isArray(params.nodes) && params.nodes.length === 0)) {
+            try {
+                const canvasPos = params.pointer && params.pointer.canvas ? params.pointer.canvas : null;
+                if (canvasPos) {
+                    const found = this.ownNetwork.getNodeAt(canvasPos);
+                    console.log('doubleclick fallback found node at pointer:', found);
+                    if (found !== undefined && found !== null) {
+                        clickedNodeId = found;
+                    }
+                }
+            } catch (e) {
+                console.warn('doubleclick fallback error:', e);
+            }
+        }
+
         if (clickedNodeId !== undefined) {
+            const clickedIdStr = String(clickedNodeId);
             // メモタグ（memo-tag-<nodeId>）がダブルクリックされたら、対応するノードのメモ編集UIを開く
-            if (String(clickedNodeId).startsWith('memo-tag-')) {
-                const targetNodeId = String(clickedNodeId).replace('memo-tag-', '');
+            if (clickedIdStr.startsWith('memo-tag-')) {
+                const targetNodeId = clickedIdStr.replace('memo-tag-', '');
                 try {
                     this.showNodeMemoUI(targetNodeId);
                 } catch (e) {
                     console.error('メモタグのダブルクリック処理でエラー:', e);
                 }
+            // 内省タグ（reflection-tag-<nodeId>）がダブルクリックされたらログ出力
+            } else if (clickedIdStr.startsWith('reflection-tag-')) {
+                console.log('内省タグがダブルクリックされました');
+                return;
             } else {
                 // 通常のノードダブルクリックはラベル編集
-                // ユーザーに新しいラベルを尋ね、それをノードの中身に設定
+                // ただしステータスが completed のノードは編集不可とする
                 const nodeObj = this.nodes.get(clickedNodeId) || {};
+                const nodeStatus = (nodeObj.status || '').toString();
+                if (nodeStatus === 'completed') {
+                    console.log(`ノード ${clickedNodeId} は完了済みのため編集できません (status=completed)`);
+                    try {
+                        alert('このノードは完了済みのため編集できません');
+                    } catch (e) {
+                        /* ignore: alert が存在しない環境でも処理継続 */
+                    }
+                    return;
+                }
+
+                // ユーザーに新しいラベルを尋ね、それをノードの中身に設定
                 const currentLabel = (nodeObj.label || '').split('\n').join('');
                 const newLabel = prompt('新しいラベルを入力してください:', currentLabel);
                 // 編集したラベルを反映

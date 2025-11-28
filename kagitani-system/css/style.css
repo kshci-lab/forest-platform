@@ -234,7 +234,8 @@ body #main_title {
 	font-size: 1em;
 	border:solid 5px #ccc;
 	margin: 0;
-	overflow-x: auto;
+	/* 横スクロール禁止（ボタンは折り返して表示されます） */
+	overflow-x: hidden;
 	overflow-y: visible;
 	float:left;
 }
@@ -362,6 +363,8 @@ input:checked+label::before {
 	min-width: 300px;
 	/* height:75vh; */
 	height: calc(100vh - 139px); /* 画面の一番下まで */
+	/* nav を上に重ねた際にマップ内部が隠れないように上部パディングを確保 */
+	padding-top: 48px;
 	/* 元は75 */
 	/* min-height: 450px; */
 	margin-bottom: 0;
@@ -1524,17 +1527,73 @@ select[name="mttime_list"] {
 	background-color: #ff8c00;
 }
 
-/* Wider buttons for question/answer nodes: prevent wrapping and ensure enough width */
+/* Make question/answer buttons fit their text and avoid wrapping inside the button */
 #addQNodeBtn, #addAnodeBtn {
-	min-width: 140px;
-	padding: 8px 16px;
-	white-space: nowrap;
+	min-width: 0; /* allow button to shrink to text width */
+	padding: 6px 12px;
+	white-space: nowrap; /* prevent text wrapping inside button */
+	display: inline-flex; /* size to content */
+	width: auto;
 }
 
-/* Ensure the inner span does not wrap */
+/* Inner span: prevent wrapping and let button width follow text */
 #addQNodeBtn span, #addAnodeBtn span {
 	display: inline-block;
 	white-space: nowrap;
+}
+
+/* Screenshot button: force auto width and no-wrap (override inline width if present) */
+#screenshotBtn {
+	width: auto !important;
+	min-width: 0;
+	padding: 6px 10px;
+	white-space: nowrap;
+	display: inline-flex;
+}
+
+#screenshotBtn span {
+	display: inline-block;
+	white-space: nowrap;
+}
+
+/* Make the "答えノード追加" button use the same color as jmnode[type="answer"] */
+#addAnodeBtn {
+	background: #f39c12 !important; /* jmnode[type=answer] の背景色 */
+	color: #000 !important;
+	border-color: #d97b0f !important;
+}
+#addAnodeBtn:hover {
+	background: #d68910 !important;
+}
+
+/* Make the "ラベル追加" button use a deep green color */
+#addLabelBtn {
+	background: #006400 !important; /* 深緑 */
+	color: #fff !important;
+	border-color: #005000 !important;
+}
+#addLabelBtn:hover {
+	background: #005500 !important;
+}
+
+/* Make the node-remove button clearly red (for deletion) */
+#removeNodeBtn {
+	background: #e74c3c !important;
+	color: #fff !important;
+	border-color: #c0392b !important;
+}
+#removeNodeBtn:hover {
+	background: #c0392b !important;
+}
+
+/* Make zoom in/out buttons gray */
+#zoomInBtn, #zoomOutBtn {
+	background: #6c757d !important; /* bootstrap secondary gray */
+	color: #fff !important;
+	border-color: #5a6268 !important;
+}
+#zoomInBtn:hover, #zoomOutBtn:hover {
+	background: #5a6268 !important;
 }
 
 .button5 {
