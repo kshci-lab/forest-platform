@@ -3348,3 +3348,60 @@ display: none;
 濃いピンク(tertiary):#fa5246
 */
 
+/* --- KFrag action buttons: Undo / Redo / Reset --- */
+.kfrag-action-btn{
+	display:inline-block;
+	width:40px;
+	height:40px;
+	padding:0;
+	margin-left:6px;
+	margin-right:0;
+	border:0;
+	background: transparent;
+	cursor:pointer;
+	vertical-align:middle;
+	line-height:0; /* hide text height */
+	text-indent: -9999px; /* visually hide label but keep for screen readers */
+}
+
+/* shared gradient used for arrows */
+.kfrag-action-btn.gradient-fill{
+	background: linear-gradient(90deg, #4B33CC 0%, #8DD4FF 100%);
+}
+
+/* Undo: left-pointing arrow mask (no outer circle). Color controlled by background (gradient). */
+#kfrag-undo{
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='10' y='7' width='8' height='10' fill='white'/><polygon points='10,7 4,12 10,17' fill='white'/></svg>") center/60% no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='10' y='7' width='8' height='10' fill='white'/><polygon points='10,7 4,12 10,17' fill='white'/></svg>") center/60% no-repeat;
+	background: linear-gradient(90deg, #4B33CC 0%, #8DD4FF 100%);
+	border-radius:0px;
+}
+
+/* Redo: mirror of undo */
+#kfrag-redo{
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='6' y='7' width='8' height='10' fill='white'/><polygon points='14,7 20,12 14,17' fill='white'/></svg>") center/60% no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='6' y='7' width='8' height='10' fill='white'/><polygon points='14,7 20,12 14,17' fill='white'/></svg>") center/60% no-repeat;
+	background: linear-gradient(90deg, #4B33CC 0%, #8DD4FF 100%);
+	border-radius:0px;
+}
+
+/* Reset: circular refresh arrow. Using single-color gradient as fill. Recommend this as intuitive reset icon. */
+#kfrag-reset{
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.87-.99 3.52-2.5 4.47l1.42 1.42C19.5 17.29 21 14.86 21 12c0-4.97-4.03-9-9-9z'/><path fill='white' d='M6.5 6.53L5.08 5.11C3.56 6.55 3 8.67 3 11c0 4.97 4.03 9 9 9v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.39.56-2.66 1.46-3.61z'/></svg>") center/60% no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.87-.99 3.52-2.5 4.47l1.42 1.42C19.5 17.29 21 14.86 21 12c0-4.97-4.03-9-9-9z'/><path fill='white' d='M6.5 6.53L5.08 5.11C3.56 6.55 3 8.67 3 11c0 4.97 4.03 9 9 9v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.39.56-2.66 1.46-3.61z'/></svg>") center/60% no-repeat;
+	background: linear-gradient(90deg, #4B33CC 0%, #8DD4FF 100%);
+	border-radius:4px;
+}
+
+/* Hover/active affordance */
+.kfrag-action-btn:hover{ transform: translateY(-1px) scale(1.04); }
+.kfrag-action-btn:active{ transform: translateY(0) scale(0.98); }
+
+/* Ensure text inside buttons is hidden but accessible */
+.kfrag-action-btn span{display:none}
+
+/* tighten spacing specifically between undo and redo */
+.kfrag-action-group > #kfrag-undo{ margin-right:2px; margin-left:4px; }
+.kfrag-action-group > #kfrag-redo{ margin-left:0px; }
+
+
