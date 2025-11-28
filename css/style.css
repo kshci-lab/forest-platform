@@ -3372,30 +3372,36 @@ display: none;
 
 /* Undo: left-pointing arrow mask (no outer circle). Color controlled by background (gradient). */
 #kfrag-undo{
-	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='10' y='7' width='8' height='10' fill='white'/><polygon points='10,7 4,12 10,17' fill='white'/></svg>") center/60% no-repeat;
-	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='10' y='7' width='8' height='10' fill='white'/><polygon points='10,7 4,12 10,17' fill='white'/></svg>") center/60% no-repeat;
-	/* solid midpoint color between gradient endpoints */
+	/* left-pointing filled arrow (chevron-like) */
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M15 6 L9 12 L15 18 L13 18 L7 12 L13 6 Z'/></svg>") center/70% no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M15 6 L9 12 L15 18 L13 18 L7 12 L13 6 Z'/></svg>") center/70% no-repeat;
 	background: #6C84E6;
 	border-radius:0px;
 }
 
 /* Redo: mirror of undo */
 #kfrag-redo{
-	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='6' y='7' width='8' height='10' fill='white'/><polygon points='14,7 20,12 14,17' fill='white'/></svg>") center/60% no-repeat;
-	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='6' y='7' width='8' height='10' fill='white'/><polygon points='14,7 20,12 14,17' fill='white'/></svg>") center/60% no-repeat;
-	/* solid midpoint color between gradient endpoints */
+	/* right-pointing filled arrow (chevron-like) */
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M9 6 L15 12 L9 18 L11 18 L17 12 L11 6 Z'/></svg>") center/70% no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M9 6 L15 12 L9 18 L11 18 L17 12 L11 6 Z'/></svg>") center/70% no-repeat;
 	background: #6C84E6;
 	border-radius:0px;
 }
 
-/* Reset: circular refresh arrow. Using single-color gradient as fill. Recommend this as intuitive reset icon. */
-#kfrag-reset{
-	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.87-.99 3.52-2.5 4.47l1.42 1.42C19.5 17.29 21 14.86 21 12c0-4.97-4.03-9-9-9z'/><path fill='white' d='M6.5 6.53L5.08 5.11C3.56 6.55 3 8.67 3 11c0 4.97 4.03 9 9 9v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.39.56-2.66 1.46-3.61z'/></svg>") center/60% no-repeat;
-	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.87-.99 3.52-2.5 4.47l1.42 1.42C19.5 17.29 21 14.86 21 12c0-4.97-4.03-9-9-9z'/><path fill='white' d='M6.5 6.53L5.08 5.11C3.56 6.55 3 8.67 3 11c0 4.97 4.03 9 9 9v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.39.56-2.66 1.46-3.61z'/></svg>") center/60% no-repeat;
-	/* solid midpoint color between gradient endpoints */
-	background: #6C84E6;
-	border-radius:4px;
+#kfrag-reset {
+    /* refresh-style circular arrow */
+    -webkit-mask: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+      <path fill='white' d='M17.65 6.35A8 8 0 1 0 12 20a8 8 0 0 0 7.94-7h-2.1A6 6 0 1 1 12 6c1.34 0 2.56.43 3.55 1.15L13 10h7V3l-2.35 2.35z'/>\
+    </svg>") center/80% no-repeat;
+    mask: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+      <path fill='white' d='M17.65 6.35A8 8 0 1 0 12 20a8 8 0 0 0 7.94-7h-2.1A6 6 0 1 1 12 6c1.34 0 2.56.43 3.55 1.15L13 10h7V3l-2.35 2.35z'/>\
+    </svg>") center/80% no-repeat;
+
+    background: #6C84E6; /* アイコンの色 */
 }
+
 
 /* Hover/active affordance */
 .kfrag-action-btn:hover{ transform: translateY(-1px) scale(1.04); }

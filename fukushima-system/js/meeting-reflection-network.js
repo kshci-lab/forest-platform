@@ -2961,6 +2961,15 @@ function initializeFragmentsWorkspace(){
             if(fetchId === null) fetchId = kfid;
             fetchDiscussionHistory(fetchId);
         }catch(_){ }
+        // When a fragment is selected, show the post form and remove any placeholder.
+        try{
+            var $formShow = $('#discussion_post_form');
+            if($formShow && $formShow.length){ $formShow.show(); }
+            var $ml = $('#discussion_message_list');
+            if($ml && $ml.length){ $ml.find('.discussion-placeholder').remove(); }
+            var $areaHide = $('#discussion_history_area');
+            if($areaHide && $areaHide.length){ $areaHide.find('.discussion-placeholder').hide(); }
+        }catch(_){ }
         // ボタン状態同期（トグル式、無効化はしない）
         try{
             var st = ($wrap.data('discussed-status')||'').trim();
@@ -3188,6 +3197,32 @@ function initializeDiscussionBoard(){
         var $form = $('#discussion_post_form');
         var $input = $('#discussion_input');
         var $list = $('#discussion_message_list');
+        var $area = $('#discussion_history_area');
+        // If no fragment is selected at initialization, hide the post form
+        // and show a simple placeholder message asking the user to select a fragment.
+        try{
+            var noActive = (typeof window.activeKnowledgeFragmentId === 'undefined' || !window.activeKnowledgeFragmentId) && (typeof window.activeExternalizedId === 'undefined' || !window.activeExternalizedId);
+            if(noActive){
+                if($form && $form.length){ $form.hide(); }
+                if($list && $list.length){
+                    // show placeholder inside the message list area
+                    var ph = '<div class="discussion-placeholder" style="padding:12px 10px;color:#666;">議論対象とするフラグメントを選択してください</div>';
+                    $list.empty().append(ph);
+                } else if($area && $area.length){
+                    var $body = $area.find('.overlay-body').first();
+                    if($body && $body.length){
+                        if($body.find('.discussion-placeholder').length === 0){
+                            $body.prepend('<div class="discussion-placeholder" style="padding:12px 10px;color:#666;">議論対象とするフラグメントを選択してください</div>');
+                        } else {
+                            $body.find('.discussion-placeholder').show();
+                        }
+                    }
+                }
+            } else {
+                if($form && $form.length){ $form.show(); }
+                if($area && $area.length){ $area.find('.discussion-placeholder').hide(); }
+            }
+        }catch(_){ }
         if(!$form.length || !$input.length || !$list.length) return;
 
         // 二重バインド防止: ただし既にバウンド済でもボタンが未作成ならボタンだけ追加する
