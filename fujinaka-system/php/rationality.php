@@ -59,6 +59,52 @@ try {
         $rationalityNodeIds = array_merge($rationalityNodeIds, $pair);
     }
 
+    // 追加: ペアのどちらかを親に持ち、概念IDが指定のもの（アンカー）を取得し、さらにその子の content を取得
+    $targetConceptId = '1519483811401_n426';
+    $pairAnchors = [];               // rid => [anchor_node_id,...]
+    $pairAnchorChildContents = [];   // rid => [ { node_id, content }, ... ]
+    foreach ($rationalityPairs as $pair) {
+        $rid = $pair['rationality_id'];
+        $nidA = (string)$pair['node_ids'][0];
+        $nidB = (string)$pair['node_ids'][1];
+
+        // アンカー取得: parent がペアのどちらか かつ concept_id が一致
+        $sqlAnchor = "SELECT id AS node_id FROM nodes
+            WHERE sheet_id = ? AND user_id = ? AND concept_id = ? AND parent_id IN (?, ?)";
+        if ($stmtA = $mysqli->prepare($sqlAnchor)) {
+            $stmtA->bind_param('sssss', $sheet_id, $user_id, $targetConceptId, $nidA, $nidB);
+            $stmtA->execute();
+            $resA = $stmtA->get_result();
+            while ($rowA = $resA->fetch_assoc()) {
+                $aid = (string)$rowA['node_id'];
+                if (!isset($pairAnchors[$rid])) $pairAnchors[$rid] = [];
+                if (!in_array($aid, $pairAnchors[$rid], true)) $pairAnchors[$rid][] = $aid;
+            }
+            $stmtA->close();
+        }
+
+        // 子の content 取得: parent がアンカー かつ同じ concept_id
+        if (!empty($pairAnchors[$rid])) {
+            foreach ($pairAnchors[$rid] as $aid) {
+                $sqlChild = "SELECT id AS node_id, content FROM nodes
+                    WHERE sheet_id = ? AND user_id = ? AND concept_id = ? AND parent_id = ?";
+                if ($stmtC = $mysqli->prepare($sqlChild)) {
+                    $stmtC->bind_param('ssss', $sheet_id, $user_id, $targetConceptId, $aid);
+                    $stmtC->execute();
+                    $resC = $stmtC->get_result();
+                    while ($rowC = $resC->fetch_assoc()) {
+                        if (!isset($pairAnchorChildContents[$rid])) $pairAnchorChildContents[$rid] = [];
+                        $pairAnchorChildContents[$rid][] = [
+                            'node_id' => (string)$rowC['node_id'],
+                            'content' => $rowC['content'] ?? ''
+                        ];
+                    }
+                    $stmtC->close();
+                }
+            }
+        }
+    }
+
     // 2) logic_node から f_node_id を取得（対象ユーザ＆シート）
     $sqlL = "SELECT ln.logic_node_id, ln.f_node_id
         FROM logic_node ln
@@ -89,6 +135,7 @@ try {
     $lSet = array_values(array_unique($logicNodeFIds));
 
     $diffRationalityMinusLogic = array_values(array_diff($rSet, $lSet));
+    // 追加: 逆差分と共通集合を明示的に定義（未定義だったキーを補完）
     $diffLogicMinusRationality = array_values(array_diff($lSet, $rSet));
     $intersection = array_values(array_intersect($rSet, $lSet));
 
@@ -113,7 +160,6 @@ try {
         $entry = [
             'rationality_id' => $pair['rationality_id'],
             'node_ids'       => [$nidA, $nidB],
-            'in_logic'       => [$inA, $inB],
         ];
 
         if ($inA && $inB) {
@@ -172,6 +218,28 @@ try {
             $stmtNA->close();
         }
     }
+
+    // 追加: $pairStatus の各エントリへ logic に存在するノードの logic_node_ids と content を付与
+    foreach ($pairStatus as $statusKey => &$entries) {
+        foreach ($entries as &$entry) {
+            $detailList = [];
+            foreach ($entry['node_ids'] as $nid) {
+                $nidStr = (string)$nid;
+                $lnIds = $logicNodeIdsByFNode[$nidStr] ?? [];
+                $detailList[] = [
+                    'node_id' => $nidStr,
+                    'logic_node_ids' => $lnIds,
+                    'content' => $contentByNode[$nidStr] ?? null,
+                ];
+            }
+            $entry['nodesLogic'] = $detailList; // 新フィールド: ペア内の各 node の対応情報
+            // 追加: 該当 rationality_id のアンカー配下子ノードの content を付与
+            $rid = (string)$entry['rationality_id'];
+            $entry['anchorChildContents'] = $pairAnchorChildContents[$rid] ?? [];
+        }
+        unset($entry);
+    }
+    unset($entries);
 
     if (!empty($lSet)) {
         // f_node ごとの matches を算出
@@ -274,6 +342,9 @@ try {
         'ok' => true,
         'sheetId' => $sheet_id,
         'rationalityPairs' => $rationalityPairs,
+        // 追加: ペア関連の指定概念アンカーと子のcontent
+        'pairAnchors' => $pairAnchors,
+        'pairAnchorChildContents' => $pairAnchorChildContents,
         'pairStatus' => $pairStatus,
         'logicNodeIdsByFNode' => $logicNodeIdsByFNode,
         'rationalityNodeIds' => $rSet,

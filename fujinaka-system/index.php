@@ -161,6 +161,10 @@ $ai_output = '';
               <button class="button4" onclick="fetchClaimNodes();">
                 主張ノード取得
               </button>
+              <!-- 追加: 合理性ペア助言表示ボタン -->
+              <button class="button4" onclick="window.showRationalityAdvice && window.showRationalityAdvice('#rationality_advice');">
+                合理性ペア助言
+              </button>
               <!-- 追加: 差分のconcept_idとLABELをコンソール出力 -->
               <button class="button4" onclick="window.logDiffConceptLabels && window.logDiffConceptLabels();">
                 差分をコンソール出力
@@ -175,6 +179,10 @@ $ai_output = '';
               <!-- 追加: 差分のconcept_idとLABELをコンソール出力 -->
               <button class="button4" onclick="window.logDiffConceptLabels && window.logDiffConceptLabels();">
                 差分をコンソール出力
+              </button>
+              <!-- 追加: 合理性ペア助言表示ボタン（論理メニュー側） -->
+              <button class="button4" onclick="window.showRationalityAdvice && window.showRationalityAdvice('#rationality_advice');">
+                合理性ペア助言
               </button>
             </div>
 
@@ -569,6 +577,8 @@ $ai_output = '';
         <script type="text/javascript" src="js/logic_network.js"></script>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="js/run_ai.js"></script>
+        <!-- 追加: 合理性ペア助言ロジック -->
+        <script type="text/javascript" src="js/logic_rationality.js"></script>
         <!-- 追加: 主張ノード取得スクリプト（ES Moduleとして読み込み） -->
         <script type="module" src="js/ont_claim.js"></script>
         <script>
