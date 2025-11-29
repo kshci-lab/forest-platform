@@ -60,7 +60,7 @@ try {
     }
 
     // 2) logic_node から f_node_id を取得（対象ユーザ＆シート）
-    $sqlL = "SELECT DISTINCT ln.f_node_id
+    $sqlL = "SELECT ln.logic_node_id, ln.f_node_id
         FROM logic_node ln
         INNER JOIN nodes n ON n.id = ln.f_node_id
         WHERE ln.f_node_id IS NOT NULL
@@ -73,8 +73,14 @@ try {
     $stmtL->execute();
     $resL = $stmtL->get_result();
     $logicNodeFIds = [];
-    while ($row = $resL->fetch_row()) {
-        $logicNodeFIds[] = $row[0];
+    // 追加: f_node_id => [logic_node_id,...] の対応（主キーを格納）
+    $logicNodeIdsByFNode = [];
+    while ($row = $resL->fetch_assoc()) {
+        $fid = (string)$row['f_node_id'];
+        $lid = (string)$row['logic_node_id']; // 主キー
+        $logicNodeFIds[] = $fid;
+        if (!isset($logicNodeIdsByFNode[$fid])) $logicNodeIdsByFNode[$fid] = [];
+        $logicNodeIdsByFNode[$fid][] = $lid;
     }
     $stmtL->close();
 
@@ -126,16 +132,60 @@ try {
             $nidB = (string)$e['node_ids'][1];
             $inA  = isset($logicSet[$nidA]);
             $presentIndex = $inA ? 0 : 1;
-            $presentNodeId = $e['node_ids'][$presentIndex];
+            $presentFNodeId = $e['node_ids'][$presentIndex];
 
-            $matches = findLogicTriangleRoles($mysqli, $presentNodeId);
+            // f_node_id に紐づく logicnode.id 群を取り出す
+            $logicIds = $logicNodeIdsByFNode[$presentFNodeId] ?? [];
+            // logicnodeid を指定して役割を取得
+            $matches = findRolesInLogicTriangleByLogicNodeIds($mysqli, $logicIds);
+
             $e['logicDetail'] = [
-                'presentIndex' => $presentIndex, // 0 or 1
-                'node_id'      => $presentNodeId,
-                'matches'      => $matches,      // [{ role: 'claim'|'fact'|'reason', column: 'claim_id'|'fact_id'|'reason_id' }, ...]
+                'presentIndex' => $presentIndex,
+                'node_id'      => $presentFNodeId,   // f_node_id
+                'logicnode_ids'=> $logicIds,         // 使った logicnode.id 群
+                'matches'      => $matches,          // [{ role, column, triangle_id }, ...]
             ];
         }
         unset($e);
+    }
+
+    // 3.4) logic に存在する f_node_id について、f_node_id / logic_node_id[] / content / matches を生成
+    $fNodeLogicSummary = [];
+    // 追加: 全node_id(content)取得のために rSet と lSet のユニオンを作って content を先に取得
+    $allNodeIds = array_values(array_unique(array_merge($rSet, $lSet)));
+    $contentByNode = [];
+    if (!empty($allNodeIds)) {
+        $placeholdersAll = implode(',', array_fill(0, count($allNodeIds), '?'));
+        $sqlNodesAll = "SELECT id AS node_id, content FROM nodes WHERE sheet_id = ? AND user_id = ? AND id IN ($placeholdersAll)";
+        $stmtNA = $mysqli->prepare($sqlNodesAll);
+        if ($stmtNA) {
+            $typesNA = 'ss' . str_repeat('s', count($allNodeIds));
+            $bindValuesNA = array_merge([$sheet_id, $user_id], $allNodeIds);
+            $bindParamsNA = [ &$typesNA ];
+            foreach ($bindValuesNA as $i => $v) { $bindParamsNA[] = &$bindValuesNA[$i]; }
+            call_user_func_array([$stmtNA, 'bind_param'], $bindParamsNA);
+            $stmtNA->execute();
+            $resNA = $stmtNA->get_result();
+            while ($row = $resNA->fetch_assoc()) {
+                $contentByNode[(string)$row['node_id']] = $row['content'] ?? '';
+            }
+            $stmtNA->close();
+        }
+    }
+
+    if (!empty($lSet)) {
+        // f_node ごとの matches を算出
+        foreach ($lSet as $fid) {
+            $fidStr = (string)$fid;
+            $logicIds = $logicNodeIdsByFNode[$fidStr] ?? [];
+            $matches  = !empty($logicIds) ? findRolesInLogicTriangleByLogicNodeIds($mysqli, $logicIds) : [];
+            $fNodeLogicSummary[] = [
+                'f_node_id'       => $fidStr,
+                'logic_node_ids'  => $logicIds,
+                'content'         => $contentByNode[$fidStr] ?? '',
+                'matches'         => $matches,
+            ];
+        }
     }
 
     // 3.5) 差分（rationality - logic）のnode_idに紐づくcontentを取得
@@ -174,17 +224,68 @@ try {
         $stmtD->close();
     }
 
+    // 3.6) rationality_id ごとに node_id と f_node_id の対応を分類して返す
+    $rationalityLogicMatch = [
+        'double' => new stdClass(), // 両方対応
+        'single' => new stdClass(), // 片方のみ対応
+        'no'     => new stdClass(), // 対応なし
+    ];
+    foreach ($rationalityPairs as $pair) {
+        $rid   = (string)$pair['rationality_id'];
+        $nidA  = (string)$pair['node_ids'][0];
+        $nidB  = (string)$pair['node_ids'][1];
+
+        // f_node 対応可否
+        $logicIdsA = $logicNodeIdsByFNode[$nidA] ?? [];
+        $logicIdsB = $logicNodeIdsByFNode[$nidB] ?? [];
+        $inA = !empty($logicIdsA);
+        $inB = !empty($logicIdsB);
+
+        // helper to make entry
+        $makeEntry = function(?string $fnodeId, array $logicIds, array $contentByNode) {
+            $firstLogicId = !empty($logicIds) ? (string)$logicIds[0] : null;
+            return [
+                'f_node_id'     => $fnodeId,
+                'logic_node_id' => $firstLogicId,
+                'content'       => ($fnodeId !== null) ? ($contentByNode[$fnodeId] ?? null) : null,
+            ];
+        };
+
+        if ($inA && $inB) {
+            $rationalityLogicMatch['double']->{$rid} = [
+                $makeEntry($nidA, $logicIdsA, $contentByNode),
+                $makeEntry($nidB, $logicIdsB, $contentByNode),
+            ];
+        } elseif ($inA xor $inB) {
+            $entries = [];
+            if ($inA) $entries[] = $makeEntry($nidA, $logicIdsA, $contentByNode);
+            if ($inB) $entries[] = $makeEntry($nidB, $logicIdsB, $contentByNode);
+            $rationalityLogicMatch['single']->{$rid} = $entries;
+        } else {
+            $rationalityLogicMatch['no']->{$rid} = [[
+                'f_node_id'     => null,
+                'logic_node_id' => null,
+                'content'       => null,
+            ]];
+        }
+    }
+
     echo json_encode([
         'ok' => true,
         'sheetId' => $sheet_id,
         'rationalityPairs' => $rationalityPairs,
         'pairStatus' => $pairStatus,
+        'logicNodeIdsByFNode' => $logicNodeIdsByFNode,
         'rationalityNodeIds' => $rSet,
         'logicNodeFIds' => $lSet,
         'diffRationalityMinusLogic' => $diffRationalityMinusLogic,
         'diffLogicMinusRationality' => $diffLogicMinusRationality,
         'intersection' => $intersection,
         'diffRationalityMinusLogicDetailed' => $diffRationalityMinusLogicDetailed,
+        // 追加: f_node 要約
+        'fNodeLogicSummary' => $fNodeLogicSummary,
+        // 追加: rationality_id ごとの対応分類
+        'rationalityLogicMatch' => $rationalityLogicMatch,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 } catch (Throwable $e) {
@@ -196,30 +297,83 @@ try {
 }
 
 /**
- * logictriangle を nodeId で照会し、該当する全行分の役割/カラムを返す
- * 返り値: [ { role: 'claim'|'fact'|'reason', column: 'claim_id'|'fact_id'|'reason_id' }, ... ]
+ * 指定テーブルの存在確認
  */
-function findLogicTriangleRoles(mysqli $mysqli, string $nodeId): array {
-    $out = [];
-    $targets = [
-        ['role' => 'claim',  'col' => 'claim_id'],
-        ['role' => 'fact',   'col' => 'fact_id'],
-        ['role' => 'reason', 'col' => 'reason_id'],
-    ];
-    foreach ($targets as $t) {
-        $sql = "SELECT {$t['col']} FROM logictriangle WHERE {$t['col']} = ?";
-        $stmt = $mysqli->prepare($sql);
-        if (!$stmt) continue;
-        $stmt->bind_param("s", $nodeId);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($res) {
-            // 同一 node_id が複数行に該当する場合、行数分追加
-            while ($res->fetch_row()) {
-                $out[] = ['role' => $t['role'], 'column' => $t['col']];
-            }
-        }
-        $stmt->close();
-    }
-    return $out;
+function tableExists(mysqli $mysqli, string $table): bool {
+	$sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?";
+	$stmt = $mysqli->prepare($sql);
+	if (!$stmt) return false;
+	$stmt->bind_param("s", $table);
+	$stmt->execute();
+	$exists = (bool)$stmt->get_result()->fetch_row();
+	$stmt->close();
+	return $exists;
+}
+
+/**
+ * logic_node_id の配列を使って logic_triangle/logictriangle の役割を全件取得する
+ * 返り値: [
+ *   { logic_node_id: string, role: 'claim'|'fact'|'reason', triangle_id: string },
+ *   ...
+ * ]
+ */
+function findRolesInLogicTriangleByLogicNodeIds(mysqli $mysqli, array $logicNodeIds): array {
+	if (empty($logicNodeIds)) return [];
+
+	// 文字列化とユニーク化
+	$logicNodeIds = array_values(array_unique(array_map('strval', $logicNodeIds)));
+
+	// テーブル・カラム名の決定（logic_triangle 優先、無ければ logictriangle）
+	$table = tableExists($mysqli, 'logic_triangle') ? 'logic_triangle' : 'logictriangle';
+	$triCol = ($table === 'logic_triangle') ? 'triangle_id' : 'id';
+
+	$ph = implode(',', array_fill(0, count($logicNodeIds), '?'));
+
+	$sql = "
+		SELECT {$triCol} AS triangle_id, 'claim' AS role, claim_id AS logic_node_id
+		FROM {$table}
+		WHERE claim_id IN ($ph)
+		UNION ALL
+		SELECT {$triCol} AS triangle_id, 'fact' AS role, fact_id AS logic_node_id
+		FROM {$table}
+		WHERE fact_id IN ($ph)
+		UNION ALL
+		SELECT {$triCol} AS triangle_id, 'reason' AS role, reason_id AS logic_node_id
+		FROM {$table}
+		WHERE reason_id IN ($ph)
+	";
+
+	// バインド: ids を3回繰り返す
+	$bindValues = array_merge($logicNodeIds, $logicNodeIds, $logicNodeIds);
+	$types = str_repeat('s', count($bindValues));
+
+	$stmt = $mysqli->prepare($sql);
+	if (!$stmt) return [];
+
+	$params = [ &$types ];
+	foreach ($bindValues as $i => $v) { $params[] = &$bindValues[$i]; }
+	call_user_func_array([$stmt, 'bind_param'], $params);
+
+	$out = [];
+	$seen = []; // 重複排除 key: lnid|role|triId
+	$stmt->execute();
+	if ($res = $stmt->get_result()) {
+		while ($row = $res->fetch_assoc()) {
+			$triId = (string)($row['triangle_id'] ?? '');
+			$lnid  = (string)($row['logic_node_id'] ?? '');
+			$role  = (string)($row['role'] ?? '');
+			if ($triId === '' || $lnid === '' || $role === '') continue;
+			$key = $lnid.'|'.$role.'|'.$triId;
+			if (isset($seen[$key])) continue;
+			$seen[$key] = true;
+			$out[] = [
+				'logic_node_id' => $lnid,
+				'role' => $role,
+				'triangle_id' => $triId,
+			];
+		}
+	}
+	$stmt->close();
+
+	return $out;
 }

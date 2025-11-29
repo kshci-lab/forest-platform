@@ -39,6 +39,18 @@ function getDiffConceptLabels() {
 		// id -> (直下SLOTS 内 role="出力" の) class_constraint
 		const idToOutputCC = buildIdToOutputCC(xml);
 
+		// 取得データの検証ログ（問題調査用）
+		try {
+			console.group('fetch_claim_nodes.php response debug');
+			console.log('ok:', diff.ok);
+			console.log('sheetId:', diff.sheetId);
+			console.log('keys:', Object.keys(diff || {}));
+			console.log('diffMapMinusLogicDetailed type/len:', Array.isArray(diff.diffMapMinusLogicDetailed), diff.diffMapMinusLogicDetailed ? diff.diffMapMinusLogicDetailed.length : 0);
+			console.log('sample diffMapMinusLogicDetailed[0]:', diff.diffMapMinusLogicDetailed && diff.diffMapMinusLogicDetailed[0]);
+			console.log('diffMapMinusClaimDetailed type/len:', Array.isArray(diff.diffMapMinusClaimDetailed), diff.diffMapMinusClaimDetailed ? diff.diffMapMinusClaimDetailed.length : 0);
+			console.groupEnd();
+		} catch(e) { console.warn('debug logging failed', e); }
+
 		// 詳細差分を content 単位に展開し、class_constraint を付与
 		const flattenDetailed = (arrDetailed) => {
 			const out = [];
@@ -52,7 +64,7 @@ function getDiffConceptLabels() {
 			return out;
 		};
 
-		const claimMinusMap = flattenDetailed(diff.diffClaimMinusMapDetailed || []);
+		const mapMinusLogic = flattenDetailed(diff.diffMapMinusLogicDetailed || []);
 		const mapMinusClaim = flattenDetailed(diff.diffMapMinusClaimDetailed || []);
 		const intersection = (diff.intersection || [])
 			.map((cid) => ({ concept_id: cid, class_constraint: idToOutputCC[cid] || '', content: '' }))
@@ -61,9 +73,8 @@ function getDiffConceptLabels() {
 		return {
 			ok: true,
 			sheetId: diff.sheetId,
-			claimMinusMap,
-			mapMinusClaim,
-			intersection
+			mapMinusLogic,
+			mapMinusClaim
 		};
 	});
 }
@@ -93,19 +104,26 @@ function renderDiffConceptLabels(containerSelector) {
 	const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	getDiffConceptLabels()
 		.done(function(res){
-			const line = (p) => `「${esc(p.class_constraint)}」「${esc(p.content)}」これを主張する必要はないですか`;
+			// 種類別メッセージ生成
+			const makeLine = (title, p) => {
+				if (title === 'map - logic') {
+					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を三要素（主張/事実/理由付け）の論理構成に取り込む必要はありませんか`;
+				} else if (title === 'map - claim') {
+					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を主張として明確化する必要はありませんか`;
+				}
+				return `「${esc(p.class_constraint)}」「${esc(p.content)}」これを検討する必要はありませんか`;
+			};
 			const section = (title, arr) => {
 				// 念のため表示直前でも空のclass_constraintを除外
 				const items = (arr || [])
 					.filter(p => p.class_constraint && p.class_constraint.trim() !== '')
-					.map(p => `<li>${line(p)}</li>`).join('');
+					.map(p => `<li>${makeLine(title, p)}</li>`).join('');
 				return `<h4>${esc(title)}</h4><ul>${items}</ul>`;
 			};
 			const html = [
 				'<div class="diff-concepts">',
-				section('claim - map', res.claimMinusMap),
+				section('map - logic', res.mapMinusLogic),
 				section('map - claim', res.mapMinusClaim),
-				section('intersection', res.intersection),
 				'</div>'
 			].join('');
 			$(containerSelector).html(html);

@@ -43,6 +43,54 @@ try {
     }
     $stmt->close();
 
+    // 1.1) 事実ノードに紐づくconcept_idを取得（対象ユーザ＆シート）
+    $sqlFact = "SELECT DISTINCT n.concept_id
+        FROM logic_triangle t
+        INNER JOIN logic_node ln ON ln.logic_node_id = t.fact_id
+        INNER JOIN nodes n       ON n.id = ln.f_node_id
+        WHERE t.sheet_id = ?
+          AND n.user_id = ?
+          AND ln.f_node_id IS NOT NULL
+          AND n.concept_id IS NOT NULL
+          AND n.concept_id <> ''
+    ";
+    $stmtF = $mysqli->prepare($sqlFact);
+    if (!$stmtF) {
+        throw new Exception('SQLプリペア失敗(sqlFact): ' . $mysqli->error);
+    }
+    $stmtF->bind_param("ss", $sheet_id, $user_id);
+    $stmtF->execute();
+    $resF = $stmtF->get_result();
+    $factConceptIds = [];
+    while ($row = $resF->fetch_row()) {
+        $factConceptIds[] = $row[0];
+    }
+    $stmtF->close();
+
+    // 1.2) 理由付けノードに紐づくconcept_idを取得（対象ユーザ＆シート）
+    $sqlReason = "SELECT DISTINCT n.concept_id
+        FROM logic_triangle t
+        INNER JOIN logic_node ln ON ln.logic_node_id = t.reason_id
+        INNER JOIN nodes n       ON n.id = ln.f_node_id
+        WHERE t.sheet_id = ?
+          AND n.user_id = ?
+          AND ln.f_node_id IS NOT NULL
+          AND n.concept_id IS NOT NULL
+          AND n.concept_id <> ''
+    ";
+    $stmtRsn = $mysqli->prepare($sqlReason);
+    if (!$stmtRsn) {
+        throw new Exception('SQLプリペア失敗(sqlReason): ' . $mysqli->error);
+    }
+    $stmtRsn->bind_param("ss", $sheet_id, $user_id);
+    $stmtRsn->execute();
+    $resRsn = $stmtRsn->get_result();
+    $reasonConceptIds = [];
+    while ($row = $resRsn->fetch_row()) {
+        $reasonConceptIds[] = $row[0];
+    }
+    $stmtRsn->close();
+
     // 2) 思考整理マップのconcept_idを取得（toiを除外、対象ユーザ＆シート）
     $sqlMap = "SELECT DISTINCT concept_id
         FROM nodes
@@ -94,21 +142,29 @@ try {
     $stmtC->close();
 
     // 3) 差分と共通集合
-    $claimSet = array_values(array_unique($claimConceptIds));
-    $mapSet   = array_values(array_unique($mapConceptIds));
-
-    $diffClaimMinusMap = array_values(array_diff($claimSet, $mapSet));
+    $claimSet  = array_values(array_unique($claimConceptIds));
+    $factSet   = array_values(array_unique($factConceptIds ?? []));     
+    $reasonSet = array_values(array_unique($reasonConceptIds ?? []));
+    $mapSet    = array_values(array_unique($mapConceptIds));
     $diffMapMinusClaim = array_values(array_diff($mapSet, $claimSet));
-    $intersection      = array_values(array_intersect($claimSet, $mapSet));
+    $diffMapMinusFact = array_values(array_diff($mapSet, $factSet));
+    $diffMapMinusReason = array_values(array_diff($mapSet, $reasonSet));
 
-    // 3.5) 差分の各concept_idにcontents配列を付加
-    $diffClaimMinusMapDetailed = array_map(function($cid) use ($conceptIdToContents) {
+    // 3.1) map-(事実+理由付け+主張)
+    $logicConceptIds = array_values(array_unique(array_merge($claimSet, $factSet, $reasonSet)));
+    $diffMapMinusLogic = array_values(array_diff($mapSet, $logicConceptIds));
+
+    // 3.2) map - diffMapMinusLogic - claim
+    // mapSet から diffMapMinusLogic と claimSet を取り除いた残り
+    $diffMapMinusClaim = array_values(array_diff($mapSet, array_merge($diffMapMinusLogic, $claimSet)));
+
+    // 3.3) Detailed（contents 付与）
+    $diffMapMinusLogicDetailed = array_map(function($cid) use ($conceptIdToContents) {
         return [
             'concept_id' => $cid,
             'contents'   => $conceptIdToContents[$cid] ?? []
         ];
-    }, $diffClaimMinusMap);
-
+    }, $diffMapMinusLogic);
     $diffMapMinusClaimDetailed = array_map(function($cid) use ($conceptIdToContents) {
         return [
             'concept_id' => $cid,
@@ -120,12 +176,12 @@ try {
         'ok' => true,
         'sheetId' => $sheet_id,
         'claimConceptIds' => $claimSet,
+        'factConceptIds' => $factSet,
+        'reasonConceptIds' => $reasonSet,
         'mapConceptIds' => $mapSet,
-        'diffClaimMinusMap' => $diffClaimMinusMap,
+        'diffMapMinusLogic' => $diffMapMinusLogic,
+        'diffMapMinusLogicDetailed' => $diffMapMinusLogicDetailed,
         'diffMapMinusClaim' => $diffMapMinusClaim,
-        'intersection' => $intersection,
-        // 追加: 差分にcontentを付与した詳細
-        'diffClaimMinusMapDetailed' => $diffClaimMinusMapDetailed,
         'diffMapMinusClaimDetailed' => $diffMapMinusClaimDetailed,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
