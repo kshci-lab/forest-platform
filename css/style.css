@@ -365,6 +365,15 @@ table[type] {
 	cursor: move;
 }
 
+/* 選択されている（現在表示中の）フラグメントを強調する枠線 */
+#shared_combination_overlay .fragment-node-wrapper.kfrag-selected-highlight .knowledge_fragment,
+#shared_combination_overlay .fragment-node-wrapper.kfrag-selected-highlight .thinking-node{
+	border: 3px solid #6C84E6; /* 太めの青系枠線 */
+	box-shadow: 0 4px 12px rgba(108,132,230,0.12);
+	z-index: 30; /* 前面に出す */
+}
+
+
 /* 議論状態インジケータ（右上） */
 #shared_combination_overlay .fragment-node-wrapper .fragment-discussed-indicator{
 	position:absolute;
@@ -3351,8 +3360,8 @@ display: none;
 /* --- KFrag action buttons: Undo / Redo / Reset --- */
 .kfrag-action-btn{
 	display:inline-block;
-	width:40px;
-	height:40px;
+	width:35px;
+	height:35px;
 	padding:0;
 	margin-left:6px;
 	margin-right:0;
@@ -3376,6 +3385,7 @@ display: none;
 	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M15 6 L9 12 L15 18 L13 18 L7 12 L13 6 Z'/></svg>") center/70% no-repeat;
 	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M15 6 L9 12 L15 18 L13 18 L7 12 L13 6 Z'/></svg>") center/70% no-repeat;
 	background: #6C84E6;
+	margin-left: 0px;
 	border-radius:0px;
 }
 
@@ -3398,7 +3408,6 @@ display: none;
     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
       <path fill='white' d='M17.65 6.35A8 8 0 1 0 12 20a8 8 0 0 0 7.94-7h-2.1A6 6 0 1 1 12 6c1.34 0 2.56.43 3.55 1.15L13 10h7V3l-2.35 2.35z'/>\
     </svg>") center/80% no-repeat;
-
     background: #6C84E6; /* アイコンの色 */
 }
 
@@ -3413,5 +3422,115 @@ display: none;
 /* tighten spacing specifically between undo and redo */
 .kfrag-action-group > #kfrag-undo{ margin-right:2px; margin-left:4px; }
 .kfrag-action-group > #kfrag-redo{ margin-left:0px; }
+
+/* Visual marker for fragments added to discussion selection */
+.fragment-node-wrapper.additional-selected{
+	box-shadow: 0 0 0 3px rgba(108,132,230,0.18);
+	border-radius: 8px;
+}
+
+/* Add-select button: circular plus icon with tooltip on hover */
+.fragment-add-select-btn{
+	display:inline-block;
+	width:30px;
+	height:30px;
+	padding:0;
+	margin-left:8px;
+	border-radius:50%;
+	border:1px solid #6C84E6;
+	background:transparent;
+	position:relative;
+	cursor:pointer;
+	vertical-align:middle;
+}
+.fragment-add-select-btn .plus-icon{
+	position:absolute;
+	left:50%;
+	top:50%;
+	transform:translate(-50%,-50%);
+	font-size:18px;
+	color:#6C84E6;
+	line-height:1;
+}
+.fragment-add-select-btn .tooltip{
+	position:absolute;
+	left:50%;
+	bottom:calc(100% + 8px);
+	transform:translateX(-50%) translateY(6px);
+	background:rgba(0,0,0,0.85);
+	color:#fff;
+	padding:6px 8px;
+	border-radius:4px;
+	font-size:12px;
+	white-space:nowrap;
+	opacity:0;
+	pointer-events:none;
+	transition:opacity .12s, transform .12s;
+}
+.fragment-add-select-btn:hover .tooltip{
+	opacity:1; 
+	transform:translateX(-50%) translateY(0); 
+}
+.fragment-add-select-btn.is-adding{ 
+	background:#6C84E6; 
+}
+.fragment-add-select-btn.is-adding .plus-icon{
+	color:#fff; 
+}
+
+/* Selected fragments list under the discussion title */
+.fragment-selected-list{ 
+	display:flex; 
+	gap:6px; 
+	align-items:center; 
+	margin-top:6px; 
+}
+.fragment-selected-item{ 
+	display:inline-block; 
+	padding:4px 8px; 
+	background:#eef; 
+	border-radius:8px; 
+	font-size:13px; 
+	color:#003049; 
+	border:1px solid rgba(0,0,0,0.04); 
+}
+.fragment-selected-item.primary{ 
+	background:#6C84E6; 
+	color:#fff; 
+	font-weight:600; 
+}
+
+/* remove button inside badge */
+.fragment-selected-item .remove-btn{
+	display:inline-block;
+	width:16px;
+	height:16px;
+	line-height:16px;
+	text-align:center;
+	margin-left:6px;
+	background: rgba(0,0,0,0.06);
+	border-radius:50%;
+	font-size:12px;
+	color:#333;
+	cursor:pointer;
+}
+.fragment-selected-item.primary .remove-btn{ display:none; }
+
+/* Container between title and message list that shows selected nodes */
+.fragment-selected-area{ 
+	display:flex; 
+	align-items:center; 
+	font-size: 14px;
+	gap:8px; 
+	padding:0px 0 4px 0; 
+}
+.fragment-selected-area .selected-label{ 
+	color:#003049; 
+	font-weight:600; 
+	margin-right:6px; 
+}
+.fragment-selected-area .fragment-selected-list{ 
+	margin-top:0; 
+}
 
 

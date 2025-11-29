@@ -584,7 +584,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             <div class="overlay-input-area">
                                                 <!-- 左右2分割: 左=ディスカッション履歴, 右=知識登録フォーム -->
                                                 <div id="discussion_history_area" class="discussion_history_area">
-                                                    <div class="overlay-title" style="margin-bottom:8px;">ディスカッション履歴</div>
+                                                    <div class="overlay-title" style="margin-bottom:4px;">ディスカッション履歴</div>
                                                     <?php
                                                     // 掲示板用にログインユーザー名を取得
                                                     $__board_user_name = 'ユーザー';

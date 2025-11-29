@@ -5,6 +5,172 @@ window.addEventListener && window.addEventListener('error', function(evt){
     try{ console && console.error && console.error('JS error caught:', evt && (evt.message || evt.error)); }catch(_){ }
 });
 
+// 追加のフラグメント選択モード切替ボタン
+$(document).on('click', '#fragment-add-select-toggle', function(){
+    try{
+        window.kfrag_add_select_mode = !window.kfrag_add_select_mode;
+        var $btn = $(this);
+        if(window.kfrag_add_select_mode){
+            // enable mode
+            window.kfrag_add_selected = window.kfrag_add_selected || { ext: [], kfid: [] };
+            $btn.addClass('is-adding');
+        } else {
+            // disable mode
+            $btn.removeClass('is-adding');
+        }
+        try{ updateFragmentSelectedList(); }catch(_){ }
+    }catch(e){ console && console.error && console.error('fragment-add-select-toggle error', e); }
+});
+
+// update the selected fragment list UI (primary + additional)
+function updateFragmentSelectedList(){
+    try{
+        var $list = $('#fragment-selected-list');
+        if(!$list || !$list.length) return;
+        $list.empty();
+        // prefer explicit display list if maintained, otherwise build from primary + additional
+        var items = [];
+        if(window.kfrag_display_list && Array.isArray(window.kfrag_display_list) && window.kfrag_display_list.length){
+            items = window.kfrag_display_list.slice();
+        } else {
+            if(typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null){ items.push(String(window.activeKnowledgeFragmentId)); }
+            else if(typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null){ items.push(String(window.activeExternalizedId)); }
+            if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+                window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks !== 'null' && ks !== 'undefined' && ks.length && items.indexOf(ks) === -1){ items.push(ks); } });
+            }
+        }
+        items.forEach(function(k,i){
+            var $it = $('<span class="fragment-selected-item" data-kfid="'+k+'"></span>');
+            $it.text('#' + k);
+            if(i === 0) {
+                $it.addClass('primary');
+            } else {
+                // add a small remove button for additional selections
+                $it.append('<span class="remove-btn" title="選択解除">×</span>');
+            }
+            $list.append($it);
+        });
+
+        // Update highlight class on fragment node wrappers so selected fragments show thicker border
+        try{
+            // remove previous highlights
+            $('.fragment-node-wrapper.kfrag-selected-highlight').removeClass('kfrag-selected-highlight');
+            // add highlight to each selected id
+            items.forEach(function(k){
+                try{
+                    var $w = $('.fragment-node-wrapper').filter(function(){
+                        try{ return String($(this).data('knowledge-fragment-id')) === String(k) || String($(this).data('externalized-id')) === String(k); }catch(_){ return false; }
+                    }).first();
+                    if($w && $w.length){ $w.addClass('kfrag-selected-highlight'); }
+                }catch(_){ }
+            });
+        }catch(_){ }
+
+    }catch(e){ console && console.error && console.error('updateFragmentSelectedList error', e); }
+}
+
+
+// Right-click on a selected badge to remove that additional selection
+$(document).on('contextmenu', '#fragment-selected-list .fragment-selected-item', function(e){
+    try{
+        e.preventDefault();
+        var $el = $(this);
+        var k = String($el.data('kfid'));
+        // If it's the primary item (first), do not remove primary here
+        var $list = $('#fragment-selected-list');
+        if(!$list || !$list.length) return;
+        var first = $list.find('.fragment-selected-item').first();
+        if(first && first.length && String(first.data('kfid')) === k){
+            // primary selected; do nothing on right-click
+            return;
+        }
+        // remove from kfrag_add_selected arrays
+        if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+            var idx = window.kfrag_add_selected.kfid.indexOf(k);
+            if(idx !== -1){
+                window.kfrag_add_selected.kfid.splice(idx,1);
+                if(window.kfrag_add_selected.ext && window.kfrag_add_selected.ext.length > idx){ window.kfrag_add_selected.ext.splice(idx,1); }
+            } else {
+                // maybe stored in ext; try remove by matching ext
+                if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+                    var idx2 = window.kfrag_add_selected.ext.indexOf(k);
+                    if(idx2 !== -1){ window.kfrag_add_selected.ext.splice(idx2,1); if(window.kfrag_add_selected.kfid.length > idx2) window.kfrag_add_selected.kfid.splice(idx2,1); }
+                }
+            }
+        }
+        // remove visual marker on node wrapper if present
+        try{
+            var $w = $('.fragment-node-wrapper').filter(function(){
+                try{ return String($(this).data('knowledge-fragment-id')) === k || String($(this).data('externalized-id')) === k; }catch(_){ return false; }
+            }).first();
+            if($w && $w.length){ $w.removeClass('additional-selected'); }
+        }catch(_){ }
+        // update UI and history
+        try{ 
+            // update display list
+            if(window.kfrag_display_list && Array.isArray(window.kfrag_display_list)){
+                window.kfrag_display_list = window.kfrag_display_list.filter(function(x){ return String(x) !== k; });
+            }
+            updateFragmentSelectedList();
+        }catch(_){ }
+        try{
+            var combined = [];
+            if(window.activeExternalizedId) combined.push(window.activeExternalizedId);
+            else if(window.activeKnowledgeFragmentId) combined.push(window.activeKnowledgeFragmentId);
+            if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+                window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
+            }
+            combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
+            if(combined.length === 0){ $('#discussion_message_list').empty(); }
+            else { fetchDiscussionHistory(combined); }
+        }catch(_){ }
+    }catch(e){ console && console.error && console.error('remove selected badge error', e); }
+});
+
+// Click on remove button inside badge to remove selection (more reliable than right-click)
+$(document).on('click', '#fragment-selected-list .remove-btn', function(e){
+    try{
+        e.stopPropagation();
+        var $btn = $(this);
+        var $el = $btn.closest('.fragment-selected-item');
+        var k = String($el.data('kfid'));
+        // prevent removing primary
+        var $list = $('#fragment-selected-list');
+        var first = $list.find('.fragment-selected-item').first();
+        if(first && first.length && String(first.data('kfid')) === k){ return; }
+        // remove from selection arrays
+        if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+            var idx = window.kfrag_add_selected.kfid.indexOf(k);
+            if(idx !== -1){
+                window.kfrag_add_selected.kfid.splice(idx,1);
+                if(window.kfrag_add_selected.ext && window.kfrag_add_selected.ext.length > idx){ window.kfrag_add_selected.ext.splice(idx,1); }
+            } else {
+                var idx2 = (window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)) ? window.kfrag_add_selected.ext.indexOf(k) : -1;
+                if(idx2 !== -1){ window.kfrag_add_selected.ext.splice(idx2,1); if(window.kfrag_add_selected.kfid.length > idx2) window.kfrag_add_selected.kfid.splice(idx2,1); }
+            }
+        }
+        // remove from display list
+        if(window.kfrag_display_list && Array.isArray(window.kfrag_display_list)){
+            window.kfrag_display_list = window.kfrag_display_list.filter(function(x){ return String(x) !== k; });
+        }
+        // remove visual marker on node wrapper
+        try{ var $w = $('.fragment-node-wrapper').filter(function(){ try{ return String($(this).data('knowledge-fragment-id')) === k || String($(this).data('externalized-id')) === k; }catch(_){ return false; } }).first(); if($w && $w.length){ $w.removeClass('additional-selected'); } }catch(_){ }
+        // update UI and history
+        try{ updateFragmentSelectedList(); }catch(_){ }
+        try{
+            var combined = [];
+            if(window.activeExternalizedId) combined.push(window.activeExternalizedId);
+            else if(window.activeKnowledgeFragmentId) combined.push(window.activeKnowledgeFragmentId);
+            if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+                window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
+            }
+            combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
+            if(combined.length === 0){ $('#discussion_message_list').empty(); }
+            else { fetchDiscussionHistory(combined); }
+        }catch(_){ }
+    }catch(e){ console && console.error && console.error('remove-btn click error', e); }
+});
+
 // Save fragment positions to server when KRA is submitted (separate from discussed->DONE)
 $(document).on('click', '#kra-submit', function(){
     try{
@@ -2938,27 +3104,81 @@ function initializeFragmentsWorkspace(){
         if ($(e.target).closest('.detail-button, .card-actions, .card-detail, a, button, input, textarea, select, label').length) return;
         var $wrap = $(this).closest('.fragment-node-wrapper');
         if (!$wrap.length) return;
+
+        // If add-select mode active, toggle additional selection and refresh combined history
+        try{
+            if(window.kfrag_add_select_mode){
+                window.kfrag_add_selected = window.kfrag_add_selected || { ext: [], kfid: [] };
+                var addExt = null;
+                try{ addExt = $wrap.data('externalized-id') || null; }catch(_){ addExt = null; }
+                var addKfid = $wrap.data('knowledge-fragment-id') || null;
+                var uid = (addExt !== null && addExt !== undefined && String(addExt).length) ? String(addExt) : String(addKfid);
+                var idx = window.kfrag_add_selected.ext.indexOf(uid);
+                if(idx === -1){
+                    window.kfrag_add_selected.ext.push(uid);
+                    window.kfrag_add_selected.kfid.push(String(addKfid));
+                    $wrap.addClass('additional-selected');
+                } else {
+                    window.kfrag_add_selected.ext.splice(idx,1);
+                    window.kfrag_add_selected.kfid.splice(idx,1);
+                    $wrap.removeClass('additional-selected');
+                }
+                try{ 
+                    // ensure display list keeps previous selections and primary
+                    window.kfrag_display_list = window.kfrag_display_list || [];
+                    // primary at index 0
+                    var primaryId = (typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null) ? String(window.activeKnowledgeFragmentId) : ((typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) ? String(window.activeExternalizedId) : null);
+                    var display = [];
+                    if(primaryId) display.push(primaryId);
+                    if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+                        window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && display.indexOf(ks) === -1) display.push(ks); });
+                    }
+                    window.kfrag_display_list = display;
+                    updateFragmentSelectedList();
+                }catch(_){ }
+                try{
+                    var combined = [];
+                    if(window.activeExternalizedId) combined.push(window.activeExternalizedId);
+                    else if(window.activeKnowledgeFragmentId) combined.push(window.activeKnowledgeFragmentId);
+                    if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+                        window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
+                    }
+                    combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
+                    if(combined.length === 0){ $('#discussion_message_list').empty(); }
+                    else { fetchDiscussionHistory(combined); }
+                }catch(__){ }
+
+                // Auto-disable add-select mode after toggling selection and update button UI
+                try{
+                    window.kfrag_add_select_mode = false;
+                    var $btnAdd = $('#fragment-add-select-toggle');
+                    if($btnAdd && $btnAdd.length){ $btnAdd.removeClass('is-adding'); }
+                }catch(_){ }
+
+                return;
+            }
+        }catch(_){ }
+
+        // Normal primary selection behavior
         var kfid = $wrap.data('knowledge-fragment-id') || null;
         var disp = $wrap.data('knowledge-fragment-display') || kfid;
         window.activeKnowledgeFragmentId = kfid;
-        // 外部化テーブルのID（externalized_contents_id）があればグローバルに保持
         try{ window.activeExternalizedId = $wrap.data('externalized-id') || null; }catch(_){ window.activeExternalizedId = null; }
         try{
             var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
             if($dtitle && $dtitle.length){
-                // 保持されているボタンを上書きして消さないよう、.title-text に表示文言を設定する
                 if($dtitle.find('.title-text').length){
-                    $dtitle.find('.title-text').text(disp + ' に関してのディスカッション履歴');
-                } else {
-                    // もし .title-text が無ければ従来通り text() する
-                    $dtitle.text(disp + ' に関してのディスカッション履歴');
-                }
+                    $dtitle.find('.title-text').text('ディスカッション履歴');
+                } else { $dtitle.text('ディスカッション履歴'); }
             }
         }catch(_){ }
         try{
             var fetchId = null;
             try{ fetchId = $wrap.data('externalized-id') || null; }catch(_){ fetchId = null; }
             if(fetchId === null) fetchId = kfid;
+            // Clear additional selections when primary changes
+            try{ if(window.kfrag_add_selected){ window.kfrag_add_selected = { ext: [], kfid: [] }; $('.fragment-node-wrapper.additional-selected').removeClass('additional-selected'); } }catch(_){ }
+            try{ updateFragmentSelectedList(); }catch(_){ }
             fetchDiscussionHistory(fetchId);
         }catch(_){ }
         // When a fragment is selected, show the post form and remove any placeholder.
@@ -2970,7 +3190,6 @@ function initializeFragmentsWorkspace(){
             var $areaHide = $('#discussion_history_area');
             if($areaHide && $areaHide.length){ $areaHide.find('.discussion-placeholder').hide(); }
         }catch(_){ }
-        // ボタン状態同期（トグル式、無効化はしない）
         try{
             var st = ($wrap.data('discussed-status')||'').trim();
             var $btn = $('#fragment-discussed-toggle');
@@ -3153,6 +3372,38 @@ function fetchDiscussionHistory(fragmentId){
     try{ console && console.debug && console.debug('fetchDiscussionHistory', fragmentId); }catch(_){ }
     var $list = $('#discussion_message_list');
     if(!$list || !$list.length) return;
+    // support passing an array of fragment ids to fetch combined history
+    if(Array.isArray(fragmentId)){
+        $list.empty();
+        var ids = fragmentId.slice();
+        var pending = ids.length;
+        if(pending === 0) return;
+        ids.forEach(function(id){
+            var data = { limit: 200 };
+            if(typeof id !== 'undefined' && id !== null){ data.fragment_id = id; }
+            $.ajax({ url: 'php/get_discussion_history.php', type: 'GET', dataType: 'json', data: data }).done(function(res){
+                if(res && res.status === 'ok' && Array.isArray(res.items)){
+                    var $board = $('#discussion_board');
+                    var boardUser = $board.data('user-name') || 'ユーザー';
+                    res.items.forEach(function(item){
+                        try{ if(item.discussion_history_id && $list.find('[data-discussion-id="'+item.discussion_history_id+'"]').length){ return; } }catch(_){ }
+                        var uname = (item.user_name && item.user_name.length) ? item.user_name : boardUser;
+                        var $card = $('<div class="message-card"></div>').attr('data-discussion-id', item.discussion_history_id || '');
+                        var $author = $('<div class="message-author"></div>').text(uname + ' さん');
+                        var $body = $('<div class="message-body"></div>').text(item.content || '');
+                        $card.append($author).append($body);
+                        if(item.posted_time){ var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(item.posted_time); $card.append($time); }
+                        $list.append($card);
+                    });
+                } else {
+                    console.warn('fetchDiscussionHistory failed for id', id, res);
+                }
+            }).fail(function(xhr,st,err){ console.error('fetchDiscussionHistory通信失敗', st, err, xhr && xhr.responseText); })
+            .always(function(){ pending--; if(pending <= 0){ try{ $list.scrollTop($list.prop('scrollHeight')); }catch(_){ } } });
+        });
+        return;
+    }
+
     $list.empty();
     var data = { limit: 200 };
     if(typeof fragmentId !== 'undefined' && fragmentId !== null){ data.fragment_id = fragmentId; }
@@ -3249,8 +3500,27 @@ function initializeDiscussionBoard(){
                         $dtitle.prepend('<span class="title-text"></span>');
                     }
                 }
+                // set fixed title text
+                try{ $dtitle.find('.title-text').text('ディスカッション履歴'); }catch(_){ }
                 var $btn = $('<button type="button" id="fragment-discussed-toggle" class="fragment-discussed-btn">議論開始</button>');
                 $dtitle.append($btn);
+                // 追加フラグメント選択ボタン（+アイコン、ツールチップ付き）
+                if(!$dtitle.find('#fragment-add-select-toggle').length){
+                    var $btnAdd = $(
+                        '<button type="button" id="fragment-add-select-toggle" class="fragment-add-select-btn" aria-label="追加のフラグメントを選択">'
+                        + '<span class="plus-icon" aria-hidden="true">+</span>'
+                        + '<span class="tooltip">追加のフラグメントを選択</span>'
+                        + '</button>'
+                    );
+                    $dtitle.append($btnAdd);
+                }
+                // placeholder container for selected node list: insert after title (between title and message list)
+                try{
+                    var $selArea = $dtitle.next('#fragment-selected-area');
+                    if(!$selArea || !$selArea.length){
+                        $dtitle.after('<div id="fragment-selected-area" class="fragment-selected-area"><span class="selected-label">現在選択しているノード： </span><div id="fragment-selected-list" class="fragment-selected-list" aria-live="polite"></div></div>');
+                    }
+                }catch(_){ }
             }
         }catch(__){ }
 
@@ -3347,6 +3617,7 @@ function initializeDiscussionBoard(){
         }
         // if a fragment is already active, load its history
         try{ if(window.activeKnowledgeFragmentId){ fetchDiscussionHistory(window.activeKnowledgeFragmentId); } }catch(_){ }
+        try{ updateFragmentSelectedList(); }catch(_){ }
     }catch(ex){ try{ console.warn('initializeDiscussionBoard error', ex); }catch(_){}}
 }
 
