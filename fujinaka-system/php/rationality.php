@@ -219,122 +219,71 @@ try {
         }
     }
 
-    // 追加: $pairStatus の各エントリへ logic に存在するノードの logic_node_ids と content を付与
-    foreach ($pairStatus as $statusKey => &$entries) {
-        foreach ($entries as &$entry) {
-            $detailList = [];
-            foreach ($entry['node_ids'] as $nid) {
-                $nidStr = (string)$nid;
-                $lnIds = $logicNodeIdsByFNode[$nidStr] ?? [];
-                $detailList[] = [
-                    'node_id' => $nidStr,
-                    'logic_node_ids' => $lnIds,
-                    'content' => $contentByNode[$nidStr] ?? null,
-                ];
-            }
-            $entry['nodesLogic'] = $detailList; // 新フィールド: ペア内の各 node の対応情報
-            // 追加: 該当 rationality_id のアンカー配下子ノードの content を付与
-            $rid = (string)$entry['rationality_id'];
-            $entry['anchorChildContents'] = $pairAnchorChildContents[$rid] ?? [];
-        }
-        unset($entry);
-    }
-    unset($entries);
-
-    if (!empty($lSet)) {
-        // f_node ごとの matches を算出
-        foreach ($lSet as $fid) {
-            $fidStr = (string)$fid;
-            $logicIds = $logicNodeIdsByFNode[$fidStr] ?? [];
-            $matches  = !empty($logicIds) ? findRolesInLogicTriangleByLogicNodeIds($mysqli, $logicIds) : [];
-            $fNodeLogicSummary[] = [
-                'f_node_id'       => $fidStr,
-                'logic_node_ids'  => $logicIds,
-                'content'         => $contentByNode[$fidStr] ?? '',
-                'matches'         => $matches,
-            ];
-        }
-    }
-
-    // 3.5) 差分（rationality - logic）のnode_idに紐づくcontentを取得
-    $diffRationalityMinusLogicDetailed = [];
-    if (!empty($diffRationalityMinusLogic)) {
-        $placeholders = implode(',', array_fill(0, count($diffRationalityMinusLogic), '?'));
-        $sqlContents = "SELECT id AS node_id, content
-            FROM nodes
-            WHERE sheet_id = ?
-              AND user_id = ?
-              AND id IN ($placeholders)
-        ";
-        $stmtD = $mysqli->prepare($sqlContents);
-        if (!$stmtD) throw new Exception('SQLプリペア失敗(sqlContents): ' . $mysqli->error);
-
-        // 型をすべて文字列で扱う（node_idが数値でないケースに対応）
-        $types = 'ss' . str_repeat('s', count($diffRationalityMinusLogic));
-        $bindValues = array_merge([$sheet_id, $user_id], $diffRationalityMinusLogic);
-
-        $bindParams = [];
-        $bindParams[] = &$types;
-        foreach ($bindValues as $k => $v) {
-            $bindParams[] = &$bindValues[$k];
-        }
-        call_user_func_array([$stmtD, 'bind_param'], $bindParams);
-
-        $stmtD->execute();
-        $resD = $stmtD->get_result();
-        while ($row = $resD->fetch_assoc()) {
-            $diffRationalityMinusLogicDetailed[] = [
-                // 数値化せずそのまま返す（0化防止）
-                'node_id' => $row['node_id'],
-                'content' => $row['content'] ?? ''
-            ];
-        }
-        $stmtD->close();
-    }
-
-    // 3.6) rationality_id ごとに node_id と f_node_id の対応を分類して返す
-    $rationalityLogicMatch = [
-        'double' => new stdClass(), // 両方対応
-        'single' => new stdClass(), // 片方のみ対応
-        'no'     => new stdClass(), // 対応なし
+    // 表示要件に合わせたエントリ生成: rationality_id, node_id, content, anchor子content, 対応logic
+    $displayEntries = [
+        'noneinlogic' => [],
+        'oneinlogic'  => [],
+        'bothinlogic' => [],
     ];
     foreach ($rationalityPairs as $pair) {
         $rid   = (string)$pair['rationality_id'];
         $nidA  = (string)$pair['node_ids'][0];
         $nidB  = (string)$pair['node_ids'][1];
 
-        // f_node 対応可否
         $logicIdsA = $logicNodeIdsByFNode[$nidA] ?? [];
         $logicIdsB = $logicNodeIdsByFNode[$nidB] ?? [];
         $inA = !empty($logicIdsA);
         $inB = !empty($logicIdsB);
 
-        // helper to make entry
-        $makeEntry = function(?string $fnodeId, array $logicIds, array $contentByNode) {
-            $firstLogicId = !empty($logicIds) ? (string)$logicIds[0] : null;
-            return [
-                'f_node_id'     => $fnodeId,
-                'logic_node_id' => $firstLogicId,
-                'content'       => ($fnodeId !== null) ? ($contentByNode[$fnodeId] ?? null) : null,
-            ];
-        };
+        // ノード側情報
+        $nodesInfo = [
+            [
+                'node_id' => $nidA,
+                'content' => $contentByNode[$nidA] ?? '',
+            ],
+            [
+                'node_id' => $nidB,
+                'content' => $contentByNode[$nidB] ?? '',
+            ]
+        ];
+
+        // アンカー配下子情報
+        $anchorsChildren = $pairAnchorChildContents[$rid] ?? [];
+
+        // 対応logic（あるもののみ列挙、複数logicnode_idに対応）
+        $logicInfo = [];
+        if ($inA) {
+            foreach ($logicIdsA as $lnid) {
+                $logicInfo[] = [
+                    'logic_node_id' => (string)$lnid,
+                    'f_node_id'     => $nidA,
+                    'content'       => $contentByNode[$nidA] ?? '',
+                ];
+            }
+        }
+        if ($inB) {
+            foreach ($logicIdsB as $lnid) {
+                $logicInfo[] = [
+                    'logic_node_id' => (string)$lnid,
+                    'f_node_id'     => $nidB,
+                    'content'       => $contentByNode[$nidB] ?? '',
+                ];
+            }
+        }
+
+        $entry = [
+            'rationality_id' => $rid,
+            'nodes'          => $nodesInfo,
+            'anchor_children'=> $anchorsChildren,
+            'logic_matches'  => $logicInfo,
+        ];
 
         if ($inA && $inB) {
-            $rationalityLogicMatch['double']->{$rid} = [
-                $makeEntry($nidA, $logicIdsA, $contentByNode),
-                $makeEntry($nidB, $logicIdsB, $contentByNode),
-            ];
-        } elseif ($inA xor $inB) {
-            $entries = [];
-            if ($inA) $entries[] = $makeEntry($nidA, $logicIdsA, $contentByNode);
-            if ($inB) $entries[] = $makeEntry($nidB, $logicIdsB, $contentByNode);
-            $rationalityLogicMatch['single']->{$rid} = $entries;
+            $displayEntries['bothinlogic'][] = $entry;
+        } elseif ($inA || $inB) {
+            $displayEntries['oneinlogic'][] = $entry;
         } else {
-            $rationalityLogicMatch['no']->{$rid} = [[
-                'f_node_id'     => null,
-                'logic_node_id' => null,
-                'content'       => null,
-            ]];
+            $displayEntries['noneinlogic'][] = $entry;
         }
     }
 
@@ -345,18 +294,14 @@ try {
         // 追加: ペア関連の指定概念アンカーと子のcontent
         'pairAnchors' => $pairAnchors,
         'pairAnchorChildContents' => $pairAnchorChildContents,
+        // 既存の詳細に加えて、表示用に整理した配列を追加
+        'displayEntries' => $displayEntries,
+        // 互換のため旧キーも返すが、フロントは displayEntries を使用
         'pairStatus' => $pairStatus,
-        'logicNodeIdsByFNode' => $logicNodeIdsByFNode,
-        'rationalityNodeIds' => $rSet,
-        'logicNodeFIds' => $lSet,
-        'diffRationalityMinusLogic' => $diffRationalityMinusLogic,
-        'diffLogicMinusRationality' => $diffLogicMinusRationality,
-        'intersection' => $intersection,
-        'diffRationalityMinusLogicDetailed' => $diffRationalityMinusLogicDetailed,
-        // 追加: f_node 要約
-        'fNodeLogicSummary' => $fNodeLogicSummary,
-        // 追加: rationality_id ごとの対応分類
-        'rationalityLogicMatch' => $rationalityLogicMatch,
+        // エイリアスキー名も追加（noneinlogic/oneinlogic/bothinlogic）
+        'noneinlogic' => $displayEntries['noneinlogic'],
+        'oneinlogic'  => $displayEntries['oneinlogic'],
+        'bothinlogic' => $displayEntries['bothinlogic'],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 } catch (Throwable $e) {

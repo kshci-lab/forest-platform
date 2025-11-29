@@ -13,79 +13,90 @@ function getRationalityStatus() {
 
 // 助言描画
 function renderRationalityAdvice(containerSelector) {
-	const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-	$(containerSelector).html('<div class="loading">読み込み中...</div>');
 	getRationalityStatus()
 		.done(function(res){
-			try { console.log('rationality.php response', res); } catch(e) {}
-			const ps = (res.pairStatus) || {};
-			const noneArr = ps.noneInLogic || [];
-			const oneArr  = ps.oneInLogic || [];
-			const bothArr = ps.bothInLogic || [];
+			console.log('rationality.php response:', res);
 
-			// 共通: ペア概要文字列
-			const formatPairNodes = (entry) => {
-				const nodes = entry.node_ids || [];
-				return nodes.map(n => `#${esc(n)}`).join(' / ');
-			};
+			const noneArr = res.noneinlogic || (res.displayEntries && res.displayEntries.noneinlogic) || [];
+			const oneArr  = res.oneinlogic  || (res.displayEntries && res.displayEntries.oneinlogic)  || [];
+			const bothArr = res.bothinlogic || (res.displayEntries && res.displayEntries.bothinlogic) || [];
 
-			// ノード詳細（content, logic_node_ids）
-			const nodeLogicSummary = (entry) => {
-				const list = entry.nodesLogic || [];
-				return list.map(n => {
-					const lnIds = (n.logic_node_ids || []).map(id => esc(id)).join(',');
-					return `<span class="node-detail">node:${esc(n.node_id)} content:"${esc(n.content)}" logic_node_ids:[${lnIds}]</span>`;
-				}).join('<br>');
-			};
+			console.log('noneinlogic:', noneArr);
+			console.log('oneinlogic:', oneArr);
+			console.log('bothinlogic:', bothArr);
 
-			// アンカー配下子ノード内容
-			const anchorChildrenHtml = (entry) => {
-				const arr = entry.anchorChildContents || [];
-				if (!arr.length) return '';
-				const items = arr.map(c => `<li>#${esc(c.node_id)}: ${esc(c.content)}</li>`).join('');
-				return `<div class="anchor-children"><strong>関連子ノード:</strong><ul>${items}</ul></div>`;
-			};
+			const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-			// セクション生成
-			const section = (title, entries, lineBuilder) => {
-				if (!entries.length) return '';
-				const items = entries.map(e => `<li>${lineBuilder(e)}${anchorChildrenHtml(e)}<div class="pair-nodes">${nodeLogicSummary(e)}</div></li>`).join('');
-				return `<h4>${esc(title)}</h4><ul class="rationality-advice-list">${items}</ul>`;
-			};
+			// none/one/bothごとの助言文生成
+			const nodeContentList = (nodes) =>
+				(nodes||[]).map(n => `node_id:${esc(n.node_id)} content:"${esc(n.content)}"`).join(' / ');
+			const anchorContentList = (children) =>
+				(children||[]).map(c => `#${esc(c.node_id)} "${esc(c.content)}"`).join(', ');
+			const logicContentList = (matches) =>
+				(matches||[]).map(m => `logic_node_id:${esc(m.logic_node_id)} f_node_id:${esc(m.f_node_id)} content:"${esc(m.content)}"`).join('<br>');
 
-			// メッセージ生成ロジック
 			const lineNone = (e) => {
-				return `ペア(${formatPairNodes(e)})はまだ論理構成に取り込まれていません。これらを claim/fact/reason のいずれかへ対応付ける必要はありませんか？`;
+				console.log('[none] entry:', e);
+				const nodes = nodeContentList(e.nodes);
+				const anchors = anchorContentList(e.anchor_children);
+				return `<div class="entry">
+					<div class="head">[none] rationality_id:${esc(e.rationality_id)}</div>
+					<div>ノード: ${nodes}</div>
+					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
+					<div class="advice">これらの内容を三角ロジックに反映しなくていいですか？</div>
+				</div>`;
 			};
 			const lineOne = (e) => {
-				// logicDetail から片側の presentIndex を利用可能
-				const presentIndex = e.logicDetail ? e.logicDetail.presentIndex : null;
-				let hint = '';
-				if (presentIndex === 0 || presentIndex === 1) {
-					const side = presentIndex === 0 ? '一方(先頭ノード)' : '一方(二番目ノード)';
-					hint = `${side}のみ論理構成に存在。もう片方も論理要素化すべきか検討してください。`;
-				} else {
-					hint = '片方のみ論理構成に存在。もう片方の論理要素化を検討。';
-				}
-				return `ペア(${formatPairNodes(e)}) ${hint}`;
+				console.log('[one] entry:', e);
+				const nodes = nodeContentList(e.nodes);
+				const anchors = anchorContentList(e.anchor_children);
+				const logic = logicContentList(e.logic_matches);
+				return `<div class="entry">
+					<div class="head">[one] rationality_id:${esc(e.rationality_id)}</div>
+					<div>ノード: ${nodes}</div>
+					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
+					${logic ? `<div>三角ロジック対応: ${logic}</div>` : ''}
+					<div class="advice">これらの内容を三角ロジックに反映しなくていいですか？</div>
+				</div>`;
 			};
 			const lineBoth = (e) => {
-				return `ペア(${formatPairNodes(e)})は両方とも論理構成に取り込まれています。整合性や重複を確認し、不要な冗長がないか検討してください。`;
+				console.log('[both] entry:', e);
+				const nodes = nodeContentList(e.nodes);
+				const anchors = anchorContentList(e.anchor_children);
+				const logic = logicContentList(e.logic_matches);
+				return `<div class="entry">
+					<div class="head">[both] rationality_id:${esc(e.rationality_id)}</div>
+					<div>ノード: ${nodes}</div>
+					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
+					${logic ? `<div>三角ロジック対応: ${logic}</div>` : ''}
+					<div class="advice">f_node_idのcontentは三角ロジックにありますが、それはnode_idのcontentやアンカー子のcontentが適切に反映されていますか？</div>
+				</div>`;
+			};
+
+			const section = (title, entries, lineFn) => {
+				console.log('section:', title, entries);
+				if (!entries.length) return '';
+				const items = entries.map(lineFn).join('');
+				return `<h4>${esc(title)}</h4><div class="rationality-advice-list">${items}</div>`;
 			};
 
 			let body = [
-				section('未取り込みペア (noneInLogic)', noneArr, lineNone),
-				section('片側のみ取り込み (oneInLogic)', oneArr, lineOne),
-				section('両側取り込み済み (bothInLogic)', bothArr, lineBoth)
+				section('noneinlogic', noneArr, lineNone),
+				section('oneinlogic', oneArr, lineOne),
+				section('bothinlogic', bothArr, lineBoth),
 			].join('');
-			if (!body || body.trim() === '') {
-				body = '<div class="empty">対象のペアが見つかりませんでした。</div>';
+			if (!body.trim()) body = '<div class="empty">対象のペアが見つかりませんでした。</div>';
+			console.log('rendered html:', body);
+			const $target = $(containerSelector);
+			if ($target.length === 0) {
+				console.warn('指定のcontainerSelectorに該当する要素がありません:', containerSelector);
+			} else {
+				$target.html('<div class="rationality-advice">'+body+'</div>');
+				console.log('after html set:', $target.html());
 			}
-			const html = '<div class="rationality-advice">' + body + '</div>';
-			$(containerSelector).html(html);
 		})
 		.fail(function(err){
-			console.error(err);
+			console.error('getRationalityStatus failed:', err);
 			$(containerSelector).html('<div class="error">rationality取得に失敗しました</div>');
 		});
 }

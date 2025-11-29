@@ -377,6 +377,8 @@ $ai_output = '';
                 <div style="font-weight:bold; margin-bottom:6px;">助言</div>
                 <div id="advice_output" style="white-space:pre-wrap; line-height:1.6; font-size:0.95em; min-height:2em; color:#333;"></div>
               </div>
+              <!-- rationalityペア助言表示用エリアを追加 -->
+              <div id="rationality_advice" style="margin:14px 0; padding:12px; border:1px solid #ddd; border-radius:8px; background:#fff;"></div>
             </div>
             <div id="elab_jsmind_container" style="display:none;" oncontextmenu="return false;" ></div>
             <div id="elab_map_conmenu" class="elab_conmenu">
