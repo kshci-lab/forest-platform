@@ -108,6 +108,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.jmindex = []; // マインドマップとの連携用インデックス配列
         this.ownNetwork = this.generateThinkingProcessNetworkCanvas(container, this.nodes, this.edges); // デフォルトのマップを表示
         this.choose_input_xmlLoad();
+        // jmnode の右クリック制御をセットアップ
+        this.setupJmnodeContextGuards();
         // カスタムツールチップの設定
         this.setupCustomTooltip();
         if(load == "load"){
@@ -231,6 +233,60 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             this.setupKeyboardListeners();
         }
         this.choose_input_xmlLoad();
+    }
+
+    // jmnode 要素の右クリックをガードする (type="answer" のときは無効化)
+    setupJmnodeContextGuards() {
+        const attachGuard = (el) => {
+            try {
+                if (!el) return;
+                const type = el.getAttribute && el.getAttribute('type');
+                if (type === 'answer') {
+                    // 重複登録を避ける
+                    if (!el._answerContextGuarded) {
+                        el.addEventListener('contextmenu', (ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            // optional: 小さなコンソールログで確認できるようにする
+                            console.log('右クリック無効（answerノード）:', el.getAttribute('nodeid'));
+                            return false;
+                        }, { capture: true });
+                        el._answerContextGuarded = true;
+                    }
+                }
+            } catch (e) {
+                console.warn('attachGuard error', e);
+            }
+        };
+
+        // 既存の jmnode 要素に適用
+        try {
+            const existing = document.getElementsByTagName('jmnode');
+            for (let i = 0; i < existing.length; i++) {
+                attachGuard(existing[i]);
+            }
+        } catch (e) { /* ignore */ }
+
+        // ドキュメント内で新しく追加される jmnode に対しても自動でアタッチ
+        try {
+            const mo = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    if (m.addedNodes && m.addedNodes.length) {
+                        m.addedNodes.forEach((node) => {
+                            if (!node) return;
+                            if (node.tagName && node.tagName.toLowerCase() === 'jmnode') {
+                                attachGuard(node);
+                            } else if (node.querySelectorAll) {
+                                const kids = node.querySelectorAll('jmnode');
+                                kids.forEach(k => attachGuard(k));
+                            }
+                        });
+                    }
+                }
+            });
+            mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
+            this._jmnodeMutationObserver = mo;
+        } catch (e) { /* ignore */ }
     }
 
 
@@ -530,7 +586,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // 理由タグノードの場合の色設定
         if (node_type === "reason-tag") {
             node_color = '#FF8C00'; // オレンジ色（濃いめ）
-            node_shape = 'circularImage'; // アイコン形状
+            node_shape = 'ellipse'; // ゴシック絵文字をラベルで表示するため楕円形に変更
             text_color = 'white';  // 白い文字（見やすくするため）
             position_fixed = true;   // 固定位置
         }
@@ -538,7 +594,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         let result_label = '';
         // 理由タグノードの場合はアイコンラベルを使用
         if (node_type === "reason-tag") {
-            result_label = '?';
+            result_label = '💡';
         } else {
             const maxLength = 20;
             let currentPosition = 0;
@@ -593,19 +649,26 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             x: node_x, y: node_y, 
             status: "todo",
             shadow: {
-                enabled: false,  // 初期状態では影を無効
-                color: 'rgba(0,0,0,0.5)',
-                size: 15,
-                x: 3,
-                y: 3
+                enabled: true,
+                color: 'rgba(0,0,0,0.15)',
+                size: 1,
+                x: 4,
+                y: 4
             }
         };
 
-        // 理由タグノードの場合はアイコン画像を追加
+        // 手段ノード（group === 'step'）は枠線を表示しない
+        if (node_type === 'step') {
+            newNode.borderWidth = 0;
+            newNode.borderWidthSelected = 0;
+            newNode.shapeProperties = { borderDashes: false };
+        }
+
+        // 理由タグノードは絵文字ラベルで表示
         if (node_type === "reason-tag") {
-            newNode.image = 'image/question_agent.png'; // パスを修正
             newNode.size = 20;
             newNode.title = `なぜそれを取り組もうとしたか: ${node_label}`;
+            newNode.font = { color: 'white', size: 16 };
         }
         this.nodes.add(newNode);
         const boundingBox = this.ownNetwork.getBoundingBox(node_id);
@@ -745,6 +808,16 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             }
         };
 
+        // デフォルトで影を設定（手段ノードやタグは上書きする）
+        newNode.shadow = { enabled: true, color: 'rgba(0,0,0,0.15)', size: 1, x: 4, y: 4 };
+
+        // 手段ノード（group === 'step'）は枠線を表示しない
+        if (node_type === 'step') {
+            newNode.borderWidth = 0;
+            newNode.borderWidthSelected = 0;
+            newNode.shapeProperties = { borderDashes: false };
+        }
+
         // 手段ノード以外の場合はtitleを追加
         if (node_type !== "step") {
             newNode.title = tooltip;
@@ -760,20 +833,23 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 const reasonTagId = `reason-tag-${node_id}`;
                 const reasonTag = {
                     id: reasonTagId,
-                    label: '?',
-                    shape: 'circularImage',
-                    image: 'image/question_agent.png', // パスを修正
+                    label: '💡',
+                    shape: 'ellipse',
                     size: 20,
+                    font: { size: 16, color: 'white' },
                     color: {
-                        background: 'orange',
-                        border: 'darkorange'
+                        background: '#FF8C00',
+                        border: '#CC7000'
                     },
                     x: nodeBoundingBox.left + 8,
                     y: nodeBoundingBox.top + 8,
                     fixed: true,
                     physics: false,
                     group: 'reason-tag',
-                    title: '理由: ' + purpose
+                    title: '理由: ' + purpose,
+                    borderWidth: 0,
+                    borderWidthSelected: 0,
+                    shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
                 };
                 defaultThinkingProcess.nodes.add(reasonTag);
             }, 100);
@@ -786,7 +862,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 const timeTagId = `time-tag-${node_id}`;
                 const timeTag = {
                     id: timeTagId,
-                    label: '🕒',
+                    label: '⏳',
                     shape: 'ellipse',
                     size: 20,
                     color: {
@@ -802,7 +878,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     fixed: true,
                     physics: false,
                     group: 'time-tag',
-                    title: '完了予定: ' + estimated_time
+                    title: '完了予定: ' + estimated_time,
+                    borderWidth: 0,
+                    borderWidthSelected: 0,
+                    shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
                 };
                 defaultThinkingProcess.nodes.add(timeTag);
             }, 100);
@@ -832,7 +911,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     fixed: true,
                     physics: false,
                     group: 'reflection-tag',
-                    title: reflectionTitle
+                    title: reflectionTitle,
+                    borderWidth: 0,
+                    borderWidthSelected: 0,
+                    shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
                 };
                 defaultThinkingProcess.nodes.add(reflectionTag);
             }, 100);
@@ -880,6 +962,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             fixed: {y: y_fixed },
             x: node_x, y: node_y, 
         };
+        // バージョンノードにも影を適用
+        newNode.shadow = { enabled: true, color: 'rgba(0,0,0,0.15)', size: 1, x: 4, y: 4 };
         // console.log(newNode);
         
         defaultThinkingProcess.nodes.add(newNode);
@@ -1104,45 +1188,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
     }
 
-    //エッジのラベル編集
-    editEdgeLabel(edge_id, label_content) {
-        if (this.isViewingPastData) {
-            console.log('過去データ表示中のため、エッジ編集は無効化されています');
-            return;
-        }
-        console.log(`エッジ ${edge_id} のラベルを "${label_content}" に編集中...`);
-        
-        // エッジが存在するかチェック
-        const edge = this.edges.get(edge_id);
-        if (edge) {
-            // エッジラベルを内部管理オブジェクトに保存
-            this.EdgeLabels[edge_id] = label_content;
-            
-            // エッジを更新（ラベルを追加）
-            const updatedEdge = {
-                ...edge,
-                label: label_content,
-                font: {
-                    size: 12,
-                    color: '#333333',
-                    background: 'rgba(255, 255, 255, 0.8)',
-                    strokeWidth: 1,
-                    strokeColor: '#ffffff'
-                }
-            };
-            
-            this.edges.update(updatedEdge);
-            
-            // データベースに保存（RecordThinkingProcessを使用）
-            if (typeof defaultRecordThinkingProcess !== 'undefined' && defaultRecordThinkingProcess.update_Edge) {
-                defaultRecordThinkingProcess.update_Edge(edge_id, "label", label_content);
-            }
-            
-            console.log(`エッジ ${edge_id} のラベルが正常に更新されました`);
-        } else {
-            console.error(`エッジ ${edge_id} が見つかりません`);
-        }
-    }
+    // NOTE: エッジラベルの編集機能は仕様変更により廃止しました。
+    //    以前は editEdgeLabel によりエッジラベルを入力・保存していましたが、
+    //    現在はエッジラベル編集のUIを表示しません。
 
     //ダブルクリック時編集(完了)
     doubleclick (params) {
@@ -1164,13 +1212,86 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // params.nodes が空のときは、pointer の位置からノードを探すフォールバックを行う
         if (clickedNodeId === undefined || (Array.isArray(params.nodes) && params.nodes.length === 0)) {
             try {
-                const canvasPos = params.pointer && params.pointer.canvas ? params.pointer.canvas : null;
-                if (canvasPos) {
-                    const found = this.ownNetwork.getNodeAt(canvasPos);
-                    console.log('doubleclick fallback found node at pointer:', found);
-                    if (found !== undefined && found !== null) {
-                        clickedNodeId = found;
+                const network = this.ownNetwork;
+                let found = null;
+
+                // 1) pointer.canvas をそのまま試す
+                try {
+                    if (params.pointer && params.pointer.canvas && typeof params.pointer.canvas.x === 'number') {
+                        found = network.getNodeAt({ x: params.pointer.canvas.x, y: params.pointer.canvas.y });
+                        console.log('doubleclick fallback try pointer.canvas ->', found);
                     }
+                } catch (e) {
+                    console.warn('doubleclick fallback pointer.canvas error:', e);
+                }
+
+                // 2) pointer.DOM があれば DOM->canvas 変換を試す
+                if (!found && params.pointer && params.pointer.DOM && typeof params.pointer.DOM.x === 'number') {
+                    try {
+                        // network.body.container があればそれを使う（vis の内部コンテナ）、無ければ id 'myProcessnetwork' を試す
+                        const container = (network && network.body && network.body.container) ? network.body.container : document.getElementById('myProcessnetwork');
+                        if (container) {
+                            const rect = container.getBoundingClientRect();
+                            // DOM 座標をコンテナ基準の canvas/DOM 座標へ変換
+                            const cx = params.pointer.DOM.x - rect.left;
+                            const cy = params.pointer.DOM.y - rect.top;
+                            // ここでは一旦変換後の座標をそのまま getNodeAt に渡す
+                            try {
+                                found = network.getNodeAt({ x: cx, y: cy });
+                                console.log('doubleclick fallback try pointer.DOM->canvas ->', found, 'coords:', {x: cx, y: cy});
+                            } catch (e2) {
+                                console.warn('doubleclick fallback getNodeAt with DOM->canvas coords failed:', e2);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('doubleclick fallback pointer.DOM conversion error:', e);
+                    }
+                }
+
+                // 3) それでも見つからない場合は最寄りノード探索（距離閾値で決定）
+                if (!found) {
+                    try {
+                        // 参照するターゲット座標（優先: canvas, 次: DOM）
+                        let target = null;
+                        if (params.pointer && params.pointer.canvas && typeof params.pointer.canvas.x === 'number') {
+                            target = { x: params.pointer.canvas.x, y: params.pointer.canvas.y };
+                        } else if (params.pointer && params.pointer.DOM && typeof params.pointer.DOM.x === 'number') {
+                            // DOM -> コンテナ基準
+                            const container = (network && network.body && network.body.container) ? network.body.container : document.getElementById('myProcessnetwork');
+                            if (container) {
+                                const rect = container.getBoundingClientRect();
+                                target = { x: params.pointer.DOM.x - rect.left, y: params.pointer.DOM.y - rect.top };
+                            } else {
+                                target = { x: params.pointer.DOM.x, y: params.pointer.DOM.y };
+                            }
+                        }
+
+                        if (target) {
+                            const positions = network.getPositions();
+                            let bestId = null;
+                            let bestDist = Infinity;
+                            for (const id in positions) {
+                                if (!positions.hasOwnProperty(id)) continue;
+                                const p = positions[id];
+                                const dx = p.x - target.x;
+                                const dy = p.y - target.y;
+                                const d = Math.sqrt(dx * dx + dy * dy);
+                                if (d < bestDist) { bestDist = d; bestId = id; }
+                            }
+                            console.log('doubleclick fallback nearest:', bestId, 'dist:', bestDist);
+                            // 閾値はおおよそ 30-40px（必要なら調整）
+                            if (bestDist <= 40) {
+                                found = bestId;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('doubleclick fallback nearest-node search error:', e);
+                    }
+                }
+
+                console.log('doubleclick fallback found node at pointer:', found);
+                if (found !== undefined && found !== null) {
+                    clickedNodeId = found;
                 }
             } catch (e) {
                 console.warn('doubleclick fallback error:', e);
@@ -1187,17 +1308,90 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 } catch (e) {
                     console.error('メモタグのダブルクリック処理でエラー:', e);
                 }
+            // 理由タグ（reason-tag-<nodeId>）がダブルクリックされたら理由編集ダイアログを開く
+            } else if (clickedIdStr.startsWith('reason-tag-')) {
+                try {
+                    const targetNodeId = clickedIdStr.replace('reason-tag-', '');
+                    this.selectId = targetNodeId; // show_reason_input は this.selectId を参照する
+                    // 既存の理由をメモリ/ノードタイトルから取得
+                    let reasonText = '';
+                    const rIdx = this.ReasonConnectNodeId.indexOf(targetNodeId);
+                    if (rIdx !== -1 && this.ReasonContent[rIdx]) {
+                        reasonText = this.ReasonContent[rIdx];
+                    } else {
+                        const reasonTagNode = this.nodes.get(clickedNodeId);
+                        if (reasonTagNode && reasonTagNode.title) {
+                            const m = reasonTagNode.title.split(/[:：]/);
+                            reasonText = m.slice(1).join(':').trim();
+                        }
+                    }
+                    this.show_reason_input();
+                    // ダイアログの textarea に既存値をセット
+                    try { document.getElementById('t_Process_reasontext').value = reasonText || ''; } catch (e) { /* ignore */ }
+                } catch (e) {
+                    console.error('理由タグダブルクリック処理でエラー:', e);
+                }
+                return;
+            // 完了予定タグ（time-tag-<nodeId>）がダブルクリックされたら完了予定編集ダイアログを開く
+            } else if (clickedIdStr.startsWith('time-tag-')) {
+                try {
+                    const targetNodeId = clickedIdStr.replace('time-tag-', '');
+                    this.selectId = targetNodeId; // show_time_input は this.selectId を参照する
+                    // 既存の完了予定をメモリ/ノードタイトルから取得
+                    let timeText = '';
+                    const tIdx = this.TimeConnectNodeId.indexOf(targetNodeId);
+                    if (tIdx !== -1 && this.TimeContent[tIdx]) {
+                        timeText = this.TimeContent[tIdx];
+                    } else {
+                        const timeTagNode = this.nodes.get(clickedNodeId);
+                        if (timeTagNode && timeTagNode.title) {
+                            const m = timeTagNode.title.split(/[:：]/);
+                            timeText = m.slice(1).join(':').trim();
+                        }
+                    }
+                    this.show_time_input();
+                    // ダイアログの入力に既存値をセット
+                    try { document.getElementById('t_Process_timetext').value = timeText || ''; } catch (e) { /* ignore */ }
+                } catch (e) {
+                    console.error('時間タグダブルクリック処理でエラー:', e);
+                }
+                return;
             // 内省タグ（reflection-tag-<nodeId>）がダブルクリックされたらログ出力
             } else if (clickedIdStr.startsWith('reflection-tag-')) {
-                console.log('内省タグがダブルクリックされました');
+                // reflection-tag-<nodeId> の場合、対応するノードの内省吹き出しを開く
+                try {
+                    const targetNodeId = clickedIdStr.replace('reflection-tag-', '');
+                    this.selectId = targetNodeId; // showFeedbackTooltip は this.selectId を参照する
+                    // showFeedbackTooltip 内で既存の内省タグがあれば内容を抽出して textarea に差し込む
+                    this.showFeedbackTooltip();
+                } catch (e) {
+                    console.error('内省タグダブルクリック処理でエラー:', e);
+                }
                 return;
             } else {
                 // 通常のノードダブルクリックはラベル編集
                 // ただしステータスが completed のノードは編集不可とする
                 const nodeObj = this.nodes.get(clickedNodeId) || {};
                 const nodeStatus = (nodeObj.status || '').toString();
-                if (nodeStatus === 'completed') {
-                    console.log(`ノード ${clickedNodeId} は完了済みのため編集できません (status=completed)`);
+                // ノードの色情報を取得（string か {background:...} の可能性がある）
+                let nodeColorVal = '';
+                try {
+                    if (typeof nodeObj.color === 'string') {
+                        nodeColorVal = nodeObj.color;
+                    } else if (nodeObj.color && typeof nodeObj.color.background === 'string') {
+                        nodeColorVal = nodeObj.color.background;
+                    }
+                } catch (e) {
+                    nodeColorVal = '';
+                }
+                // 追加デバッグ: どのIDが来ているかとステータス／色をログ出力
+                try {
+                    console.log('doubleclick: clickedNodeId=', clickedNodeId, 'nodeObj=', nodeObj, 'nodeStatus=', nodeStatus, 'nodeColor=', nodeColorVal);
+                } catch (e) { /* ignore */ }
+
+                // ガード: ノードの色が 'gray' の場合は編集不可とする
+                if (nodeColorVal === 'gray' || nodeStatus === 'completed') {
+                    console.log(`ノード ${clickedNodeId} は完了済み（color=${nodeColorVal} / status=${nodeStatus}）のため編集できません`);
                     try {
                         alert('このノードは完了済みのため編集できません');
                     } catch (e) {
@@ -1219,19 +1413,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // エッジがダブルクリックされた場合
         const clickedEdgeId = params.edges[0];
         if (clickedEdgeId !== undefined) {
-            console.log('エッジがダブルクリックされました:', clickedEdgeId);
-            
-            // 現在のエッジラベルを取得（存在する場合）
-            const currentEdge = this.edges.get(clickedEdgeId);
-            const currentLabel = currentEdge ? (currentEdge.label || '') : '';
-            
-            // ユーザーに新しいラベルを尋ねる
-            const newLabel = prompt('エッジに表示する文字を入力してください:', currentLabel);
-            
-            // 編集したラベルを反映
-            if (newLabel !== null) {
-                this.editEdgeLabel(clickedEdgeId, newLabel);
-            }
+            // エッジに文字を入力する処理は廃止されています
+            console.log('エッジがダブルクリックされました（ラベル編集は無効）:', clickedEdgeId);
+            return;
         }
     }
 
@@ -1716,8 +1900,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         reasonselect.style.position = "fixed"; // absoluteからfixedに変更
         reasonselect.style.zIndex = "9999"; // より高いz-indexに設定
         reasonselect.style.backgroundColor = "white";
-        reasonselect.style.border = "3px solid red"; // 目立つように赤い枠線を追加
-        reasonselect.style.boxShadow = "0 0 20px rgba(0,0,0,0.8)"; // 影を追加
+        reasonselect.style.border = "3px solid #FF8C00"; // 理由タグと同じオレンジで統一
+        reasonselect.style.boxShadow = "0 6px 18px rgba(255,136,0,0.08)"; // オレンジ寄りの柔らかい影
+        reasonselect.style.borderRadius = "6px";
         
         console.log('中央表示座標:', centerX, centerY);
         
@@ -1778,20 +1963,23 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // 理由タグノードを作成（左上に配置）
         const reasonTag = {
             id: `reason-tag-${this.selectId}`,
-            label: '?',
-            shape: 'circularImage',
-            image: 'image/question_agent.png', // パスを修正
+            label: '💡',
+            shape: 'ellipse',
             size: 20,
+            font: { size: 16, color: 'white' },
             color: {
-                background: 'orange',
-                border: 'darkorange'
+                background: '#FF8C00',
+                border: '#CC7000'
             },
             x: nodeBoundingBox.left + 8,
             y: nodeBoundingBox.top + 8,
             fixed: true,
             physics: false,
             group: 'reason-tag',
-            title: '理由: ' + reasonText
+            title: '理由: ' + reasonText,
+            borderWidth: 0,
+            borderWidthSelected: 0,
+            shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
         };
         
         // 理由タグをネットワークに追加
@@ -1863,8 +2051,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         timeselect.style.position = "fixed";
         timeselect.style.zIndex = "9999";
         timeselect.style.backgroundColor = "white";
-        timeselect.style.border = "3px solid blue";
-        timeselect.style.boxShadow = "0 0 20px rgba(0,0,0,0.8)";
+        // 時間タグと統一感を出すため緑系のボーダーとやわらかい緑の影を付与
+        timeselect.style.border = "3px solid #2e8b57";
+        timeselect.style.boxShadow = "0 6px 18px rgba(46,139,87,0.08)";
+        timeselect.style.borderRadius = "6px";
     }
 
     //完了予定を追加する
@@ -1905,7 +2095,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         const nodeBoundingBox = this.ownNetwork.getBoundingBox(this.selectId);
         const timeTag = {
             id: `time-tag-${this.selectId}`,
-            label: '🕒',
+            label: '⏳',
             shape: 'ellipse',
             size: 20,
             color: {
@@ -1921,7 +2111,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             fixed: true,
             physics: false,
             group: 'time-tag',
-            title: '完了予定: ' + timeText
+            title: '完了予定: ' + timeText,
+            borderWidth: 0,
+            borderWidthSelected: 0,
+            shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
         };
         
         // 完了予定タグをネットワークに追加
@@ -2076,6 +2269,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.nodes.update({
             id: this.selectId,
             color: 'orange',
+            status: 'inProgress',
             title: "作業中",
             size: 50,
             physics: { enabled: false },
@@ -2222,7 +2416,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                             fixed: true,
                             physics: false,
                             group: 'memo-tag',
-                            title: reflectionTitle
+                            title: reflectionTitle,
+                            borderWidth: 0,
+                            borderWidthSelected: 0,
+                            shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
                         };
 
                         this.nodes.add(reflectionTag);
@@ -2281,6 +2478,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // ノードの見た目を更新
         this.nodes.update({
             id: this.selectId,
+            status: 'paused',
             color: 'LightCoral',
             title: "作業中断",
             size: 50,
@@ -2326,6 +2524,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // ノードの見た目を更新
         this.nodes.update({
             id: this.selectId,
+            status: 'completed',
             color: 'gray',
             title: "作業完了",
             size: 50,
@@ -2366,12 +2565,16 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // 吹き出しの内容を設定
         tooltip.style.left = `${canvasPosition.x}px`;
         tooltip.style.top = `${canvasPosition.y + 20}px`; // ノードの下に表示
-        tooltip.style.width = "400px";
-        tooltip.style.minWidth = "300px";
+        // 常に最前面に表示されるよう position と z-index を明示的に設定
+        tooltip.style.position = "fixed";
+        tooltip.style.zIndex = "2147483647"; // 最大に近い値で最前面に
+        // 横長にして入力欄がゆったり広がるように調整
+        tooltip.style.width = "700px";
+        tooltip.style.minWidth = "500px";
         tooltip.innerHTML = `
         <div style="border: 2px solid #888; border-radius: 8px; background: white; box-shadow: 2px 2px 8px rgba(0,0,0,0.3);">
     <div id="feedbackTooltipHeader" style="cursor: move; background: #ccc; padding: 5px; border-bottom: 1px solid #888;">
-        <strong>【内省メモ】</strong>
+        <strong>振り返り</strong>
     </div>
     <div style="padding: 10px;">
         <form id="formFeedbackInput">
@@ -2396,6 +2599,48 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // 保存ボタンのイベントリスナーを設定
         this.setupTooltipSaveButton(tooltip);
         this.setupTooltipDrag(tooltip);
+        // 既存の内省タグがあれば、そのタイトルから値を抽出して textarea に流し込む
+        try {
+            const reflectionTagNode = this.nodes.get(`reflection-tag-${this.selectId}`);
+            if (reflectionTagNode && reflectionTagNode.title) {
+                const titleText = reflectionTagNode.title || '';
+                // 複数のフォーマットに対応して抽出
+                let actionReason = '';
+                let completionReason = '';
+                let challengesAndLearnings = '';
+                try {
+                    const lines = titleText.split(/\n|\r\n/).map(s => s.trim());
+                    for (const line of lines) {
+                        if (/行動意図|行動評価|評価[:：]/.test(line)) {
+                            // 行動意図/評価: 値部分を抽出
+                            const m = line.split(/[:：]/);
+                            actionReason = (m.slice(1).join(':') || '').trim();
+                        } else if (/原因分析|完了基準|原因[:：]/.test(line)) {
+                            const m = line.split(/[:：]/);
+                            completionReason = (m.slice(1).join(':') || '').trim();
+                        } else if (/学び|学習|学んだ/.test(line)) {
+                            const m = line.split(/[:：]/);
+                            challengesAndLearnings = (m.slice(1).join(':') || '').trim();
+                        }
+                    }
+                } catch (e) {
+                    console.warn('reflection title parse error', e);
+                }
+                // textarea 要素に値をセット
+                try {
+                    const aEl = document.getElementById('actionReason');
+                    const cEl = document.getElementById('completionReason');
+                    const lEl = document.getElementById('challengesAndLearnings');
+                    if (aEl) aEl.value = actionReason || '';
+                    if (cEl) cEl.value = completionReason || '';
+                    if (lEl) lEl.value = challengesAndLearnings || '';
+                } catch (e) {
+                    console.warn('failed to set textarea values for feedbackTooltip', e);
+                }
+            }
+        } catch (e) {
+            console.warn('error while pre-filling feedbackTooltip from reflection-tag', e);
+        }
     }
     
     setupTooltipSaveButton(tooltip) {
@@ -2441,10 +2686,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         // 既存の内省タグがあるかチェック
                         const existingReflectionTag = this.nodes.get(reflectionTagId);
                         if (existingReflectionTag) {
-                            // 既存のタグのタイトルを更新
+                            // 既存のタグのタイトルを更新し、枠線を消して影を付ける
                             this.nodes.update({
                                 id: reflectionTagId,
-                                title: reflectionTitle
+                                title: reflectionTitle,
+                                borderWidth: 0,
+                                borderWidthSelected: 0,
+                                shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
                             });
                             console.log('既存の内省タグを更新しました:', reflectionTagId);
                         } else {
@@ -2467,7 +2715,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                 fixed: true,
                                 physics: false,
                                 group: 'reflection-tag',
-                                title: reflectionTitle
+                                title: reflectionTitle,
+                                borderWidth: 0,
+                                borderWidthSelected: 0,
+                                shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
                             };
                             this.nodes.add(reflectionTag);
                             console.log('新しい内省タグを追加しました:', reflectionTagId);
@@ -3639,6 +3890,12 @@ const getPassDataFromDB = (selected_date) => {
                     if (typeof defaultThinkingProcess !== 'undefined') {
                         defaultThinkingProcess.isViewingPastData = true;
                         console.log("過去データ表示モードを有効化しました");
+                            try {
+                                // ビュー切替に合わせて操作系ボタンを視覚的に無効化
+                                $('#process_addNode, #process_startEditEdge, #process_removeNode').addClass('disabled').prop('disabled', true);
+                            } catch (e) {
+                                /* ignore */
+                            }
                         try {
                             // ノードをすべて固定して移動できなくする
                             const allNodes = defaultThinkingProcess.nodes.get();
@@ -3920,15 +4177,44 @@ const displayTriggerData = (mode, display_target_area_id) => {
             conceptdisplay_area.html(concept_label);
             let j = 0;
 
-            // versionノードの表示
-            trigger_list_info.node_versions.forEach((v) => {
-                defaultThinkingProcess.addVersionNode(v.node_version_id, v.content, "versions", v.appeared_at, node_x, node_y);
-                if(from_id != ""){
+            // versionノードは最新のもの1つだけ表示する
+            if (Array.isArray(trigger_list_info.node_versions) && trigger_list_info.node_versions.length > 0) {
+                const v = trigger_list_info.node_versions[trigger_list_info.node_versions.length - 1];
+                // 表示するテキストは、選択されたノードの content を優先して使う
+                let selectedContent = '';
+                try {
+                    // まずマインドマップの現在選択ノード（jmnode）のテキストを取得して優先使用
+                    if (typeof _jm !== 'undefined' && _jm.get_selected_node) {
+                        const sel = _jm.get_selected_node();
+                        if (sel && sel.id) {
+                            const jmnodeEl = document.querySelector(`jmnode[nodeid="${sel.id}"]`);
+                            if (jmnodeEl) {
+                                // jmnode の子要素にアイコン等があるため、最初のテキストノードを取り出す
+                                const firstTextNode = Array.from(jmnodeEl.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim() !== '');
+                                if (firstTextNode) {
+                                    selectedContent = firstTextNode.nodeValue.trim();
+                                } else {
+                                    // fallback: 全てのテキストを結合してトリム
+                                    selectedContent = jmnodeEl.textContent.replace(/\s+/g, ' ').trim();
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('selected jmnode lookup failed', e);
+                }
+                // 次に、server から渡された onode.content を参照（あれば使用）
+                if (!selectedContent && Array.isArray(trigger_list_info.onode) && trigger_list_info.onode.length > 0) {
+                    selectedContent = trigger_list_info.onode[0].content || '';
+                }
+                const textForVersion = selectedContent || v.content || '';
+                defaultThinkingProcess.addVersionNode(v.node_version_id, textForVersion, "versions", v.appeared_at, node_x, node_y);
+                if (from_id != "") {
                     defaultThinkingProcess.addVersionEdge(from_id, v.node_version_id);
                 }
                 from_id = v.node_version_id;
-                node_x += 300;
-            });
+                // 複数表示しないため、node_x の増加は不要
+            }
             // triggerの候補一覧
             trigger_list_info.trigger_candidate.forEach((u) => {
                 if(u){
@@ -4032,6 +4318,9 @@ const displayTriggerData = (mode, display_target_area_id) => {
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました（最新データ選択）");
                             try {
+                                $('#process_addNode, #process_startEditEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
+                            } catch (e) { /* ignore */ }
+                            try {
                                 // ノード固定を解除（ただしタグノードなどは固定のまま）
                                 const allNodes = defaultThinkingProcess.nodes.get();
                                 if (Array.isArray(allNodes) && allNodes.length > 0) {
@@ -4094,6 +4383,9 @@ const displayTriggerData = (mode, display_target_area_id) => {
                         if (typeof defaultThinkingProcess !== 'undefined') {
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました");
+                            try {
+                                $('#process_addNode, #process_startEditEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
+                            } catch (e) { /* ignore */ }
                             try {
                                 // ノード固定を解除（ただしタグノードなどは固定のまま）
                                 const allNodes = defaultThinkingProcess.nodes.get();
@@ -4538,10 +4830,28 @@ window.addEventListener('load', () => {
     defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
     // マップ編集ボタンにイベント付与
     $(`#process_addNode`).on("click", e => {
+        if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
+            console.log('過去データ表示中のため、ノード追加は無効化されています');
+            try { alert('過去の表示中はノード追加できません'); } catch (err) { /* ignore */ }
+            return;
+        }
         defaultThinkingProcess.addNewNode();
     });
     $(`#process_startEditEdge`).on("click", e => {
+        if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
+            console.log('過去データ表示中のため、エッジ追加は無効化されています');
+            try { alert('過去の表示中はエッジ追加できません'); } catch (err) { /* ignore */ }
+            return;
+        }
         defaultThinkingProcess.SelectEditEdge();
+    });
+    $(`#process_removeNode`).on("click", e => {
+        if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
+            console.log('過去データ表示中のため、ノード削除は無効化されています');
+            try { alert('過去の表示中はノード削除できません'); } catch (err) { /* ignore */ }
+            return;
+        }
+        defaultThinkingProcess.deleteNode();
     });
     $(`#process_ZoomIn`).on("click", e => {
         defaultThinkingProcess.zoomIn();

@@ -288,211 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
             overlay.classList.remove('active');
         }
         
-        // ノード数を更新する関数（非同期対応）
-        async function updateNodeCount() {
-            try {
-                console.log('ノード数更新開始...');
-                const timestamp = new Date().toLocaleString('ja-JP');
-                
-                // PHPエンドポイントからノード数を取得
-                const result = await getNodeCountFromObjectManager();
-                const totalNodes = result.count || 0;
-                const dataSource = result.source || 'unknown';
-                
-                // ノード数表示を更新
-                const nodeCountElement = document.getElementById('current_node_count');
-                if (nodeCountElement) {
-                    nodeCountElement.textContent = totalNodes;
-                }
-                
-                // ステータス別ノード数を更新
-                if (result.details && result.details.status_stats) {
-                    const statusStats = result.details.status_stats;
-                    
-                    // 各ステータスの表示を更新
-                    const completedElement = document.getElementById('completed_count');
-                    const inProgressElement = document.getElementById('inProgress_count');
-                    const pausedElement = document.getElementById('paused_count');
-                    const notStartedElement = document.getElementById('not_started_count');
-                    
-                    if (completedElement) completedElement.textContent = statusStats.completed || 0;
-                    if (inProgressElement) inProgressElement.textContent = statusStats.inProgress || 0;
-                    if (pausedElement) pausedElement.textContent = statusStats.paused || 0;
-                    if (notStartedElement) notStartedElement.textContent = statusStats.not_started || 0;
-                }
-                
-                // データソース情報を更新
-                const debugElement = document.getElementById('node_count_debug');
-                if (debugElement) {
-                    let debugInfo = `最終更新: ${new Date().toLocaleTimeString()}`;
-                    
-                    // 詳細情報があれば追加
-                    if (result.details) {
-                        const details = result.details;
-                        debugInfo += ` | 総数: ${details.total}`;
-                        if (details.related > 0) {
-                            debugInfo += `, 関連: ${details.related}`;
-                        }
-                        if (details.selectedNodeId) {
-                            debugInfo += `, 選択ID: ${details.selectedNodeId}`;
-                        }
-                        
-                        // ステータス別統計があれば追加
-                        if (details.status_stats) {
-                            const stats = details.status_stats;
-                            // debugInfo += ` | ✅${stats.completed} 🔄${stats.inProgress} ⏸️${stats.paused} 📝${stats.not_started}`;
-                        }
-                    }
-                    
-                    // debugElement.textContent = debugInfo;
-                }
-                
-                console.log(`ノード数更新完了: ${totalNodes} (source: ${dataSource})`, result);
-                
-                // 詳細な統計情報をログ出力
-                if (result.details && result.details.typeStats) {
-                    console.log('ノードタイプ別統計:', result.details.typeStats);
-                }
-                
-                // ステータス別統計をログ出力
-                if (result.details && result.details.status_stats) {
-                    console.log('ステータス別統計:', result.details.status_stats);
-                }
-                
-                // 詳細ステータス統計をログ出力
-                if (result.details && result.details.detailed_status_stats) {
-                    console.log('詳細ステータス統計:', result.details.detailed_status_stats);
-                }
-                
-            } catch (error) {
-                console.error('ノード数更新エラー:', error);
-                const nodeCountElement = document.getElementById('current_node_count');
-                if (nodeCountElement) {
-                    nodeCountElement.textContent = 'エラー';
-                }
-                
-                const debugElement = document.getElementById('node_count_debug');
-                if (debugElement) {
-                    debugElement.textContent = `エラー: ${error.message}`;
-                }
-            }
-        }
-        
-        // object_map_managerからノード数を取得する関数（PHPエンドポイント使用）
-        function getNodeCountFromObjectManager() {
-            return new Promise((resolve, reject) => {
-                try {
-                    // 選択されているノードIDを取得（グローバル変数から）
-                    const selectedNodeId = typeof selected_node_id !== 'undefined' ? selected_node_id : null;
-                    
-                    // PHPエンドポイントにAJAXリクエストを送信
-                    $.ajax({
-                        url: 'php/object_map_manager.php',
-                        type: 'POST',
-                        data: {
-                            process_mode: 'getNodeCount',
-                            selected_node_id: selectedNodeId
-                        },
-                        dataType: 'json',
-                        timeout: 5000,
-                        success: function(response) {
-                            console.log('object_map_manager PHP response:', response);
-                            if (response.status === 'success') {
-                                resolve({
-                                    count: response.total_count,
-                                    source: 'object_map_manager_php',
-                                    details: {
-                                        total: response.total_count,
-                                        related: response.related_count,
-                                        typeStats: response.type_stats,
-                                        status_stats: response.status_stats,
-                                        detailed_status_stats: response.detailed_status_stats,
-                                        selectedNodeId: response.selected_node_id,
-                                        timestamp: response.timestamp
-                                    }
-                                });
-                            } else {
-                                console.warn('object_map_manager returned error:', response.message);
-                                resolve({ count: 0, source: 'php_error', error: response.message });
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('AJAX error:', { xhr, status, error });
-                            // フォールバック: JavaScript版を試す
-                            const fallbackResult = getNodeCountFromObjectManagerFallback();
-                            resolve({ 
-                                count: fallbackResult, 
-                                source: 'javascript_fallback',
-                                error: error
-                            });
-                        }
-                    });
-                } catch (error) {
-                    console.error('getNodeCountFromObjectManager exception:', error);
-                    resolve({ count: 0, source: 'exception', error: error.message });
-                }
-            });
-        }
-        
-        // JavaScript版のフォールバック関数
-        function getNodeCountFromObjectManagerFallback() {
-            try {
-                let nodeCount = 0;
-                
-                // object_map_managerのnodesプロパティを確認
-                if (object_map_manager && object_map_manager.nodes) {
-                    if (typeof object_map_manager.nodes.length !== 'undefined') {
-                        // nodesが配列の場合
-                        nodeCount = object_map_manager.nodes.length;
-                    } else if (typeof object_map_manager.nodes.get !== 'undefined') {
-                        // nodesがvis.DataSetの場合
-                        nodeCount = object_map_manager.nodes.get().length;
-                    }
-                }
-                
-                // 別のプロパティ名の可能性もチェック
-                if (nodeCount === 0 && object_map_manager) {
-                    // networkオブジェクトからノード数を取得
-                    if (object_map_manager.network && object_map_manager.network.body && object_map_manager.network.body.data && object_map_manager.network.body.data.nodes) {
-                        const nodes = object_map_manager.network.body.data.nodes;
-                        if (typeof nodes.get !== 'undefined') {
-                            nodeCount = nodes.get().length;
-                        }
-                    }
-                    
-                    // 思考過程ネットワークからノード数を取得
-                    if (nodeCount === 0 && object_map_manager.thinkingProcess && object_map_manager.thinkingProcess.nodes) {
-                        if (typeof object_map_manager.thinkingProcess.nodes.length !== 'undefined') {
-                            nodeCount = object_map_manager.thinkingProcess.nodes.length;
-                        } else if (typeof object_map_manager.thinkingProcess.nodes.get !== 'undefined') {
-                            nodeCount = object_map_manager.thinkingProcess.nodes.get().length;
-                        }
-                    }
-                }
-                
-                return nodeCount;
-            } catch (error) {
-                console.log('JavaScript fallbackでのノード数取得エラー:', error);
-                return 0;
-            }
-        }
-        
-        // ノード数を定期的に更新
-        function startNodeCountUpdater() {
-            // 初回更新
-            updateNodeCount();
-            
-            // 2秒ごとに更新（より頻繁に）
-            setInterval(updateNodeCount, 2000);
-            
-            // object_map_managerの状態をログ出力
-            console.log('object_map_manager の状態:', typeof object_map_manager !== 'undefined' ? object_map_manager : 'undefined');
-        }
-        
-        // マニュアルでノード数を更新するグローバル関数
-        window.refreshNodeCount = function() {
-            updateNodeCount();
-        };
+     
         
         // ハンバーガーメニューのクリックイベント
         document.addEventListener('DOMContentLoaded', function() {
@@ -675,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'notStartedLabel': '未着手',
                 'navigatorGreetingHeader': 'こんにちは！',
                 'navigatorGreetingSub': '目標手段階層マップへようこそ',
-                'weeklyGoalTitle': '小目標',
+                'weeklyGoalTitle': '時間軸で目標を整理',
                 'weeklyGoalTooltip': '次のMTの１週間の目標',
                 'weeklyGoalStartLabel': '開始日',
                 'weeklyGoalEndLabel': '終了日',
@@ -1242,6 +1038,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <span class="button-text" id="processStartEditEdgeText">エッジ追加</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
+                                                    id="process_removeNode" title="手段削除">
+                                                <span class="button-icon">−</span>
+                                                <span class="button-text" id="processRemoveNodeText">手段削除</span>
+                                            </button>
+                                            <button type="button" class="thinkingProcess_network_button"
                                                     id="process_ZoomIn" title="拡大">
                                                 <span class="button-text" id="processZoomInText">拡大</span>
                                             </button>
@@ -1346,13 +1147,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </select>
                                         <input type="button" value="選択完了" id="t_p_recruit_select">
                                     </div>
-                                    <div id="t_Process_reasonselect" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ccc; padding:10px; width:300px;">
+                                    <div id="t_Process_reasonselect" style="display:none; position:absolute; z-index:1000; background:white; border:3px solid #FF8C00; padding:10px; width:360px; box-sizing:border-box; border-radius:6px;">
                                         <label for="t_Process_reasontext">なぜそれを取り組もうとしたか:</label><br>
-                                        <textarea id="t_Process_reasontext" rows="4" cols="40" placeholder="理由を入力してください..."></textarea><br><br>
+                                        <textarea id="t_Process_reasontext" rows="4" style="width:100%; box-sizing:border-box; font-family:inherit;" placeholder="理由を入力してください..."></textarea><br><br>
                                         <input type="button" value="決定" id="t_p_reason_select">
                                         <input type="button" value="キャンセル" id="t_p_reason_cancel">
                                     </div>
-                                    <div id="t_Process_timeselect" style="display:none; position:absolute; z-index:1000; background:white; border:1px solid #ccc; padding:10px; width:300px;">
+                                    <div id="t_Process_timeselect" style="display:none; position:absolute; z-index:1000; background:white; border:3px solid #2e8b57; padding:10px; width:300px; box-sizing:border-box; border-radius:6px;">
                                         <label for="t_Process_timetext">完了予定:</label><br>
                                         <select id="t_Process_timetext" style="width: 200px;">
                                             <option value="">選択してください</option>

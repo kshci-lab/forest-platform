@@ -1,5 +1,5 @@
 <?php
-// 議論内省マップのデータを読み出すための処理群
+// 目標手段階層マップのデータを読み出すための処理群
 
 session_start();
 require("connect_db.php");

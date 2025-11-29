@@ -606,11 +606,13 @@ input[type="checkbox"][name="check_process"]{
 }
 
 #process_removeNode {
-    background: #e67e22 !important;
+    background: #e74c3c !important; /* 統一: 赤 */
+    color: #fff !important;
+    border-color: #c0392b !important;
 }
 
 #process_removeNode:hover {
-    background: #d68910 !important;
+    background: #c0392b !important; /* 統一: hover 赤 */
 }
 
 #process_startEditEdge {
@@ -638,6 +640,20 @@ input[type="checkbox"][name="check_process"]{
 #process_ZoomIn:hover,
 #mrnb_ZoomIn:hover {
     background: #5a6268 !important;
+}
+
+/* 無効化状態の見た目 */
+.thinkingProcess_network_button.disabled,
+.thinkingProcess_network_button:disabled {
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(40%);
+}
+
+/* 追加でボタン内のテキストも淡色にする */
+.thinkingProcess_network_button.disabled .button-text,
+.thinkingProcess_network_button:disabled .button-text {
+    color: rgba(255,255,255,0.7) !important;
 }
 
 #process_ZoomOut,
