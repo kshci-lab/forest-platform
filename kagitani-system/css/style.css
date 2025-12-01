@@ -3,6 +3,55 @@
 	display: inline-block;
 	min-width: 110px;
 }
+
+/* Modal labels for weekly-goal: prevent character wrapping (e.g., 終了日 が折り返されるのを防ぐ) */
+.weekly-modal-label {
+	display: inline-block;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+/* Weekly goal area: show stronger shadow on hover for interactive/button-like parts */
+#weekly_goal_area .jmnode,
+#weekly_goal_area .jmnode * {
+	transition: box-shadow 160ms ease, transform 160ms ease;
+}
+#weekly_goal_area .jmnode{
+	cursor: pointer; /* indicate clickable */
+}
+#weekly_goal_area .jmnode:hover{
+	box-shadow: 0 10px 20px rgba(0,0,0,0.18) !important;
+	transform: translateY(-3px);
+}
+
+/* Add hover shadow for action buttons inside weekly goal area (e.g., Add button) */
+#weekly_goal_area button,
+#weekly_goal_area .export-weekly-btn,
+#weekly_goal_area .edit-weekly-date-btn {
+	transition: box-shadow 160ms ease, transform 120ms ease;
+}
+#weekly_goal_area button:hover,
+#weekly_goal_area .export-weekly-btn:hover,
+#weekly_goal_area .edit-weekly-date-btn:hover {
+	box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+	transform: translateY(-2px);
+}
+
+/* Prevent labels inside weekly_goal_area from wrapping onto multiple lines */
+#weekly_goal_area label {
+	display: inline-block;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+/* Allow inputs inside weekly_goal_area to take more horizontal space when available */
+#weekly_goal_area input[type="date"],
+#weekly_goal_area input[type="text"],
+#weekly_goal_area select {
+	min-width: 140px;
+	max-width: 100%;
+	box-sizing: border-box;
+}
 /* 言語切替スライダーのテキスト色を白に */
 #language-toggle-container, #language-toggle-container label, #language-toggle-container span {
 	color: #fff !important;
@@ -179,9 +228,9 @@ body #main_title {
     font-size: 15px; /* フォントサイズを小さく設定 */
 }
 
-.tabnav li a:hover {
-	background-color: #ff8c00;
-}
+	.tabnav li a:hover {
+		background-color: #ffa500;
+	}
 
 .tabnav li a.active{
 		background: #405dca;
@@ -390,27 +439,115 @@ input:checked+label::before {
     display: none !important;
 }
 
-/* マインドマップ上で右クリックしたときのメニュー */
+/* マインドマップ上で右クリックしたときのメニュー（カード風） */
 #mindmap_conmenu{
-  width:350px;
-  background-color:#f0f0f0;
-  border:2px solid #999999;
+	min-width: 260px;
+	max-width: 420px;
+	background-color: #ffffff; /* 白ベースでカードに */
+	border: 1px solid rgba(16,24,40,0.08);
 	border-radius: 10px;
-  display:none;
-  position:fixed;
-	z-index: 1000;
-	text-align: center;
+	display: none;
+	position: fixed;
+	z-index: 1200;
+	text-align: left;
+	box-shadow: 0 8px 20px rgba(16,24,40,0.12);
+	padding: 8px 10px;
+	font-family: "Noto Sans JP", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+	color: #111827;
+	transition: transform 160ms ease, opacity 160ms ease;
+	opacity: 0; transform: translateY(6px);
 }
 #mindmap_conmenu.on{
-  display:block;
+	display: block;
+	opacity: 1; transform: translateY(0);
+}
+#mindmap_conmenu::before{
+	/* 小さな矢印（上向き） */
+	content: "";
+	position: absolute;
+	top: -8px;
+	left: 20px;
+	width: 14px;
+	height: 14px;
+	background: #ffffff;
+	transform: rotate(45deg);
+	border-left: 1px solid rgba(16,24,40,0.08);
+	border-top: 1px solid rgba(16,24,40,0.08);
+	box-shadow: -2px -2px 6px rgba(16,24,40,0.04);
 }
 #mindmap_conmenu ul{
-  list-style:none;
-  margin:0px;
-  padding:7px;
+	list-style: none;
+	margin: 0;
+	padding: 6px 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+#mindmap_conmenu li{
+	border-radius: 8px;
+	padding: 6px 8px;
 }
 #mindmap_conmenu li:hover{
-  background-color: #CCFFFF;
+	background-color: rgba(14,165,233,0.06); /* subtle cyan on hover */
+}
+#mindmap_conmenu li button,
+#mindmap_conmenu li a{
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	background: transparent;
+	border: none;
+	text-align: left;
+	cursor: pointer;
+	color: inherit;
+	font-size: 14px;
+}
+#mindmap_conmenu li button:focus,
+#mindmap_conmenu li a:focus{
+	outline: 3px solid rgba(59,130,246,0.18);
+	border-radius: 6px;
+}
+
+/* main-action-btn + compact-btn: 一貫したコンパクトなボタンデザイン */
+.main-action-btn.compact-btn{
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	background: linear-gradient(180deg,#fff 0%, #f7f9fc 100%);
+	border: 1px solid rgba(16,24,40,0.08);
+	color: #0f172a;
+	border-radius: 8px;
+	font-size: 13px;
+	box-shadow: 0 4px 8px rgba(2,6,23,0.06);
+	cursor: pointer;
+	transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+.main-action-btn.compact-btn:hover{
+	transform: translateY(-2px);
+	box-shadow: 0 10px 20px rgba(2,6,23,0.08);
+}
+.main-action-btn.compact-btn:active{
+	transform: translateY(0);
+	box-shadow: 0 6px 12px rgba(2,6,23,0.06);
+}
+.main-action-btn.compact-btn span{
+	white-space: nowrap;
+	display: inline-block;
+}
+
+/* Small utility to allow icon-like prefix inside the button */
+.main-action-btn.compact-btn .btn-icon{
+	width: 20px;
+	height: 20px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 6px;
+	background: rgba(15,23,42,0.04);
+	font-size: 12px;
 }
 
 /*ここから大槻修正*/
@@ -1452,7 +1589,7 @@ select[name="mttime_list"] {
 	height: 30px;
 }
 .button:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 .button0 {
@@ -1462,7 +1599,7 @@ select[name="mttime_list"] {
 	height: 30px;
 }
 .button0:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 /* シート選択画面に戻るボタン */
@@ -1479,7 +1616,7 @@ select[name="mttime_list"] {
 }
 
 .button1:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 /* ログアウトボタン */
@@ -1496,7 +1633,7 @@ select[name="mttime_list"] {
 }
 
 .button2:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 .button3 {
@@ -1508,7 +1645,7 @@ select[name="mttime_list"] {
 	margin-left: 0;
 }
 .button3:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 .button4 {
@@ -1524,7 +1661,7 @@ select[name="mttime_list"] {
 	
 }
 .button4:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 /* Make question/answer buttons fit their text and avoid wrapping inside the button */
@@ -1605,7 +1742,7 @@ select[name="mttime_list"] {
 	margin-top: 5px;
 }
 .button5:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 .button6 {
@@ -1615,7 +1752,7 @@ select[name="mttime_list"] {
 	height: 30px;
 }
 .button6:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 
@@ -1633,17 +1770,17 @@ select[name="mttime_list"] {
 	padding:0;
 }
 .button7:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 .button8 {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 	color: #fff;
 	width: 30%;
 	height: 30px;
 }
 .button8:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 /* 操作確認ボタン */
@@ -1659,7 +1796,7 @@ select[name="mttime_list"] {
 	padding:0;
 }
 .button9:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 .button10 {
@@ -1673,7 +1810,7 @@ select[name="mttime_list"] {
 	overflow: auto;
 }
 .button10:hover {
-	background-color: #ff8c00;
+	background-color: #ffa500;
 }
 
 /* 修正理由記入テキストエリア */

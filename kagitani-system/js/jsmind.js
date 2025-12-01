@@ -68,12 +68,12 @@ function createNodeIcon(nodeElement, status = 'todo') {
     if (isInProgress) {
         backgroundColor = '#FF9800'; // オレンジ色
         iconSrc = 'https://img.icons8.com/fluency/48/running--v1.png';
-        title = 'このノードは作業中です（手段階層マップあり）';
+        title = '作業中の手段ノードがあります';
         altText = '作業中';
     } else {
         backgroundColor = '#4CAF50'; // 緑色
         iconSrc = 'https://img.icons8.com/fluency/48/compass--v1.png';
-        title = 'このノードには手段階層マップがあります';
+        title = '目標手段階層マップがあります';
         altText = '手段階層マップあり';
     }
     

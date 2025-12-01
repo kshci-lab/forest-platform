@@ -399,7 +399,7 @@
 				// 4. object_nodes_histories に新規レコードを追加（全カラムを含む）
 				$insert_history_sql = "
 					INSERT INTO object_nodes_histories 
-						(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time)
+						(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time, drag)
 					SELECT 
 						'$object_h_id',
 						object_node_id,
@@ -414,7 +414,8 @@
 						action_reason,
 						completion_reason,
 						challenges_learnings,
-						estimated_time
+						estimated_time,
+						1
 					FROM object_nodes
 					WHERE object_node_id = '$node_id'
 				";

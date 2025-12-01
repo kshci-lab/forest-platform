@@ -585,7 +585,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // 理由タグノードの場合の色設定
         if (node_type === "reason-tag") {
-            node_color = '#FF8C00'; // オレンジ色（濃いめ）
+            node_color = '#FFA500'; // オレンジ色（少し薄めに調整）
             node_shape = 'ellipse'; // ゴシック絵文字をラベルで表示するため楕円形に変更
             text_color = 'white';  // 白い文字（見やすくするため）
             position_fixed = true;   // 固定位置
@@ -831,15 +831,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             setTimeout(() => {
                 const nodeBoundingBox = defaultThinkingProcess.ownNetwork.getBoundingBox(`${node_id}`);
                 const reasonTagId = `reason-tag-${node_id}`;
-                const reasonTag = {
+                    const reasonTag = {
                     id: reasonTagId,
                     label: '💡',
                     shape: 'ellipse',
                     size: 20,
                     font: { size: 16, color: 'white' },
-                    color: {
-                        background: '#FF8C00',
-                        border: '#CC7000'
+                        color: {
+                        background: '#FFA500',
+                        border: '#D17A00'
                     },
                     x: nodeBoundingBox.left + 8,
                     y: nodeBoundingBox.top + 8,
@@ -1900,8 +1900,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         reasonselect.style.position = "fixed"; // absoluteからfixedに変更
         reasonselect.style.zIndex = "9999"; // より高いz-indexに設定
         reasonselect.style.backgroundColor = "white";
-        reasonselect.style.border = "3px solid #FF8C00"; // 理由タグと同じオレンジで統一
-        reasonselect.style.boxShadow = "0 6px 18px rgba(255,136,0,0.08)"; // オレンジ寄りの柔らかい影
+        reasonselect.style.border = "3px solid #FFA500"; // 理由タグと同じオレンジで統一（少し薄め）
+        reasonselect.style.boxShadow = "0 6px 18px rgba(255,165,0,0.08)"; // オレンジ寄りの柔らかい影（色を合わせる）
         reasonselect.style.borderRadius = "6px";
         
         console.log('中央表示座標:', centerX, centerY);
@@ -1968,8 +1968,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             size: 20,
             font: { size: 16, color: 'white' },
             color: {
-                background: '#FF8C00',
-                border: '#CC7000'
+                background: '#FFA500',
+                border: '#D17A00'
             },
             x: nodeBoundingBox.left + 8,
             y: nodeBoundingBox.top + 8,
@@ -2233,14 +2233,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     step_start() {
         const menu = document.getElementById('t_Process_conmenu');
         if (menu) menu.style.display = "none";
-        console.log(`step_start() を呼び出しました。選択中のノードID: ${this.selectId}`); // デバッグ用ログ 
-        // まずUIを表示（サーバー更新でエラーが出てもユーザーがメモできるように先に出す）
-        try {
-            const idForUI = this.selectId || sessionStorage.getItem('currentSelectId');
-            if (idForUI) this.showNodeMemoUI(idForUI);
-        } catch (e) {
-            console.error('初期 UI 表示エラー:', e);
-        }
+
 
         if (!this.selectId) {
             // セッションストレージからバックアップを取得
@@ -2282,173 +2275,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         const updatedNode = this.nodes.get(this.selectId);
         console.log('更新後のノード:', updatedNode);
-        // feedback_area にノードごとのメモ入力欄を表示
-        try {
-            this.showNodeMemoUI(this.selectId);
-        } catch (e) {
-            console.error('showNodeMemoUI 呼び出しエラー:', e);
-        }
-    }
-
-    // feedback_area にノード単位のメモUIを表示する
-    showNodeMemoUI(nodeId) {
-        const feedbackArea = document.getElementById('feedback_area');
-        if (!feedbackArea) {
-            console.warn('feedback_area 要素が見つかりません');
-            return;
-        }
-
-        // ノード情報を取得
-        const node = this.nodes.get(nodeId);
-        const nodeLabel = node ? (node.label || node.id) : nodeId;
-
-        // 既存の内容をクリアして再生成
-        feedbackArea.innerHTML = '';
-        feedbackArea.style.display = 'block';
-
-        // コンテナ
-        const container = document.createElement('div');
-        container.style.padding = '8px';
-        container.style.boxSizing = 'border-box';
-
-        // ヘッダー
-        const header = document.createElement('div');
-        header.style.display = 'flex';
-        header.style.justifyContent = 'space-between';
-        header.style.alignItems = 'center';
-        header.style.marginBottom = '8px';
-
-        const title = document.createElement('div');
-        title.innerHTML = `<strong>ノードメモ — ${this.escapeHtml(String(nodeLabel))}</strong>`;
-        header.appendChild(title);
-
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = '閉じる';
-        closeBtn.style.padding = '4px 8px';
-        closeBtn.style.fontSize = '12px';
-        closeBtn.onclick = function() { feedbackArea.style.display = 'none'; };
-        header.appendChild(closeBtn);
-
-        container.appendChild(header);
-
-        // テキストエリア
-        const textarea = document.createElement('textarea');
-        textarea.id = `feedback_memo_${nodeId}`;
-        textarea.style.width = '100%';
-        textarea.style.minHeight = '120px';
-        textarea.style.boxSizing = 'border-box';
-        textarea.placeholder = 'このノードについてのメモを入力してください。保存するとサーバーへ記録されます。';
-        container.appendChild(textarea);
-
-        // ボタン群
-        const btnRow = document.createElement('div');
-        btnRow.style.marginTop = '8px';
-        btnRow.style.display = 'flex';
-        btnRow.style.gap = '8px';
-
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = 'メモを保存';
-        saveBtn.style.background = '#007bff';
-        saveBtn.style.color = '#fff';
-        saveBtn.style.border = 'none';
-        saveBtn.style.padding = '6px 12px';
-        saveBtn.style.borderRadius = '4px';
-        saveBtn.onclick = () => {
-            const memo = textarea.value.trim();
-            // シンプルなバリデーション
-            if (!memo) {
-                alert('メモが空です');
-                return;
-            }
-            // AJAXで保存（既存のobject_maneger.phpのフォーマットに合わせる）
-            $.ajax({
-                url: 'php/object_maneger.php',
-                type: 'POST',
-                data: {
-                    object_node_id: nodeId,
-                    memo: memo,
-                    purpose: 'record',
-                    record_thing: 'memo'
-                },
-                success: (res) => {
-                    try {
-                        console.log('memo 保存成功:', res);
-                        alert('メモを保存しました');
-                    } catch (e) { console.log(res); }
-
-                    // メモ保存後にノード右下にメモタグ(内省タグ)を追加
-                    try {
-                        // 既に同じタグがあれば削除して上書き
-                        const reflectionTagId = `memo-tag-${nodeId}`;
-                        if (this.nodes.get(reflectionTagId)) {
-                            try { this.nodes.remove(reflectionTagId); } catch (e) { /* ignore */ }
-                        }
-
-                        const nodeBoundingBox = this.ownNetwork.getBoundingBox(nodeId);
-                        let tagX, tagY;
-                        if (nodeBoundingBox) {
-                            // 右下に表示
-                            tagX = nodeBoundingBox.right - 8;
-                            tagY = nodeBoundingBox.bottom - 8;
-                        } else {
-                            // fallback: canvas positions
-                            const pos = this.ownNetwork.getPositions([nodeId])[nodeId];
-                            tagX = pos ? pos.x + 30 : 0;
-                            tagY = pos ? pos.y + 30 : 0;
-                        }
-
-                        const reflectionTitle = memo.length > 200 ? memo.substr(0,200) + '...' : memo;
-                        const reflectionTag = {
-                            id: reflectionTagId,
-                            label: '💭',
-                            shape: 'ellipse',
-                            size: 20,
-                            color: {
-                                background: 'lightblue',
-                                border: 'blue'
-                            },
-                            font: {
-                                size: 18,
-                                color: 'darkblue'
-                            },
-                            x: tagX,
-                            y: tagY,
-                            fixed: true,
-                            physics: false,
-                            group: 'memo-tag',
-                            title: reflectionTitle,
-                            borderWidth: 0,
-                            borderWidthSelected: 0,
-                            shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
-                        };
-
-                        this.nodes.add(reflectionTag);
-                    } catch (e) {
-                        console.error('メモタグ追加エラー:', e);
-                    }
-                },
-                error: (xhr, status, err) => {
-                    console.error('memo 保存エラー:', status, err, xhr);
-                    alert('メモの保存に失敗しました');
-                }
-            });
-        };
-        btnRow.appendChild(saveBtn);
-
-        const clearBtn = document.createElement('button');
-        clearBtn.textContent = 'クリア';
-        clearBtn.onclick = () => { textarea.value = ''; };
-        clearBtn.style.padding = '6px 12px';
-        btnRow.appendChild(clearBtn);
-
-        container.appendChild(btnRow);
-
-        feedbackArea.appendChild(container);
-    }
-
-    // HTMLを安全に表示するためのエスケープ
-    escapeHtml(str) {
-        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;');
+        // feedback_area の自動表示は不要なため無効化（ユーザー要望による）
+        // this.showNodeMemoUI(this.selectId);
     }
 
 
@@ -3399,7 +3227,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     
                     this.nodes.update({ 
                         id: this.ReasonNodeId[reason_index], 
-                        color: { background: '#FF8C00', border: '#FF6347'}, 
+                        color: { background: '#FFA500', border: '#FF6347'}, 
                         x: reason_x, 
                         y: reason_y,
                         title: `なぜそれを取り組もうとしたか: ${reasonContent}`

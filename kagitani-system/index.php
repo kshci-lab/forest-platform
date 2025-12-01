@@ -442,9 +442,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 'rationalityTitle': '【合理性】',
                 'lang-label-ja': '日本語',
                 'lang-label-en': 'English',
-                'addWeeklyGoalBtn': '小目標に追加',
+                'addWeeklyGoalBtn': 'SRLジャーナル作成',
                 'addWeeklyGoalMenuLabel': '小目標に追加',
-                'showThinkingProcessMapBtn': '目標手段階層マップ',
+                'showThinkingProcessMapBtn': 'この問いノードの目標手段階層マップを作成',
                 'sheetbtn': 'シート選択画面に戻る',
                 'logout': 'ログアウト',
                 'addQNodeText': '問いノード追加',
@@ -872,10 +872,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                             </button>
                                         </li> -->
                                         <li>
-                                            <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();"><span id="addWeeklyGoalMenuLabel">小目標に追加</span></button>
+                                            <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();"><span id="addWeeklyGoalMenuLabel"></span></button>
                                         </li>
                                         <li>
-                                            <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();"><span id="showThinkingProcessMapBtn">目標手段階層マップ</span></button>
+                                            <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();"><span id="showThinkingProcessMapBtn">この問いノードの目標手段階層マップを作成</span></button>
         <!-- Duplicate language dictionary removed to avoid redeclaration of `langDict`. Using the main `langDict` defined earlier. -->
         </script>
                                         </li>
@@ -1147,7 +1147,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </select>
                                         <input type="button" value="選択完了" id="t_p_recruit_select">
                                     </div>
-                                    <div id="t_Process_reasonselect" style="display:none; position:absolute; z-index:1000; background:white; border:3px solid #FF8C00; padding:10px; width:360px; box-sizing:border-box; border-radius:6px;">
+                                    <div id="t_Process_reasonselect" style="display:none; position:absolute; z-index:1000; background:white; border:3px solid #FFA500; padding:10px; width:360px; box-sizing:border-box; border-radius:6px;">
                                         <label for="t_Process_reasontext">なぜそれを取り組もうとしたか:</label><br>
                                         <textarea id="t_Process_reasontext" rows="4" style="width:100%; box-sizing:border-box; font-family:inherit;" placeholder="理由を入力してください..."></textarea><br><br>
                                         <input type="button" value="決定" id="t_p_reason_select">
@@ -1459,12 +1459,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
                                     <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 <span id="weeklyGoalTitle">SRL Journal</span>
                                     <form id="weeklyGoalForm" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
-                                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                                            <label for="weeklyGoalStart" style="font-size: 15px; color: #28a745;"><span id="weeklyGoalStartLabel">開始日</span></label>
-                                            <input type="date" id="weeklyGoalStart" style="font-size: 15px; padding: 8px; border-radius: 6px; border: 1.5px solid #28a745;">
-                                            <label for="weeklyGoalEnd" style="font-size: 15px; color: #28a745;"><span id="weeklyGoalEndLabel">終了日</span></label>
-                                            <input type="date" id="weeklyGoalEnd" style="font-size: 15px; padding: 8px; border-radius: 6px; border: 1.5px solid #28a745;">
-                                        </div>
                                         <button type="button" id="addWeeklyGoalBtn" style="background:#28a745;color:white;border:none;border-radius:6px;padding:12px 0;font-size:16px;font-weight:bold;cursor:pointer;"><span id="addWeeklyGoalBtnText">追加</span></button>
                                     </form>
                                     <div id="weeklyGoalsList" style="margin-top:8px;"></div>

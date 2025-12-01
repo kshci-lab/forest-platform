@@ -1,6 +1,6 @@
 <?php
 require_once('connect_db.php');
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 $object_goal_id = isset($_POST['object_goal_id']) ? $_POST['object_goal_id'] : null;
 $start_date = isset($_POST['start_date']) ? $_POST['start_date'] : null;
@@ -11,17 +11,25 @@ if (!$object_goal_id || !$start_date || !$finish_date) {
     exit;
 }
 
-try {
-    $pdo = connect_db();
-    $sql = 'UPDATE object_goals SET start_date = ?, finish_date = ? WHERE object_goal_id = ?';
-    $stmt = $pdo->prepare($sql);
-    $result = $stmt->execute([$start_date, $finish_date, $object_goal_id]);
-    if ($result) {
-        echo json_encode(['success' => true]);
-    } else {
-        echo json_encode(['success' => false, 'error' => 'DB update failed']);
-    }
-} catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+// connect_db.php provides $mysqli (mysqli object)
+if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
+    echo json_encode(['success' => false, 'error' => 'Database connection not available']);
+    exit;
 }
+
+$sql = "UPDATE object_goals SET start_date = ?, finish_date = ? WHERE object_goal_id = ?";
+$stmt = $mysqli->prepare($sql);
+if (!$stmt) {
+    echo json_encode(['success' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
+    exit;
+}
+
+$stmt->bind_param('sss', $start_date, $finish_date, $object_goal_id);
+$res = $stmt->execute();
+if ($res) {
+    echo json_encode(['success' => true]);
+} else {
+    echo json_encode(['success' => false, 'error' => 'DB update failed: ' . $stmt->error]);
+}
+$stmt->close();
 ?>
