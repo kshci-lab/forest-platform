@@ -50,8 +50,9 @@
     return `<ul>${li}</ul>`;
   }
 
-  // メイン描画
-  function renderDashboard($target, claims, rat){
+  // メイン描画（stage: 'first-empty' | 'first-content' | 'second' | 'third'）
+  function renderDashboard($target, claims, rat, options){
+    const opt = Object.assign({ stage: 'first-empty' }, options || {});
     const mapMinusLogic = (claims.mapMinusLogic || []).filter(p => p.class_constraint && p.class_constraint.trim() !== '');
     const mapMinusClaim = (claims.mapMinusClaim || []).filter(p => p.class_constraint && p.class_constraint.trim() !== '');
     const intersection = (claims.intersection || []).filter(p => p.class_constraint && p.class_constraint.trim() !== '');
@@ -77,9 +78,6 @@
       ].join(''))
     ].join('');
 
-    // 理想（定義の提示）
-    const idealHtml = `<div>主張: 「map-logic=0」かつ「map-claim=0」。合理性: 全ペアが bothlogic（= bothinlogic）。</div>`;
-
     // 助言 - first（ないことへの助言）
     const firstHtml = [
       subSection('主張 (map-logic)', list(mapMinusLogic.map(p => claimLine('map - logic', p)))),
@@ -92,21 +90,40 @@
       subSection('合理性 (bothlogic)', list(bothArr.map(rationalityLineBoth)))
     ].join('');
 
-    const html = [
-      '<div class="advice-dashboard">',
-      section('現在', nowHtml),
-      section('理想', idealHtml),
-      section('三角ロジックにないことに対する助言（first助言）', firstHtml),
-      section('三角ロジックにあることに対する助言（second助言）', secondHtml),
-      '</div>'
-    ].join('');
+    const parts = ['<div class="advice-dashboard">'];
+    switch (opt.stage) {
+      case 'first-empty':
+        parts.push(section('三角ロジックにないことに対する助言（first助言）', '<div class="advice-first-intro"><button type="button" class="button4 advice-show-first">first助言を表示</button></div>'));
+        break;
+      case 'first-content':
+        parts.push(section('三角ロジックにないことに対する助言（first助言）', firstHtml));
+        parts.push('<div class="advice-next">'
+          + '<button type="button" class="button4 advice-show-second">second助言を表示</button>'
+          + '</div>');
+        break;
+      case 'second':
+        parts.push(section('三角ロジックにあることに対する助言（second助言）', secondHtml));
+        parts.push('<div class="advice-next">'
+          + '<button type="button" class="button4 advice-show-third">third助言を表示</button>'
+          + '</div>');
+        break;
+      case 'third':
+        parts.push(section('AIからの助言（third助言）', '<div class="advice-third">AI助言を実行しました。結果はAI出力エリアに表示されます。</div>'));
+        break;
+    }
+    parts.push('</div>');
+    const html = parts.join('');
 
     $target.html(html);
   }
 
   function showAdviceDashboard(selector){
-    try { $('#advice_panel').show(); } catch(e) {}
-    const target = selector || '#advice_output';
+    // 出力先をAI助言の場所に変更し、パネルを開く
+    try {
+      $('#ai_output_panel').show();
+      $('#ai_output_body').show();
+    } catch(e) {}
+    const target = selector || '#ai_output';
     const $target = $(target);
     if ($target.length === 0) {
       console.warn('描画先が見つかりません:', target);
@@ -117,8 +134,33 @@
       (typeof getDiffConceptLabels === 'function') ? getDiffConceptLabels() : $.Deferred().reject('getDiffConceptLabels not found').promise(),
       (typeof getRationalityStatus === 'function') ? getRationalityStatus() : $.Deferred().reject('getRationalityStatus not found').promise()
     ).done(function(claims, rat){
-      // $.whenは各thenの返りを包むが、既に生配列/オブジェクトなのでそのまま扱う
-      renderDashboard($target, claims, rat);
+      // キャッシュ
+      try {
+        $target.data('adviceClaims', claims);
+        $target.data('adviceRat', rat);
+      } catch(e) {}
+      // first/second/third助言ボタンを委譲でバインド（重複防止）
+      try {
+        // first助言を表示
+        $target.off('click.adviceFirst').on('click.adviceFirst', '.advice-show-first', function(){
+          const c = $target.data('adviceClaims') || claims;
+          const r = $target.data('adviceRat') || rat;
+          renderDashboard($target, c, r, { stage: 'first-content' });
+        });
+        $target.off('click.adviceSecond').on('click.adviceSecond', '.advice-show-second', function(){
+          const c = $target.data('adviceClaims') || claims;
+          const r = $target.data('adviceRat') || rat;
+          // first助言を消し、second助言のみ表示
+          renderDashboard($target, c, r, { stage: 'second' });
+        });
+        $target.off('click.adviceThird').on('click.adviceThird', '.advice-show-third', function(){
+          // second助言を消し、third助言のみ表示し、AIを実行
+          renderDashboard($target, {}, {}, { stage: 'third' });
+          try { if (typeof runAi === 'function') { runAi(); } } catch(e) { console.error(e); }
+        });
+      } catch(e) {}
+      // 初期は first 助言のボタンのみ表示
+      renderDashboard($target, claims, rat, { stage: 'first-empty' });
     }).fail(function(err){
       console.error('showAdviceDashboard failed:', err);
       $target.html('<div class="error">助言ダッシュボードの取得に失敗しました</div>');

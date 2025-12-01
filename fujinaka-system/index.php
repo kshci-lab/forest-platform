@@ -364,7 +364,7 @@ $ai_output = '';
                      aria-expanded="false">
                   <div style="display:flex; align-items:center; gap:10px;">
                     <span id="ai_toggle_icon" aria-hidden="true">▶</span>
-                    <div style="font-weight:bold;">AI出力</div>
+                    <div style="font-weight:bold;">助言エリア</div>
                   </div>
                   <button id="run_ai_btn" type="button" class="button4"
                           onclick="event.stopPropagation(); runAi();">実行</button>

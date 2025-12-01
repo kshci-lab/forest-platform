@@ -1158,10 +1158,10 @@ function CheckClick(){
     }
     //　三角ロジックボタンだけオン（マップと三角ロジックを表示）
     else if(logic_check.checked == true && check.checked == false && pre_check.checked == false){ 
-      $('#jsmind_container').css('width','50%');
-      $('#map_menu').css('width','50%');
-      $('#logic_area').css('width','49%');
-      $('#logic_menu').css('width','49%');
+      $('#jsmind_container').css('width','50vw');
+      $('#map_menu').css('width','50vw');
+      $('#logic_area').css('width','49vw');
+      $('#logic_menu').css('width','49vw');
 
       $('#jsmind_container').show('fast');
       $('#map_menu').show('fast');
@@ -1174,10 +1174,10 @@ function CheckClick(){
     }
     // 論文シナリオだけオン（マップとシナリオを表示）
     else if(logic_check.checked == false && check.checked == true && pre_check.checked == false){ 
-      $('#jsmind_container').css('width','50%');
-      $('#map_menu').css('width','50%');
-      $('#document_area').css('width','49%');
-      $('#presen_menu').css('width','49%');
+      $('#jsmind_container').css('width','50vw');
+      $('#map_menu').css('width','50vw');
+      $('#document_area').css('width','49vw');
+      $('#presen_menu').css('width','49vw');
 
       $('#jsmind_container').show('fast');
       $('#map_menu').show('fast');
