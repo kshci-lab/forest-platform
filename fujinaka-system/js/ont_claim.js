@@ -74,7 +74,8 @@ function getDiffConceptLabels() {
 			ok: true,
 			sheetId: diff.sheetId,
 			mapMinusLogic,
-			mapMinusClaim
+			mapMinusClaim,
+			intersection
 		};
 	});
 }
@@ -139,6 +140,9 @@ window.logDiffConceptLabels = function() {
 	try { $('#advice_panel').show(); } catch (e) {}
 	renderDiffConceptLabels('#advice_output');
 };
+
+// ダッシュボード等からデータ取得関数を利用できるように公開
+try { window.getDiffConceptLabels = getDiffConceptLabels; } catch(e) {}
 
 // 簡易利用例（必要に応じてUIに反映してください）
 // getDiffConceptLabels().done(function (res) {

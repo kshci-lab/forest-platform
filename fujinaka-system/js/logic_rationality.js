@@ -37,13 +37,14 @@ function renderRationalityAdvice(containerSelector) {
 
 			const lineNone = (e) => {
 				console.log('[none] entry:', e);
-				const nodes = nodeContentList(e.nodes);
-				const anchors = anchorContentList(e.anchor_children);
+				// ノードIDなどは表示しない。contentのテキストのみを提示。
+				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
+				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
 				return `<div class="entry">
-					<div class="head">[none] rationality_id:${esc(e.rationality_id)}</div>
-					<div>ノード: ${nodes}</div>
-					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
-					<div class="advice">これらの内容を三角ロジックに反映しなくていいですか？</div>
+					<div class="head">[none]</div>
+					${nodeTexts ? `<div>「コンテント」${nodeTexts}</div>` : ''}
+					${anchorTexts ? `<div>「アンカーのコンテント」${anchorTexts}</div>` : ''}
+					<div class="advice">${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか</div>
 				</div>`;
 			};
 			const lineOne = (e) => {
@@ -61,15 +62,16 @@ function renderRationalityAdvice(containerSelector) {
 			};
 			const lineBoth = (e) => {
 				console.log('[both] entry:', e);
-				const nodes = nodeContentList(e.nodes);
-				const anchors = anchorContentList(e.anchor_children);
-				const logic = logicContentList(e.logic_matches);
+				// IDは表示せず、contentのみを表示
+				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
+				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
+				const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join('<br>');
 				return `<div class="entry">
-					<div class="head">[both] rationality_id:${esc(e.rationality_id)}</div>
-					<div>ノード: ${nodes}</div>
-					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
-					${logic ? `<div>三角ロジック対応: ${logic}</div>` : ''}
-					<div class="advice">f_node_idのcontentは三角ロジックにありますが、それはnode_idのcontentやアンカー子のcontentが適切に反映されていますか？</div>
+					<div class="head">[both]</div>
+					${nodeTexts ? `<div>「コンテント」${nodeTexts}</div>` : ''}
+					${anchorTexts ? `<div>「アンカーのコンテント」${anchorTexts}</div>` : ''}
+					${logicTexts ? `<div>三角ロジック対応のコンテント:<br>${logicTexts}</div>` : ''}
+					<div class="advice">三角ロジックにある${logicTexts}は、上記の「${nodeTexts}」についての合理性「${anchorTexts}」の内容を適切に反映していますか？</div>
 				</div>`;
 			};
 

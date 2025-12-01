@@ -169,6 +169,10 @@ $ai_output = '';
               <button class="button4" onclick="window.logDiffConceptLabels && window.logDiffConceptLabels();">
                 差分をコンソール出力
               </button>
+              <!-- 追加: 統合助言ダッシュボード -->
+              <button class="button4" onclick="window.showAdviceDashboard && window.showAdviceDashboard();">
+                助言ダッシュボード
+              </button>
               <!-- <label><input type="checkbox" name="Difference" id="Difference" onClick="Difference();">以前のマップとの差分</label> -->
             </div>
 
@@ -583,6 +587,8 @@ $ai_output = '';
         <script type="text/javascript" src="js/logic_rationality.js"></script>
         <!-- 追加: 主張ノード取得スクリプト（ES Moduleとして読み込み） -->
         <script type="module" src="js/ont_claim.js"></script>
+        <!-- 統合ダッシュボード -->
+        <script type="text/javascript" src="js/advice_dashboard.js"></script>
         <script>
         // 折りたたみトグル（デフォルト閉じ）
         function toggleAiPanel() {
