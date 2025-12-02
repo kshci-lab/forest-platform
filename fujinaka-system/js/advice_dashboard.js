@@ -8,12 +8,28 @@
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  function makeActions(category, subcategory, payloadObj){
+    try {
+      const encoded = encodeURIComponent(JSON.stringify(payloadObj||{}));
+      return ` <span class="advice-actions" data-category="${esc(category)}" data-subcategory="${esc(subcategory)}" data-payload="${encoded}">`+
+             `<button type="button" class="button4 advice-decide" data-decision="think">考える</button> `+
+             `<button type="button" class="button4 advice-decide" data-decision="not_think">考えない</button>`+
+             `</span>`;
+    } catch(e){
+      return '';
+    }
+  }
+
   // クレーム（主張）側の行文面
   function claimLine(type, p){
     if (type === 'map - logic') {
-      return `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
+      const msg = `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
+      const actions = makeActions('ont_claim','map_minus_logic',{ concept_id:p.concept_id, class_constraint:p.class_constraint, content:p.content||'' });
+      return msg + actions;
     } else if (type === 'map - claim') {
-      return `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
+      const msg = `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
+      const actions = makeActions('ont_claim','map_minus_claim',{ concept_id:p.concept_id, class_constraint:p.class_constraint, content:p.content||'' });
+      return msg + actions;
     }
     return `「${esc(p.class_constraint)}」${p.content ? `「${esc(p.content)}」` : ''}`;
   }
@@ -22,19 +38,36 @@
   function rationalityLineNone(e){
     const nodeTexts = (e.nodes || []).map(n => `「${esc(n.content)}」`).join('、');
     const anchorTexts = (e.anchor_children || []).map(c => `「${esc(c.content)}」`).join('、');
-    return `あなたは${nodeTexts}の合理性として${anchorTexts ? ` ${anchorTexts}` : ''}を述べています。${nodeTexts}を主張として三角ロジックを作成する必要はありませんか`;
+    const msg = `あなたは${nodeTexts}の合理性として${anchorTexts ? ` ${anchorTexts}` : ''}を述べています。${nodeTexts}を主張として三角ロジックを作成する必要はありませんか`;
+    const actions = makeActions('rationality','noneinlogic',{
+      rationality_id: e.rationality_id,
+      nodes: (e.nodes||[]).map(n=>({node_id:n.node_id, content:n.content, concept_id:n.concept_id||'', class_constraint:n.class_constraint||''}))
+    });
+    return msg + actions;
   }
   function rationalityLineOne(e){
     const nodes = (e.nodes||[]).map(n => `#${esc(n.node_id)} "${esc(n.content)}"`).join(' / ');
     const anchors = (e.anchor_children||[]).map(c => `#${esc(c.node_id)} "${esc(c.content)}"`).join(', ');
     const logic = (e.logic_matches||[]).map(m => `logic#${esc(m.logic_node_id)} "${esc(m.content)}"`).join(' / ');
-    return `【one】ノード: ${nodes}${anchors ? `｜アンカー: ${anchors}` : ''}${logic ? `｜対応: ${logic}` : ''}。三角ロジックに反映しなくてよいですか？`;
+    const msg = `【one】ノード: ${nodes}${anchors ? `｜アンカー: ${anchors}` : ''}${logic ? `｜対応: ${logic}` : ''}。三角ロジックに反映しなくてよいですか？`;
+    const actions = makeActions('rationality','oneinlogic',{
+      rationality_id: e.rationality_id,
+      nodes: (e.nodes||[]).map(n=>({node_id:n.node_id, content:n.content, concept_id:n.concept_id||'', class_constraint:n.class_constraint||''})),
+      logic_matches: (e.logic_matches||[]).map(m=>({logic_node_id:m.logic_node_id, f_node_id:m.f_node_id, content:m.content, concept_id:m.concept_id||'', class_constraint:m.class_constraint||''}))
+    });
+    return msg + actions;
   }
   function rationalityLineBoth(e){
     const nodeTexts = (e.nodes || []).map(n => `「${esc(n.content)}」`).join('、');
     const anchorTexts = (e.anchor_children || []).map(c => `「${esc(c.content)}」`).join('、');
     const logicTexts = (e.logic_matches || []).map(m => `「${esc(m.content)}」`).join('、');
-    return `あなたは${nodeTexts}の合理性として${anchorTexts ? ` ${anchorTexts}` : ''}を述べています。${nodeTexts}を主張とした三角ロジックはこれらの内容と整合していますか`;
+    const msg = `あなたは${nodeTexts}の合理性として${anchorTexts ? ` ${anchorTexts}` : ''}を述べています。${nodeTexts}を主張とした三角ロジックはこれらの内容と整合していますか`;
+    const actions = makeActions('rationality','bothinlogic',{
+      rationality_id: e.rationality_id,
+      nodes: (e.nodes||[]).map(n=>({node_id:n.node_id, content:n.content, concept_id:n.concept_id||'', class_constraint:n.class_constraint||''})),
+      logic_matches: (e.logic_matches||[]).map(m=>({logic_node_id:m.logic_node_id, f_node_id:m.f_node_id, content:m.content, concept_id:m.concept_id||'', class_constraint:m.class_constraint||''}))
+    });
+    return msg + actions;
   }
 
   function section(title, innerHtml){
@@ -157,6 +190,33 @@
           // second助言を消し、third助言のみ表示し、AIを実行
           renderDashboard($target, {}, {}, { stage: 'third' });
           try { if (typeof runAi === 'function') { runAi(); } } catch(e) { console.error(e); }
+        });
+        // 各質問の「考える/考えない」
+        $target.off('click.adviceDecide').on('click.adviceDecide', '.advice-decide', function(){
+          const $btn = $(this);
+          const decision = String($btn.data('decision')||'');
+          const $act = $btn.closest('.advice-actions');
+          const category = String($act.data('category')||'');
+          const subcategory = String($act.data('subcategory')||'');
+          let payload = {};
+          try { payload = JSON.parse(decodeURIComponent(String($act.data('payload')||''))); } catch(e) { payload = {}; }
+          const record = { ts: new Date().toISOString(), category, subcategory, decision, payload };
+          try {
+            // フックがあれば呼ぶ
+            if (typeof window.logAdviceDecision === 'function') {
+              window.logAdviceDecision(record);
+            }
+            // ローカルにも保持
+            const key = 'advice_decisions';
+            let arr = [];
+            try { arr = JSON.parse(localStorage.getItem(key)||'[]'); if (!Array.isArray(arr)) arr = []; } catch(e) { arr = []; }
+            arr.push(record);
+            localStorage.setItem(key, JSON.stringify(arr));
+          } catch(e) {
+            console.warn('decision store failed', e);
+          }
+          // UI 反映
+          $act.find('button').prop('disabled', true);
         });
       } catch(e) {}
       // 初期は first 助言のボタンのみ表示
