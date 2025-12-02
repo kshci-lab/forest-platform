@@ -10,6 +10,7 @@ $(document).on('click', '#fragment-add-select-toggle', function(){
     try{
         window.kfrag_add_select_mode = !window.kfrag_add_select_mode;
         var $btn = $(this);
+        try{ console && console.debug && console.debug('[kfrag] add-select toggle ->', window.kfrag_add_select_mode, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         if(window.kfrag_add_select_mode){
             // enable mode
             window.kfrag_add_selected = window.kfrag_add_selected || { ext: [], kfid: [] };
@@ -30,6 +31,14 @@ function updateFragmentSelectedList(){
         $list.empty();
         // prefer explicit display list if maintained, otherwise build from primary + additional
         var items = [];
+        try{
+            console && console.debug && console.debug('[kfrag] updateFragmentSelectedList: inputs', {
+                display_list: window.kfrag_display_list,
+                activeKnowledgeFragmentId: window.activeKnowledgeFragmentId,
+                activeExternalizedId: window.activeExternalizedId,
+                add_selected: window.kfrag_add_selected
+            });
+        }catch(_){ }
         if(window.kfrag_display_list && Array.isArray(window.kfrag_display_list) && window.kfrag_display_list.length){
             items = window.kfrag_display_list.slice();
         } else {
@@ -39,6 +48,7 @@ function updateFragmentSelectedList(){
                 window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks !== 'null' && ks !== 'undefined' && ks.length && items.indexOf(ks) === -1){ items.push(ks); } });
             }
         }
+        try{ console && console.debug && console.debug('[kfrag] updateFragmentSelectedList: items', items); }catch(_){ }
         items.forEach(function(k,i){
             var $it = $('<span class="fragment-selected-item" data-kfid="'+k+'"></span>');
             $it.text('#' + k);
@@ -61,6 +71,7 @@ function updateFragmentSelectedList(){
                     var $w = $('.fragment-node-wrapper').filter(function(){
                         try{ return String($(this).data('knowledge-fragment-id')) === String(k) || String($(this).data('externalized-id')) === String(k); }catch(_){ return false; }
                     }).first();
+                    try{ console && console.debug && console.debug('[kfrag] highlight for', k, '-> wrapper', ($w && $w.length) ? { kfid: $(this).data('knowledge-fragment-id'), ext: $(this).data('externalized-id') } : null ); }catch(_){ }
                     if($w && $w.length){ $w.addClass('kfrag-selected-highlight'); }
                 }catch(_){ }
             });
@@ -76,6 +87,7 @@ $(document).on('contextmenu', '#fragment-selected-list .fragment-selected-item',
         e.preventDefault();
         var $el = $(this);
         var k = String($el.data('kfid'));
+        try{ console && console.debug && console.debug('[kfrag] contextmenu remove badge', k, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         // If it's the primary item (first), do not remove primary here
         var $list = $('#fragment-selected-list');
         if(!$list || !$list.length) return;
@@ -111,6 +123,7 @@ $(document).on('contextmenu', '#fragment-selected-list .fragment-selected-item',
             if(window.kfrag_display_list && Array.isArray(window.kfrag_display_list)){
                 window.kfrag_display_list = window.kfrag_display_list.filter(function(x){ return String(x) !== k; });
             }
+            try{ console && console.debug && console.debug('[kfrag] after contextmenu remove', { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
             updateFragmentSelectedList();
         }catch(_){ }
         try{
@@ -121,6 +134,7 @@ $(document).on('contextmenu', '#fragment-selected-list .fragment-selected-item',
                 window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
             }
             combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
+            try{ console && console.debug && console.debug('[kfrag] fetch after contextmenu remove, combined', combined); }catch(_){ }
             if(combined.length === 0){ $('#discussion_message_list').empty(); }
             else { fetchDiscussionHistory(combined); }
         }catch(_){ }
@@ -134,6 +148,7 @@ $(document).on('click', '#fragment-selected-list .remove-btn', function(e){
         var $btn = $(this);
         var $el = $btn.closest('.fragment-selected-item');
         var k = String($el.data('kfid'));
+        try{ console && console.debug && console.debug('[kfrag] click remove badge', k, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         // prevent removing primary
         var $list = $('#fragment-selected-list');
         var first = $list.find('.fragment-selected-item').first();
@@ -156,6 +171,7 @@ $(document).on('click', '#fragment-selected-list .remove-btn', function(e){
         // remove visual marker on node wrapper
         try{ var $w = $('.fragment-node-wrapper').filter(function(){ try{ return String($(this).data('knowledge-fragment-id')) === k || String($(this).data('externalized-id')) === k; }catch(_){ return false; } }).first(); if($w && $w.length){ $w.removeClass('additional-selected'); } }catch(_){ }
         // update UI and history
+        try{ console && console.debug && console.debug('[kfrag] after click remove badge', { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         try{ updateFragmentSelectedList(); }catch(_){ }
         try{
             var combined = [];
@@ -165,6 +181,7 @@ $(document).on('click', '#fragment-selected-list .remove-btn', function(e){
                 window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
             }
             combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
+            try{ console && console.debug && console.debug('[kfrag] fetch after click remove, combined', combined); }catch(_){ }
             if(combined.length === 0){ $('#discussion_message_list').empty(); }
             else { fetchDiscussionHistory(combined); }
         }catch(_){ }
@@ -2458,16 +2475,50 @@ function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
         };
         var parentId = parentIdMap[areaLabel] || 333;
         // node_type は今回は未指定 → NULL 相当として送らない or 空文字
+        // Build combined list of selected fragment ids (primary + additional)
+        var combined = [];
+        try{
+            if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
+                combined.push(String(window.activeExternalizedId));
+            } else if (window.activeKnowledgeFragmentId) {
+                combined.push(String(window.activeKnowledgeFragmentId));
+            }
+            if (window.kfrag_add_selected) {
+                if (Array.isArray(window.kfrag_add_selected.ext)){
+                    window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length && combined.indexOf(String(x)) === -1) combined.push(String(x)); });
+                }
+                if (Array.isArray(window.kfrag_add_selected.kfid)){
+                    window.kfrag_add_selected.kfid.forEach(function(x){ if(String(x).length && combined.indexOf(String(x)) === -1) combined.push(String(x)); });
+                }
+            }
+        }catch(_){ }
+
         $.ajax({
             url: 'php/save_knowledge_explorer.php',
             type: 'POST',
             dataType: 'json',
-            data: {
-                parent_node_id: parentId,
-                node_title: nodeTitle,
-                comment: commentText || '',
-                node_type: ''
-            }
+            data: (function(){
+                var d = {
+                    parent_node_id: parentId,
+                    node_title: nodeTitle,
+                    comment: commentText || '',
+                    node_type: ''
+                };
+                // Use externalized IDs only
+                var extOnly = [];
+                if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
+                    extOnly.push(String(window.activeExternalizedId));
+                }
+                if (window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+                    window.kfrag_add_selected.ext.forEach(function(x){
+                        var sx = String(x);
+                        if(sx && sx !== 'null' && sx !== 'undefined' && extOnly.indexOf(sx) === -1){ extOnly.push(sx); }
+                    });
+                }
+                if (extOnly.length){ d.knowledge_fragment_id = extOnly.join(','); }
+                try{ console && console.debug && console.debug('[kfrag] KE submit payload', { areaLabel: areaLabel, parentId: parentId, extOnly: extOnly, data: d }); }catch(_){ }
+                return d;
+            })()
         }).done(function(res){
             if(res && res.status === 'ok'){
                 console.log('knowledge_explorer 保存OK', res);
@@ -3113,6 +3164,7 @@ function initializeFragmentsWorkspace(){
                 try{ addExt = $wrap.data('externalized-id') || null; }catch(_){ addExt = null; }
                 var addKfid = $wrap.data('knowledge-fragment-id') || null;
                 var uid = (addExt !== null && addExt !== undefined && String(addExt).length) ? String(addExt) : String(addKfid);
+                try{ console && console.debug && console.debug('[kfrag] click.kfragselect add-mode toggle', { addExt: addExt, addKfid: addKfid, uid: uid }); }catch(_){ }
                 var idx = window.kfrag_add_selected.ext.indexOf(uid);
                 if(idx === -1){
                     window.kfrag_add_selected.ext.push(uid);
@@ -3134,6 +3186,7 @@ function initializeFragmentsWorkspace(){
                         window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && display.indexOf(ks) === -1) display.push(ks); });
                     }
                     window.kfrag_display_list = display;
+                    try{ console && console.debug && console.debug('[kfrag] display_list updated', window.kfrag_display_list, { add_selected: window.kfrag_add_selected, primaryId: primaryId }); }catch(_){ }
                     updateFragmentSelectedList();
                 }catch(_){ }
                 try{
@@ -3144,6 +3197,7 @@ function initializeFragmentsWorkspace(){
                         window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
                     }
                     combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
+                    try{ console && console.debug && console.debug('[kfrag] fetchDiscussionHistory with combined', combined); }catch(_){ }
                     if(combined.length === 0){ $('#discussion_message_list').empty(); }
                     else { fetchDiscussionHistory(combined); }
                 }catch(__){ }
@@ -3164,6 +3218,7 @@ function initializeFragmentsWorkspace(){
         var disp = $wrap.data('knowledge-fragment-display') || kfid;
         window.activeKnowledgeFragmentId = kfid;
         try{ window.activeExternalizedId = $wrap.data('externalized-id') || null; }catch(_){ window.activeExternalizedId = null; }
+        try{ console && console.debug && console.debug('[kfrag] primary select', { kfid: kfid, ext: window.activeExternalizedId }); }catch(_){ }
         try{
             var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
             if($dtitle && $dtitle.length){
@@ -3179,6 +3234,7 @@ function initializeFragmentsWorkspace(){
             // Clear additional selections when primary changes
             try{ if(window.kfrag_add_selected){ window.kfrag_add_selected = { ext: [], kfid: [] }; $('.fragment-node-wrapper.additional-selected').removeClass('additional-selected'); } }catch(_){ }
             try{ updateFragmentSelectedList(); }catch(_){ }
+            try{ console && console.debug && console.debug('[kfrag] fetchDiscussionHistory(primary)', fetchId); }catch(_){ }
             fetchDiscussionHistory(fetchId);
         }catch(_){ }
         // When a fragment is selected, show the post form and remove any placeholder.
@@ -3566,12 +3622,40 @@ function initializeDiscussionBoard(){
                 // まずサーバーへ保存要求 (DB挿入) → 成功時UI反映
                 var postData = { content: text };
                 try{
-                    // 優先して externalized_contents_id を送る（サーバ側 discussion_history.knowledge_fragment_id に格納される）
-                    if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
-                        postData.knowledge_fragment_id = window.activeExternalizedId;
-                    } else if (window.activeKnowledgeFragmentId) {
-                        postData.knowledge_fragment_id = window.activeKnowledgeFragmentId;
+                    // Build combined from the badge display list to ensure it matches UI selections
+                    var combined = [];
+                    var ids = [];
+                    if (Array.isArray(window.kfrag_display_list) && window.kfrag_display_list.length){
+                        ids = window.kfrag_display_list.slice();
+                    } else {
+                        // fallback to active + add_selected
+                        if (typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null) {
+                            ids.push(String(window.activeKnowledgeFragmentId));
+                        } else if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
+                            ids.push(String(window.activeExternalizedId));
+                        }
+                        if (window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+                            window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && ids.indexOf(ks) === -1) ids.push(ks); });
+                        }
                     }
+                    // Map knowledge/display IDs to externalized IDs by finding wrappers
+                    ids.forEach(function(k){
+                        try{
+                            var $w = $('.fragment-node-wrapper').filter(function(){
+                                var $t = $(this);
+                                return String($t.data('knowledge-fragment-id')) === String(k) || String($t.data('externalized-id')) === String(k);
+                            }).first();
+                            var ext = ($w && $w.length) ? $w.data('externalized-id') : null;
+                            if (ext !== null && typeof ext !== 'undefined'){
+                                var sx = String(ext);
+                                if (sx && combined.indexOf(sx) === -1){ combined.push(sx); }
+                            }
+                        }catch(__){ }
+                    });
+                    if (combined.length) {
+                        postData.knowledge_fragment_id = combined.join(',');
+                    }
+                    try{ console && console.debug && console.debug('[kfrag] discussion submit payload', { idsFromBadges: ids, combinedExt: combined, postData: postData }); }catch(_){ }
                 }catch(_){ }
                 $.ajax({
                     url: 'php/save_discussion_history.php',

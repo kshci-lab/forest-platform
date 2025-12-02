@@ -1935,7 +1935,7 @@ select[name="user_list"] {
 /* 表出化メイン入力セクション */
 .externalization-main-section{
 	display:block;
-	background: #ffb6c1;
+	background: #ffc6d0; /* 中間トーンのピンク */
 	border-radius:12px;
 	padding:10px 10px; 
 	margin: 15px 10px 12px 10px;
@@ -1972,7 +1972,7 @@ select[name="user_list"] {
 .qa{ display:block; 
 	margin-left: 10px; 
 	margin-right: 10px; 
-	background: #a8cde0; 
+	background: #bcd8e8; /* 中間トーンの水色 */
 	padding:12px; 
 	border-radius:12px; 
 	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
@@ -1998,7 +1998,7 @@ select[name="user_list"] {
 	min-height:25px; /* 初期の高さを約25pxに */
 	margin-left: 10px; 
 	margin-right: 10px; 
-	background: #a8cde0; 
+	background: #bcd8e8; /* 中間トーンの水色 */
 	padding:10px; /* 高さを抑えるために余白も縮小 */
 	border-radius:12px; 
 	box-shadow: 0 6px 0 rgba(0,0,0,0.06);

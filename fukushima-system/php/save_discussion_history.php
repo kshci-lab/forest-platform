@@ -52,10 +52,26 @@ if (mb_strlen($content,'UTF-8') > 255) {
     $content = mb_substr($content, 0, 255, 'UTF-8');
 }
 
-// optional: knowledge_fragment_id (int) - which fragment this discussion belongs to
+// optional: knowledge_fragment_id - which fragment(s) this discussion belongs to
+// Accept either a single id, an array of ids, or a comma-separated string. Normalize to a comma-separated string when appropriate.
 $knowledge_fragment_id = null;
 if (isset($_POST['knowledge_fragment_id']) && $_POST['knowledge_fragment_id'] !== '') {
-    $knowledge_fragment_id = (int)$_POST['knowledge_fragment_id'];
+    if (is_array($_POST['knowledge_fragment_id'])) {
+        $arr = array_map('trim', $_POST['knowledge_fragment_id']);
+        $arr = array_filter($arr, function($v){ return $v !== ''; });
+        if (count($arr)) { $knowledge_fragment_id = implode(',', $arr); }
+    } else {
+        $kraw = trim((string)$_POST['knowledge_fragment_id']);
+        if ($kraw !== '') {
+            if (strpos($kraw, ',') !== false) {
+                $parts = array_map('trim', explode(',', $kraw));
+                $parts = array_filter($parts, function($v){ return $v !== ''; });
+                if (count($parts)) { $knowledge_fragment_id = implode(',', $parts); }
+            } else {
+                $knowledge_fragment_id = $kraw;
+            }
+        }
+    }
 }
 
 $table = 'discussion_history';
@@ -105,7 +121,8 @@ if ($resCol = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE 'knowledge_fragmen
 }
 if (!$hasKFragCol) {
     // try to add column (non-blocking; report to error log on failure)
-    $alterSql = "ALTER TABLE `$table` ADD COLUMN knowledge_fragment_id INT NULL DEFAULT NULL";
+    // Use VARCHAR to allow storing multiple ids as a comma-separated string
+    $alterSql = "ALTER TABLE `$table` ADD COLUMN knowledge_fragment_id VARCHAR(255) NULL DEFAULT NULL";
     if ($mysqli->query($alterSql)) {
         $hasKFragCol = true;
         error_log("save_discussion_history: added column knowledge_fragment_id to $table");
@@ -114,20 +131,40 @@ if (!$hasKFragCol) {
     }
 }
 
-// if column exists, detect whether it allows NULL; if not and no value provided, coerce to 0
+// if column exists, detect whether it allows NULL and its type; coerce empty values appropriately
 $kfragAllowsNull = true;
+$kfragIsVarchar = false;
 if ($hasKFragCol) {
-    if ($resCol2 = $mysqli->query("SHOW COLUMNS FROM `$table` WHERE Field='knowledge_fragment_id'")) {
+    // Use LIKE to reliably fetch the column definition (Type, Null)
+    if ($resCol2 = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE 'knowledge_fragment_id'")) {
         $rowCol2 = $resCol2->fetch_assoc();
         if ($rowCol2 && isset($rowCol2['Null'])) {
             $kfragAllowsNull = (strtoupper(trim($rowCol2['Null'])) === 'YES');
         }
+        if ($rowCol2 && isset($rowCol2['Type'])) {
+            $kfragIsVarchar = (stripos($rowCol2['Type'], 'varchar') !== false);
+        }
         $resCol2->free();
     }
+    // If incoming value is CSV and column is not VARCHAR, try to auto-migrate to VARCHAR
+    if (!$kfragIsVarchar && is_string($knowledge_fragment_id) && strpos($knowledge_fragment_id, ',') !== false) {
+        $alterSql2 = "ALTER TABLE `$table` MODIFY COLUMN knowledge_fragment_id VARCHAR(255) NULL";
+        if ($mysqli->query($alterSql2)) {
+            $kfragIsVarchar = true;
+            error_log("save_discussion_history: modified knowledge_fragment_id to VARCHAR(255) to store CSV ids");
+        } else {
+            error_log("save_discussion_history: failed to modify knowledge_fragment_id to VARCHAR: " . $mysqli->error);
+        }
+    }
     if (!$kfragAllowsNull && $knowledge_fragment_id === null) {
-        // coerce to 0 to avoid NULL insert failure in strict mode
-        _dbg('knowledge_fragment_id column NOT NULL but no fragment provided; coercing to 0');
-        $knowledge_fragment_id = 0;
+        // coerce to appropriate empty value to avoid NULL insert failure in strict mode
+        if ($kfragIsVarchar) {
+            _dbg('knowledge_fragment_id column NOT NULL (VARCHAR) but no fragment provided; coercing to empty string');
+            $knowledge_fragment_id = '';
+        } else {
+            _dbg('knowledge_fragment_id column NOT NULL (INT) but no fragment provided; coercing to 0');
+            $knowledge_fragment_id = 0;
+        }
     }
 }
 
@@ -139,7 +176,15 @@ if(!$stmt = $mysqli->prepare($sqlIns)) {
     exit;
 }
 if($hasKFragCol){
-    $stmt->bind_param('iisi', $nextId, $user_id, $content, $knowledge_fragment_id);
+    if (!isset($kfragIsVarchar)) { $kfragIsVarchar = false; }
+    if ($kfragIsVarchar) {
+        // bind knowledge_fragment_id as string
+        $stmt->bind_param('iiss', $nextId, $user_id, $content, $knowledge_fragment_id);
+    } else {
+        // bind as int (legacy)
+        $kfragInt = ($knowledge_fragment_id === null || $knowledge_fragment_id === '') ? 0 : (int)$knowledge_fragment_id;
+        $stmt->bind_param('iisi', $nextId, $user_id, $content, $kfragInt);
+    }
 } else {
     $stmt->bind_param('iis', $nextId, $user_id, $content);
 }
