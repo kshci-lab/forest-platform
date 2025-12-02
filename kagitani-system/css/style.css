@@ -836,13 +836,16 @@ h3 {
 
 #feedback_area{
 	background-color: #f0f0f0;
-	height: calc(100vh - 500px); /* 画面の一番下まで伸ばす（上部要素分を除く） */
+	/* 自動高さを基本としつつ、画面下まで伸ばすための最大高さを指定 */
+	height: auto;
+	max-height: calc(100vh - 160px); /* ヘッダ等の上部要素の高さ分を差し引く */
 	min-height: 200px; /* 最小高さを確保 */
 	padding: 10px;
-	overflow-y: scroll;
-    border: 1px solid #ccc;
-    margin-bottom: 0; /* 下のマージンを削除 */
-    position: relative;
+	overflow-y: auto; /* コンテンツが長い場合はスクロール */
+	border: 1px solid #ccc;
+	margin-bottom: 0; /* 下のマージンを削除 */
+	position: relative;
+	box-sizing: border-box;
 }
 
   /* アコーディオンメニューのスタイル */
@@ -947,13 +950,17 @@ h3 {
 }
 /* 問い一覧の全体 */
 #side_menu .inquiry_area {
-	height: 47vw;
+	/* Make inquiry_area match the visible jsmind container height for consistent vertical alignment */
+	/* Matches #jsmind_container height: calc(100vh - 139px) */
+	height: calc(100vh - 139px);
+	max-height: none;
 	overflow-y: auto;
-	border:solid 5px #ccc;
-	margin-bottom: 30px;
+	border: solid 5px #ccc;
+	margin-bottom: 0; /* remove extra space between inquiry_area and feedback_area */
 	font-size: 14px;
 	text-align: left;
-	resize:vertical;
+	resize: vertical;
+	box-sizing: border-box;
 }
 /* 問い一覧 */
 #testxml{

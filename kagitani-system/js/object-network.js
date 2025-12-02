@@ -3151,7 +3151,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 console.log(params.nodes);
                 console.log(`ノード ${movedNodeId} の位置を更新しました。新しい座標: (${this.latest_selected_node_info.x}, ${this.latest_selected_node_info.y})`);
             
-                defaultRecordThinkingProcess.update_Node("point" ,movedNodeId, (nodeBoundingBox.right + nodeBoundingBox.left)/2, (nodeBoundingBox.bottom + nodeBoundingBox.top)/2)
+                defaultRecordThinkingProcess.update_Node("point" ,movedNodeId, (nodeBoundingBox.right + nodeBoundingBox.left)/2, (nodeBoundingBox.bottom + nodeBoundingBox.top)/2, 1)
                 
                 const ontology_index = this.OntologyConnectNodeId.indexOf(movedNodeId);
                 if(ontology_index !== -1){
@@ -3351,16 +3351,25 @@ class RecordThinkingProcess{
     
 
     //ノードの更新(完了)
-    update_Node (select_update, id, node_update_thing1, node_update_thing2){
+    // 4つ目の引数までの互換性を保ちつつ、5番目の引数で drag フラグを受け取れるようにする
+    update_Node (select_update, id, node_update_thing1, node_update_thing2, dragFlag = 0){
+        const postData = {
+            select_update : select_update,
+            node_id : id,
+            purpose : 'update',
+            update_thing : 'node',
+            node_update_thing1 : node_update_thing1,
+            node_update_thing2: node_update_thing2
+        };
+        // dragFlag が指定されている（1）の場合はサーバに伝える
+        if (typeof dragFlag !== 'undefined' && (dragFlag === 1 || dragFlag === '1')) {
+            postData.drag = 1;
+        }
+
         $.ajax({
             url: "php/object_maneger.php",
             type: "POST",
-            data: {select_update : select_update,
-                node_id : id,
-                purpose : 'update',
-                update_thing : 'node',
-                node_update_thing1 : node_update_thing1,
-                node_update_thing2: node_update_thing2},
+            data: postData,
             success:function(e){
                 if(e){
                     console.log(e);

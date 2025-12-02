@@ -1438,7 +1438,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="ont"></div>
 <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;"><span id="reasonPurposeTitle">【理由・目的】</span></div>
 <div id="intention"></div>
-<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;"><span id="rationalityTitle">【合理性】</span></div>
+<!-- Rationality header removed to eliminate extra spacing under inquiry_area -->
 <div id="rationality"></div>
                             </div>
 

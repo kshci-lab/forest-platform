@@ -1087,9 +1087,24 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
     renderLargeGoals();
 });
 
-addWeeklyGoal = function() {
+window.addWeeklyGoal = function() {
+    console.log('[goal_list] addWeeklyGoal called');
+    try {
+        if (typeof _jm === 'undefined' || !_jm) {
+            console.warn('[goal_list] _jm is undefined');
+        }
+    } catch (e) {
+        console.warn('[goal_list] _jm check failed', e);
+    }
     // 選択中ノードIDを取得
-    var selected_node_id = _jm.get_selected_node().id;
+    var selected_node_id = null;
+    try {
+        var sel = (typeof _jm !== 'undefined' && _jm && typeof _jm.get_selected_node === 'function') ? _jm.get_selected_node() : null;
+        selected_node_id = sel && sel.id ? sel.id : null;
+    } catch (err) {
+        console.error('[goal_list] get_selected_node error', err);
+    }
+    console.log('[goal_list] selected_node_id:', selected_node_id);
     if (!selected_node_id) {
         alert('ノードが選択されていません');
         return;
@@ -1101,31 +1116,32 @@ addWeeklyGoal = function() {
         var latestGoal = goals[0];
         if (!latestGoal.contents) latestGoal.contents = [];
         // マインドマップからノード内容取得
-        var selectedNode = _jm.get_selected_node();
+        var selectedNode = sel || ((typeof _jm !== 'undefined' && _jm && typeof _jm.get_selected_node === 'function') ? _jm.get_selected_node() : null);
         var nodeContent = selectedNode && selectedNode.topic ? selectedNode.topic : '(内容なし)';
+        console.log('[goal_list] adding nodeContent to latestGoal:', nodeContent);
         latestGoal.contents.push(nodeContent);
         localStorage.setItem('weeklyGoals', JSON.stringify(goals));
-        renderWeeklyGoals();
+        try { renderWeeklyGoals(); } catch(e){ console.warn('[goal_list] renderWeeklyGoals error', e); }
     }
     // PHPへAJAXリクエスト送信
+    console.log('[goal_list] sending AJAX to update_latest_goal_node.php with node_id=', selected_node_id);
     $.ajax({
         url: 'php/update_latest_goal_node.php',
         type: 'POST',
         data: { node_id: selected_node_id },
         success: function(response) {
-            console.log('最新の小目標にnode_idを保存しました:', response);
-            // alert('最新の小目標にノードIDを保存しました');
+            console.log('[goal_list] 最新の小目標にnode_idを保存しました:', response);
             // DB反映後に再取得
             if (typeof fetchWeeklyGoalsFromDB === 'function') {
-                fetchWeeklyGoalsFromDB();
+                try { fetchWeeklyGoalsFromDB(); } catch(e){ console.warn('[goal_list] fetchWeeklyGoalsFromDB failed', e); }
             }
         },
         error: function(xhr, status, error) {
-            console.error('保存に失敗しました:', error);
+            console.error('[goal_list] 保存に失敗しました:', error, status);
             alert('保存に失敗しました');
         }
     });
-}
+};
 
 // グローバル: node-icon-container に対してホバー/フォーカスでカスタムツールチップを表示
 (function(){
