@@ -105,16 +105,16 @@ try {
         }
     }
 
-    // 2) logic_node から f_node_id を取得（対象ユーザ＆シート）
-    $sqlL = "SELECT ln.logic_node_id, ln.f_node_id
-        FROM logic_node ln
-        INNER JOIN nodes n ON n.id = ln.f_node_id
-        WHERE ln.f_node_id IS NOT NULL
-          AND n.sheet_id = ?
-          AND n.user_id = ?
+    // 2) 主張ノードに紐づくf_node_id を取得（対象ユーザ＆シート）
+    $sqlClaim = "SELECT DISTINCT ln.f_node_id
+        FROM logic_triangle t
+        INNER JOIN logic_node ln ON ln.logic_node_id = t.claim_id
+        WHERE t.sheet_id = ?
+          AND ln.user_id = ?
+          AND ln.f_node_id IS NOT NULL
     ";
-    $stmtL = $mysqli->prepare($sqlL);
-    if (!$stmtL) throw new Exception('SQLプリペア失敗(sqlL): ' . $mysqli->error);
+    $stmtL = $mysqli->prepare($sqlClaim);
+    if (!$stmtL) throw new Exception('SQLプリペア失敗(sqlClaim): ' . $mysqli->error);
     $stmtL->bind_param("ss", $sheet_id, $user_id);
     $stmtL->execute();
     $resL = $stmtL->get_result();
@@ -129,6 +129,28 @@ try {
         $logicNodeIdsByFNode[$fid][] = $lid;
     }
     $stmtL->close();
+
+    // 2.1) f_node_id と rationality の node_id に対して、nodes から concept_id を取得
+    $allNodeIds = array_values(array_unique(array_merge($rationalityNodeIds, $logicNodeFIds)));
+    $conceptByNode = [];
+    if (!empty($allNodeIds)) {
+        $phAll = implode(',', array_fill(0, count($allNodeIds), '?'));
+        $sqlConcepts = "SELECT id AS node_id, concept_id FROM nodes WHERE sheet_id = ? AND user_id = ? AND id IN ($phAll)";
+        if ($stmtCon = $mysqli->prepare($sqlConcepts)) {
+            $typesCon = 'ss' . str_repeat('s', count($allNodeIds));
+            $bindValsCon = array_merge([$sheet_id, $user_id], $allNodeIds);
+            $bindParamsCon = [ &$typesCon ];
+            foreach ($bindValsCon as $i => $v) { $bindParamsCon[] = &$bindValsCon[$i]; }
+            call_user_func_array([$stmtCon, 'bind_param'], $bindParamsCon);
+            $stmtCon->execute();
+            $resCon = $stmtCon->get_result();
+            while ($rowC = $resCon->fetch_assoc()) {
+                $conceptByNode[(string)$rowC['node_id']] = (string)($rowC['concept_id'] ?? '');
+            }
+            $stmtCon->close();
+        }
+    }
+
 
     // 3) 差分・共通集合
     $rSet = array_values(array_unique($rationalityNodeIds));
@@ -240,10 +262,14 @@ try {
             [
                 'node_id' => $nidA,
                 'content' => $contentByNode[$nidA] ?? '',
+                'concept_id' => $conceptByNode[$nidA] ?? '',
+                'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : ''
             ],
             [
                 'node_id' => $nidB,
                 'content' => $contentByNode[$nidB] ?? '',
+                'concept_id' => $conceptByNode[$nidB] ?? '',
+                'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : ''
             ]
         ];
 
@@ -258,6 +284,8 @@ try {
                     'logic_node_id' => (string)$lnid,
                     'f_node_id'     => $nidA,
                     'content'       => $contentByNode[$nidA] ?? '',
+                    'concept_id'    => $conceptByNode[$nidA] ?? '',
+                    'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : ''
                 ];
             }
         }
@@ -267,6 +295,8 @@ try {
                     'logic_node_id' => (string)$lnid,
                     'f_node_id'     => $nidB,
                     'content'       => $contentByNode[$nidB] ?? '',
+                    'concept_id'    => $conceptByNode[$nidB] ?? '',
+                    'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : ''
                 ];
             }
         }
