@@ -39,18 +39,6 @@ function getDiffConceptLabels() {
 		// id -> (直下SLOTS 内 role="出力" の) class_constraint
 		const idToOutputCC = buildIdToOutputCC(xml);
 
-		// 取得データの検証ログ（問題調査用）
-		try {
-			console.group('fetch_claim_nodes.php response debug');
-			console.log('ok:', diff.ok);
-			console.log('sheetId:', diff.sheetId);
-			console.log('keys:', Object.keys(diff || {}));
-			console.log('diffMapMinusLogicDetailed type/len:', Array.isArray(diff.diffMapMinusLogicDetailed), diff.diffMapMinusLogicDetailed ? diff.diffMapMinusLogicDetailed.length : 0);
-			console.log('sample diffMapMinusLogicDetailed[0]:', diff.diffMapMinusLogicDetailed && diff.diffMapMinusLogicDetailed[0]);
-			console.log('diffMapMinusClaimDetailed type/len:', Array.isArray(diff.diffMapMinusClaimDetailed), diff.diffMapMinusClaimDetailed ? diff.diffMapMinusClaimDetailed.length : 0);
-			console.groupEnd();
-		} catch(e) { console.warn('debug logging failed', e); }
-
 		// 詳細差分を content 単位に展開し、class_constraint を付与
 		const flattenDetailed = (arrDetailed) => {
 			const out = [];

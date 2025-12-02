@@ -11,18 +11,18 @@
   // クレーム（主張）側の行文面
   function claimLine(type, p){
     if (type === 'map - logic') {
-      return `「${esc(p.class_constraint)}」${p.content ? `「${esc(p.content)}」` : ''}この内容を三要素（主張/事実/理由付け）の論理構成に取り込む必要はありませんか`;
+      return `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
     } else if (type === 'map - claim') {
-      return `「${esc(p.class_constraint)}」${p.content ? `「${esc(p.content)}」` : ''}この内容を主張として明確化する必要はありませんか`;
+      return `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
     }
     return `「${esc(p.class_constraint)}」${p.content ? `「${esc(p.content)}」` : ''}`;
   }
 
   // 合理性側の行文面（logic_rationality.jsの方針に合わせて簡略版）
   function rationalityLineNone(e){
-    const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
-    const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
-    return `【none】「コンテント」${nodeTexts}${anchorTexts ? ` 「アンカーのコンテント」${anchorTexts}` : ''}。これらを三角ロジックとして考えなくてよいですか？`;
+    const nodeTexts = (e.nodes || []).map(n => `「${esc(n.content)}」`).join('、');
+    const anchorTexts = (e.anchor_children || []).map(c => `「${esc(c.content)}」`).join('、');
+    return `あなたは${nodeTexts}の合理性として${anchorTexts ? ` ${anchorTexts}` : ''}を述べています。${nodeTexts}を主張として三角ロジックを作成する必要はありませんか`;
   }
   function rationalityLineOne(e){
     const nodes = (e.nodes||[]).map(n => `#${esc(n.node_id)} "${esc(n.content)}"`).join(' / ');
@@ -31,10 +31,10 @@
     return `【one】ノード: ${nodes}${anchors ? `｜アンカー: ${anchors}` : ''}${logic ? `｜対応: ${logic}` : ''}。三角ロジックに反映しなくてよいですか？`;
   }
   function rationalityLineBoth(e){
-    const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
-    const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
-    const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join(' / ');
-    return `【both】「コンテント」${nodeTexts}${anchorTexts ? ` 「アンカー」${anchorTexts}` : ''}${logicTexts ? `｜三角ロジック対応: ${logicTexts}` : ''}。対応内容は適切ですか？`;
+    const nodeTexts = (e.nodes || []).map(n => `「${esc(n.content)}」`).join('、');
+    const anchorTexts = (e.anchor_children || []).map(c => `「${esc(c.content)}」`).join('、');
+    const logicTexts = (e.logic_matches || []).map(m => `「${esc(m.content)}」`).join('、');
+    return `あなたは${nodeTexts}の合理性として${anchorTexts ? ` ${anchorTexts}` : ''}を述べています。${nodeTexts}を主張とした三角ロジックはこれらの内容と整合していますか`;
   }
 
   function section(title, innerHtml){
@@ -81,12 +81,12 @@
     // 助言 - first（ないことへの助言）
     const firstHtml = [
       subSection('主張 (map-logic)', list(mapMinusLogic.map(p => claimLine('map - logic', p)))),
+      subSection('主張 (map-claim)', list(mapMinusClaim.map(p => claimLine('map - claim', p)))),
       subSection('合理性 (noneinlogic, oneinlogic)', list([].concat(noneArr.map(rationalityLineNone), oneArr.map(rationalityLineOne))))
     ].join('');
 
     // 助言 - second（あることへの助言）
     const secondHtml = [
-      subSection('主張 (map-claim)', list(mapMinusClaim.map(p => claimLine('map - claim', p)))),
       subSection('合理性 (bothlogic)', list(bothArr.map(rationalityLineBoth)))
     ].join('');
 
