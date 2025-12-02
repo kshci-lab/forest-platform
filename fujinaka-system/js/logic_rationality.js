@@ -1,6 +1,5 @@
 // rationality.php から pairStatus を取得して助言を表示する処理
-// ont_claim.js の構成を参考に作成
-
+// ont_claim.js の getDiffConceptLabels を参照して差分も併記
 // データ取得
 function getRationalityStatus() {
 	return $.getJSON('php/rationality.php').then(function(resp){
@@ -13,9 +12,15 @@ function getRationalityStatus() {
 
 // 助言描画
 function renderRationalityAdvice(containerSelector) {
-	getRationalityStatus()
-		.done(function(res){
+	$.when(
+		getRationalityStatus(),
+		(window.getDiffConceptLabels ? window.getDiffConceptLabels() : $.Deferred().resolve({ ok:true, mapMinusLogic:[], mapMinusClaim:[], intersection:[] }).promise())
+	)
+		.done(function(res, diff){
+			if (Array.isArray(res)) res = res[0];
+			if (Array.isArray(diff)) diff = diff[0];
 			console.log('rationality.php response:', res);
+			console.log('ont-claim diff response:', diff);
 
 			const noneArr = res.noneinlogic || (res.displayEntries && res.displayEntries.noneinlogic) || [];
 			const oneArr  = res.oneinlogic  || (res.displayEntries && res.displayEntries.oneinlogic)  || [];
@@ -82,10 +87,29 @@ function renderRationalityAdvice(containerSelector) {
 				return `<h4>${esc(title)}</h4><div class="rationality-advice-list">${items}</div>`;
 			};
 
+			// ont-claim の差分（map - logic / map - claim）も併記
+			const claimLine = (title, p) => {
+				if (title === 'map - logic') {
+					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を三要素（主張/事実/理由付け）の論理構成に取り込む必要はありませんか`;
+				} else if (title === 'map - claim') {
+					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を主張として明確化する必要はありませんか`;
+				}
+				return `「${esc(p.class_constraint)}」「${esc(p.content)}」これを検討する必要はありませんか`;
+			};
+			const sectionClaim = (title, arr) => {
+				const items = (arr || [])
+					.filter(p => p.class_constraint && p.class_constraint.trim() !== '')
+					.map(p => `<li>${claimLine(title, p)}</li>`).join('');
+				if (!items) return '';
+				return `<h4>${esc(title)}</h4><ul>${items}</ul>`;
+			};
+
 			let body = [
 				section('noneinlogic', noneArr, lineNone),
 				section('oneinlogic', oneArr, lineOne),
 				section('bothinlogic', bothArr, lineBoth),
+				sectionClaim('map - logic', (diff && diff.mapMinusLogic) || []),
+				sectionClaim('map - claim', (diff && diff.mapMinusClaim) || []),
 			].join('');
 			if (!body.trim()) body = '<div class="empty">対象のペアが見つかりませんでした。</div>';
 			console.log('rendered html:', body);
