@@ -24,11 +24,11 @@
   function claimLine(type, p){
     if (type === 'map - logic') {
       const msg = `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
-      const actions = makeActions('ont_claim','map_minus_logic',{ concept_id:p.concept_id, class_constraint:p.class_constraint, content:p.content||'' });
+      const actions = makeActions('ont_claim','map_minus_logic',{ concept_id:p.concept_id, node_id:(p.node_id ?? (Array.isArray(p.node_ids)? p.node_ids[0] : null)), class_constraint:p.class_constraint, content:p.content||'' });
       return msg + actions;
     } else if (type === 'map - claim') {
       const msg = `教育システム学研究において「${esc(p.class_constraint)}」は重要です．あなたは「${esc(p.class_constraint)}」として${p.content ? `「${esc(p.content)}」` : '内容'}を述べています．これを主張として三角ロジックを作成する必要はありませんか．`;
-      const actions = makeActions('ont_claim','map_minus_claim',{ concept_id:p.concept_id, class_constraint:p.class_constraint, content:p.content||'' });
+      const actions = makeActions('ont_claim','map_minus_claim',{ concept_id:p.concept_id, node_id:(p.node_id ?? (Array.isArray(p.node_ids)? p.node_ids[0] : null)), class_constraint:p.class_constraint, content:p.content||'' });
       return msg + actions;
     }
     return `「${esc(p.class_constraint)}」${p.content ? `「${esc(p.content)}」` : ''}`;
@@ -46,10 +46,10 @@
     return msg + actions;
   }
   function rationalityLineOne(e){
-    const nodes = (e.nodes||[]).map(n => `#${esc(n.node_id)} "${esc(n.content)}"`).join(' / ');
-    const anchors = (e.anchor_children||[]).map(c => `#${esc(c.node_id)} "${esc(c.content)}"`).join(', ');
-    const logic = (e.logic_matches||[]).map(m => `logic#${esc(m.logic_node_id)} "${esc(m.content)}"`).join(' / ');
-    const msg = `【one】ノード: ${nodes}${anchors ? `｜アンカー: ${anchors}` : ''}${logic ? `｜対応: ${logic}` : ''}。三角ロジックに反映しなくてよいですか？`;
+    const nodeTexts = (e.nodes||[]).map(n => `「${esc(n.content)}」`).join('、');
+    const anchorTexts = (e.anchor_children||[]).map(c => `「${esc(c.content)}」`).join('、');
+    const logicTexts = (e.logic_matches||[]).map(m => `「${esc(m.content)}」`).join('、');
+    const msg = `あなたは${nodeTexts}の合理性として${anchorTexts ? ` ${anchorTexts}` : ''}を述べています。${logicTexts}を主張とした三角ロジックはこれらの内容と整合していますか`;
     const actions = makeActions('rationality','oneinlogic',{
       rationality_id: e.rationality_id,
       nodes: (e.nodes||[]).map(n=>({node_id:n.node_id, content:n.content, concept_id:n.concept_id||'', class_constraint:n.class_constraint||''})),
@@ -115,12 +115,12 @@
     const firstHtml = [
       subSection('主張 (map-logic)', list(mapMinusLogic.map(p => claimLine('map - logic', p)))),
       subSection('主張 (map-claim)', list(mapMinusClaim.map(p => claimLine('map - claim', p)))),
-      subSection('合理性 (noneinlogic, oneinlogic)', list([].concat(noneArr.map(rationalityLineNone), oneArr.map(rationalityLineOne))))
+      subSection('合理性 (noneinlogic)', list([].concat(noneArr.map(rationalityLineNone))))
     ].join('');
 
     // 助言 - second（あることへの助言）
     const secondHtml = [
-      subSection('合理性 (bothlogic)', list(bothArr.map(rationalityLineBoth)))
+      subSection('合理性 (oneinlogic,bothlogic)', list([].concat(oneArr.map(rationalityLineOne), bothArr.map(rationalityLineBoth))))
     ].join('');
 
     const parts = ['<div class="advice-dashboard">'];
@@ -212,6 +212,20 @@
             try { arr = JSON.parse(localStorage.getItem(key)||'[]'); if (!Array.isArray(arr)) arr = []; } catch(e) { arr = []; }
             arr.push(record);
             localStorage.setItem(key, JSON.stringify(arr));
+
+            // 追加: 「考える」時に主張（ont_claim）から三角ロジックを作成
+            if (decision === 'think' && category === 'ont_claim') {
+              const claimLabel = String(payload.content || '');
+              // Forestの実ノードIDを渡す（diffの detailed に含まれる node_id）
+              const f_node_id = payload.node_id ? String(payload.node_id) : null;
+              try {
+                if (window.defaultLogicNetwork && typeof window.defaultLogicNetwork.maketriangle === 'function') {
+                  window.defaultLogicNetwork.maketriangle(claimLabel, f_node_id, null, true);
+                }
+              } catch (e) {
+                console.error('maketriangle failed:', e);
+              }
+            }
           } catch(e) {
             console.warn('decision store failed', e);
           }

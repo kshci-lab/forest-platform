@@ -113,15 +113,15 @@ try {
     }
     $stmt2->close();
 
-    // 2.5) concept_id => contents[] のマップを作成（toiを除外、対象ユーザ＆シート）
-    $sqlAllContents = "SELECT concept_id, content
-        FROM nodes
-        WHERE sheet_id = ?
-          AND user_id = ?
-          AND concept_id IS NOT NULL
-          AND concept_id <> ''
-          AND type <> 'toi'
-    ";
+        // 2.5) concept_id => contents[] / node_ids[] のマップを作成（toiを除外、対象ユーザ＆シート）
+        $sqlAllContents = "SELECT concept_id, content, id AS node_id
+                FROM nodes
+                WHERE sheet_id = ?
+                    AND user_id = ?
+                    AND concept_id IS NOT NULL
+                    AND concept_id <> ''
+                    AND type <> 'toi'
+        ";
     $stmtC = $mysqli->prepare($sqlAllContents);
     if (!$stmtC) {
         throw new Exception('SQLプリペア失敗(sqlAllContents): ' . $mysqli->error);
@@ -130,13 +130,22 @@ try {
     $stmtC->execute();
     $resC = $stmtC->get_result();
     $conceptIdToContents = [];
+    $conceptIdToNodeIds = [];
     while ($row = $resC->fetch_assoc()) {
         $cid = $row['concept_id'];
         $content = $row['content'];
+        $nid = $row['node_id'];
         if ($content === null || $content === '') continue;
         if (!isset($conceptIdToContents[$cid])) $conceptIdToContents[$cid] = [];
         if (!in_array($content, $conceptIdToContents[$cid], true)) {
             $conceptIdToContents[$cid][] = $content;
+        }
+        if (!isset($conceptIdToNodeIds[$cid])) $conceptIdToNodeIds[$cid] = [];
+        if ($nid !== null && $nid !== '') {
+            // 重複排除
+            if (!in_array($nid, $conceptIdToNodeIds[$cid], true)) {
+                $conceptIdToNodeIds[$cid][] = $nid;
+            }
         }
     }
     $stmtC->close();
@@ -159,16 +168,21 @@ try {
     $diffMapMinusClaim = array_values(array_diff($mapSet, array_merge($diffMapMinusLogic, $claimSet)));
 
     // 3.3) Detailed（contents 付与）
-    $diffMapMinusLogicDetailed = array_map(function($cid) use ($conceptIdToContents) {
+    $diffMapMinusLogicDetailed = array_map(function($cid) use ($conceptIdToContents, $conceptIdToNodeIds) {
         return [
             'concept_id' => $cid,
-            'contents'   => $conceptIdToContents[$cid] ?? []
+            'contents'   => $conceptIdToContents[$cid] ?? [],
+            // 代表 node_id（あれば最初のもの）、複数ある場合は node_ids に全件
+            'node_id'    => isset($conceptIdToNodeIds[$cid][0]) ? $conceptIdToNodeIds[$cid][0] : null,
+            'node_ids'   => $conceptIdToNodeIds[$cid] ?? []
         ];
     }, $diffMapMinusLogic);
-    $diffMapMinusClaimDetailed = array_map(function($cid) use ($conceptIdToContents) {
+    $diffMapMinusClaimDetailed = array_map(function($cid) use ($conceptIdToContents, $conceptIdToNodeIds) {
         return [
             'concept_id' => $cid,
-            'contents'   => $conceptIdToContents[$cid] ?? []
+            'contents'   => $conceptIdToContents[$cid] ?? [],
+            'node_id'    => isset($conceptIdToNodeIds[$cid][0]) ? $conceptIdToNodeIds[$cid][0] : null,
+            'node_ids'   => $conceptIdToNodeIds[$cid] ?? []
         ];
     }, $diffMapMinusClaim);
 
