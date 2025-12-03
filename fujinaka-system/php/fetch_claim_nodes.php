@@ -20,7 +20,7 @@ try {
     $sheet_id = $_SESSION['SHEETID'];
 
     // 1) 主張ノードに紐づくconcept_idを取得（対象ユーザ＆シート）
-    $sqlClaim = "SELECT DISTINCT n.concept_id
+    $sqlClaim = "SELECT DISTINCT n.concept_id, n.id, ln.logic_node_id, ln.label
         FROM logic_triangle t
         INNER JOIN logic_node ln ON ln.logic_node_id = t.claim_id
         INNER JOIN nodes n       ON n.id = ln.f_node_id
@@ -37,14 +37,27 @@ try {
     $stmt->bind_param("ss", $sheet_id, $user_id);
     $stmt->execute();
     $res = $stmt->get_result();
+
+    // concept_id だけの配列
     $claimConceptIds = [];
+    // concept_id と node_id のペア配列（両方見たい場合）
+    $claimConceptNodes = [];
+
     while ($row = $res->fetch_row()) {
+        // $row[0] = concept_id, $row[1] = nodes.id (node_id)
         $claimConceptIds[] = $row[0];
+        $claimNodeIds[] = $row[1];
+        $claimConceptNodes[] = [
+            'concept_id' => $row[0],
+            'node_id'    => $row[1],
+            'ln_id'      => $row[2],
+            'ln_label'   => $row[3],
+        ];
     }
     $stmt->close();
 
     // 1.1) 事実ノードに紐づくconcept_idを取得（対象ユーザ＆シート）
-    $sqlFact = "SELECT DISTINCT n.concept_id
+    $sqlFact = "SELECT DISTINCT n.concept_id, n.id, ln.logic_node_id, ln.label
         FROM logic_triangle t
         INNER JOIN logic_node ln ON ln.logic_node_id = t.fact_id
         INNER JOIN nodes n       ON n.id = ln.f_node_id
@@ -64,11 +77,18 @@ try {
     $factConceptIds = [];
     while ($row = $resF->fetch_row()) {
         $factConceptIds[] = $row[0];
+        $factNodeIds[] = $row[1];
+        $factConceptNodes[] = [
+            'concept_id' => $row[0],
+            'node_id'    => $row[1],
+            'ln_id'      => $row[2],
+            'ln_label'   => $row[3],
+        ];
     }
     $stmtF->close();
 
     // 1.2) 理由付けノードに紐づくconcept_idを取得（対象ユーザ＆シート）
-    $sqlReason = "SELECT DISTINCT n.concept_id
+    $sqlReason = "SELECT DISTINCT n.concept_id, n.id, ln.logic_node_id, ln.label
         FROM logic_triangle t
         INNER JOIN logic_node ln ON ln.logic_node_id = t.reason_id
         INNER JOIN nodes n       ON n.id = ln.f_node_id
@@ -88,11 +108,18 @@ try {
     $reasonConceptIds = [];
     while ($row = $resRsn->fetch_row()) {
         $reasonConceptIds[] = $row[0];
+        $reasonNodeIds[] = $row[1];
+        $reasonConceptNodes[] = [
+            'concept_id' => $row[0],
+            'node_id'    => $row[1],
+            'ln_id'      => $row[2],
+            'ln_label'   => $row[3],
+        ];
     }
     $stmtRsn->close();
 
     // 2) 思考整理マップのconcept_idを取得（toiを除外、対象ユーザ＆シート）
-    $sqlMap = "SELECT DISTINCT concept_id
+    $sqlMap = "SELECT DISTINCT concept_id, id, content
         FROM nodes
         WHERE sheet_id = ?
           AND user_id = ?
@@ -108,56 +135,26 @@ try {
     $stmt2->execute();
     $res2 = $stmt2->get_result();
     $mapConceptIds = [];
+    $mapNodeIds = [];
     while ($row = $res2->fetch_row()) {
         $mapConceptIds[] = $row[0];
+        $mapNodeIds[] = $row[1];
+        $mapConceptNodes[] = [
+            'concept_id' => $row[0],
+            'node_id'    => $row[1],
+            'content'    => $row[2],
+        ];
     }
     $stmt2->close();
-
-        // 2.5) concept_id => contents[] / node_ids[] のマップを作成（toiを除外、対象ユーザ＆シート）
-        $sqlAllContents = "SELECT concept_id, content, id AS node_id
-                FROM nodes
-                WHERE sheet_id = ?
-                    AND user_id = ?
-                    AND concept_id IS NOT NULL
-                    AND concept_id <> ''
-                    AND type <> 'toi'
-        ";
-    $stmtC = $mysqli->prepare($sqlAllContents);
-    if (!$stmtC) {
-        throw new Exception('SQLプリペア失敗(sqlAllContents): ' . $mysqli->error);
-    }
-    $stmtC->bind_param("ss", $sheet_id, $user_id);
-    $stmtC->execute();
-    $resC = $stmtC->get_result();
-    $conceptIdToContents = [];
-    $conceptIdToNodeIds = [];
-    while ($row = $resC->fetch_assoc()) {
-        $cid = $row['concept_id'];
-        $content = $row['content'];
-        $nid = $row['node_id'];
-        if ($content === null || $content === '') continue;
-        if (!isset($conceptIdToContents[$cid])) $conceptIdToContents[$cid] = [];
-        if (!in_array($content, $conceptIdToContents[$cid], true)) {
-            $conceptIdToContents[$cid][] = $content;
-        }
-        if (!isset($conceptIdToNodeIds[$cid])) $conceptIdToNodeIds[$cid] = [];
-        if ($nid !== null && $nid !== '') {
-            // 重複排除
-            if (!in_array($nid, $conceptIdToNodeIds[$cid], true)) {
-                $conceptIdToNodeIds[$cid][] = $nid;
-            }
-        }
-    }
-    $stmtC->close();
 
     // 3) 差分と共通集合
     $claimSet  = array_values(array_unique($claimConceptIds));
     $factSet   = array_values(array_unique($factConceptIds ?? []));     
     $reasonSet = array_values(array_unique($reasonConceptIds ?? []));
     $mapSet    = array_values(array_unique($mapConceptIds));
-    $diffMapMinusClaim = array_values(array_diff($mapSet, $claimSet));
-    $diffMapMinusFact = array_values(array_diff($mapSet, $factSet));
-    $diffMapMinusReason = array_values(array_diff($mapSet, $reasonSet));
+    // $diffMapMinusClaim = array_values(array_diff($mapSet, $claimSet));
+    // $diffMapMinusFact = array_values(array_diff($mapSet, $factSet));
+    // $diffMapMinusReason = array_values(array_diff($mapSet, $reasonSet));
 
     // 3.1) map-(事実+理由付け+主張)
     $logicConceptIds = array_values(array_unique(array_merge($claimSet, $factSet, $reasonSet)));
@@ -167,31 +164,83 @@ try {
     // mapSet から diffMapMinusLogic と claimSet を取り除いた残り
     $diffMapMinusClaim = array_values(array_diff($mapSet, array_merge($diffMapMinusLogic, $claimSet)));
 
-    // 3.3) Detailed（contents 付与）
-    $diffMapMinusLogicDetailed = array_map(function($cid) use ($conceptIdToContents, $conceptIdToNodeIds) {
+    // 3.3) Detailed 拡張
+    // 準備: concept_id -> nodes(id, content) の参照（map側）
+    $conceptIdToContents = [];
+    $conceptIdToNodeIds = [];
+    foreach (($mapConceptNodes ?? []) as $mn) {
+        $cid = $mn['concept_id'];
+        $nid = $mn['node_id'];
+        $content = $mn['content'];
+        if (!isset($conceptIdToContents[$cid])) $conceptIdToContents[$cid] = [];
+        if (!isset($conceptIdToNodeIds[$cid])) $conceptIdToNodeIds[$cid] = [];
+        if ($content !== null && $content !== '' && !in_array($content, $conceptIdToContents[$cid], true)) {
+            $conceptIdToContents[$cid][] = $content;
+        }
+        if ($nid !== null && $nid !== '' && !in_array($nid, $conceptIdToNodeIds[$cid], true)) {
+            $conceptIdToNodeIds[$cid][] = $nid;
+        }
+    }
+
+    // 準備: node_id -> logic_node_id/label の参照（claim/fact/reason から統合）
+    $nodeIdToLogicInfo = [];
+    foreach ((isset($claimConceptNodes)?$claimConceptNodes:[]) as $row) {
+        $nid = $row['node_id'] ?? null; if (!$nid) continue;
+        $nodeIdToLogicInfo[$nid] = [ 'logic_node_id' => $row['ln_id'] ?? null, 'logic_label' => $row['ln_label'] ?? null ];
+    }
+    foreach ((isset($factConceptNodes)?$factConceptNodes:[]) as $row) {
+        $nid = $row['node_id'] ?? null; if (!$nid) continue;
+        if (!isset($nodeIdToLogicInfo[$nid])) {
+            $nodeIdToLogicInfo[$nid] = [ 'logic_node_id' => $row['ln_id'] ?? null, 'logic_label' => $row['ln_label'] ?? null ];
+        }
+    }
+    foreach ((isset($reasonConceptNodes)?$reasonConceptNodes:[]) as $row) {
+        $nid = $row['node_id'] ?? null; if (!$nid) continue;
+        if (!isset($nodeIdToLogicInfo[$nid])) {
+            $nodeIdToLogicInfo[$nid] = [ 'logic_node_id' => $row['ln_id'] ?? null, 'logic_label' => $row['ln_label'] ?? null ];
+        }
+    }
+
+    // Detailed: concept_id から map の n.id/n.content を列挙し、node_id 経由で ln.* を付与
+    $buildDetailed = function($cid) use ($conceptIdToContents, $conceptIdToNodeIds, $nodeIdToLogicInfo) {
+        $nodeIds = $conceptIdToNodeIds[$cid] ?? [];
+        $details = [];
+        foreach ($nodeIds as $nid) {
+            $logic = $nodeIdToLogicInfo[$nid] ?? [ 'logic_node_id' => null, 'logic_label' => null ];
+            // content は代表値として conceptIdToContents の先頭を採用（必要なら個別に取得するよう拡張可能）
+            $content = isset($conceptIdToContents[$cid][0]) ? $conceptIdToContents[$cid][0] : null;
+            $details[] = [
+                'concept_id'    => $cid,
+                'node_id'       => $nid,
+                'content'       => $content,
+                'logic_node_id' => $logic['logic_node_id'],
+                'logic_label'   => $logic['logic_label'],
+            ];
+        }
         return [
             'concept_id' => $cid,
             'contents'   => $conceptIdToContents[$cid] ?? [],
-            // 代表 node_id（あれば最初のもの）、複数ある場合は node_ids に全件
-            'node_id'    => isset($conceptIdToNodeIds[$cid][0]) ? $conceptIdToNodeIds[$cid][0] : null,
-            'node_ids'   => $conceptIdToNodeIds[$cid] ?? []
+            'node_id'    => isset($nodeIds[0]) ? $nodeIds[0] : null,
+            'node_ids'   => $nodeIds,
+            'details'    => $details,
         ];
-    }, $diffMapMinusLogic);
-    $diffMapMinusClaimDetailed = array_map(function($cid) use ($conceptIdToContents, $conceptIdToNodeIds) {
-        return [
-            'concept_id' => $cid,
-            'contents'   => $conceptIdToContents[$cid] ?? [],
-            'node_id'    => isset($conceptIdToNodeIds[$cid][0]) ? $conceptIdToNodeIds[$cid][0] : null,
-            'node_ids'   => $conceptIdToNodeIds[$cid] ?? []
-        ];
-    }, $diffMapMinusClaim);
+    };
+
+    $diffMapMinusLogicDetailed = array_map($buildDetailed, $diffMapMinusLogic);
+    $diffMapMinusClaimDetailed = array_map($buildDetailed, $diffMapMinusClaim);
 
     echo json_encode([
         'ok' => true,
         'sheetId' => $sheet_id,
         'claimConceptIds' => $claimSet,
+        'claimNodeIds' => $claimNodeIds,
+        'claimConceptNodes' => $claimConceptNodes, // 追加: concept_id と node_id の一覧
         'factConceptIds' => $factSet,
+        'factNodeIds' => $factNodeIds,
+        'factConceptNodes' => $factConceptNodes, // 追加: concept_id と node_id の一覧
         'reasonConceptIds' => $reasonSet,
+        'reasonNodeIds' => $reasonNodeIds,
+        'reasonConceptNodes' => $reasonConceptNodes, // 追加: concept_id と node_id の一覧
         'mapConceptIds' => $mapSet,
         'diffMapMinusLogic' => $diffMapMinusLogic,
         'diffMapMinusLogicDetailed' => $diffMapMinusLogicDetailed,
