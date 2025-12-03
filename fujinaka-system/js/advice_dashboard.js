@@ -4,6 +4,24 @@
 (function(global){
   'use strict';
 
+  // // 根本対策: getDiffConceptLabels が未定義でも動作するフォールバックを提供
+  // try {
+  //   if (typeof global.getDiffConceptLabels !== 'function') {
+  //     global.getDiffConceptLabels = function(){
+  //       try {
+  //         const empty = { mapMinusLogic: [], mapMinusClaim: [], intersection: [] };
+  //         return (window.$ && $.Deferred) ? $.Deferred().resolve(empty).promise() : Promise.resolve(empty);
+  //       } catch(e) {
+  //         // jQueryが無い場合でもPromiseで返す
+  //         return Promise.resolve({ mapMinusLogic: [], mapMinusClaim: [], intersection: [] });
+  //       }
+  //     };
+  //     console.warn('[AdviceDashboard] Shim applied: getDiffConceptLabels fallback defined');
+  //   }
+  // } catch(e) {
+  //   console.error('[AdviceDashboard] Shim setup failed', e);
+  // }
+
   function esc(s){
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
