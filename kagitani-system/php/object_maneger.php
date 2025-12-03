@@ -29,9 +29,10 @@
 				(object_node_id, node_id, content, object_nodes_type, node_x, node_y, status, created_at, updated_at, deleted)
 				VALUES ('$node_id', '$selected_node_id', '$label', '$node_type', '$x', '$y', '$status', '$timestamp', '$timestamp', 0)";
 
+			// activity: 1 = 手段をrecordする時
 			$h_sql = "INSERT INTO object_nodes_histories 
-			(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y)
-			VALUES ('".$object_h_id."', '".$node_id."','".$node_type."','".$status."', '".$timestamp."', NULL,'".$label."','$x', '$y')";
+			(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, activity)
+			VALUES ('".$object_h_id."', '".$node_id."','".$node_type."','".$status."', '".$timestamp."', NULL,'".$label."','$x', '$y', 1)";
 
 		
 			if ($mysqli->query($sql)) {
@@ -45,15 +46,28 @@
 				]);
 			}
 
-			if ($mysqli->query($h_sql)) {
-				echo json_encode(["success" => true]);
+			// 重複チェック（record->node: activity=1）
+			$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$node_id' AND appeared_at = '$timestamp' AND activity = 1";
+			$dup_res = $mysqli->query($dup_check_sql);
+			$dup_count = 0;
+			if ($dup_res) {
+				$row_dup = $dup_res->fetch_assoc();
+				$dup_count = (int)$row_dup['cnt'];
+			}
+			if ($dup_count === 0) {
+				if ($mysqli->query($h_sql)) {
+					echo json_encode(["success" => true]);
+				} else {
+					// エラーログを返す
+					echo json_encode([
+						"success" => false,
+						"error" => $mysqli->error,
+						"sql" => $h_sql
+					]);
+				}
 			} else {
-				// エラーログを返す
-				echo json_encode([
-					"success" => false,
-					"error" => $mysqli->error,
-					"sql" => $h_sql
-				]);
+				error_log("Skip duplicate history insert for node $node_id at $timestamp (record->node)");
+				echo json_encode(["success" => true, "note" => "duplicate skipped"]);
 			}
 			echo json_encode([
 				"success" => false,
@@ -147,68 +161,36 @@
 			$timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 			$mysqli->query("UPDATE object_nodes SET action_reason = '$action_reason', completion_reason = '$completion_reason',challenges_learnings = '$challenges_learnings',updated_at = '$timestamp' 
 				WHERE  object_node_id = '$object_node_id' ");
+			// reflection は内省（activity=8）を履歴に残す（従来の処理を復元）
 			$h_sql = "INSERT INTO object_nodes_histories
-				(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y,
-				action_reason, completion_reason, challenges_learnings)
-				SELECT
-				'$object_h_id',
-				object_node_id,
-				object_nodes_type,
-				status,
-				'$timestamp',
-				NULL,
-				content,
-				node_x,
-				node_y,
-				'$action_reason',
-				'$completion_reason',
-				'$challenges_learnings'
-				FROM object_nodes
-				WHERE object_node_id = '$object_node_id'";
-			$result = $mysqli->query($h_sql);
-			if ($mysqli->error) {
-				// echo "Error inserting into histories: " . $mysqli->error;
-			} else {
-				// echo "Inserted reflection into histories successfully!";
-			}
-			
-		}else if($record_thing === 'reason'){
-			//理由の記録
-			$node_id = $_POST["node_id"];
-			$reason_node_id = $_POST["reason_node_id"];
-			$reason_text = $_POST["reason_text"];
-			
-			// まず既存の履歴レコードのdisappeared_atを更新
-			$update_history_sql = "UPDATE object_nodes_histories 
-				SET disappeared_at = '$timestamp' 
-				WHERE object_node_id = '$node_id' AND disappeared_at IS NULL";
-			$mysqli->query($update_history_sql);
-			
-			// メインテーブルを更新
-			$sql = "UPDATE object_nodes SET purpose = '$reason_text', updated_at = '$timestamp' WHERE object_node_id = '$node_id'";
-			
-			if ($mysqli->query($sql)) {
-				// 新しい履歴レコードを追加
-				$h_sql = "INSERT INTO object_nodes_histories 
-					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time)
-					SELECT 
-						'$object_h_id',
-						object_node_id,
-						object_nodes_type,
-						status,
-						'$timestamp',
-						NULL,
-						content,
-						node_x,
-						node_y,
-						purpose,
-						action_reason,
-						completion_reason,
-						challenges_learnings,
-						estimated_time
+					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y,
+					action_reason, completion_reason, challenges_learnings, activity)
+					SELECT
+					'$object_h_id',
+					object_node_id,
+					object_nodes_type,
+					status,
+					'$timestamp',
+					NULL,
+					content,
+					node_x,
+					node_y,
+					'$action_reason',
+					'$completion_reason',
+					'$challenges_learnings',
+					8
 					FROM object_nodes
-					WHERE object_node_id = '$node_id'";
-				
+					WHERE object_node_id = '$object_node_id'";
+
+			// 重複チェック（record->reflection: activity=8）
+			$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$object_node_id' AND appeared_at = '$timestamp' AND activity = 8";
+			$dup_res = $mysqli->query($dup_check_sql);
+			$dup_count = 0;
+			if ($dup_res) {
+				$row_dup = $dup_res->fetch_assoc();
+				$dup_count = (int)$row_dup['cnt'];
+			}
+			if ($dup_count === 0) {
 				$result = $mysqli->query($h_sql);
 				if ($mysqli->error) {
 					echo json_encode([
@@ -220,11 +202,8 @@
 					echo json_encode(["success" => true]);
 				}
 			} else {
-				echo json_encode([
-					"success" => false,
-					"error" => $mysqli->error,
-					"sql" => $sql
-				]);
+				error_log("Skip duplicate history insert for node $object_node_id at $timestamp (record->reflection)");
+				echo json_encode(["success" => true, "note" => "duplicate skipped"]);
 			}
 			
 		}else if($record_thing === 'estimated_time'){
@@ -245,7 +224,7 @@
 			if ($mysqli->query($sql)) {
 				// 新しい履歴レコードを追加
 				$h_sql = "INSERT INTO object_nodes_histories 
-					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time)
+					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time, activity)
 					SELECT 
 						'$object_h_id',
 						object_node_id,
@@ -260,19 +239,33 @@
 						action_reason,
 						completion_reason,
 						challenges_learnings,
-						estimated_time
+						estimated_time,
+						4
 					FROM object_nodes
 					WHERE object_node_id = '$node_id'";
 				
-				$result = $mysqli->query($h_sql);
-				if ($mysqli->error) {
-					echo json_encode([
-						"success" => false,
-						"error" => "履歴保存エラー: " . $mysqli->error,
-						"sql" => $h_sql
-					]);
+				// 重複チェック（estimated_time: activity=4）
+				$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$node_id' AND appeared_at = '$timestamp' AND activity = 4";
+				$dup_res = $mysqli->query($dup_check_sql);
+				$dup_count = 0;
+				if ($dup_res) {
+					$row_dup = $dup_res->fetch_assoc();
+					$dup_count = (int)$row_dup['cnt'];
+				}
+				if ($dup_count === 0) {
+					$result = $mysqli->query($h_sql);
+					if ($mysqli->error) {
+						echo json_encode([
+							"success" => false,
+							"error" => "履歴保存エラー: " . $mysqli->error,
+							"sql" => $h_sql
+						]);
+					} else {
+						echo json_encode(["success" => true]);
+					}
 				} else {
-					echo json_encode(["success" => true]);
+					error_log("Skip duplicate history insert for node $node_id at $timestamp (estimated_time)");
+					echo json_encode(["success" => true, "note" => "duplicate skipped"]);
 				}
 			} else {
 				echo json_encode([
@@ -305,8 +298,9 @@
 			
 			if ($mysqli->query($sql)) {
 				// 新しい履歴レコードを追加
+				// activity: 8 = 内省を記録した時
 				$h_sql = "INSERT INTO object_nodes_histories 
-					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time)
+					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time, activity)
 					SELECT 
 						'$object_h_id',
 						object_node_id,
@@ -321,19 +315,33 @@
 						action_reason,
 						completion_reason,
 						challenges_learnings,
-						estimated_time
+						estimated_time,
+						8
 					FROM object_nodes
 					WHERE object_node_id = '$object_node_id'";
 				
-				$result = $mysqli->query($h_sql);
-				if ($mysqli->error) {
-					echo json_encode([
-						"success" => false,
-						"error" => "履歴保存エラー: " . $mysqli->error,
-						"sql" => $h_sql
-					]);
+				// 重複チェック（record->reflection bottom: activity=8）
+				$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$object_node_id' AND appeared_at = '$timestamp' AND activity = 8";
+				$dup_res = $mysqli->query($dup_check_sql);
+				$dup_count = 0;
+				if ($dup_res) {
+					$row_dup = $dup_res->fetch_assoc();
+					$dup_count = (int)$row_dup['cnt'];
+				}
+				if ($dup_count === 0) {
+					$result = $mysqli->query($h_sql);
+					if ($mysqli->error) {
+						echo json_encode([
+							"success" => false,
+							"error" => "履歴保存エラー: " . $mysqli->error,
+							"sql" => $h_sql
+						]);
+					} else {
+						echo json_encode(["success" => true]);
+					}
 				} else {
-					echo json_encode(["success" => true]);
+					error_log("Skip duplicate history insert for node $object_node_id at $timestamp (reflection bottom)");
+					echo json_encode(["success" => true, "note" => "duplicate skipped"]);
 				}
 			} else {
 				echo json_encode([
@@ -419,9 +427,22 @@
 					FROM object_nodes
 					WHERE object_node_id = '$node_id'
 				";
-				$mysqli->query($insert_history_sql);
-				if ($mysqli->error) {
-					echo "Error inserting new history: " . $mysqli->error;
+				// 重複チェック（同一ノード・同時刻のレコードが既にあるか）
+				$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$node_id' AND appeared_at = '$timestamp'";
+				$dup_res = $mysqli->query($dup_check_sql);
+				$dup_count = 0;
+				if ($dup_res) {
+					$row_dup = $dup_res->fetch_assoc();
+					$dup_count = (int)$row_dup['cnt'];
+				}
+				if ($dup_count === 0) {
+					$mysqli->query($insert_history_sql);
+					if ($mysqli->error) {
+						echo "Error inserting new history: " . $mysqli->error;
+					}
+				} else {
+					// duplicate detected: skip insert
+					error_log("Skip duplicate history insert for node $node_id at $timestamp (point update)");
 				}
 			}
 			else if($select_update === 'label'){
@@ -434,34 +455,47 @@
 					echo "Error update content: " . $mysqli->error;
 				}
 			
-				// 履歴レコードを追加（全カラムを含む）
+				// 履歴レコードを追加（全カラムを含む） - label 更新は activity=2 とする
 				$h_sql = "INSERT INTO object_nodes_histories 
-						  (object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time)
-						  SELECT 
-							'$object_h_id',
-							object_node_id,
-							object_nodes_type,
-							status,
-							'$timestamp',
-							NULL,
-							content,
-							node_x,
-							node_y,
-							purpose,
-							action_reason,
-							completion_reason,
-							challenges_learnings,
-							estimated_time
-						  FROM object_nodes
-						  WHERE object_node_id = '$node_id'";
+						(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, action_reason, completion_reason, challenges_learnings, estimated_time, activity)
+						SELECT 
+						'$object_h_id',
+						object_node_id,
+						object_nodes_type,
+						status,
+						'$timestamp',
+						NULL,
+						content,
+						node_x,
+						node_y,
+						purpose,
+						action_reason,
+						completion_reason,
+						challenges_learnings,
+						estimated_time,
+						2
+						FROM object_nodes
+						WHERE object_node_id = '$node_id'";
 			
 				// echo "DEBUG INSERT SQL: $h_sql\n";
 			
-				$result = $mysqli->query($h_sql);
-				if($mysqli->error){
-					echo "Error history insert: " . $mysqli->error;
+				// 重複チェック（同一ノード・同時刻・activity=2 のレコードが既にあるか）
+				$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$node_id' AND appeared_at = '$timestamp' AND activity = 2";
+				$dup_res = $mysqli->query($dup_check_sql);
+				$dup_count = 0;
+				if ($dup_res) {
+					$row_dup = $dup_res->fetch_assoc();
+					$dup_count = (int)$row_dup['cnt'];
+				}
+				if ($dup_count === 0) {
+					$result = $mysqli->query($h_sql);
+					if($mysqli->error){
+						echo "Error history insert: " . $mysqli->error;
+					} else {
+						echo "History insert successful!\n";
+					}
 				} else {
-					echo "History insert successful!\n";
+					error_log("Skip duplicate history insert for node $node_id at $timestamp (label update)");
 				}
 			}else if($select_update === 'status'){
 
@@ -474,55 +508,140 @@
 					echo "Error update status: " . $mysqli->error;
 				}
 			
-				// ② object_nodes_histories テーブルで、同じ object_node_id の中で appeared_at が最新で disappeared_at が NULL の履歴を探す
-				$sub_sql = "
-					SELECT object_node_history_id 
-					FROM object_nodes_histories 
-					WHERE object_node_id = '$node_id' 
-					  AND disappeared_at IS NULL 
-					ORDER BY appeared_at DESC 
-					LIMIT 1
-				";
-				$result = $mysqli->query($sub_sql);
-				if ($result && $row = $result->fetch_assoc()) {
-					$latest_history_id = $row['object_node_history_id'];
-			
-					// ③ 該当履歴の disappeared_at を現在の timestamp で更新
-					$update_sql = "
-						UPDATE object_nodes_histories 
-						SET disappeared_at = '$timestamp' 
-						WHERE object_node_history_id = '$latest_history_id'
-					";
-					$mysqli->query($update_sql);
-					if ($mysqli->error) {
-						echo "Error updating disappeared_at: " . $mysqli->error;
-					}
+				// ストレージエンジンを確認して、InnoDB の場合は FOR UPDATE を使ったトランザクション、
+				// それ以外はフォールバック（従来の処理）を行う
+				$engine_res = $mysqli->query("SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes_histories'");
+				$engine = null;
+				if ($engine_res && $erow = $engine_res->fetch_assoc()) {
+					$engine = strtoupper($erow['ENGINE']);
 				}
-			
-				// ④ object_nodes の内容を元に、新しい履歴を object_nodes_histories に挿入
-				$h_sql = "INSERT INTO object_nodes_histories 
-						  (object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y)
-						  SELECT 
-							'$object_h_id',
-							object_node_id,
-							object_nodes_type,
-							'$node_update_thing1',
-							'$timestamp',
-							NULL,
-							content,
-							node_x,
-							node_y
-						  FROM object_nodes
-						  WHERE object_node_id = '$node_id'";
-			
-				// デバッグ用
-				// echo "DEBUG INSERT SQL: $h_sql\n";
-			
-				$result = $mysqli->query($h_sql);
-				if($mysqli->error){
-					echo "Error history insert: " . $mysqli->error;
+
+				if ($engine === 'INNODB') {
+					try {
+						$mysqli->begin_transaction();
+						$sub_sql = "
+							SELECT * 
+							FROM object_nodes_histories 
+							WHERE object_node_id = '$node_id' 
+							  AND disappeared_at IS NULL 
+							ORDER BY appeared_at DESC 
+							LIMIT 1
+							FOR UPDATE
+						";
+						$result = $mysqli->query($sub_sql);
+						$should_insert = true;
+						if ($result && $row = $result->fetch_assoc()) {
+							$latest_history_id = $row['object_node_history_id'];
+
+							// 直近の開いた履歴が既に同じ status/activity なら挿入をスキップ
+							if (isset($row['status']) && isset($row['activity']) && $row['status'] === $node_update_thing1 && (string)$row['activity'] === (string)$node_update_thing2) {
+								$should_insert = false;
+							} else {
+								$update_sql = "UPDATE object_nodes_histories SET disappeared_at = '$timestamp' WHERE object_node_history_id = '$latest_history_id'";
+								$mysqli->query($update_sql);
+								if ($mysqli->error) {
+									throw new Exception('Error updating disappeared_at: ' . $mysqli->error);
+								}
+							}
+						}
+
+						if ($should_insert) {
+							// 挿入前に重複チェック（同一ノード・同時刻・同ステータス・同 activity）
+							$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$node_id' AND appeared_at = '$timestamp' AND status = '$node_update_thing1' AND activity = '$node_update_thing2'";
+							$dup_res = $mysqli->query($dup_check_sql);
+							$dup_count = 0;
+							if ($dup_res) {
+								$row_dup = $dup_res->fetch_assoc();
+								$dup_count = (int)$row_dup['cnt'];
+							}
+							if ($dup_count === 0) {
+								$h_sql = "INSERT INTO object_nodes_histories 
+								  (object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y,activity)
+								  SELECT 
+									'$object_h_id',
+									object_node_id,
+									object_nodes_type,
+									'$node_update_thing1',
+									'$timestamp',
+									NULL,
+									content,
+									node_x,
+									node_y,
+									'$node_update_thing2'
+								  FROM object_nodes
+								  WHERE object_node_id = '$node_id'";
+
+								$result = $mysqli->query($h_sql);
+								if ($mysqli->error) {
+									throw new Exception('Error history insert: ' . $mysqli->error);
+								}
+							} else {
+								// duplicate - nothing to do
+								error_log("Skip duplicate history insert for node $node_id at $timestamp (status update - InnoDB)");
+							}
+						} else {
+							// duplicate - nothing to do
+						}
+
+						$mysqli->commit();
+					} catch (Exception $e) {
+						$mysqli->rollback();
+						error_log('object_maneger status-update transaction error: ' . $e->getMessage());
+						echo json_encode(["success" => false, "error" => $e->getMessage()]);
+					}
 				} else {
-					// echo "History insert successful!\n";
+					// InnoDB 以外（例: MyISAM）の場合は FOR UPDATE を使わずに従来処理だが同一チェックを行う
+					$sub_sql = "SELECT * FROM object_nodes_histories WHERE object_node_id = '$node_id' AND disappeared_at IS NULL ORDER BY appeared_at DESC LIMIT 1";
+					$result = $mysqli->query($sub_sql);
+					$should_insert = true;
+					if ($result && $row = $result->fetch_assoc()) {
+						$latest_history_id = $row['object_node_history_id'];
+						if (isset($row['status']) && isset($row['activity']) && $row['status'] === $node_update_thing1 && (string)$row['activity'] === (string)$node_update_thing2) {
+							$should_insert = false;
+						} else {
+							$update_sql = "UPDATE object_nodes_histories SET disappeared_at = '$timestamp' WHERE object_node_history_id = '$latest_history_id'";
+							$mysqli->query($update_sql);
+						}
+					}
+
+					if ($should_insert) {
+						// フォールバック側でも挿入前に重複チェック
+						$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$node_id' AND appeared_at = '$timestamp' AND status = '$node_update_thing1' AND activity = '$node_update_thing2'";
+						$dup_res = $mysqli->query($dup_check_sql);
+						$dup_count = 0;
+						if ($dup_res) {
+							$row_dup = $dup_res->fetch_assoc();
+							$dup_count = (int)$row_dup['cnt'];
+						}
+						if ($dup_count === 0) {
+							$h_sql = "INSERT INTO object_nodes_histories 
+							  (object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y,activity)
+							  SELECT 
+								'$object_h_id',
+								object_node_id,
+								object_nodes_type,
+								'$node_update_thing1',
+								'$timestamp',
+								NULL,
+								content,
+								node_x,
+								node_y,
+								'$node_update_thing2'
+							  FROM object_nodes
+							  WHERE object_node_id = '$node_id'";
+
+							$mysqli->query($h_sql);
+							if ($mysqli->error) {
+								error_log('object_maneger status-update insert error (fallback): ' . $mysqli->error);
+								echo json_encode(["success" => false, "error" => $mysqli->error]);
+							}
+						} else {
+							// duplicate - skip insert
+							error_log("Skip duplicate history insert for node $node_id at $timestamp (status update - fallback)");
+						}
+					} else {
+						// duplicate - skip insert
+					}
 				}
 			}
 		}			
@@ -584,11 +703,24 @@
 					  FROM object_nodes
 					  WHERE object_node_id = '$node_id'";
 	
-			$result_h = $mysqli->query($h_sql);
-			if (!$result_h) {
-				echo "Error inserting delete history: " . $mysqli->error;
+			// 重複チェック（delete history: 同一ノード・同じ disappeared_at が既にあるか）
+			$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$node_id' AND disappeared_at = '$timestamp'";
+			$dup_res = $mysqli->query($dup_check_sql);
+			$dup_count = 0;
+			if ($dup_res) {
+				$row_dup = $dup_res->fetch_assoc();
+				$dup_count = (int)$row_dup['cnt'];
+			}
+			if ($dup_count === 0) {
+				$result_h = $mysqli->query($h_sql);
+				if (!$result_h) {
+					echo "Error inserting delete history: " . $mysqli->error;
+				} else {
+					echo "Delete history recorded successfully.";
+				}
 			} else {
-				echo "Delete history recorded successfully.";
+				error_log("Skip duplicate delete history insert for node $node_id at $timestamp");
+				echo "Delete history skipped (duplicate).";
 			}
 		}else if($delete_thing === 'trigger'){
 			$trigger_id = $_POST["trigger_id"];

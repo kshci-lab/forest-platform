@@ -234,6 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <link rel="stylesheet" type="text/css" href="css/object-network.css" />
         <script type="text/javascript" src="js/timeline_slider.js"></script>
         <script type="text/javascript" src="js/goal_list.js"></script>
+        <script type="text/javascript" src="js/weekly_report.js"></script>
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         
@@ -476,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'weeklyGoalStartLabel': '開始日',
                 'weeklyGoalEndLabel': '終了日',
                 'addWeeklyGoalBtnText': '追加',
-                'exportWeeklyGoalBtnText': 'レポート出力',
+                'exportWeeklyGoalBtnText': '振り返る',
                 'editWeeklyGoalBtnText': '編集',
                 'deleteWeeklyGoalBtnText': '削除',
             },

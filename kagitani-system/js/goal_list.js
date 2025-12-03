@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'noWeeklyGoals': 'まだ小目標がありません',
         'unlinked': '未リンク',
         'edit': '編集',
-        'exportReport': 'レポート出力',
+        'exportReport': '詳細表示',
         'delete': '削除',
         'dash': 'ー',
         'dateEditTitle': '日付編集',
@@ -652,231 +652,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.appendChild(modal);
             });
         });
-        // レポート出力の内容を設定する
+        // レポート出力は外部モジュールに委譲（weekly_report.js）
         var exportBtns = weeklyListDiv.querySelectorAll('.export-weekly-btn');
-        exportBtns.forEach(function(btn) {
-            // set title/aria for accessibility
-            try { if (!btn.getAttribute('title')) btn.setAttribute('title', (getCurrentLang() === 'ja') ? 'SRLジャーナルをWordファイルで出力できます' : 'Export SRL journal as a Word file'); } catch(e){}
-            try { if (!btn.getAttribute('aria-label')) btn.setAttribute('aria-label', (getCurrentLang() === 'ja') ? 'SRLジャーナルをWordファイルで出力できます' : 'Export SRL journal as a Word file'); } catch(e){}
-
-            // custom tooltip for export button
-            var showExportTooltip = function(target) {
-                var existing = document.getElementById('gl_custom_tooltip');
-                if (existing) existing.parentNode.removeChild(existing);
-                var text = (getCurrentLang() === 'ja') ? 'SRLジャーナルをWordファイルで出力できます' : 'Export SRL journal as a Word file';
-                var tip = document.createElement('div');
-                tip.id = 'gl_custom_tooltip';
-                tip.textContent = text;
-                tip.style.position = 'absolute';
-                tip.style.background = 'rgba(0,0,0,0.8)';
-                tip.style.color = '#fff';
-                tip.style.padding = '6px 8px';
-                tip.style.borderRadius = '6px';
-                tip.style.fontSize = '13px';
-                tip.style.zIndex = 20000;
-                tip.style.pointerEvents = 'none';
-                document.body.appendChild(tip);
-                var rect = target.getBoundingClientRect();
-                var top = rect.top - tip.offsetHeight - 8 + window.scrollY;
-                if (top < 6) top = rect.bottom + 8 + window.scrollY;
-                var left = rect.left + (rect.width - tip.offsetWidth) / 2 + window.scrollX;
-                if (left < 6) left = 6 + window.scrollX;
-                tip.style.top = top + 'px';
-                tip.style.left = left + 'px';
-            };
-            var hideExportTooltip = function() { var existing = document.getElementById('gl_custom_tooltip'); if (existing) existing.parentNode.removeChild(existing); };
-            btn.addEventListener('mouseenter', function(){ showExportTooltip(btn); });
-            btn.addEventListener('mouseleave', function(){ hideExportTooltip(); });
-            btn.addEventListener('focus', function(){ showExportTooltip(btn); });
-            btn.addEventListener('blur', function(){ hideExportTooltip(); });
-
-            btn.addEventListener('click', function(e) {
-                var idx = parseInt(btn.getAttribute('data-idx'), 10);
-                var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
-                var goal = goals[idx];
-                if (!goal || !goal.object_goal_id) {
-                    console.warn('object_goal_idが見つかりません');
-                    return;
-                }
-                // 日付範囲取得
-                var startDate = goal.start || goal.start_date;
-                var endDate = goal.end || goal.finish_date;
-                // 小目標の表示文字列リスト
-                var goalContents = Array.isArray(goal.contents) ? goal.contents : [];
-                // object_goal_idでnode_id一覧を取得
-                $.ajax({
-                    url: 'php/get_object_goal_nodes.php',
-                    type: 'GET',
-                    dataType: 'json',
-                    data: { object_goal_id: goal.object_goal_id },
-                    success: function(res) {
-                        if (res.success && Array.isArray(res.node_ids)) {
-                            var nodeIds = res.node_ids;
-                            // node_idごとにcontentを取得（期間で絞り込み）
-                            var promises = nodeIds.map(function(nodeId, i) {
-                                return new Promise(function(resolve) {
-                                    $.ajax({
-                                        url: 'php/get_object_node_info.php',
-                                        type: 'GET',
-                                        dataType: 'json',
-                                        data: {
-                                            node_id: nodeId,
-                                            start_date: startDate,
-                                            end_date: endDate
-                                        },
-                                        success: function(objRes) {
-                                                    // ノード毎に返される object_node_ids / object_node_history_ids / histories をログ出力
-                                                    try { console.log('get_object_node_info.php object_node_ids for', nodeId, objRes.object_node_ids); } catch(e){}
-                                                    try { console.log('get_object_node_info.php object_node_history_ids for', nodeId, objRes.object_node_history_ids); } catch(e){}
-                                                    try { console.log('get_object_node_info.php histories for', nodeId, objRes.histories); } catch(e){}
-                                            if (objRes.success && Array.isArray(objRes.data) && objRes.data.length) {
-                                                var contents = objRes.data.map(function(row){ return row.content; });
-                                                // 小目標の表示文字列（goal.contents）を使う
-                                                var display = goalContents[i] || '';
-                                                resolve({ display: display, content: contents, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [] });
-                                            } else {
-                                                var display = goalContents[i] || '';
-                                                resolve({ display: display, content: [], object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [] });
-                                            }
-                                        },
-                                        error: function(xhr, status, error) {
-                                            var display = goalContents[i] || '';
-                                            resolve({ display: display, content: [], error: error });
-                                        }
-                                    });
-                                });
-                            });
-                            Promise.all(promises).then(function(results) {
-                                // プレビュー用モーダル生成（小目標ごとに見出し＋箇条書き）
-                                var modal = document.createElement('div');
-                                modal.style.position = 'fixed';
-                                modal.style.top = '0';
-                                modal.style.left = '0';
-                                modal.style.width = '100vw';
-                                modal.style.height = '100vh';
-                                modal.style.background = 'rgba(0,0,0,0.4)';
-                                modal.style.display = 'flex';
-                                modal.style.alignItems = 'center';
-                                modal.style.justifyContent = 'center';
-                                modal.style.zIndex = '9999';
-
-                                var modalContent = document.createElement('div');
-                                modalContent.style.background = '#fff';
-                                modalContent.style.padding = '32px 24px';
-                                modalContent.style.borderRadius = '12px';
-                                modalContent.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)';
-                                modalContent.style.minWidth = '320px';
-                                modalContent.style.maxWidth = '90vw';
-                                modalContent.style.maxHeight = '80vh';
-                                modalContent.style.overflowY = 'auto';
-
-                                var title = document.createElement('h3');
-                                title.textContent = 'Wordプレビュー';
-                                title.style.marginBottom = '16px';
-                                modalContent.appendChild(title);
-                                // 指定した期間情報を見出し形式で表示
-                                var periodHeading = document.createElement('h3');
-                                periodHeading.style.margin = '0 0 12px 0';
-                                periodHeading.style.fontSize = '16px';
-                                periodHeading.style.fontWeight = '700';
-                                periodHeading.style.color = '#333';
-                                periodHeading.textContent = startDate + '~' + endDate + 'に行ったこと';
-                                modalContent.appendChild(periodHeading);
-
-                                // 小目標ごとに見出し＋箇条書き
-                                results.forEach(function(item){
-                                    var heading = document.createElement('h4');
-                                    // 見出しを「思考した問いノード：内容」の形式に変更
-                                    heading.textContent = '思考した問いノード：' + (item.display || '');
-                                    heading.style.margin = '18px 0 8px 0';
-                                    heading.style.fontWeight = 'bold';
-                                    modalContent.appendChild(heading);
-                                    var ul = document.createElement('ul');
-                                    ul.style.marginBottom = '12px';
-                                    if (item.content && item.content.length) {
-                                        item.content.forEach(function(content){
-                                            var li = document.createElement('li');
-                                            li.textContent = content;
-                                            ul.appendChild(li);
-                                        });
-                                    } else {
-                                        var li = document.createElement('li');
-                                        li.textContent = '(該当データなし)';
-                                        ul.appendChild(li);
-                                    }
-                                    modalContent.appendChild(ul);
-                                });
-
-                                // ダウンロードボタン
-                                var dlBtn = document.createElement('button');
-                                dlBtn.textContent = 'Wordダウンロード';
-                                dlBtn.style.marginTop = '18px';
-                                dlBtn.style.padding = '8px 24px';
-                                dlBtn.style.background = '#007bff';
-                                dlBtn.style.color = '#fff';
-                                dlBtn.style.border = 'none';
-                                dlBtn.style.borderRadius = '6px';
-                                dlBtn.style.fontSize = '15px';
-                                dlBtn.style.cursor = 'pointer';
-                                dlBtn.onclick = function() {
-                                    // Word (doc) ファイル用HTML生成（見出し＋箇条書き）
-                                    var html = '<html><head><meta charset="utf-8"><title>Weekly Goal Report</title></head><body>';
-                                    html += '<h2>Weekly Goal Report (' + startDate + ' ~ ' + endDate + ')</h2>';
-                                    results.forEach(function(item) {
-                                        html += '<h3>' + (item.display || '') + '</h3>';
-                                        html += '<ul>';
-                                        if (item.content && item.content.length) {
-                                            item.content.forEach(function(content) {
-                                                html += '<li>' + (content || '') + '</li>';
-                                            });
-                                        } else {
-                                            html += '<li>(該当データなし)</li>';
-                                        }
-                                        html += '</ul>';
-                                    });
-                                    html += '</body></html>';
-                                    var blob = new Blob([html], { type: 'application/msword' });
-                                    var url = URL.createObjectURL(blob);
-                                    var a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = 'weekly_goal_report_' + startDate + '-' + endDate + '.doc';
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(url);
-                                    document.body.removeChild(modal);
-                                };
-                                modalContent.appendChild(dlBtn);
-
-                                // 閉じるボタン
-                                var closeBtn = document.createElement('button');
-                                closeBtn.textContent = '閉じる';
-                                closeBtn.style.marginLeft = '16px';
-                                closeBtn.style.padding = '8px 24px';
-                                closeBtn.style.background = '#aaa';
-                                closeBtn.style.color = '#fff';
-                                closeBtn.style.border = 'none';
-                                closeBtn.style.borderRadius = '6px';
-                                closeBtn.style.fontSize = '15px';
-                                closeBtn.style.cursor = 'pointer';
-                                closeBtn.onclick = function() {
-                                    document.body.removeChild(modal);
-                                };
-                                modalContent.appendChild(closeBtn);
-
-                                modal.appendChild(modalContent);
-                                document.body.appendChild(modal);
-                            });
-                        } else {
-                            console.warn('node_id一覧が見つかりません', res);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('object_goal_nodes取得通信エラー:', status, error, xhr);
-                    }
-                });
-            });
-        });
+        // ハンドラは `weekly_report.js` の `window.initWeeklyReportHandlers` が設定します
+        if (window.initWeeklyReportHandlers && typeof window.initWeeklyReportHandlers === 'function') {
+            try { window.initWeeklyReportHandlers(window._goalListHelpers || {}); } catch(e){ console.warn('initWeeklyReportHandlers failed', e); }
+        }
     }
 
 // 関連ノード（contents）個別削除（グローバル定義）
@@ -907,6 +688,15 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
     window.deleteWeeklyGoal = function(idx) {
         var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
         var goal = goals[idx];
+        // Confirm before deleting
+        try {
+            var lang = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked) ? 'en' : 'ja';
+            var confirmMsg = (lang === 'ja') ? '本当に削除しますか？' : 'Are you sure you want to delete this weekly goal?';
+            if (!confirm(confirmMsg)) return;
+        } catch (e) {
+            if (!confirm('Are you sure you want to delete this weekly goal?')) return;
+        }
+
         if (goal && goal.object_goal_id) {
             $.ajax({
                 url: 'php/delete_object_goal.php',
@@ -1081,6 +871,19 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
     // 初期化
     setupYearSelect();
     renderWeeklyGoals();
+    // expose minimal helpers for weekly_report.js to reuse
+    try {
+        window._goalListHelpers = {
+            t: t,
+            getCurrentLang: getCurrentLang,
+            fetchWeeklyGoalsFromDB: fetchWeeklyGoalsFromDB,
+            fetchObjectNodeInfo: fetchObjectNodeInfo,
+            renderWeeklyGoals: function(){ if (typeof window.renderWeeklyGoals === 'function') window.renderWeeklyGoals(); }
+        };
+        if (window.initWeeklyReportHandlers && typeof window.initWeeklyReportHandlers === 'function') {
+            try { window.initWeeklyReportHandlers(window._goalListHelpers); } catch(e) { console.warn('initWeeklyReportHandlers after init failed', e); }
+        }
+    } catch(e){ console.warn('expose goal helpers failed', e); }
     // render後にラベルを同期
     updateAddWeeklyMenuLabel();
     renderMediumGoals();

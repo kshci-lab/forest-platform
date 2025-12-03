@@ -114,25 +114,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.setupCustomTooltip();
         if(load == "load"){
             this.jmindex = [];
+            // bind UI handlers via addEventLister() to avoid duplicate bindings
             this.addEventLister();
-            $(`#jsmind_container`).on('click',this.connect_mindmap.bind(this));
-            $(`#object_conmenu1`).on('click', this.step_start.bind(this));
-            $(`#object_conmenu2`).on('click',this.step_end.bind(this));
-            $(`#object_conmenu3`).on('click',this.step_paused.bind(this));
-            $(`#process_conmenu1`).on('click',this.show_select.bind(this));
-            $(`#process_conmenu2`).on('click',this.connect_network.bind(this));
-            $(`#process_conmenu3`).on('click',this.Recruit_Idea.bind(this));
-            $(`#process_conmenu4`).on('click',this.ContentmenuCancel.bind(this));
-            $(`#process_conmenu5`).on('click',this.show_reason_input.bind(this));
-            $(`#process_conmenu6`).on('click',this.show_time_input.bind(this));
-            $(`#p_ontology_select`).on('click',this.addontology.bind(this));
-            $(`#p_recruit_select`).on('click',this.Selected_Recruit_Idea.bind(this));
-            $(`#t_p_ontology_select`).on('click',this.addontology.bind(this));
-            $(`#t_p_recruit_select`).on('click',this.Selected_Recruit_Idea.bind(this));
-            $(`#t_p_reason_select`).on('click',this.add_reason.bind(this));
-            $(`#t_p_reason_cancel`).on('click',this.cancel_reason_input.bind(this));
-            $(`#t_p_time_select`).on('click',this.add_time.bind(this));
-            $(`#t_p_time_cancel`).on('click',this.cancel_time_input.bind(this));
+            // network event handlers (not bound in addEventLister)
             this.ownNetwork.on('click', this.networkClick.bind(this));
             this.ownNetwork.on('dragStart', this.dragstart.bind(this));
             this.ownNetwork.on('dragEnd', this.dragend.bind(this));
@@ -379,7 +363,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     addEventLister(){
+        // Guard: avoid binding events multiple times
+        if (this._eventsAdded) {
+            console.log('イベントリスナーは既に追加済みです。スキップします。');
+            return;
+        }
         console.log('イベントリスナーを追加中...');
+        this._eventsAdded = true;
+
         this.bindconnect_mindmap = this.connect_mindmap.bind(this);
         this.bindshow_select = this.show_select.bind(this);
         this.bindconnect_network = this.connect_network.bind(this);
@@ -396,51 +387,54 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.bindcancel_time_input = this.cancel_time_input.bind(this);
         this.bindSelected_Recruit_Idea = this.Selected_Recruit_Idea.bind(this);
         this.bindRecruit_Idea = this.Recruit_Idea.bind(this);
-        $(`#jsmind_container`).on('click',this.bindconnect_mindmap);
-        $(`#object_conmenu1`).on('click',this.bindstep_start);
-        $(`#object_conmenu2`).on('click',this.bindstep_end);
-        $(`#object_conmenu3`).on('click', this.bindstep_paused);
-        $(`#net_conmenu02`).on('click', this.bindstep_end);
-        $(`#process_conmenu1`).on('click',this.bindshow_select);
-        $(`#process_conmenu2`).on('click',this.bindconnect_network);
-        $(`#process_conmenu3`).on('click',this.bindRecruit_Idea);
-        $(`#process_conmenu4`).on('click',this.bindContentmenuCancel);
-        $(`#process_conmenu5`).on('click', function() {
+
+        // Use namespaced events and unbind the namespace first to ensure idempotence
+        $(`#jsmind_container`).off('click.objectNetwork').on('click.objectNetwork', this.bindconnect_mindmap);
+        $(`#object_conmenu1`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_start);
+        $(`#object_conmenu2`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_end);
+        $(`#object_conmenu3`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_paused);
+        $(`#net_conmenu02`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_end);
+        $(`#process_conmenu1`).off('click.objectNetwork').on('click.objectNetwork', this.bindshow_select);
+        $(`#process_conmenu2`).off('click.objectNetwork').on('click.objectNetwork', this.bindconnect_network);
+        $(`#process_conmenu3`).off('click.objectNetwork').on('click.objectNetwork', this.bindRecruit_Idea);
+        $(`#process_conmenu4`).off('click.objectNetwork').on('click.objectNetwork', this.bindContentmenuCancel);
+        $(`#process_conmenu5`).off('click.objectNetwork').on('click.objectNetwork', function() {
             console.log('理由記述ボタンがクリックされました');
         });
-        $(`#process_conmenu5`).on('click',this.bindshow_reason_input);
-        $(`#process_conmenu6`).on('click',this.bindshow_time_input);
-        $(`#p_ontology_select`).on('click',this.bindaddontology);
-        $(`#p_recruit_select`).on('click',this.bindSelected_Recruit_Idea);
-        $(`#t_p_ontology_select`).on('click',this.bindaddontology);
-        $(`#t_p_recruit_select`).on('click',this.bindSelected_Recruit_Idea);
-        $(`#t_p_reason_select`).on('click',this.bindadd_reason);
-        $(`#t_p_reason_cancel`).on('click',this.bindcancel_reason_input);
-        $(`#t_p_time_select`).on('click',this.bindadd_time);
-        $(`#t_p_time_cancel`).on('click',this.bindcancel_time_input);
+        $(`#process_conmenu5`).off('click.objectNetwork').on('click.objectNetwork', this.bindshow_reason_input);
+        $(`#process_conmenu6`).off('click.objectNetwork').on('click.objectNetwork', this.bindshow_time_input);
+        $(`#p_ontology_select`).off('click.objectNetwork').on('click.objectNetwork', this.bindaddontology);
+        $(`#p_recruit_select`).off('click.objectNetwork').on('click.objectNetwork', this.bindSelected_Recruit_Idea);
+        $(`#t_p_ontology_select`).off('click.objectNetwork').on('click.objectNetwork', this.bindaddontology);
+        $(`#t_p_recruit_select`).off('click.objectNetwork').on('click.objectNetwork', this.bindSelected_Recruit_Idea);
+        $(`#t_p_reason_select`).off('click.objectNetwork').on('click.objectNetwork', this.bindadd_reason);
+        $(`#t_p_reason_cancel`).off('click.objectNetwork').on('click.objectNetwork', this.bindcancel_reason_input);
+        $(`#t_p_time_select`).off('click.objectNetwork').on('click.objectNetwork', this.bindadd_time);
+        $(`#t_p_time_cancel`).off('click.objectNetwork').on('click.objectNetwork', this.bindcancel_time_input);
     }
 
     removeEventLister(){
-        $(`#jsmind_container`).off('click',this.bindconnect_mindmap);
-        $(`#object_conmenu1`).off('click',this.bindstep_start);
-        $(`#object_conmenu2`).off('click',this.bindstep_end);
-        $(`#object_conmenu3`).off('click', this.bindstep_paused);
-        $(`#net_conmenu02`).off('click', this.bindstep_end);
-        $(`#process_conmenu1`).off('click',this.bindshow_select);
-        $(`#process_conmenu2`).off('click',this.bindconnect_network);
-        $(`#process_conmenu3`).off('click',this.bindRecruit_Idea);
-        $(`#process_conmenu4`).off('click',this.bindContentmenuCancel);
-        $(`#process_conmenu5`).off('click',this.bindshow_reason_input);
-        $(`#process_conmenu6`).off('click',this.bindshow_time_input);
-        $(`#p_ontology_select`).off('click',this.bindaddontology);
-        $(`#p_recruit_select`).off('click',this.bindSelected_Recruit_Idea);
-        $(`#t_p_ontology_select`).off('click',this.bindaddontology);
-        $(`#t_p_recruit_select`).off('click',this.bindSelected_Recruit_Idea);
-        $(`#t_p_reason_select`).off('click',this.bindadd_reason);
-        $(`#t_p_reason_cancel`).off('click',this.bindcancel_reason_input);
-        $(`#t_p_time_select`).off('click',this.bindadd_time);
-        $(`#t_p_time_cancel`).off('click',this.bindcancel_time_input);
+        $(`#jsmind_container`).off('click.objectNetwork',this.bindconnect_mindmap);
+        $(`#object_conmenu1`).off('click.objectNetwork',this.bindstep_start);
+        $(`#object_conmenu2`).off('click.objectNetwork',this.bindstep_end);
+        $(`#object_conmenu3`).off('click.objectNetwork', this.bindstep_paused);
+        $(`#net_conmenu02`).off('click.objectNetwork',this.bindstep_end);
+        $(`#process_conmenu1`).off('click.objectNetwork',this.bindshow_select);
+        $(`#process_conmenu2`).off('click.objectNetwork',this.bindconnect_network);
+        $(`#process_conmenu3`).off('click.objectNetwork',this.bindRecruit_Idea);
+        $(`#process_conmenu4`).off('click.objectNetwork',this.bindContentmenuCancel);
+        $(`#process_conmenu5`).off('click.objectNetwork',this.bindshow_reason_input);
+        $(`#process_conmenu6`).off('click.objectNetwork',this.bindshow_time_input);
+        $(`#p_ontology_select`).off('click.objectNetwork',this.bindaddontology);
+        $(`#p_recruit_select`).off('click.objectNetwork',this.bindSelected_Recruit_Idea);
+        $(`#t_p_ontology_select`).off('click.objectNetwork',this.bindaddontology);
+        $(`#t_p_recruit_select`).off('click.objectNetwork',this.bindSelected_Recruit_Idea);
+        $(`#t_p_reason_select`).off('click.objectNetwork',this.bindadd_reason);
+        $(`#t_p_reason_cancel`).off('click.objectNetwork',this.bindcancel_reason_input);
+        $(`#t_p_time_select`).off('click.objectNetwork',this.bindadd_time);
+        $(`#t_p_time_cancel`).off('click.objectNetwork',this.bindcancel_time_input);
         clearInterval(this.interval);
+        this._eventsAdded = false;
         
         // キーボードイベントリスナーを削除
         this.removeKeyboardListeners();
@@ -1313,6 +1307,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 try {
                     const targetNodeId = clickedIdStr.replace('reason-tag-', '');
                     this.selectId = targetNodeId; // show_reason_input は this.selectId を参照する
+                    // ダブルクリックから理由ダイアログを開くフローでは sessionStorage にも退避しておく
+                    // これにより、ダイアログを開いている間に selectId がクリアされても復元できます
+                    try { sessionStorage.setItem('currentSelectId', this.selectId); } catch (e) { /* ignore */ }
                     // 既存の理由をメモリ/ノードタイトルから取得
                     let reasonText = '';
                     const rIdx = this.ReasonConnectNodeId.indexOf(targetNodeId);
@@ -1922,9 +1919,16 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         
         // selectIdが設定されているかチェック
         if (!this.selectId) {
-            console.error('selectIdが設定されていません:', this.selectId);
-            // alert('ノードが選択されていません');
-            return;
+            // セッションストレージからバックアップを取得して復元を試みる
+            const backupSelectId = sessionStorage.getItem('currentSelectId');
+            if (backupSelectId) {
+                this.selectId = backupSelectId;
+                console.log('add_reason: セッションストレージからselectIdを復元:', this.selectId);
+            } else {
+                console.error('selectIdが設定されていません:', this.selectId);
+                // alert('ノードが選択されていません');
+                return;
+            }
         }
         
         // すでに理由が記述されているかチェック
@@ -2250,7 +2254,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         console.log(`ノード ${this.selectId} の作業開始だよ！！`);
         try {
-            defaultRecordThinkingProcess.update_Node("status", this.selectId, "inProgress", "");
+            defaultRecordThinkingProcess.update_Node("status", this.selectId, "inProgress", 5);
         } catch (e) {
             console.error('update_Node エラー（無視して続行）:', e);
         }
@@ -2301,7 +2305,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         console.log(`ノード ${this.selectId} の作業中断だよ！！`);
         // ステータスを更新
-        defaultRecordThinkingProcess.update_Node("status", this.selectId, "paused", "");
+        defaultRecordThinkingProcess.update_Node("status", this.selectId, "paused", 6);
 
         // ノードの見た目を更新
         this.nodes.update({
@@ -2347,7 +2351,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
         console.log(`ノード ${this.selectId} の作業完了だよ！！`);
         // ステータスを completed に更新
-        defaultRecordThinkingProcess.update_Node("status", this.selectId, "completed", "");
+        defaultRecordThinkingProcess.update_Node("status", this.selectId, "completed", 7);
     
         // ノードの見た目を更新
         this.nodes.update({
