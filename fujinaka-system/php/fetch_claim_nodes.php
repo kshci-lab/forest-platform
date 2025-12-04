@@ -43,6 +43,7 @@ try {
     // concept_id と node_id のペア配列（両方見たい場合）
     $claimConceptNodes = [];
 
+    $claimNodeIds = [];
     while ($row = $res->fetch_row()) {
         // $row[0] = concept_id, $row[1] = nodes.id (node_id)
         $claimConceptIds[] = $row[0];
@@ -75,6 +76,8 @@ try {
     $stmtF->execute();
     $resF = $stmtF->get_result();
     $factConceptIds = [];
+    $factNodeIds = [];
+    $factConceptNodes = [];
     while ($row = $resF->fetch_row()) {
         $factConceptIds[] = $row[0];
         $factNodeIds[] = $row[1];
@@ -106,6 +109,8 @@ try {
     $stmtRsn->execute();
     $resRsn = $stmtRsn->get_result();
     $reasonConceptIds = [];
+    $reasonNodeIds = [];
+    $reasonConceptNodes = [];
     while ($row = $resRsn->fetch_row()) {
         $reasonConceptIds[] = $row[0];
         $reasonNodeIds[] = $row[1];
@@ -136,6 +141,7 @@ try {
     $res2 = $stmt2->get_result();
     $mapConceptIds = [];
     $mapNodeIds = [];
+    $mapConceptNodes = [];
     while ($row = $res2->fetch_row()) {
         $mapConceptIds[] = $row[0];
         $mapNodeIds[] = $row[1];
@@ -147,22 +153,18 @@ try {
     }
     $stmt2->close();
 
-    // 3) 差分と共通集合
+    // 3) 差分（node_idベース）と共通集合（各セットは併記維持）
     $claimSet  = array_values(array_unique($claimConceptIds));
-    $factSet   = array_values(array_unique($factConceptIds ?? []));     
+    $factSet   = array_values(array_unique($factConceptIds ?? []));
     $reasonSet = array_values(array_unique($reasonConceptIds ?? []));
     $mapSet    = array_values(array_unique($mapConceptIds));
-    // $diffMapMinusClaim = array_values(array_diff($mapSet, $claimSet));
-    // $diffMapMinusFact = array_values(array_diff($mapSet, $factSet));
-    // $diffMapMinusReason = array_values(array_diff($mapSet, $reasonSet));
 
-    // 3.1) map-(事実+理由付け+主張)
-    $logicConceptIds = array_values(array_unique(array_merge($claimSet, $factSet, $reasonSet)));
-    $diffMapMinusLogic = array_values(array_diff($mapSet, $logicConceptIds));
+    // 3.1) node_idベースのロジック集合と差分: mapNodeIds - (claim|fact|reason の f_node_id)
+    $logicFNodeIds = array_values(array_unique(array_merge($claimNodeIds ?? [], $factNodeIds ?? [], $reasonNodeIds ?? [])));
+    $diffMapMinusLogicNodes = array_values(array_diff($mapNodeIds ?? [], $logicFNodeIds));
 
-    // 3.2) map - diffMapMinusLogic - claim
-    // mapSet から diffMapMinusLogic と claimSet を取り除いた残り
-    $diffMapMinusClaim = array_values(array_diff($mapSet, array_merge($diffMapMinusLogic, $claimSet)));
+    // 3.2) node_idベースの差分: mapNodeIds - diffMapMinusLogicNodes - claimNodeIds
+    $diffMapMinusClaimNodes = array_values(array_diff($mapNodeIds ?? [], array_merge($diffMapMinusLogicNodes, $claimNodeIds ?? [])));
 
     // 3.3) Detailed 拡張
     // 準備: concept_id -> nodes(id, content) の参照（map側）
@@ -225,9 +227,31 @@ try {
             'details'    => $details,
         ];
     };
+    
+    // node_idベース Detailed: 対象node_idごとに詳細を構築
+    // node_id -> concept_id/content の逆引き辞書（map側）
+    $nodeIdToConcept = [];
+    $nodeIdToContent = [];
+    foreach (($mapConceptNodes ?? []) as $mn) {
+        $nodeIdToConcept[$mn['node_id']] = $mn['concept_id'];
+        $nodeIdToContent[$mn['node_id']] = $mn['content'];
+    }
 
-    $diffMapMinusLogicDetailed = array_map($buildDetailed, $diffMapMinusLogic);
-    $diffMapMinusClaimDetailed = array_map($buildDetailed, $diffMapMinusClaim);
+    $buildDetailedNode = function($nid) use ($nodeIdToConcept, $nodeIdToContent, $nodeIdToLogicInfo) {
+        $cid = $nodeIdToConcept[$nid] ?? null;
+        $content = $nodeIdToContent[$nid] ?? null;
+        $logic = $nodeIdToLogicInfo[$nid] ?? [ 'logic_node_id' => null, 'logic_label' => null ];
+        return [
+            'concept_id'    => $cid,
+            'node_id'       => $nid,
+            'content'       => $content,
+            'logic_node_id' => $logic['logic_node_id'],
+            'logic_label'   => $logic['logic_label'],
+        ];
+    };
+
+    $diffMapMinusLogicDetailed = array_map($buildDetailedNode, $diffMapMinusLogicNodes);
+    $diffMapMinusClaimDetailed = array_map($buildDetailedNode, $diffMapMinusClaimNodes);
 
     echo json_encode([
         'ok' => true,
@@ -242,9 +266,13 @@ try {
         'reasonNodeIds' => $reasonNodeIds,
         'reasonConceptNodes' => $reasonConceptNodes, // 追加: concept_id と node_id の一覧
         'mapConceptIds' => $mapSet,
-        'diffMapMinusLogic' => $diffMapMinusLogic,
+        'mapConceptNodes' => $mapConceptNodes,
+        // 旧conceptベースのキーとの互換は維持しつつ、nodeベースのキーを追加
+        'diffMapMinusLogic' => $diffMapMinusLogicNodes,
+        'diffMapMinusLogicNodes' => $diffMapMinusLogicNodes,
         'diffMapMinusLogicDetailed' => $diffMapMinusLogicDetailed,
-        'diffMapMinusClaim' => $diffMapMinusClaim,
+        'diffMapMinusClaim' => $diffMapMinusClaimNodes,
+        'diffMapMinusClaimNodes' => $diffMapMinusClaimNodes,
         'diffMapMinusClaimDetailed' => $diffMapMinusClaimDetailed,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 

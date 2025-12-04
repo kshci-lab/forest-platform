@@ -58,13 +58,24 @@ function getDiffConceptLabels() {
         const nodeId = item.node_id ?? item.nodeId ?? null; // 追加: node_id を取り出す
         const cc  = idToOutputCC[cid] || '';
         if (!cc || cc.trim() === '') return;
-        const contents = Array.isArray(item.contents) ? item.contents.filter(c => c !== null && c !== '') : [''];
-        contents.forEach((c) => out.push({
-          concept_id: cid,
-          node_id: nodeId,            // 追加: node_id を含める
-          class_constraint: cc,
-          content: c
-        }));
+        // node_idベースDetailedでは item.content に単一値が入る。従来のconceptベースDetailedでは item.contents が配列。
+        const single = (item.content ?? '').trim();
+        if (single !== '') {
+          out.push({
+            concept_id: cid,
+            node_id: nodeId,
+            class_constraint: cc,
+            content: single
+          });
+        } else {
+          const contents = Array.isArray(item.contents) ? item.contents.filter(c => c !== null && String(c).trim() !== '') : [];
+          contents.forEach((c) => out.push({
+            concept_id: cid,
+            node_id: nodeId,
+            class_constraint: cc,
+            content: c
+          }));
+        }
       });
       return out;
     };
@@ -112,20 +123,42 @@ function renderDiffConceptLabels(containerSelector) {
 	getDiffConceptLabels()
 		.done(function(res){
 			// 種類別メッセージ生成
-			const makeLine = (title, p) => {
+      const makeLine = (title, p) => {
 				if (title === 'map - logic') {
-					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を三要素（主張/事実/理由付け）の論理構成に取り込む必要はありませんか`;
+					return `教育システム学研究において「${esc(p.class_constraint)}」は重要です。あなたは「${esc(p.class_constraint)}」として「${esc(p.content)}」を述べています。これを主張として三角ロジックを構成する必要はありませんか`;
 				} else if (title === 'map - claim') {
-					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を主張として明確化する必要はありませんか`;
+					return `教育システム学研究において「${esc(p.class_constraint)}」は重要です。あなたは「${esc(p.class_constraint)}」として「${esc(p.content)}」を述べています。これを主張として三角ロジックを構成する必要はありませんか`;
 				}
 				return `「${esc(p.class_constraint)}」「${esc(p.content)}」これを検討する必要はありませんか`;
 			};
-			const section = (title, arr) => {
+      const section = (title, arr) => {
 				// 念のため表示直前でも空のclass_constraintを除外
-				const items = (arr || [])
-					.filter(p => p.class_constraint && p.class_constraint.trim() !== '')
-					.map(p => `<li>${makeLine(title, p)}</li>`).join('');
-				return `<h4>${esc(title)}</h4><ul>${items}</ul>`;
+        const attr = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+        const items = (arr || [])
+          .filter(p => p.class_constraint && p.class_constraint.trim() !== '')
+          .map(p => {
+            // localStorage 用キー（属性用に encodeURIComponent 済み）
+            const rawKey = `diffAdvice|${title}|${p.concept_id ?? ''}|${p.node_id ?? ''}|${p.class_constraint ?? ''}|${p.content ?? ''}`;
+            const key = encodeURIComponent(rawKey);
+            let saved = '';
+            try { saved = localStorage.getItem(key) || ''; } catch(e) { saved = ''; }
+            const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
+
+            return [
+              `<li class="ai-advice-item" data-key="${key}"` +
+              ` data-title="${attr(title)}"` +
+              ` data-concept-id="${attr(p.concept_id ?? '')}"` +
+              ` data-node-id="${attr(p.node_id ?? '')}"` +
+              ` data-class-constraint="${attr(p.class_constraint ?? '')}"` +
+              ` data-content="${attr(p.content ?? '')}">`,
+              `  <span class="ai-advice-text">${makeLine(title, p)}</span>`,
+              `  <button type="button" class="ai-advice-btn ai-consider-btn">考える</button>`,
+              `  <button type="button" class="ai-advice-btn ai-skip-btn">考えない</button>`,
+              `  <span class="ai-advice-status">${esc(statusLabel)}</span>`,
+              `</li>`
+            ].join('');
+          }).join('');
+        return `<h4>${esc(title)}</h4><ul class="ai-advice-list">${items}</ul>`;
 			};
 			const html = [
 				'<div class="diff-concepts">',
@@ -141,35 +174,139 @@ function renderDiffConceptLabels(containerSelector) {
 		});
 }
 
-// デバッグ: 差分再描画ボタンを追加（#testxml の直前に挿入）
+// 連動: 「論文シナリオ構成終了」ボタンに紐づけて #ai_output へ描画
 $(function(){
   try {
-    const btnId = 'btn_render_diff';
-    if ($('#' + btnId).length === 0) {
-      const $btn = $('<button type="button" class="button4" id="'+btnId+'">差分を再描画</button>');
-      if ($('#testxml').length) {
-        $('#testxml').before($btn);
-      } else {
-        $('body').append($btn);
-      }
-      console.log('[ont_claim] debug button added: #' + btnId);
+    // finalizeScenarioAndShowAI をラップして、元の処理後に描画を追加
+    if (typeof window.finalizeScenarioAndShowAI === 'function') {
+      const original = window.finalizeScenarioAndShowAI;
+      window.finalizeScenarioAndShowAI = function() {
+        try { original.apply(this, arguments); } catch(e) { console.warn('[ont_claim] original finalizeScenarioAndShowAI error', e); }
+        try {
+          var panel = document.getElementById('ai_output_panel');
+          var body = document.getElementById('ai_output_body');
+          var header = document.getElementById('ai_output_header');
+          var icon = document.getElementById('ai_toggle_icon');
+          if (panel) panel.style.display = 'block';
+          if (body && header && icon) {
+            body.style.display = 'block';
+            icon.textContent = '▼';
+            header.setAttribute('aria-expanded', 'true');
+          }
+          if (typeof renderDiffConceptLabels === 'function') {
+            renderDiffConceptLabels('#ai_output');
+            console.log('[ont_claim] renderDiffConceptLabels invoked via finalizeScenarioAndShowAI');
+          }
+        } catch(e) { console.error('[ont_claim] finalizeScenarioAndShowAI render hook failed', e); }
+      };
+      console.log('[ont_claim] finalizeScenarioAndShowAI hooked');
+    } else {
+      // 直接ボタンのクリックにハンドラを追加（フォールバック）
+      $(document).on('click.ont_claim_bind', 'button.button4[onclick*="finalizeScenarioAndShowAI"]', function(){
+        try {
+          var panel = document.getElementById('ai_output_panel');
+          var body = document.getElementById('ai_output_body');
+          var header = document.getElementById('ai_output_header');
+          var icon = document.getElementById('ai_toggle_icon');
+          if (panel) panel.style.display = 'block';
+          if (body && header && icon) {
+            body.style.display = 'block';
+            icon.textContent = '▼';
+            header.setAttribute('aria-expanded', 'true');
+          }
+          if (typeof renderDiffConceptLabels === 'function') {
+            renderDiffConceptLabels('#ai_output');
+            console.log('[ont_claim] renderDiffConceptLabels invoked via button click');
+          }
+        } catch(e) { console.error('[ont_claim] button bind render failed', e); }
+      });
+      console.log('[ont_claim] button click binding added (fallback)');
     }
-
-    // クリックで renderDiffConceptLabels('#testxml') を実行
-    $(document).off('click.'+btnId).on('click.'+btnId, '#'+btnId, function(){
-      try {
-        console.log('[ont_claim] manual trigger: renderDiffConceptLabels');
-        if (typeof renderDiffConceptLabels === 'function') {
-          renderDiffConceptLabels('#testxml');
-          console.log('[ont_claim] renderDiffConceptLabels invoked');
-        } else {
-          console.warn('[ont_claim] renderDiffConceptLabels not defined - skip');
-        }
-      } catch (e) {
-        console.error('[ont_claim] renderDiffConceptLabels trigger failed', e);
-      }
-    });
   } catch(e) {
-    console.error('[ont_claim] debug button setup failed', e);
+    console.error('[ont_claim] finalizeScenarioAndShowAI binding failed', e);
   }
 });
+
+// 考える/考えない ボタンのハンドラ（委譲）
+$(document)
+  .off('click.ont_claim_consider', '.ai-advice-item .ai-consider-btn')
+  .on('click.ont_claim_consider', '.ai-advice-item .ai-consider-btn', function(){
+    try {
+      const $li = $(this).closest('.ai-advice-item');
+      const key = $li.data('key');
+      const content = $li.attr('data-content') || '';
+      const forestNodeId = $li.attr('data-node-id') || null;
+      // すでに"考える"済みなら二重作成を避ける
+      let already = '';
+      try { already = localStorage.getItem(String(key)) || ''; } catch(e) { already = ''; }
+      if (already !== 'consider') {
+        // defaultLogicNetwork が利用可能なら主張=content で三角ロジックを作成
+        if (window.defaultLogicNetwork && typeof window.defaultLogicNetwork.maketriangle === 'function') {
+          try {
+            // 主張: content, Forest紐づけ: forestNodeId（あれば）
+            window.defaultLogicNetwork.maketriangle(String(content), forestNodeId || null, null, 1);
+            // 追加: 作成直後に新規三角をハイライト＆フォーカス
+            setTimeout(() => {
+              try {
+                const dln = window.defaultLogicNetwork;
+                const tris = dln && Array.isArray(dln.triangles) ? dln.triangles : null;
+                const last = tris && tris.length ? tris[tris.length - 1] : null;
+                if (last && typeof dln.highlightTriangles === 'function') {
+                  dln.highlightTriangles([last]);
+                  // キャンバスへスクロール
+                  const netEl = document.getElementById('mynetwork');
+                  if (netEl && typeof netEl.scrollIntoView === 'function') {
+                    netEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                  // 主張ノードへフォーカス
+                  const claimId = String(last.claim_id ?? last.claimId ?? '');
+                  if (claimId && dln.ownNetwork && typeof dln.ownNetwork.focus === 'function') {
+                    dln.ownNetwork.focus(claimId, { scale: 1.3, animation: { duration: 450, easingFunction: 'easeInOutQuad' } });
+                  }
+                }
+              } catch (_) { /* noop */ }
+            }, 10);
+          } catch (e) {
+            console.error('[ont_claim] maketriangle failed', e);
+          }
+        } else {
+          console.warn('[ont_claim] defaultLogicNetwork not ready; skip triangle creation');
+        }
+      }
+      try { localStorage.setItem(String(key), 'consider'); } catch(e) {}
+      $li.find('.ai-advice-status').text('選択: 考える');
+    } catch(e) { console.error('[ont_claim] consider click failed', e); }
+  });
+
+$(document)
+  .off('click.ont_claim_skip', '.ai-advice-item .ai-skip-btn')
+  .on('click.ont_claim_skip', '.ai-advice-item .ai-skip-btn', function(){
+    try {
+      const $li = $(this).closest('.ai-advice-item');
+      const key = $li.data('key');
+      try { localStorage.setItem(String(key), 'skip'); } catch(e) {}
+      $li.find('.ai-advice-status').text('選択: 考えない');
+    } catch(e) { console.error('[ont_claim] skip click failed', e); }
+  });
+
+// 追加: 独立ボタン用の差分助言表示関数（#ai_output へ描画）
+window.showDiffAdvice = function() {
+  try {
+    var panel = document.getElementById('ai_output_panel');
+    var body = document.getElementById('ai_output_body');
+    var header = document.getElementById('ai_output_header');
+    var icon = document.getElementById('ai_toggle_icon');
+    if (panel) panel.style.display = 'block';
+    if (body && header && icon) {
+      body.style.display = 'block';
+      icon.textContent = '▼';
+      header.setAttribute('aria-expanded', 'true');
+    }
+    if (typeof renderDiffConceptLabels === 'function') {
+      renderDiffConceptLabels('#ai_output');
+      console.log('[ont_claim] showDiffAdvice: rendered to #ai_output');
+    }
+  } catch(e) {
+    console.error('[ont_claim] showDiffAdvice failed', e);
+  }
+};

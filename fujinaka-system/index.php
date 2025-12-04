@@ -157,22 +157,7 @@ $ai_output = '';
               <button class="button4" style="width:80px" onclick="screen_shot();">
                 screenshot
               </button>
-              <!-- 追加: 主張ノード取得 -->
-              <button class="button4" onclick="fetchClaimNodes();">
-                主張ノード取得
-              </button>
-              <!-- 追加: 合理性ペア助言表示ボタン -->
-              <button class="button4" onclick="window.showRationalityAdvice && window.showRationalityAdvice('#rationality_advice');">
-                合理性ペア助言
-              </button>
-              <!-- 追加: 差分のconcept_idとLABELをコンソール出力 -->
-              <button class="button4" onclick="window.logDiffConceptLabels && window.logDiffConceptLabels();">
-                差分をコンソール出力
-              </button>
-              <!-- 追加: 統合助言ダッシュボード -->
-              <button class="button4" onclick="window.showAdviceDashboard && window.showAdviceDashboard();">
-                助言ダッシュボード
-              </button>
+
               <!-- <label><input type="checkbox" name="Difference" id="Difference" onClick="Difference();">以前のマップとの差分</label> -->
             </div>
 
@@ -180,13 +165,13 @@ $ai_output = '';
               <input type="button" id="ln_deleteNode" value="ノード削除">
               <input type="button" id="ln_maketriangle" value="三角ロジックを作成する">
               <input type="button" id="ln_createtriangle" value="三角ロジックを追加する">
-              <!-- 追加: 差分のconcept_idとLABELをコンソール出力 -->
-              <button class="button4" onclick="window.logDiffConceptLabels && window.logDiffConceptLabels();">
-                差分をコンソール出力
-              </button>
               <!-- 追加: 合理性ペア助言表示ボタン（論理メニュー側） -->
               <button class="button4" onclick="window.showRationalityAdvice && window.showRationalityAdvice('#rationality_advice');">
                 合理性ペア助言
+              </button>
+              <!-- 追加: 差分助言表示ボタン（AI出力エリアに描画） -->
+              <button class="button4" onclick="window.showDiffAdvice && window.showDiffAdvice();">
+                差分助言
               </button>
             </div>
 

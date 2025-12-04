@@ -46,9 +46,6 @@ function renderRationalityAdvice(containerSelector) {
 				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
 				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
 				return `<div class="entry">
-					<div class="head">[none]</div>
-					${nodeTexts ? `<div>「コンテント」${nodeTexts}</div>` : ''}
-					${anchorTexts ? `<div>「アンカーのコンテント」${anchorTexts}</div>` : ''}
 					<div class="advice">${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか</div>
 				</div>`;
 			};
@@ -129,9 +126,120 @@ function renderRationalityAdvice(containerSelector) {
 
 // 公開関数（ボタン等から呼び出し想定）
 window.showRationalityAdvice = function(selector){
-	// ont_claim.js と同じ助言領域 (#advice_output) を既定とする
-	try { $('#advice_panel').show(); } catch(e) {}
-	const target = selector || '#advice_output';
+	// 出力先をAIアウトプットに統一し、パネルを開く
+	try {
+		var panel = document.getElementById('ai_output_panel');
+		var body = document.getElementById('ai_output_body');
+		var header = document.getElementById('ai_output_header');
+		var icon = document.getElementById('ai_toggle_icon');
+		if (panel) panel.style.display = 'block';
+		if (body && header && icon) {
+			body.style.display = 'block';
+			icon.textContent = '▼';
+			header.setAttribute('aria-expanded', 'true');
+		}
+	} catch(e) {}
+	const target = '#ai_output';
 	renderRationalityAdvice(target);
+};
+
+// 追加: noneのみを表示する関数（第一助言）
+window.firstadvice = function(){
+	try {
+		var panel = document.getElementById('ai_output_panel');
+		var body = document.getElementById('ai_output_body');
+		var header = document.getElementById('ai_output_header');
+		var icon = document.getElementById('ai_toggle_icon');
+		if (panel) panel.style.display = 'block';
+		if (body && header && icon) {
+			body.style.display = 'block';
+			icon.textContent = '▼';
+			header.setAttribute('aria-expanded', 'true');
+		}
+	} catch(e) {}
+	// noneのみ描画
+	getRationalityStatus()
+		.done(function(res){
+			const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+			const noneArr = res.noneinlogic || (res.displayEntries && res.displayEntries.noneinlogic) || [];
+			const lineNone = (e) => {
+				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
+				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
+				return `<div class="entry">
+					<div class="advice">${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか</div>
+				</div>`;
+			};
+			const items = noneArr.map(lineNone).join('');
+			const html = items ? `<h4>noneinlogic</h4><div class="rationality-advice-list">${items}</div>` : '<div class="empty">none の対象がありません。</div>';
+			$('#ai_output').html('<div class="rationality-advice">'+html+'</div>');
+		})
+		.fail(function(err){
+			console.error('[logic_rationality] firstadvice failed', err);
+			$('#ai_output').html('<div class="error">合理性情報の取得に失敗しました</div>');
+		});
+};
+
+// 追加: one+both を表示する関数（第二助言）
+window.secondadvice = function(){
+	try {
+		var panel = document.getElementById('ai_output_panel');
+		var body = document.getElementById('ai_output_body');
+		var header = document.getElementById('ai_output_header');
+		var icon = document.getElementById('ai_toggle_icon');
+		if (panel) panel.style.display = 'block';
+		if (body && header && icon) {
+			body.style.display = 'block';
+			icon.textContent = '▼';
+			header.setAttribute('aria-expanded', 'true');
+		}
+	} catch(e) {}
+	// one + both を描画
+	getRationalityStatus()
+		.done(function(res){
+			const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+			const nodeContentList = (nodes) => (nodes||[]).map(n => `node_id:${esc(n.node_id)} content:"${esc(n.content)}"`).join(' / ');
+			const anchorContentList = (children) => (children||[]).map(c => `#${esc(c.node_id)} "${esc(c.content)}"`).join(', ');
+			const logicContentList = (matches) => (matches||[]).map(m => `logic_node_id:${esc(m.logic_node_id)} f_node_id:${esc(m.f_node_id)} content:"${esc(m.content)}"`).join('<br>');
+
+			const oneArr  = res.oneinlogic  || (res.displayEntries && res.displayEntries.oneinlogic)  || [];
+			const bothArr = res.bothinlogic || (res.displayEntries && res.displayEntries.bothinlogic) || [];
+
+			const lineOne = (e) => {
+				const nodes = nodeContentList(e.nodes);
+				const anchors = anchorContentList(e.anchor_children);
+				const logic = logicContentList(e.logic_matches);
+				return `<div class="entry">
+					<div class="head">[one] rationality_id:${esc(e.rationality_id)}</div>
+					<div>ノード: ${nodes}</div>
+					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
+					${logic ? `<div>三角ロジック対応: ${logic}</div>` : ''}
+					<div class="advice">これらの内容を三角ロジックに反映しなくていいですか？</div>
+				</div>`;
+			};
+			const lineBoth = (e) => {
+				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
+				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
+				const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join('<br>');
+				return `<div class="entry">
+					<div class="head">[both]</div>
+					${nodeTexts ? `<div>「コンテント」${nodeTexts}</div>` : ''}
+					${anchorTexts ? `<div>「アンカーのコンテント」${anchorTexts}</div>` : ''}
+					${logicTexts ? `<div>三角ロジック対応のコンテント:<br>${logicTexts}</div>` : ''}
+					<div class="advice">三角ロジックにある${logicTexts}は、上記の「${nodeTexts}」についての合理性「${anchorTexts}」の内容を適切に反映していますか？</div>
+				</div>`;
+			};
+
+			const oneItems = oneArr.map(lineOne).join('');
+			const bothItems = bothArr.map(lineBoth).join('');
+			const htmlParts = [];
+			htmlParts.push(oneItems ? `<h4>oneinlogic</h4><div class="rationality-advice-list">${oneItems}</div>` : '<div class="empty">one の対象がありません。</div>');
+			htmlParts.push(bothItems ? `<h4>bothinlogic</h4><div class="rationality-advice-list">${bothItems}</div>` : '<div class="empty">both の対象がありません。</div>');
+
+			$('#ai_output').html('<div class="rationality-advice">'+htmlParts.join('')+'</div>');
+		})
+		.fail(function(err){
+			console.error('[logic_rationality] secondadvice failed', err);
+			$('#ai_output').html('<div class="error">合理性情報の取得に失敗しました</div>');
+		});
 };
 
