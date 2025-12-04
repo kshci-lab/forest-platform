@@ -308,6 +308,7 @@ $(document)
 				$(document).one('click', '.rat-dialog-close, .rat-dialog-cancel, .rat-dialog-overlay', function(){ cleanup(); });
 				const makeTriangle = (content, nodeId) => {
 					try {
+						console.log('[rat] makeTriangle start', { content: String(content), nodeId: String(nodeId || '') });
 						if (window.defaultLogicNetwork && typeof window.defaultLogicNetwork.maketriangle === 'function') {
 							window.defaultLogicNetwork.maketriangle(String(content), String(nodeId || ''), null, 1);
 							// 作成直後のハイライト＆フォーカス（ont_claim.jsの実装に準拠）
@@ -328,6 +329,39 @@ $(document)
 										if (claimId && dln.ownNetwork && typeof dln.ownNetwork.focus === 'function') {
 											dln.ownNetwork.focus(claimId, { scale: 1.3, animation: { duration: 450, easingFunction: 'easeInOutQuad' } });
 										}
+										// Forestマップ側のノードもフォーカス（nodeId は対応する f_node_id）
+										try {
+											var fId = String(nodeId || '');
+											console.log('[rat] focusing Forest node', { fId: fId });
+											if (fId) {
+												if (typeof window.highlightForestNodeById === 'function') {
+													console.log('[rat] using highlightForestNodeById');
+													window.highlightForestNodeById(fId);
+												} else if (window._jm && typeof window._jm.select_node === 'function') {
+													console.log('[rat] using jsMind.select_node');
+													// jsMind の選択とスクロール
+													window._jm.select_node(fId);
+													var el = document.getElementById(fId);
+													if (!el) {
+														// jsMindは <jmnode nodeid="..."> でレンダリングされることがある
+														const jmnodes = document.getElementsByTagName('jmnode');
+														for (let i = 0; i < jmnodes.length; i++) {
+															if (String(jmnodes[i].getAttribute('nodeid')) === String(fId)) { el = jmnodes[i]; break; }
+														}
+													}
+													if (!el) { console.warn('[rat] Forest DOM node not found by id/nodeid', fId); }
+													if (el && typeof el.scrollIntoView === 'function') {
+														el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+													}
+													// 軽い強調枠（短時間）
+													try {
+														el.style.transition = 'box-shadow 0.2s ease-out';
+														el.style.boxShadow = '0 0 0 3px orange inset';
+														setTimeout(function(){ try { el.style.boxShadow = ''; } catch(_){} }, 1200);
+													} catch(_) {}
+												}
+											}
+										} catch(err2) { console.error('[rat] Forest focus failed', err2); }
 									}
 								} catch(_) { /* noop */ }
 							}, 10);
