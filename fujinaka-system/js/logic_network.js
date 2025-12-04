@@ -598,10 +598,19 @@ class LogicNetwork {
       }
       // 要素のIDを取得
       const elementId = selectedElement.id || selectedElement.getAttribute('node_id') || this.generateUniqueNumberText();
+      // 可能ならForest（概念）対応のIDも取得（presentation要素側に埋め込まれている場合）
+      const conceptIdFromPresentation =
+        selectedElement.getAttribute('f_node_id') ||
+        selectedElement.getAttribute('forest_id') ||
+        selectedElement.getAttribute('concept_id') ||
+        selectedElement.getAttribute('conceptid') ||
+        (selectedElement.dataset ? (selectedElement.dataset.fNodeId || selectedElement.dataset.fnodeid || selectedElement.dataset.conceptid || selectedElement.dataset.conceptId) : null) ||
+        null;
       
       return {
         text: elementText.trim(),
-        id: elementId
+        id: elementId,
+        f_node_id: conceptIdFromPresentation || null
       };
       
     } catch (error) {
@@ -610,16 +619,45 @@ class LogicNetwork {
     }
   }
 
+  // DBから Presentation ノードIDに対応する Forest 概念ID を取得
+  async fetchForestNodeIdByPresentationId(pNodeId) {
+    try {
+      const res = await $.ajax({
+        url: "php/logic_maneger.php",
+        type: "POST",
+        data: {
+          purpose: 'get',
+          get_thing: 'pnode_to_fid',
+          p_node_id: pNodeId
+        },
+        dataType: "json"
+      });
+      if (res && res.status === 'success' && res.f_node_id) {
+        return res.f_node_id;
+      }
+      console.warn("fetchForestNodeIdByPresentationId: not found", res);
+      return null;
+    } catch (e) {
+      console.warn("fetchForestNodeIdByPresentationId error:", e);
+      return null;
+    }
+  }
+
   // 論文シナリオのノードを起点に三角ロジックを作成する関数
-  createTriangleFromScenario() {
+  async createTriangleFromScenario() {
     // マインドマップ側から選択ノード情報を取得
     let selected_pnode = this.getSelectedScenarioContent();
     if (!selected_pnode || !selected_pnode.text) {
       alert("ノードを選択してください");
       return;
     }
-    // maketriangleを呼び出し、ForestのノードIDを渡す
-    this.maketriangle(selected_pnode.text, null, selected_pnode.id, 1);
+    // f_node_id が無い場合は DB から補完
+    let fNodeId = selected_pnode.f_node_id || null;
+    if (!fNodeId && selected_pnode.id) {
+      fNodeId = await this.fetchForestNodeIdByPresentationId(String(selected_pnode.id));
+    }
+    // maketriangleを呼び出し、presentationノード由来/DB由来のf_node_idがあれば渡す
+    this.maketriangle(selected_pnode.text, fNodeId || null, selected_pnode.id, 1);
   }
 
   // Forestのノードの内容を三角ロジックに反映する

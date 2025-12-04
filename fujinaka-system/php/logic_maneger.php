@@ -21,6 +21,8 @@ if (!isset($_SESSION['USERID'])) {
 
 $user_id = $_SESSION['USERID'];
 $sheet_id = $_SESSION['SHEETID'];
+// 追加: map_id（シナリオ側テーブル参照時に使用）
+$map_id = $_SESSION['MAPID'] ?? null;
 
 $purpose = $_POST['purpose'] ?? null;
 
@@ -398,6 +400,94 @@ else if ($purpose === 'get') {
             ]);
         }
         $stmt->close();
+    }
+    // 追加: Presentation側のノードIDから Forest 概念ID（= f_node_id）を取得
+    else if ($get_thing === 'pnode_to_fid') {
+        $p_node_id = $_POST['p_node_id'] ?? '';
+        if ($p_node_id === '') {
+            echo json_encode([
+                "status" => "error",
+                "message" => "p_node_id が指定されていません"
+            ]);
+            exit;
+        }
+
+        // document_content_rank を優先して検索（id / content_id / node_id のいずれか一致）
+        $concept_id = null;
+
+        // ヘルパー: 単一値クエリ実行
+        $fetch_one = function($sql, $types, $params) use ($mysqli) {
+            $stmt = $mysqli->prepare($sql);
+            if (!$stmt) return [false, "SQLプリペア失敗: " . $mysqli->error];
+            $stmt->bind_param($types, ...$params);
+            if (!$stmt->execute()) {
+                $err = $stmt->error;
+                $stmt->close();
+                return [false, "SQL実行失敗: " . $err];
+            }
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            $stmt->close();
+            return [true, $row];
+        };
+
+        // map_id があれば絞り込む（無くても動作するように左右対応）
+        $mapWhere = ($map_id !== null) ? " AND map_id = ?" : "";
+        $mapParam = ($map_id !== null) ? [$map_id] : [];
+
+        // 1) document_content_rank.id
+        $sql1 = "SELECT concept_id FROM document_content_rank WHERE id = ?" . $mapWhere . " LIMIT 1";
+        list($ok1, $row1) = $fetch_one($sql1, ($map_id !== null ? "ss" : "s"), array_merge([$p_node_id], $mapParam));
+        if ($ok1 && $row1 && isset($row1['concept_id']) && $row1['concept_id'] !== '') {
+            $concept_id = $row1['concept_id'];
+        }
+
+        // 2) content_id
+        if ($concept_id === null) {
+            $sql2 = "SELECT concept_id FROM document_content_rank WHERE content_id = ?" . $mapWhere . " LIMIT 1";
+            list($ok2, $row2) = $fetch_one($sql2, ($map_id !== null ? "ss" : "s"), array_merge([$p_node_id], $mapParam));
+            if ($ok2 && $row2 && isset($row2['concept_id']) && $row2['concept_id'] !== '') {
+                $concept_id = $row2['concept_id'];
+            }
+        }
+
+        // 3) node_id
+        if ($concept_id === null) {
+            $sql3 = "SELECT concept_id FROM document_content_rank WHERE node_id = ?" . $mapWhere . " LIMIT 1";
+            list($ok3, $row3) = $fetch_one($sql3, ($map_id !== null ? "ss" : "s"), array_merge([$p_node_id], $mapParam));
+            if ($ok3 && $row3 && isset($row3['concept_id']) && $row3['concept_id'] !== '') {
+                $concept_id = $row3['concept_id'];
+            }
+        }
+
+        // 4) document_rank（章・節タイトル等）: id / node_id
+        if ($concept_id === null) {
+            $sql4 = "SELECT concept_id FROM document_rank WHERE id = ?" . $mapWhere . " LIMIT 1";
+            list($ok4, $row4) = $fetch_one($sql4, ($map_id !== null ? "ss" : "s"), array_merge([$p_node_id], $mapParam));
+            if ($ok4 && $row4 && isset($row4['concept_id']) && $row4['concept_id'] !== '') {
+                $concept_id = $row4['concept_id'];
+            }
+        }
+        if ($concept_id === null) {
+            $sql5 = "SELECT concept_id FROM document_rank WHERE node_id = ?" . $mapWhere . " LIMIT 1";
+            list($ok5, $row5) = $fetch_one($sql5, ($map_id !== null ? "ss" : "s"), array_merge([$p_node_id], $mapParam));
+            if ($ok5 && $row5 && isset($row5['concept_id']) && $row5['concept_id'] !== '') {
+                $concept_id = $row5['concept_id'];
+            }
+        }
+
+        if ($concept_id !== null && $concept_id !== '') {
+            echo json_encode([
+                "status" => "success",
+                "f_node_id" => $concept_id
+            ]);
+        } else {
+            echo json_encode([
+                "status" => "error",
+                "message" => "対応する概念IDが見つかりません",
+                "f_node_id" => null
+            ]);
+        }
     }
 }
 
