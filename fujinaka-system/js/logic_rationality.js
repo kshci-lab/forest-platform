@@ -78,13 +78,15 @@ function renderRationalityAdvice(containerSelector) {
 				const nodesInLogicText = nodeTextList(nodesInLogicArr);
 				const nodesNotInLogicText = nodeTextList(nodesNotInLogicArr);
 				const anchorsText = anchorTextList(e.anchor_children);
+					const anchorIdsAttr = (e.anchor_children || []).map(c => String(c.node_id || '')).filter(Boolean).join(',');
+					const logicIdsAttr = (e.logic_matches || []).map(m => String(m.logic_node_id || '')).filter(Boolean).join(',');
 				const rawKey = `ratAdvice|one|${esc(e.rationality_id)}|${nodesInLogicText}|${nodesNotInLogicText}|${anchorsText}`;
 				const key = encodeURIComponent(rawKey);
 				let saved = '';
 				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
 				const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
 				const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
-				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="one" data-rationality-id="${attr(e.rationality_id)}" data-in-logic="${attr(nodesInLogicText)}" data-not-in-logic="${attr(nodesNotInLogicText)}" data-anchors="${attr(anchorsText)}" data-node-ids="${attr(nodeIdsAttr)}">`,
+					return [`<div class="entry rat-advice-item" data-key="${key}" data-title="one" data-rationality-id="${attr(e.rationality_id)}" data-in-logic="${attr(nodesInLogicText)}" data-not-in-logic="${attr(nodesNotInLogicText)}" data-anchors="${attr(anchorsText)}" data-node-ids="${attr(nodeIdsAttr)}" data-anchor-ids="${attr(anchorIdsAttr)}" data-logic-ids="${attr(logicIdsAttr)}">`,
 					`  <div class="advice">あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか</div>`,
 					`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
 					`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
@@ -98,13 +100,15 @@ function renderRationalityAdvice(containerSelector) {
 				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
 				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
 				const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join('<br>');
+					const anchorIdsAttr = (e.anchor_children || []).map(c => String(c.node_id || '')).filter(Boolean).join(',');
+					const logicIdsAttr = (e.logic_matches || []).map(m => String(m.logic_node_id || '')).filter(Boolean).join(',');
 				const rawKey = `ratAdvice|both|${nodeTexts}|${anchorTexts}|${logicTexts}`;
 				const key = encodeURIComponent(rawKey);
 				let saved = '';
 				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
 				const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
 				const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
-				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="both" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-logic-texts="${attr(logicTexts)}" data-node-ids="${attr(nodeIdsAttr)}">`,
+					return [`<div class="entry rat-advice-item" data-key="${key}" data-title="both" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-logic-texts="${attr(logicTexts)}" data-node-ids="${attr(nodeIdsAttr)}" data-anchor-ids="${attr(anchorIdsAttr)}" data-logic-ids="${attr(logicIdsAttr)}">`,
 					`  <div class="advice">あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか</div>`,
 					`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
 					`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
@@ -388,11 +392,103 @@ $(document)
 					$li.find('.rat-advice-status').text('選択: 考える');
 				});
 			} else {
-				// one/both: node_idリストを属性から保存（三角作成は行わない）
+				// one/both: 確認操作時のフォーカス導線
+				const titleCase = String($li.data('title') || '');
 				const nodeIdsAttr = String($li.attr('data-node-ids') || '');
 				const nodeIdsList = nodeIdsAttr ? nodeIdsAttr.split(',').filter(Boolean) : [];
 				try { localStorage.setItem(String(key), JSON.stringify({ status: 'consider', node_ids: nodeIdsList })) } catch(e) {}
 				$li.find('.rat-advice-status').text('選択: 確認する');
+				// one の場合: Forestのアンカーへジャンプ＋三角ロジック側ノードへフォーカス
+				if (titleCase === 'one') {
+					try {
+						var anchorIdsAttr = String($li.attr('data-anchor-ids') || '');
+						var logicIdsAttr = String($li.attr('data-logic-ids') || '');
+						var anchorId = anchorIdsAttr.split(',').filter(Boolean)[0] || '';
+						var logicId = logicIdsAttr.split(',').filter(Boolean)[0] || '';
+						// Forestアンカーへ
+						if (anchorId) {
+							if (typeof window.highlightForestNodeById === 'function') {
+								window.highlightForestNodeById(String(anchorId));
+							} else if (window._jm && typeof window._jm.select_node === 'function') {
+								window._jm.select_node(String(anchorId));
+								var el = document.getElementById(String(anchorId));
+								if (!el) {
+									const jmnodes = document.getElementsByTagName('jmnode');
+									for (let i = 0; i < jmnodes.length; i++) {
+										if (String(jmnodes[i].getAttribute('nodeid')) === String(anchorId)) { el = jmnodes[i]; break; }
+									}
+								}
+								if (el && typeof el.scrollIntoView === 'function') {
+									el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+									try {
+										el.style.transition = 'box-shadow 0.2s ease-out';
+										el.style.boxShadow = '0 0 0 3px orange inset';
+										setTimeout(function(){ try { el.style.boxShadow = ''; } catch(_){} }, 1200);
+									} catch(_) {}
+								}
+							}
+						}
+						// 三角ロジック側ノードへ
+						if (logicId && window.defaultLogicNetwork && window.defaultLogicNetwork.ownNetwork && typeof window.defaultLogicNetwork.ownNetwork.focus === 'function') {
+							window.defaultLogicNetwork.ownNetwork.focus(String(logicId), { scale: 1.2, animation: { duration: 450, easingFunction: 'easeInOutQuad' } });
+						}
+					} catch(err3) { console.warn('[rat] one confirm focus failed', err3); }
+				}
+				// both の場合: Forestのアンカーへジャンプ＋ロジック側のどちらかへフォーカス、もう片方はハイライトのみ
+				if (titleCase === 'both') {
+					try {
+						var anchorIdsAttr2 = String($li.attr('data-anchor-ids') || '');
+						var logicIdsAttr2 = String($li.attr('data-logic-ids') || '');
+						var anchorId2 = anchorIdsAttr2.split(',').filter(Boolean)[0] || '';
+						var logicIdsList2 = logicIdsAttr2.split(',').filter(Boolean);
+						var focusLogicId = logicIdsList2[0] || '';
+						var highlightLogicId = logicIdsList2[1] || '';
+						// Forestアンカーへジャンプ
+						if (anchorId2) {
+							if (typeof window.highlightForestNodeById === 'function') {
+								window.highlightForestNodeById(String(anchorId2));
+							} else if (window._jm && typeof window._jm.select_node === 'function') {
+								window._jm.select_node(String(anchorId2));
+								var el2 = document.getElementById(String(anchorId2));
+								if (!el2) {
+									const jmnodes2 = document.getElementsByTagName('jmnode');
+									for (let i = 0; i < jmnodes2.length; i++) {
+										if (String(jmnodes2[i].getAttribute('nodeid')) === String(anchorId2)) { el2 = jmnodes2[i]; break; }
+									}
+								}
+								if (el2 && typeof el2.scrollIntoView === 'function') {
+									el2.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+									try {
+										el2.style.transition = 'box-shadow 0.2s ease-out';
+										el2.style.boxShadow = '0 0 0 3px orange inset';
+										setTimeout(function(){ try { el2.style.boxShadow = ''; } catch(_){} }, 1200);
+									} catch(_) {}
+								}
+							}
+						}
+						// 三角ロジック側: どちらかへフォーカス
+						if (focusLogicId && window.defaultLogicNetwork && window.defaultLogicNetwork.ownNetwork && typeof window.defaultLogicNetwork.ownNetwork.focus === 'function') {
+							window.defaultLogicNetwork.ownNetwork.focus(String(focusLogicId), { scale: 1.2, animation: { duration: 450, easingFunction: 'easeInOutQuad' } });
+						}
+						// もう片方はハイライトのみ
+						if (highlightLogicId && window.defaultLogicNetwork && typeof window.defaultLogicNetwork.highlightNodes === 'function') {
+							try { window.defaultLogicNetwork.highlightNodes([String(highlightLogicId)]); } catch(_) {}
+						} else if (highlightLogicId && window.defaultLogicNetwork && window.defaultLogicNetwork.ownNetwork) {
+							// fallback: ノードを一時的に装飾
+							try {
+								var canvasEl = document.getElementById('mynetwork');
+								if (canvasEl) {
+									// vis.js は直接DOMのノードがないため、focus対象に加え、ネットワーク全体を一時ハイライトで疑似表示は難しい
+									// ここではownNetworkでselectNodesを使う簡易ハイライトを試みる
+									if (typeof window.defaultLogicNetwork.ownNetwork.selectNodes === 'function') {
+										window.defaultLogicNetwork.ownNetwork.selectNodes([String(highlightLogicId)], false);
+										setTimeout(function(){ try { window.defaultLogicNetwork.ownNetwork.unselectAll(); } catch(_){} }, 1200);
+									}
+								}
+							} catch(_) {}
+						}
+					} catch(err4) { console.warn('[rat] both confirm focus failed', err4); }
+				}
 			}
 		} catch(e) { console.error('[logic_rationality] consider click failed', e); }
 	});
