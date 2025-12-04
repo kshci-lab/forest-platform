@@ -48,22 +48,12 @@ try {
     }
     $stmtR->close();
 
-    // 2件ペアに整形（余剰があっても先頭2件に丸める）
-    $rationalityPairs = [];
+    // 2件ペアに整形（flatのみを使用）
     $rationalityPairsFlat = [];
     $rationalityNodeIds = [];
     foreach ($pairsByRid as $rid => $nodes) {
         if (count($nodes) < 2) continue; // 2つ揃っていないものは除外
         $pair = array_slice($nodes, 0, 2);
-        $rationalityPairs[] = [
-            'rationality_id' => $rid,
-            'node_ids' => $pair,
-            'contents' => [
-                $contentByNode[(string)$pair[0]] ?? '',
-                $contentByNode[(string)$pair[1]] ?? ''
-            ],
-        ];
-        // 追加: フラット形式（rationality_id, node_id1, content1, node_id2, content2）
         $rationalityPairsFlat[] = [
             'rationality_id' => $rid,
             'node_id1' => (string)$pair[0],
@@ -71,7 +61,7 @@ try {
             'node_id2' => (string)$pair[1],
             'content2' => $contentByNode[(string)$pair[1]] ?? '',
         ];
-        // 既存処理用に node_id 集合も作成
+        // node_id集合も維持（後段の補完用）
         $rationalityNodeIds = array_merge($rationalityNodeIds, $pair);
     }
 
@@ -79,10 +69,10 @@ try {
     $targetConceptId = '1519483811401_n426';
     $pairAnchors = [];               // rid => [anchor_node_id,...]
     $pairAnchorChildContents = [];   // rid => [ { node_id, content }, ... ]
-    foreach ($rationalityPairs as $pair) {
-        $rid = $pair['rationality_id'];
-        $nidA = (string)$pair['node_ids'][0];
-        $nidB = (string)$pair['node_ids'][1];
+    foreach ($rationalityPairsFlat as $rowFlat) {
+        $rid = (string)$rowFlat['rationality_id'];
+        $nidA = (string)$rowFlat['node_id1'];
+        $nidB = (string)$rowFlat['node_id2'];
 
         // アンカー取得: parent がペアのどちらか かつ concept_id が一致
         $sqlAnchor = "SELECT id AS node_id FROM nodes
@@ -161,30 +151,7 @@ try {
         $logicSet[(string)$id] = true;
     }
 
-    $pairStatus = [
-        'oneInLogic'   => [], // 片方のみlogicにある
-        'noneInLogic'  => [], // 両方logicにない
-        'bothInLogic'  => [], // 両方logicにある
-    ];
-    foreach ($rationalityPairs as $pair) {
-        $nidA = (string)$pair['node_ids'][0];
-        $nidB = (string)$pair['node_ids'][1];
-        $inA  = isset($logicSet[$nidA]);
-        $inB  = isset($logicSet[$nidB]);
-
-        $entry = [
-            'rationality_id' => $pair['rationality_id'],
-            'node_ids'       => [$nidA, $nidB],
-        ];
-
-        if ($inA && $inB) {
-            $pairStatus['bothInLogic'][] = $entry;
-        } elseif ($inA || $inB) {
-            $pairStatus['oneInLogic'][] = $entry;
-        } else {
-            $pairStatus['noneInLogic'][] = $entry;
-        }
-    }
+    // pairベースの分類は廃止（flatDiffを使用）
 
     // oneInLogic の各要素について、logictriangle から役割/カラムを全件取得して付与
     if (!empty($pairStatus['oneInLogic'])) {
@@ -290,51 +257,52 @@ try {
         'oneinlogic'  => [],
         'bothinlogic' => [],
     ];
-    foreach ($rationalityPairs as $pair) {
-        $rid   = (string)$pair['rationality_id'];
-        $nidA  = (string)$pair['node_ids'][0];
-        $nidB  = (string)$pair['node_ids'][1];
-
-        $logicIdsA = $logicNodeIdsByFNode[$nidA] ?? [];
-        $logicIdsB = $logicNodeIdsByFNode[$nidB] ?? [];
-        $inA = !empty($logicIdsA);
-        $inB = !empty($logicIdsB);
-
-        // ノード側情報（node_id, content, concept_id に加えて、対応する logic_node_id と label を付与）
-        // まず claimNodes から f_node_id => [ { logic_node_id, label }, ... ] のマップを構築
-        static $logicByFNode = null;
-        if ($logicByFNode === null) {
-            $logicByFNode = [];
-            if (!empty($claimNodes)) {
-                foreach ($claimNodes as $cn) {
-                    $f = (string)($cn['f_node_id'] ?? '');
-                    $lnid = (string)($cn['logic_node_id'] ?? '');
-                    $lbl = (string)($cn['ln_label'] ?? '');
-                    if ($f === '' || $lnid === '') continue;
-                    if (!isset($logicByFNode[$f])) $logicByFNode[$f] = [];
-                    // 重複防止
-                    $exists = false;
-                    foreach ($logicByFNode[$f] as $e) {
-                        if ($e['logic_node_id'] === $lnid && $e['label'] === $lbl) { $exists = true; break; }
-                    }
-                    if (!$exists) {
-                        $logicByFNode[$f][] = [ 'logic_node_id' => $lnid, 'label' => $lbl ];
-                    }
-                }
-            }
-        }
-
-        $logicForA = $logicByFNode[$nidA] ?? [];
-        $logicForB = $logicByFNode[$nidB] ?? [];
+    // displayEntries は flatDiff をもとに生成
+    // noneinlogic
+    foreach ($flatDiff['noneinlogic'] as $rowFlat) {
+        $rid   = (string)$rowFlat['rationality_id'];
+        $nidA  = (string)$rowFlat['node_id1'];
+        $nidB  = (string)$rowFlat['node_id2'];
+        $nodesInfo = [
+            [
+                'node_id' => $nidA,
+                'content' => $contentByNode[$nidA] ?? $rowFlat['content1'] ?? '',
+                'concept_id' => $conceptByNode[$nidA] ?? '',
+                'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : '',
+                'logic_node_ids' => [],
+                'logic_labels' => [],
+            ],
+            [
+                'node_id' => $nidB,
+                'content' => $contentByNode[$nidB] ?? $rowFlat['content2'] ?? '',
+                'concept_id' => $conceptByNode[$nidB] ?? '',
+                'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : '',
+                'logic_node_ids' => [],
+                'logic_labels' => [],
+            ]
+        ];
+        $displayEntries['noneinlogic'][] = [
+            'rationality_id' => $rid,
+            'nodes'          => $nodesInfo,
+            'anchor_children'=> $pairAnchorChildContents[$rid] ?? [],
+            'logic_matches'  => [],
+        ];
+    }
+    // oneinlogic
+    foreach ($flatDiff['oneinlogic'] as $rowFlat) {
+        $rid   = (string)$rowFlat['rationality_id'];
+        $nidA  = (string)$rowFlat['node_id1'];
+        $nidB  = (string)$rowFlat['node_id2'];
+        $logicForA = $logicByFNodeFlat[$nidA] ?? [];
+        $logicForB = $logicByFNodeFlat[$nidB] ?? [];
         $logicIdsA = array_map(function($e){ return (string)$e['logic_node_id']; }, $logicForA);
         $logicLabelsA = array_map(function($e){ return (string)$e['label']; }, $logicForA);
         $logicIdsB = array_map(function($e){ return (string)$e['logic_node_id']; }, $logicForB);
         $logicLabelsB = array_map(function($e){ return (string)$e['label']; }, $logicForB);
-
         $nodesInfo = [
             [
                 'node_id' => $nidA,
-                'content' => $contentByNode[$nidA] ?? '',
+                'content' => $contentByNode[$nidA] ?? $rowFlat['content1'] ?? '',
                 'concept_id' => $conceptByNode[$nidA] ?? '',
                 'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : '',
                 'logic_node_ids' => $logicIdsA,
@@ -342,61 +310,67 @@ try {
             ],
             [
                 'node_id' => $nidB,
-                'content' => $contentByNode[$nidB] ?? '',
+                'content' => $contentByNode[$nidB] ?? $rowFlat['content2'] ?? '',
                 'concept_id' => $conceptByNode[$nidB] ?? '',
                 'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : '',
                 'logic_node_ids' => $logicIdsB,
                 'logic_labels' => $logicLabelsB,
             ]
         ];
-
-        // アンカー配下子情報
-        $anchorsChildren = $pairAnchorChildContents[$rid] ?? [];
-
-        // 対応logic（あるもののみ列挙、複数logicnode_idに対応）
-        $logicInfo = [];
-        if ($inA) {
-            foreach ($logicIdsA as $lnid) {
-                $logicInfo[] = [
-                    'logic_node_id' => (string)$lnid,
-                    'f_node_id'     => $nidA,
-                    'content'       => $contentByNode[$nidA] ?? '',
-                    'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : ''
-                ];
-            }
-        }
-        if ($inB) {
-            foreach ($logicIdsB as $lnid) {
-                $logicInfo[] = [
-                    'logic_node_id' => (string)$lnid,
-                    'f_node_id'     => $nidB,
-                    'content'       => $contentByNode[$nidB] ?? '',
-                    'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : ''
-                ];
-            }
-        }
-
-        $entry = [
+        $logicMatches = [];
+        foreach ($logicForA as $e) { $logicMatches[] = [ 'logic_node_id' => (string)$e['logic_node_id'], 'f_node_id' => $nidA, 'content' => $contentByNode[$nidA] ?? $rowFlat['content1'] ?? '' ]; }
+        foreach ($logicForB as $e) { $logicMatches[] = [ 'logic_node_id' => (string)$e['logic_node_id'], 'f_node_id' => $nidB, 'content' => $contentByNode[$nidB] ?? $rowFlat['content2'] ?? '' ]; }
+        $displayEntries['oneinlogic'][] = [
             'rationality_id' => $rid,
             'nodes'          => $nodesInfo,
-            'anchor_children'=> $anchorsChildren,
-            'logic_matches'  => $logicInfo,
+            'anchor_children'=> $pairAnchorChildContents[$rid] ?? [],
+            'logic_matches'  => $logicMatches,
         ];
-
-        if ($inA && $inB) {
-            $displayEntries['bothinlogic'][] = $entry;
-        } elseif ($inA || $inB) {
-            $displayEntries['oneinlogic'][] = $entry;
-        } else {
-            $displayEntries['noneinlogic'][] = $entry;
-        }
+    }
+    // bothinlogic
+    foreach ($flatDiff['bothinlogic'] as $rowFlat) {
+        $rid   = (string)$rowFlat['rationality_id'];
+        $nidA  = (string)$rowFlat['node_id1'];
+        $nidB  = (string)$rowFlat['node_id2'];
+        $logicForA = $logicByFNodeFlat[$nidA] ?? [];
+        $logicForB = $logicByFNodeFlat[$nidB] ?? [];
+        $logicIdsA = array_map(function($e){ return (string)$e['logic_node_id']; }, $logicForA);
+        $logicLabelsA = array_map(function($e){ return (string)$e['label']; }, $logicForA);
+        $logicIdsB = array_map(function($e){ return (string)$e['logic_node_id']; }, $logicForB);
+        $logicLabelsB = array_map(function($e){ return (string)$e['label']; }, $logicForB);
+        $nodesInfo = [
+            [
+                'node_id' => $nidA,
+                'content' => $contentByNode[$nidA] ?? $rowFlat['content1'] ?? '',
+                'concept_id' => $conceptByNode[$nidA] ?? '',
+                'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : '',
+                'logic_node_ids' => $logicIdsA,
+                'logic_labels' => $logicLabelsA,
+            ],
+            [
+                'node_id' => $nidB,
+                'content' => $contentByNode[$nidB] ?? $rowFlat['content2'] ?? '',
+                'concept_id' => $conceptByNode[$nidB] ?? '',
+                'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : '',
+                'logic_node_ids' => $logicIdsB,
+                'logic_labels' => $logicLabelsB,
+            ]
+        ];
+        $logicMatches = [];
+        foreach ($logicForA as $e) { $logicMatches[] = [ 'logic_node_id' => (string)$e['logic_node_id'], 'f_node_id' => $nidA, 'content' => $contentByNode[$nidA] ?? $rowFlat['content1'] ?? '' ]; }
+        foreach ($logicForB as $e) { $logicMatches[] = [ 'logic_node_id' => (string)$e['logic_node_id'], 'f_node_id' => $nidB, 'content' => $contentByNode[$nidB] ?? $rowFlat['content2'] ?? '' ]; }
+        $displayEntries['bothinlogic'][] = [
+            'rationality_id' => $rid,
+            'nodes'          => $nodesInfo,
+            'anchor_children'=> $pairAnchorChildContents[$rid] ?? [],
+            'logic_matches'  => $logicMatches,
+        ];
     }
 
     echo json_encode([
         'ok' => true,
         'sheetId' => $sheet_id,
         'claimNodes' => $claimNodes,
-        'rationalityPairs' => $rationalityPairs,
         // 追加: フラット形式のペア配列
         'rationalityPairsFlat' => $rationalityPairsFlat,
         // 追加: フラット行ベースの差分分類
@@ -406,8 +380,7 @@ try {
         'pairAnchorChildContents' => $pairAnchorChildContents,
         // 既存の詳細に加えて、表示用に整理した配列を追加
         'displayEntries' => $displayEntries,
-        // 互換のため旧キーも返すが、フロントは displayEntries を使用
-        'pairStatus' => $pairStatus,
+        // 互換キーは廃止: pairStatus は提供しない（flatへ一本化）
         // エイリアスキー名も追加（noneinlogic/oneinlogic/bothinlogic）
         'noneinlogic' => $displayEntries['noneinlogic'],
         'oneinlogic'  => $displayEntries['oneinlogic'],
