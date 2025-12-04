@@ -40,6 +40,12 @@ function renderRationalityAdvice(containerSelector) {
 			const logicContentList = (matches) =>
 				(matches||[]).map(m => `logic_node_id:${esc(m.logic_node_id)} f_node_id:${esc(m.f_node_id)} content:"${esc(m.content)}"`).join('<br>');
 
+			// 追加: テキスト（content）のみを抽出するヘルパー
+			const nodeTextList = (nodes) =>
+				(nodes||[]).map(n => `"${esc(n.content)}"`).join(' / ');
+			const anchorTextList = (children) =>
+				(children||[]).map(c => `"${esc(c.content)}"`).join(', ');
+
 			const lineNone = (e) => {
 				console.log('[none] entry:', e);
 				// ノードIDなどは表示しない。contentのテキストのみを提示。
@@ -51,15 +57,15 @@ function renderRationalityAdvice(containerSelector) {
 			};
 			const lineOne = (e) => {
 				console.log('[one] entry:', e);
-				const nodes = nodeContentList(e.nodes);
-				const anchors = anchorContentList(e.anchor_children);
-				const logic = logicContentList(e.logic_matches);
+				// 片方だけロジックにある（oneinlogic）ケースで、どちらが反映済みかを明示しつつ、表示はcontentのみ
+				const matchedSet = new Set((e.logic_matches || []).map(m => String(m.f_node_id)));
+				const nodesInLogicArr = (e.nodes || []).filter(n => matchedSet.has(String(n.node_id)));
+				const nodesNotInLogicArr = (e.nodes || []).filter(n => !matchedSet.has(String(n.node_id)));
+				const nodesInLogicText = nodeTextList(nodesInLogicArr);
+				const nodesNotInLogicText = nodeTextList(nodesNotInLogicArr);
+				const anchorsText = anchorTextList(e.anchor_children);
 				return `<div class="entry">
-					<div class="head">[one] rationality_id:${esc(e.rationality_id)}</div>
-					<div>ノード: ${nodes}</div>
-					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
-					${logic ? `<div>三角ロジック対応: ${logic}</div>` : ''}
-					<div class="advice">これらの内容を三角ロジックに反映しなくていいですか？</div>
+					<div class="advice">あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか</div>
 				</div>`;
 			};
 			const lineBoth = (e) => {
@@ -69,11 +75,7 @@ function renderRationalityAdvice(containerSelector) {
 				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
 				const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join('<br>');
 				return `<div class="entry">
-					<div class="head">[both]</div>
-					${nodeTexts ? `<div>「コンテント」${nodeTexts}</div>` : ''}
-					${anchorTexts ? `<div>「アンカーのコンテント」${anchorTexts}</div>` : ''}
-					${logicTexts ? `<div>三角ロジック対応のコンテント:<br>${logicTexts}</div>` : ''}
-					<div class="advice">三角ロジックにある${logicTexts}は、上記の「${nodeTexts}」についての合理性「${anchorTexts}」の内容を適切に反映していますか？</div>
+					<div class="advice">あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか</div>
 				</div>`;
 			};
 
@@ -84,29 +86,10 @@ function renderRationalityAdvice(containerSelector) {
 				return `<h4>${esc(title)}</h4><div class="rationality-advice-list">${items}</div>`;
 			};
 
-			// ont-claim の差分（map - logic / map - claim）も併記
-			const claimLine = (title, p) => {
-				if (title === 'map - logic') {
-					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を三要素（主張/事実/理由付け）の論理構成に取り込む必要はありませんか`;
-				} else if (title === 'map - claim') {
-					return `「${esc(p.class_constraint)}」「${esc(p.content)}」この内容を主張として明確化する必要はありませんか`;
-				}
-				return `「${esc(p.class_constraint)}」「${esc(p.content)}」これを検討する必要はありませんか`;
-			};
-			const sectionClaim = (title, arr) => {
-				const items = (arr || [])
-					.filter(p => p.class_constraint && p.class_constraint.trim() !== '')
-					.map(p => `<li>${claimLine(title, p)}</li>`).join('');
-				if (!items) return '';
-				return `<h4>${esc(title)}</h4><ul>${items}</ul>`;
-			};
-
 			let body = [
 				section('noneinlogic', noneArr, lineNone),
 				section('oneinlogic', oneArr, lineOne),
-				section('bothinlogic', bothArr, lineBoth),
-				sectionClaim('map - logic', (diff && diff.mapMinusLogic) || []),
-				sectionClaim('map - claim', (diff && diff.mapMinusClaim) || []),
+				section('bothinlogic', bothArr, lineBoth)
 			].join('');
 			if (!body.trim()) body = '<div class="empty">対象のペアが見つかりませんでした。</div>';
 			console.log('rendered html:', body);
@@ -208,9 +191,16 @@ window.secondadvice = function(){
 				const nodes = nodeContentList(e.nodes);
 				const anchors = anchorContentList(e.anchor_children);
 				const logic = logicContentList(e.logic_matches);
+				const matchedSet = new Set((e.logic_matches || []).map(m => String(m.f_node_id)));
+				const nodesInLogicArr = (e.nodes || []).filter(n => matchedSet.has(String(n.node_id)));
+				const nodesNotInLogicArr = (e.nodes || []).filter(n => !matchedSet.has(String(n.node_id)));
+				const nodesInLogicText = nodeContentList(nodesInLogicArr);
+				const nodesNotInLogicText = nodeContentList(nodesNotInLogicArr);
 				return `<div class="entry">
 					<div class="head">[one] rationality_id:${esc(e.rationality_id)}</div>
 					<div>ノード: ${nodes}</div>
+					${nodesInLogicText ? `<div>ロジックに反映済み: ${nodesInLogicText}</div>` : ''}
+					${nodesNotInLogicText ? `<div>未反映ノード: ${nodesNotInLogicText}</div>` : ''}
 					${anchors ? `<div>アンカー子: ${anchors}</div>` : ''}
 					${logic ? `<div>三角ロジック対応: ${logic}</div>` : ''}
 					<div class="advice">これらの内容を三角ロジックに反映しなくていいですか？</div>
