@@ -31,6 +31,7 @@ function renderRationalityAdvice(containerSelector) {
 			console.log('bothinlogic:', bothArr);
 
 			const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+			const attr = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
 
 			// none/one/bothごとの助言文生成
 			const nodeContentList = (nodes) =>
@@ -49,34 +50,65 @@ function renderRationalityAdvice(containerSelector) {
 			const lineNone = (e) => {
 				console.log('[none] entry:', e);
 				// ノードIDなどは表示しない。contentのテキストのみを提示。
-				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
+				const nodeContentsArr = (e.nodes || []).map(n => String(n.content || ''));
+				const nodeIdsArr = (e.nodes || []).map(n => String(n.node_id || ''));
+				const nodeA = (nodeContentsArr[0] || '').trim();
+				const nodeB = (nodeContentsArr[1] || '').trim();
+				const nodeTexts = nodeContentsArr.map(s => `"${esc(s)}"`).join(' / ');
 				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
-				return `<div class="entry">
-					<div class="advice">${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか</div>
-				</div>`;
+				const rawKey = `ratAdvice|none|${nodeTexts}|${anchorTexts}`;
+				const key = encodeURIComponent(rawKey);
+				let saved = '';
+				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
+				const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
+				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="none" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-node-a="${attr(nodeA)}" data-node-b="${attr(nodeB)}" data-node-a-id="${attr(nodeIdsArr[0]||'')}" data-node-b-id="${attr(nodeIdsArr[1]||'')}">`,
+					`  <div class="advice">${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか</div>`,
+					`  <button type="button" class="rat-advice-btn rat-consider-btn">考える</button>`,
+					`  <button type="button" class="rat-advice-btn rat-skip-btn">考えない</button>`,
+					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
+					`</div>`
+				].join('');
 			};
 			const lineOne = (e) => {
 				console.log('[one] entry:', e);
-				// 片方だけロジックにある（oneinlogic）ケースで、どちらが反映済みかを明示しつつ、表示はcontentのみ
+				// 片方だけロジックにある（oneinlogic）ケースで、どちらが反映済みかを明示しつつ、表示はcontentのみ＋ボタン追加
 				const matchedSet = new Set((e.logic_matches || []).map(m => String(m.f_node_id)));
 				const nodesInLogicArr = (e.nodes || []).filter(n => matchedSet.has(String(n.node_id)));
 				const nodesNotInLogicArr = (e.nodes || []).filter(n => !matchedSet.has(String(n.node_id)));
 				const nodesInLogicText = nodeTextList(nodesInLogicArr);
 				const nodesNotInLogicText = nodeTextList(nodesNotInLogicArr);
 				const anchorsText = anchorTextList(e.anchor_children);
-				return `<div class="entry">
-					<div class="advice">あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか</div>
-				</div>`;
+				const rawKey = `ratAdvice|one|${esc(e.rationality_id)}|${nodesInLogicText}|${nodesNotInLogicText}|${anchorsText}`;
+				const key = encodeURIComponent(rawKey);
+				let saved = '';
+				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
+				const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
+				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="one" data-rationality-id="${attr(e.rationality_id)}" data-in-logic="${attr(nodesInLogicText)}" data-not-in-logic="${attr(nodesNotInLogicText)}" data-anchors="${attr(anchorsText)}">`,
+					`  <div class="advice">あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか</div>`,
+					`  <button type="button" class="rat-advice-btn rat-consider-btn">考える</button>`,
+					`  <button type="button" class="rat-advice-btn rat-skip-btn">考えない</button>`,
+					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
+					`</div>`
+				].join('');
 			};
 			const lineBoth = (e) => {
 				console.log('[both] entry:', e);
-				// IDは表示せず、contentのみを表示
+				// IDは表示せず、contentのみを表示＋ボタン追加
 				const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
 				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
 				const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join('<br>');
-				return `<div class="entry">
-					<div class="advice">あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか</div>
-				</div>`;
+				const rawKey = `ratAdvice|both|${nodeTexts}|${anchorTexts}|${logicTexts}`;
+				const key = encodeURIComponent(rawKey);
+				let saved = '';
+				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
+				const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
+				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="both" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-logic-texts="${attr(logicTexts)}">`,
+					`  <div class="advice">あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか</div>`,
+					`  <button type="button" class="rat-advice-btn rat-consider-btn">考える</button>`,
+					`  <button type="button" class="rat-advice-btn rat-skip-btn">考えない</button>`,
+					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
+					`</div>`
+				].join('');
 			};
 
 			const section = (title, entries, lineFn) => {
@@ -232,4 +264,110 @@ window.secondadvice = function(){
 			$('#ai_output').html('<div class="error">合理性情報の取得に失敗しました</div>');
 		});
 };
+
+// 考える/考えない ボタンのハンドラ（委譲）
+$(document)
+	.off('click.rationality_consider', '.rat-advice-item .rat-consider-btn')
+	.on('click.rationality_consider', '.rat-advice-item .rat-consider-btn', function(){
+		try {
+			const $li = $(this).closest('.rat-advice-item');
+			const key = $li.data('key');
+			const title = String($li.data('title') || '');
+			let already = '';
+			try { already = localStorage.getItem(String(key)) || ''; } catch(e) { already = ''; }
+			if (title === 'none') {
+				const aText = String($li.attr('data-node-a') || '').trim();
+				const bText = String($li.attr('data-node-b') || '').trim();
+				const aId = String($li.attr('data-node-a-id') || '').trim();
+				const bId = String($li.attr('data-node-b-id') || '').trim();
+				// 既存ダイアログがあれば削除
+				$('.rat-dialog, .rat-dialog-overlay').remove();
+				// オーバーレイ + ダイアログ生成
+				const safeA = $('<div>').text(aText).html();
+				const safeB = $('<div>').text(bText).html();
+				const overlay = '<div class="rat-dialog-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:9998;"></div>';
+				const dialogParts = [
+					'<div class="rat-dialog" role="dialog" aria-modal="true" style="position:fixed;left:50%;top:25%;transform:translateX(-50%);width:560px;max-width:92vw;background:#fff;border-radius:8px;box-shadow:0 10px 24px rgba(0,0,0,0.25);z-index:9999;">',
+					'  <div class="rat-dialog-header" style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;">',
+					'    <span style="font-weight:600;">主張の選択</span>',
+					'    <button type="button" class="rat-dialog-close" aria-label="閉じる" style="border:none;background:none;font-size:18px;cursor:pointer;">×</button>',
+					'  </div>',
+					'  <div class="rat-dialog-body" style="padding:16px;line-height:1.6;">',
+					( aText ? `    <div style="margin-bottom:10px;"><button type="button" class="rat-dialog-choose rat-choose-a" style="padding:8px 12px;">${safeA}を主張とする三角ロジックを作成する</button></div>` : '' ),
+					( bText ? `    <div style="margin-bottom:10px;"><button type="button" class="rat-dialog-choose rat-choose-b" style="padding:8px 12px;">${safeB}を主張とする三角ロジックを作成する</button></div>` : '' ),
+					'  </div>',
+					'  <div class="rat-dialog-footer" style="padding:12px 16px;border-top:1px solid #eee;text-align:right;">',
+					'    <button type="button" class="rat-dialog-cancel" style="padding:8px 12px;">キャンセル</button>',
+					'  </div>',
+					'</div>'
+				];
+				$('body').append(overlay).append(dialogParts.join(''));
+				const cleanup = () => { try { $('.rat-dialog, .rat-dialog-overlay').remove(); } catch(_) {} };
+				$(document).one('click', '.rat-dialog-close, .rat-dialog-cancel, .rat-dialog-overlay', function(){ cleanup(); });
+				const makeTriangle = (content, nodeId) => {
+					try {
+						if (window.defaultLogicNetwork && typeof window.defaultLogicNetwork.maketriangle === 'function') {
+							window.defaultLogicNetwork.maketriangle(String(content), String(nodeId || ''), null, 1);
+							// 作成直後のハイライト＆フォーカス（ont_claim.jsの実装に準拠）
+							setTimeout(function(){
+								try {
+									var dln = window.defaultLogicNetwork;
+									var tris = dln && Array.isArray(dln.triangles) ? dln.triangles : null;
+									var last = tris && tris.length ? tris[tris.length - 1] : null;
+									if (last && typeof dln.highlightTriangles === 'function') {
+										dln.highlightTriangles([last]);
+										// キャンバスへスクロール
+										var netEl = document.getElementById('mynetwork');
+										if (netEl && typeof netEl.scrollIntoView === 'function') {
+											netEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+										}
+										// 主張ノードへフォーカス
+										var claimId = String(last.claim_id ?? last.claimId ?? '');
+										if (claimId && dln.ownNetwork && typeof dln.ownNetwork.focus === 'function') {
+											dln.ownNetwork.focus(claimId, { scale: 1.3, animation: { duration: 450, easingFunction: 'easeInOutQuad' } });
+										}
+									}
+								} catch(_) { /* noop */ }
+							}, 10);
+							// カスタムイベント通知
+							try {
+								var ev = new CustomEvent('logicTriangleCreated', { detail: { content: String(content), node_id: String(nodeId || '') } });
+								window.dispatchEvent(ev);
+							} catch(_) {}
+						}
+					} catch(err) { console.error('[logic_rationality] maketriangle failed', err); }
+				};
+				if (aText) $(document).one('click', '.rat-dialog .rat-choose-a', function(){
+					console.log('[logic_rationality] consider chosen A:', { node_id: aId, content: aText });
+					makeTriangle(aText, aId);
+					cleanup();
+					try { localStorage.setItem(String(key), JSON.stringify({ status: 'consider', chosen: 'A', node_id: aId, content: aText })) } catch(e) {}
+					$li.find('.rat-advice-status').text('選択: 考える');
+				});
+				if (bText) $(document).one('click', '.rat-dialog .rat-choose-b', function(){
+					console.log('[logic_rationality] consider chosen B:', { node_id: bId, content: bText });
+					makeTriangle(bText, bId);
+					cleanup();
+					try { localStorage.setItem(String(key), JSON.stringify({ status: 'consider', chosen: 'B', node_id: bId, content: bText })) } catch(e) {}
+					$li.find('.rat-advice-status').text('選択: 考える');
+				});
+			} else {
+				if (already !== 'consider') {
+					try { localStorage.setItem(String(key), JSON.stringify({ status: 'consider' })) } catch(e) {}
+				}
+				$li.find('.rat-advice-status').text('選択: 考える');
+			}
+		} catch(e) { console.error('[logic_rationality] consider click failed', e); }
+	});
+
+$(document)
+	.off('click.rationality_skip', '.rat-advice-item .rat-skip-btn')
+	.on('click.rationality_skip', '.rat-advice-item .rat-skip-btn', function(){
+		try {
+			const $li = $(this).closest('.rat-advice-item');
+			const key = $li.data('key');
+			try { localStorage.setItem(String(key), 'skip'); } catch(e) {}
+			$li.find('.rat-advice-status').text('選択: 考えない');
+		} catch(e) { console.error('[logic_rationality] skip click failed', e); }
+	});
 
