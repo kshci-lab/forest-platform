@@ -19,62 +19,24 @@ function collectTriangleLogic() {
       return hit ? hit.trim().replace(/\s+/g, ' ') : '';
     };
     const wrap = (t) => t && t.length ? t : '（未設定）';
-    const template = (factLabel, reasonLabel, claimLabel) =>
-      `事実[${wrap(factLabel)}]に対して理由付け[${wrap(reasonLabel)}]をすることで[${wrap(claimLabel)}]という主張をしている`;
-
-    // level==0 ノードを抽出
-    const level0 = nodesData.filter(n => {
-      const lv = (typeof n.level !== 'undefined') ? parseInt(n.level) : null;
-      return lv === 0;
-    });
-
-    const results = [];
-    const visitedClaims = new Set(); // 主張ノードとして既に処理したID
-
-    // allowDefault=true: そのIDが claim の三角が無い場合に限り未設定テンプレを出力
-    // allowDefault=false: 三角が無ければ何も出力しない（再帰先の reason/fact 用）
-    const recurseClaim = (claimId, allowDefault) => {
-      if (!claimId || visitedClaims.has(claimId)) return;
-      visitedClaims.add(claimId);
-      const claimNode = getNode(claimId);
-      const claimLabel = getLabel(claimNode);
-
-      // claimId を主張とする三角形群
-      const related = triangles.filter(tr => tr.claim_id === claimId);
-      if (related.length === 0) {
-        if (allowDefault) {
-          results.push(template('', '', claimLabel));
-        }
-        return;
-      }
-
-      for (const tr of related) {
-        const factLabel = getLabel(getNode(tr.fact_id));
-        const reasonLabel = getLabel(getNode(tr.reason_id));
-        results.push(template(factLabel, reasonLabel, claimLabel));
-
-        // 再帰は未設定テンプレを出さない
-        if (tr.reason_id) recurseClaim(tr.reason_id, false);
-        if (tr.fact_id) recurseClaim(tr.fact_id, false);
-      }
-    };
-
-    // ルート: level0 が複数あるなら全て処理（未設定テンプレ許可）
-    if (level0.length) {
-      for (const n of level0) recurseClaim(String(n.id), true);
-    } else {
-      // level0 無ければフォールバック: 全ノードから一つ選んで最低限表示
-      const any = nodesData[0];
-      if (any) recurseClaim(String(any.id), true);
+    // triple行のフォーマット
+    const tripleLine = (claimText, factText, reasonText) =>
+      `[claim_id: ${wrap(claimText)}, fact_id: ${wrap(factText)}, reason_id: ${wrap(reasonText)}]`;
+    // すべての三角ロジックを単純に列挙（重複や階層の再帰展開は行わない）
+    const lines = [];
+    for (const tr of triangles) {
+      const claimLabel = getLabel(getNode(tr.claim_id));
+      const factLabel = getLabel(getNode(tr.fact_id));
+      const reasonLabel = getLabel(getNode(tr.reason_id));
+      lines.push(tripleLine(claimLabel, factLabel, reasonLabel));
     }
-
-    if (!results.length) {
-      return '事実[（未設定）]に対して理由付け[（未設定）]をすることで[（未設定）]という主張をしている';
+    if (!lines.length) {
+      return '[claim_id: （未設定）, fact_id: （未設定）, reason_id: （未設定）]';
     }
-    return results.join('\n');
+    return lines.join('\n');
   } catch (e) {
     console.error('collectTriangleLogic error:', e);
-    return '事実[（未設定）]に対して理由付け[（未設定）]をすることで[（未設定）]という主張をしている';
+    return '[claim_id: （未設定）, fact_id: （未設定）, reason_id: （未設定）]';
   }
 }
 
@@ -90,7 +52,7 @@ function runAi() {
   // const body = bodyEl ? bodyEl.innerText : '';
   // const scenario = (title ? ('【タイトル】' + title + '\n\n') : '') + (body || '');
 
-  // 三角ロジックだけ送る
+  // 三角ロジックだけ送る（トリプル形式の複数行）
   const triangle = collectTriangleLogic();
   console.log('Sending triangle logic to AI:', triangle);
   // 以前は scenario と triangle を送信: JSON.stringify({ scenario, triangle })

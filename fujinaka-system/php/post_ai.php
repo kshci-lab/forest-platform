@@ -128,7 +128,7 @@ if (stripos($disabled, 'proc_open') !== false) {
 // SCENARIO: 論文シナリオ + 三角ロジック(JSON)
 $scenarioToSend = $scenario;
 if ($triangle !== '') {
-    $scenarioToSend .= "\n\n【三角ロジック(JSON)】\n" . $triangle;
+    $scenarioToSend .= "\n\n【三角ロジック(Triples)】\n" . $triangle;
 }
 if ($scenarioToSend !== '') {
     putenv('SCENARIO=' . $scenarioToSend);
