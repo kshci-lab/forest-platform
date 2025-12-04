@@ -82,11 +82,17 @@ function renderRationalityAdvice(containerSelector) {
 				const key = encodeURIComponent(rawKey);
 				let saved = '';
 				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
-				const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
-				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="one" data-rationality-id="${attr(e.rationality_id)}" data-in-logic="${attr(nodesInLogicText)}" data-not-in-logic="${attr(nodesNotInLogicText)}" data-anchors="${attr(anchorsText)}">`,
+				const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
+				const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
+				const logicNodeIdsMatched = (e.logic_matches || [])
+					.filter(m => matchedSet.has(String(m.f_node_id)))
+					.map(m => String(m.logic_node_id || ''))
+					.filter(Boolean)
+					.join(',');
+				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="one" data-rationality-id="${attr(e.rationality_id)}" data-in-logic="${attr(nodesInLogicText)}" data-not-in-logic="${attr(nodesNotInLogicText)}" data-anchors="${attr(anchorsText)}" data-node-ids="${attr(nodeIdsAttr)}" data-logic-node-ids="${attr(logicNodeIdsMatched)}">`,
 					`  <div class="advice">あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか</div>`,
-					`  <button type="button" class="rat-advice-btn rat-consider-btn">考える</button>`,
-					`  <button type="button" class="rat-advice-btn rat-skip-btn">考えない</button>`,
+					`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
+					`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
 					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
 					`</div>`
 				].join('');
@@ -101,11 +107,12 @@ function renderRationalityAdvice(containerSelector) {
 				const key = encodeURIComponent(rawKey);
 				let saved = '';
 				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
-				const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
-				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="both" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-logic-texts="${attr(logicTexts)}">`,
+				const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
+				const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
+				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="both" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-logic-texts="${attr(logicTexts)}" data-node-ids="${attr(nodeIdsAttr)}">`,
 					`  <div class="advice">あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか</div>`,
-					`  <button type="button" class="rat-advice-btn rat-consider-btn">考える</button>`,
-					`  <button type="button" class="rat-advice-btn rat-skip-btn">考えない</button>`,
+					`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
+					`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
 					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
 					`</div>`
 				].join('');
@@ -352,10 +359,17 @@ $(document)
 					$li.find('.rat-advice-status').text('選択: 考える');
 				});
 			} else {
-				if (already !== 'consider') {
-					try { localStorage.setItem(String(key), JSON.stringify({ status: 'consider' })) } catch(e) {}
+				// one/both: node_idリストを属性から保存（三角作成は行わない）
+				const nodeIdsAttr = String($li.attr('data-node-ids') || '');
+				const nodeIdsList = nodeIdsAttr ? nodeIdsAttr.split(',').filter(Boolean) : [];
+				// one の場合は、対応する logic_node_id もログに出す
+				if (title === 'one') {
+					const logicNodeIdsAttr = String($li.attr('data-logic-node-ids') || '');
+					const logicNodeIdsList = logicNodeIdsAttr ? logicNodeIdsAttr.split(',').filter(Boolean) : [];
+					console.log('[one] 確認する: node_id:', nodeIdsList, 'logic_node_id:', logicNodeIdsList);
 				}
-				$li.find('.rat-advice-status').text('選択: 考える');
+				try { localStorage.setItem(String(key), JSON.stringify({ status: 'consider', node_ids: nodeIdsList })) } catch(e) {}
+				$li.find('.rat-advice-status').text('選択: 確認する');
 			}
 		} catch(e) { console.error('[logic_rationality] consider click failed', e); }
 	});
@@ -367,7 +381,8 @@ $(document)
 			const $li = $(this).closest('.rat-advice-item');
 			const key = $li.data('key');
 			try { localStorage.setItem(String(key), 'skip'); } catch(e) {}
-			$li.find('.rat-advice-status').text('選択: 考えない');
+			const title = String($li.data('title') || '');
+			$li.find('.rat-advice-status').text(title === 'none' ? '選択: 考えない' : '選択: 確認しない');
 		} catch(e) { console.error('[logic_rationality] skip click failed', e); }
 	});
 

@@ -17,14 +17,14 @@ try {
     $sheet_id = $_SESSION['SHEETID'];
 
     // 1) rationality_nodes を rationality_id ごとに取得し、2つの node_id をペア化
-    $sqlR = "SELECT rn.rationality_id, rn.node_id
-        FROM rationality_nodes rn
-        INNER JOIN nodes n ON n.id = rn.node_id
-        WHERE n.sheet_id = ?
-          AND n.user_id = ?
-          AND rn.node_id IS NOT NULL
-          AND rn.rationality_id IS NOT NULL
-    ";
+        $sqlR = "SELECT rn.rationality_id, rn.node_id, n.content
+                FROM rationality_nodes rn
+                INNER JOIN nodes n ON n.id = rn.node_id
+                WHERE n.sheet_id = ?
+                    AND n.user_id = ?
+                    AND rn.node_id IS NOT NULL
+                    AND rn.rationality_id IS NOT NULL
+        ";
     $stmtR = $mysqli->prepare($sqlR);
     if (!$stmtR) throw new Exception('SQLプリペア失敗(sqlR): ' . $mysqli->error);
     $stmtR->bind_param("ss", $sheet_id, $user_id);
@@ -33,10 +33,13 @@ try {
 
     // rationality_id => [node_id, node_id]
     $pairsByRid = [];
+    $contentByNode = [];
     while ($row = $resR->fetch_assoc()) {
         $rid = (string)$row['rationality_id'];
         $nid = $row['node_id'];
         if (!$nid) continue;
+        // 先に content を収集（後段で再取得せずに使えるように）
+        $contentByNode[(string)$nid] = $row['content'] ?? '';
         if (!isset($pairsByRid[$rid])) $pairsByRid[$rid] = [];
         // 重複防止
         if (!in_array($nid, $pairsByRid[$rid], true)) {
@@ -47,6 +50,7 @@ try {
 
     // 2件ペアに整形（余剰があっても先頭2件に丸める）
     $rationalityPairs = [];
+    $rationalityPairsFlat = [];
     $rationalityNodeIds = [];
     foreach ($pairsByRid as $rid => $nodes) {
         if (count($nodes) < 2) continue; // 2つ揃っていないものは除外
@@ -54,6 +58,18 @@ try {
         $rationalityPairs[] = [
             'rationality_id' => $rid,
             'node_ids' => $pair,
+            'contents' => [
+                $contentByNode[(string)$pair[0]] ?? '',
+                $contentByNode[(string)$pair[1]] ?? ''
+            ],
+        ];
+        // 追加: フラット形式（rationality_id, node_id1, content1, node_id2, content2）
+        $rationalityPairsFlat[] = [
+            'rationality_id' => $rid,
+            'node_id1' => (string)$pair[0],
+            'content1' => $contentByNode[(string)$pair[0]] ?? '',
+            'node_id2' => (string)$pair[1],
+            'content2' => $contentByNode[(string)$pair[1]] ?? '',
         ];
         // 既存処理用に node_id 集合も作成
         $rationalityNodeIds = array_merge($rationalityNodeIds, $pair);
@@ -106,7 +122,7 @@ try {
     }
 
     // 2) 主張ノードに紐づくf_node_id を取得（対象ユーザ＆シート）
-    $sqlClaim = "SELECT DISTINCT ln.f_node_id
+    $sqlClaim = "SELECT DISTINCT ln.f_node_id, ln.logic_node_id, ln.label
         FROM logic_triangle t
         INNER JOIN logic_node ln ON ln.logic_node_id = t.claim_id
         WHERE t.sheet_id = ?
@@ -119,47 +135,24 @@ try {
     $stmtL->execute();
     $resL = $stmtL->get_result();
     $logicNodeFIds = [];
-    // 追加: f_node_id => [logic_node_id,...] の対応（主キーを格納）
     $logicNodeIdsByFNode = [];
-    while ($row = $resL->fetch_assoc()) {
-        $fid = (string)$row['f_node_id'];
-        $lid = (string)$row['logic_node_id']; // 主キー
-        $logicNodeFIds[] = $fid;
-        if (!isset($logicNodeIdsByFNode[$fid])) $logicNodeIdsByFNode[$fid] = [];
-        $logicNodeIdsByFNode[$fid][] = $lid;
+    while ($row = $resL->fetch_row()) {
+        // $row[0] = concept_id, $row[1] = nodes.id (node_id)
+        $claim_f_node_ids[] = $row[0];
+        $claim_logic_node_ids[] = $row[1];
+        $claimNodes[] = [
+            'f_node_id' => $row[0],
+            'logic_node_id'    => $row[1],
+            'ln_label'   => $row[2],
+        ];
     }
     $stmtL->close();
-
-    // 2.1) f_node_id と rationality の node_id に対して、nodes から concept_id を取得
-    $allNodeIds = array_values(array_unique(array_merge($rationalityNodeIds, $logicNodeFIds)));
-    $conceptByNode = [];
-    if (!empty($allNodeIds)) {
-        $phAll = implode(',', array_fill(0, count($allNodeIds), '?'));
-        $sqlConcepts = "SELECT id AS node_id, concept_id FROM nodes WHERE sheet_id = ? AND user_id = ? AND id IN ($phAll)";
-        if ($stmtCon = $mysqli->prepare($sqlConcepts)) {
-            $typesCon = 'ss' . str_repeat('s', count($allNodeIds));
-            $bindValsCon = array_merge([$sheet_id, $user_id], $allNodeIds);
-            $bindParamsCon = [ &$typesCon ];
-            foreach ($bindValsCon as $i => $v) { $bindParamsCon[] = &$bindValsCon[$i]; }
-            call_user_func_array([$stmtCon, 'bind_param'], $bindParamsCon);
-            $stmtCon->execute();
-            $resCon = $stmtCon->get_result();
-            while ($rowC = $resCon->fetch_assoc()) {
-                $conceptByNode[(string)$rowC['node_id']] = (string)($rowC['concept_id'] ?? '');
-            }
-            $stmtCon->close();
-        }
-    }
-
 
     // 3) 差分・共通集合
     $rSet = array_values(array_unique($rationalityNodeIds));
     $lSet = array_values(array_unique($logicNodeFIds));
 
     $diffRationalityMinusLogic = array_values(array_diff($rSet, $lSet));
-    // 追加: 逆差分と共通集合を明示的に定義（未定義だったキーを補完）
-    $diffLogicMinusRationality = array_values(array_diff($lSet, $rSet));
-    $intersection = array_values(array_intersect($rSet, $lSet));
 
     // 3.1) ペア×logic のクロス分類
     // 片方のみlogicにある / 両方ない / 両方ある
@@ -219,16 +212,16 @@ try {
 
     // 3.4) logic に存在する f_node_id について、f_node_id / logic_node_id[] / content / matches を生成
     $fNodeLogicSummary = [];
-    // 追加: 全node_id(content)取得のために rSet と lSet のユニオンを作って content を先に取得
+    // 追加: contentByNode に不足があれば補完（rSet と lSet のユニオンから欠けている id のみ取得）
     $allNodeIds = array_values(array_unique(array_merge($rSet, $lSet)));
-    $contentByNode = [];
-    if (!empty($allNodeIds)) {
-        $placeholdersAll = implode(',', array_fill(0, count($allNodeIds), '?'));
+    $missingIds = array_values(array_diff($allNodeIds, array_keys($contentByNode)));
+    if (!empty($missingIds)) {
+        $placeholdersAll = implode(',', array_fill(0, count($missingIds), '?'));
         $sqlNodesAll = "SELECT id AS node_id, content FROM nodes WHERE sheet_id = ? AND user_id = ? AND id IN ($placeholdersAll)";
         $stmtNA = $mysqli->prepare($sqlNodesAll);
         if ($stmtNA) {
-            $typesNA = 'ss' . str_repeat('s', count($allNodeIds));
-            $bindValuesNA = array_merge([$sheet_id, $user_id], $allNodeIds);
+            $typesNA = 'ss' . str_repeat('s', count($missingIds));
+            $bindValuesNA = array_merge([$sheet_id, $user_id], $missingIds);
             $bindParamsNA = [ &$typesNA ];
             foreach ($bindValuesNA as $i => $v) { $bindParamsNA[] = &$bindValuesNA[$i]; }
             call_user_func_array([$stmtNA, 'bind_param'], $bindParamsNA);
@@ -238,6 +231,56 @@ try {
                 $contentByNode[(string)$row['node_id']] = $row['content'] ?? '';
             }
             $stmtNA->close();
+        }
+    }
+
+    // 追加: rationalityPairsFlat を基に claim との差分を分類（none/one/both）
+    $flatDiff = [
+        'noneinlogic' => [],
+        'oneinlogic'  => [],
+        'bothinlogic' => [],
+    ];
+    // claim 側の f_node_id セットと f_node_id=>[{logic_node_id,label}] を用意
+    $claimFNodeSet = [];
+    if (!empty($claim_f_node_ids)) {
+        foreach ($claim_f_node_ids as $fid) { $claimFNodeSet[(string)$fid] = true; }
+    }
+    $logicByFNodeFlat = [];
+    if (!empty($claimNodes)) {
+        foreach ($claimNodes as $cn) {
+            $f = (string)($cn['f_node_id'] ?? '');
+            $lnid = (string)($cn['logic_node_id'] ?? '');
+            $lbl = (string)($cn['ln_label'] ?? '');
+            if ($f === '' || $lnid === '') continue;
+            if (!isset($logicByFNodeFlat[$f])) $logicByFNodeFlat[$f] = [];
+            $exists = false;
+            foreach ($logicByFNodeFlat[$f] as $e) { if ($e['logic_node_id'] === $lnid && $e['label'] === $lbl) { $exists = true; break; } }
+            if (!$exists) { $logicByFNodeFlat[$f][] = [ 'logic_node_id' => $lnid, 'label' => $lbl ]; }
+        }
+    }
+    if (!empty($rationalityPairsFlat)) {
+        foreach ($rationalityPairsFlat as $row) {
+            $rid  = (string)($row['rationality_id'] ?? '');
+            $nid1 = (string)($row['node_id1'] ?? '');
+            $nid2 = (string)($row['node_id2'] ?? '');
+            $in1 = ($nid1 !== '' && isset($claimFNodeSet[$nid1]));
+            $in2 = ($nid2 !== '' && isset($claimFNodeSet[$nid2]));
+            $entry = [
+                'rationality_id' => $rid,
+                'node_id1' => $nid1,
+                'content1' => (string)($row['content1'] ?? ''),
+                'node_id2' => $nid2,
+                'content2' => (string)($row['content2'] ?? ''),
+                'logic_matches1' => $logicByFNodeFlat[$nid1] ?? [],
+                'logic_matches2' => $logicByFNodeFlat[$nid2] ?? [],
+            ];
+            if ($in1 && $in2) {
+                $flatDiff['bothinlogic'][] = $entry;
+            } elseif ($in1 || $in2) {
+                $flatDiff['oneinlogic'][] = $entry;
+            } else {
+                $flatDiff['noneinlogic'][] = $entry;
+            }
         }
     }
 
@@ -257,19 +300,53 @@ try {
         $inA = !empty($logicIdsA);
         $inB = !empty($logicIdsB);
 
-        // ノード側情報
+        // ノード側情報（node_id, content, concept_id に加えて、対応する logic_node_id と label を付与）
+        // まず claimNodes から f_node_id => [ { logic_node_id, label }, ... ] のマップを構築
+        static $logicByFNode = null;
+        if ($logicByFNode === null) {
+            $logicByFNode = [];
+            if (!empty($claimNodes)) {
+                foreach ($claimNodes as $cn) {
+                    $f = (string)($cn['f_node_id'] ?? '');
+                    $lnid = (string)($cn['logic_node_id'] ?? '');
+                    $lbl = (string)($cn['ln_label'] ?? '');
+                    if ($f === '' || $lnid === '') continue;
+                    if (!isset($logicByFNode[$f])) $logicByFNode[$f] = [];
+                    // 重複防止
+                    $exists = false;
+                    foreach ($logicByFNode[$f] as $e) {
+                        if ($e['logic_node_id'] === $lnid && $e['label'] === $lbl) { $exists = true; break; }
+                    }
+                    if (!$exists) {
+                        $logicByFNode[$f][] = [ 'logic_node_id' => $lnid, 'label' => $lbl ];
+                    }
+                }
+            }
+        }
+
+        $logicForA = $logicByFNode[$nidA] ?? [];
+        $logicForB = $logicByFNode[$nidB] ?? [];
+        $logicIdsA = array_map(function($e){ return (string)$e['logic_node_id']; }, $logicForA);
+        $logicLabelsA = array_map(function($e){ return (string)$e['label']; }, $logicForA);
+        $logicIdsB = array_map(function($e){ return (string)$e['logic_node_id']; }, $logicForB);
+        $logicLabelsB = array_map(function($e){ return (string)$e['label']; }, $logicForB);
+
         $nodesInfo = [
             [
                 'node_id' => $nidA,
                 'content' => $contentByNode[$nidA] ?? '',
                 'concept_id' => $conceptByNode[$nidA] ?? '',
-                'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : ''
+                'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : '',
+                'logic_node_ids' => $logicIdsA,
+                'logic_labels' => $logicLabelsA,
             ],
             [
                 'node_id' => $nidB,
                 'content' => $contentByNode[$nidB] ?? '',
                 'concept_id' => $conceptByNode[$nidB] ?? '',
-                'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : ''
+                'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : '',
+                'logic_node_ids' => $logicIdsB,
+                'logic_labels' => $logicLabelsB,
             ]
         ];
 
@@ -284,7 +361,6 @@ try {
                     'logic_node_id' => (string)$lnid,
                     'f_node_id'     => $nidA,
                     'content'       => $contentByNode[$nidA] ?? '',
-                    'concept_id'    => $conceptByNode[$nidA] ?? '',
                     'class_constraint' => ($conceptByNode[$nidA] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidA]] ?? '') : ''
                 ];
             }
@@ -295,7 +371,6 @@ try {
                     'logic_node_id' => (string)$lnid,
                     'f_node_id'     => $nidB,
                     'content'       => $contentByNode[$nidB] ?? '',
-                    'concept_id'    => $conceptByNode[$nidB] ?? '',
                     'class_constraint' => ($conceptByNode[$nidB] ?? '') !== '' ? ($conceptToOutputCC[$conceptByNode[$nidB]] ?? '') : ''
                 ];
             }
@@ -320,7 +395,12 @@ try {
     echo json_encode([
         'ok' => true,
         'sheetId' => $sheet_id,
+        'claimNodes' => $claimNodes,
         'rationalityPairs' => $rationalityPairs,
+        // 追加: フラット形式のペア配列
+        'rationalityPairsFlat' => $rationalityPairsFlat,
+        // 追加: フラット行ベースの差分分類
+        'flatDiff' => $flatDiff,
         // 追加: ペア関連の指定概念アンカーと子のcontent
         'pairAnchors' => $pairAnchors,
         'pairAnchorChildContents' => $pairAnchorChildContents,
