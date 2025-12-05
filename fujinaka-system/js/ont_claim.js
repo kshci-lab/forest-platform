@@ -245,7 +245,7 @@ $(document)
           try {
             // 主張: content, Forest紐づけ: forestNodeId（あれば）
             window.defaultLogicNetwork.maketriangle(String(content), forestNodeId || null, null, 1);
-            // 追加: 作成直後に新規三角をハイライト＆フォーカス
+            // 追加: 作成直後に新規三角をハイライト＆フォーカス + Forest側もフォーカス
             setTimeout(() => {
               try {
                 const dln = window.defaultLogicNetwork;
@@ -262,6 +262,32 @@ $(document)
                   const claimId = String(last.claim_id ?? last.claimId ?? '');
                   if (claimId && dln.ownNetwork && typeof dln.ownNetwork.focus === 'function') {
                     dln.ownNetwork.focus(claimId, { scale: 1.3, animation: { duration: 450, easingFunction: 'easeInOutQuad' } });
+                  }
+                  // 追加: Forest側対応ノードへフォーカス（logic_rationality.js の実装に準拠）
+                  const fId = String(forestNodeId || '');
+                  if (fId) {
+                    try {
+                      if (typeof window.highlightForestNodeById === 'function') {
+                        window.highlightForestNodeById(fId);
+                      } else if (window._jm && typeof window._jm.select_node === 'function') {
+                        window._jm.select_node(fId);
+                        let el = document.getElementById(fId);
+                        if (!el) {
+                          const jmnodes = document.getElementsByTagName('jmnode');
+                          for (let i = 0; i < jmnodes.length; i++) {
+                            if (String(jmnodes[i].getAttribute('nodeid')) === String(fId)) { el = jmnodes[i]; break; }
+                          }
+                        }
+                        if (el && typeof el.scrollIntoView === 'function') {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                          try {
+                            el.style.transition = 'box-shadow 0.2s ease-out';
+                            el.style.boxShadow = '0 0 0 3px orange inset';
+                            setTimeout(() => { try { el.style.boxShadow = ''; } catch(_){} }, 1200);
+                          } catch(_) {}
+                        }
+                      }
+                    } catch (_) { /* noop */ }
                   }
                 }
               } catch (_) { /* noop */ }
