@@ -50,25 +50,29 @@ if not API_KEY:
 API_BASE = os.environ.get('OPENAI_API_BASE', 'https://api.openai.com/v1').rstrip('/')
 MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')  # 旧gpt-3.5-turboは非推奨のため既定を変更
 
-# PHPから標準入力(stdin)で送られた論文シナリオを受け取る。
-# 受け取れなかった場合は固定プロンプトで実行する。
+# PHPから標準入力(stdin)で送られたトリプル文字列（triangle）を受け取る。
+# 受け取れなかった場合は環境変数から取得する。
 stdin_error = None
-scenario_text = None
+triangle_text = None
 try:
     _stdin = sys.stdin.read()
     if _stdin and _stdin.strip():
-        scenario_text = _stdin.strip()
+        triangle_text = _stdin.strip()
 except Exception as e:
     # エラー詳細（メッセージ＋スタックトレース）を保持・stderrにも出力
     stdin_error = f"{repr(e)}\n{traceback.format_exc()}"
     print(f"STDIN_READ_ERROR: {stdin_error}", file=sys.stderr)
-    scenario_text = None
+    triangle_text = None
 
-# 追加: stdinで取得できない場合は環境変数SCENARIOから取得
-if not scenario_text:
-    env_scenario = os.environ.get('SCENARIO')
-    if env_scenario and env_scenario.strip():
-        scenario_text = env_scenario.strip()
+# 追加: stdinで取得できない場合は環境変数TRIANGLE（なければSCENARIO）から取得
+if not triangle_text:
+    env_triangle = os.environ.get('TRIANGLE')
+    if env_triangle and env_triangle.strip():
+        triangle_text = env_triangle.strip()
+    else:
+        env_scenario = os.environ.get('SCENARIO')
+        if env_scenario and env_scenario.strip():
+            triangle_text = env_scenario.strip()
 
 # --- 以前の論文シナリオ分岐を一時停止 ---
 # if scenario_text:
@@ -83,7 +87,13 @@ if not scenario_text:
 #     ]
 
 # --- 三角ロジックのみを評価するメッセージ ---
-triangle_text = scenario_text or ''
+triangle_text = triangle_text or ''
+# 追加: 受け取ったトリプル（triangle_text）をコンソールへ出力（stderr）
+try:
+    print(("[DEBUG triangle_text]\n" + triangle_text).encode("cp932", "ignore").decode("cp932"), file=sys.stderr)
+except Exception:
+    # エンコード失敗時はそのまま出力
+    print("[DEBUG triangle_text]\n" + triangle_text, file=sys.stderr)
 messages = [
     {
         "role": "system",
