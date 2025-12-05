@@ -57,7 +57,7 @@ try {
     }
     $stmt->close();
 
-    // 1.1) 事実ノードに紐づくconcept_idを取得（対象ユーザ＆シート）
+    // 1.1) 根拠ノードに紐づくconcept_idを取得（対象ユーザ＆シート）
     $sqlFact = "SELECT DISTINCT n.concept_id, n.id, ln.logic_node_id, ln.label
         FROM logic_triangle t
         INNER JOIN logic_node ln ON ln.logic_node_id = t.fact_id

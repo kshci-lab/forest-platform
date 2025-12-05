@@ -396,7 +396,7 @@ class LogicNetwork {
     // 主張ノードは整形済みラベルを使用
     //三角形描画のため、ノードとエッジを追加
     this.addNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
-    this.addNode(fact_id, "事実", null, null, false, factlevel);
+    this.addNode(fact_id, "根拠", null, null, false, factlevel);
     this.addNode(reason_id, "理由付け", null, null, false, reasonlevel);
     // 向きを統一: claim→fact, claim→reason, fact→reason
     this.addEdge(claim_id, fact_id);
@@ -408,7 +408,7 @@ class LogicNetwork {
 
     // DB記録（edited は bool -> 1/0 変換は送信側で実施）
     defaultRecordLogicNetwork.record_LogicNode(claim_id, claimLabel, f_node_id, p_node_id, !!edited, claimlevel);
-    defaultRecordLogicNetwork.record_LogicNode(fact_id, "事実", null, null, false, factlevel);
+    defaultRecordLogicNetwork.record_LogicNode(fact_id, "根拠", null, null, false, factlevel);
     defaultRecordLogicNetwork.record_LogicNode(reason_id, "理由付け", null, null, false, reasonlevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, fact_id, reason_id, "", "");
 
@@ -426,7 +426,7 @@ class LogicNetwork {
     } catch (_) {}
   }
 
-  // 三角ロジックを追加する関数（選択しているノードを主張として事実，理由付けノードを作成する関数）（x/yは使わず level のみ）
+  // 三角ロジックを追加する関数（選択しているノードを主張として根拠，理由付けノードを作成する関数）（x/yは使わず level のみ）
   createTriangleFromSelectedNode() {
     // 選択されているノードを取得
     const selectedNodeId = this.ownNetwork.getSelection().nodes[0];
@@ -1424,7 +1424,7 @@ class LogicNetwork {
     };
   }
 
-  // 三角(複数)をハイライト + 役割タグ表示（主張=下、事実/理由付け=上に分割）
+  // 三角(複数)をハイライト + 役割タグ表示（主張=下、根拠/理由付け=上に分割）
   highlightTriangles(triangles) {
     // 既存ハイライトとタグ解除
     this.clearTriangleHighlight();
@@ -1438,12 +1438,12 @@ class LogicNetwork {
       nodeRoles.get(nodeId).add(role);
     };
 
-    // 役割を集計（表示ラベルは既存どおり: reason=「事実」, fact=「理由付け」）
+    // 役割を集計（表示ラベルは既存どおり: reason=「根拠」, fact=「理由付け」）
     for (const t of triangles) {
       const nt = this.normalizeTriangle(t);
       if (!nt) continue;
       addRole(nt.claimId, "主張");
-      addRole(nt.factId, "事実");
+      addRole(nt.factId, "根拠");
       addRole(nt.reasonId, "理由付け");
 
       nodeIds.add(nt.claimId);
@@ -1486,7 +1486,7 @@ class LogicNetwork {
       });
     }
 
-    // 役割タグを生成（主張=下、事実/理由付け=上）: 役割ごとに上下へ分割
+    // 役割タグを生成（主張=下、根拠/理由付け=上）: 役割ごとに上下へ分割
     nodeRoles.forEach((rolesSet, nodeId) => {
       const roles = Array.from(rolesSet);
       const bottomRoles = roles.filter(r => r === '主張');
@@ -1884,7 +1884,7 @@ class LogicNetwork {
       const factLabel   = this._getCleanLabel(factNode);
       const reasonLabel = this._getCleanLabel(reasonNode);
       out.push(
-        `【${index}】\n主張: ${claimLabel || "(未入力)"}\n事実: ${factLabel || "(未入力)"}\n理由付け: ${reasonLabel || "(未入力)"}\n認知的葛藤: ${conflictText}\n`
+        `【${index}】\n主張: ${claimLabel || "(未入力)"}\n根拠: ${factLabel || "(未入力)"}\n理由付け: ${reasonLabel || "(未入力)"}\n認知的葛藤: ${conflictText}\n`
       );
       index++;
     }
