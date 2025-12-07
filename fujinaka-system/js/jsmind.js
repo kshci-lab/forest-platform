@@ -1272,7 +1272,8 @@
 
                         //クリックしたノードが「なぜこれらは合理的であるといえるのですか？」という問いノードだった場合，
                         //どのノード間の合理性を考えようとしたのかを表示（ピンクにハイライト）
-                        if(jmnode[i].getAttribute("concept_id") == "1519483811401_n425"){
+                        var conceptId = jmnode[i].getAttribute("concept_id");
+                        if(conceptId == "1519483811401_n425" || conceptId == "1519483811401_n426"){
 
                             checkRationality(thisId);
 

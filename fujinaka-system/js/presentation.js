@@ -617,9 +617,8 @@ function MakeSection(topic){
 
   console.log(topic)
 
-  if(topic == null){
-    topic = "節タイトル";
-  }
+  // null/undefinedでも空文字に正規化（固定文言は入れない）
+  topic = topic ?? "";
 
   var uuid = getUniqueStr(); // Threadのidをランダム生成
   var quot_uuid = "\"" + uuid + "\""; // quotationをつけたuuid　labelを書く時に欲しかった
@@ -720,7 +719,7 @@ function SetPurposeonChapterfromlogic(){
    MakeChapter(selected_logic_node.topic);
  }
 }
-
+// マインドマップ上のノードを選択した状態で右クリックすると節に反映する関数
 function SetPurposeonSection(){
 
   let selected_node = CheckSelectedNode();
@@ -1139,7 +1138,7 @@ function NodeAppend(){
 
   var jmnode = document.getElementsByTagName("jmnode");
   for(var i=0; i<jmnode.length; i++){
-    // console.log(id, jmnode[i].getAttribute('nodeid'));
+    console.log(id, jmnode[i].getAttribute('nodeid'));
     if(jmnode[i].getAttribute('nodeid') == id && jmnode[i].getAttribute('concept_id')){
       c_id = jmnode[i].getAttribute('concept_id');
       console.log(jmnode[i]);
