@@ -1,18 +1,19 @@
 <?php
 
-	// ローカル
-	$db_host = "localhost";  // ホスト名のみ
-	$db_port = 8889;  // ポート番号
-	$db_user = "root";
-	$db_password = "root";
-	$db_dbname = "forest_platform";
-
-	// デスクトップPCに接続
-	// $db_host = "10.250.63.6";  // ホスト名のみ
+	
+	//デスクトップPCから接続するとき．
+	// $db_host = "10.240.186.80";  // ホスト名のみ
 	// $db_port = 8889;  // ポート番号
 	// $db_user = "root";
 	// $db_password = "your_password";
 	// $db_dbname = "forest_platform";
+
+	//ローカルPCから接続するとき．
+	$db_host = "localhost";  // DBサーバのurl
+	$db_port = 8889;  // ポート番号
+	$db_user = "root";
+	$db_password = "root";
+	$db_dbname = "forest_platform";
 
 	//アプリケーションサーバーにアップロードするとき．
 	// $db_host = "localhost";  // DBサーバのurl

@@ -1,0 +1,7 @@
+ArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayArrayPOST: {"goal_type":"weekly","object_node_id":"","label":"","start_date":"2025-09-14","finish_date":"2025-09-15"}
+POST: {"goal_type":"weekly","object_node_id":"","label":"","start_date":"2025-09-14","finish_date":"2025-09-22"}
+SQL Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'object_node_id' in 'field list'
+SQL Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'object_node_id' in 'field list'
+SQL Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'object_node_id' in 'field list'
+SQL Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'object_node_id' in 'field list'
+SQL Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'object_node_id' in 'field list'
