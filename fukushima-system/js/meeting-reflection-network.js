@@ -2504,17 +2504,38 @@ function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
                     comment: commentText || '',
                     node_type: ''
                 };
-                // Use externalized IDs only
+                // knowledge_fragment_id: UIバッジの表示リストからDOMを辿って外部化IDを取得しCSV化
                 var extOnly = [];
-                if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
-                    extOnly.push(String(window.activeExternalizedId));
-                }
-                if (window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
-                    window.kfrag_add_selected.ext.forEach(function(x){
-                        var sx = String(x);
-                        if(sx && sx !== 'null' && sx !== 'undefined' && extOnly.indexOf(sx) === -1){ extOnly.push(sx); }
+                try{
+                    var ids = [];
+                    if (Array.isArray(window.kfrag_display_list) && window.kfrag_display_list.length){
+                        ids = window.kfrag_display_list.slice();
+                    } else {
+                        // フォールバック: 主選択 + 追加選択（kfidベース）
+                        if (typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null) {
+                            ids.push(String(window.activeKnowledgeFragmentId));
+                        } else if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
+                            ids.push(String(window.activeExternalizedId));
+                        }
+                        if (window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+                            window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && ids.indexOf(ks) === -1) ids.push(ks); });
+                        }
+                    }
+                    // kfid/display id から wrapper を見つけ、外部化IDへ正規化
+                    ids.forEach(function(k){
+                        try{
+                            var $w = $('.fragment-node-wrapper').filter(function(){
+                                var $t = $(this);
+                                return String($t.data('knowledge-fragment-id')) === String(k) || String($t.data('externalized-id')) === String(k);
+                            }).first();
+                            var ext = ($w && $w.length) ? $w.data('externalized-id') : null;
+                            if (ext !== null && typeof ext !== 'undefined'){
+                                var sx = String(ext);
+                                if (sx && extOnly.indexOf(sx) === -1){ extOnly.push(sx); }
+                            }
+                        }catch(__){ }
                     });
-                }
+                }catch(__){ }
                 if (extOnly.length){ d.knowledge_fragment_id = extOnly.join(','); }
                 try{ console && console.debug && console.debug('[kfrag] KE submit payload', { areaLabel: areaLabel, parentId: parentId, extOnly: extOnly, data: d }); }catch(_){ }
                 return d;
@@ -3791,6 +3812,19 @@ $(document).on('click', '#kra-submit', function(){
                         $btn.removeClass('is-discussing');
                     }
                 }catch(_){ }
+
+                // 併せて knowledge_explorer にも登録（追加カラム: knowledge_fragment_id, updated_by 対応）
+                try{
+                    var areaLabel = ($('select[name="knowledge_area"]').val() || '').trim();
+                    var nodeTitle = ($('textarea[name="knowledge_content"]').val() || '').trim();
+                    var commentText = ($('#kra_comment_input').val() || '').trim();
+                    if(nodeTitle){
+                        try{ console && console.debug && console.debug('[kfrag] kra-submit -> saveToKnowledgeExplorer', { areaLabel: areaLabel, nodeTitle: nodeTitle, commentText: commentText }); }catch(_){ }
+                        saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText);
+                    } else {
+                        try{ console && console.warn && console.warn('[kfrag] kra-submit: nodeTitle が空のため knowledge_explorer 登録はスキップ'); }catch(_){ }
+                    }
+                }catch(__){ }
             } else {
                 console && console.warn && console.warn('update discussed to DONE failed', res);
             }
