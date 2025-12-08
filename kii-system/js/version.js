@@ -1,4 +1,4 @@
-// マップ更新ボタンが押された時の処理
+//マップver更新ボタンをクリック
 var mapSnapshotButton = document.getElementById("map-snapshot-button");
 function MapSnapShot(){
 
@@ -8,9 +8,17 @@ function MapSnapShot(){
         type: "POST",
         data: { data : "map"},
         success: function(e){
-          console.log(e);
-          if(!e){
-            alert("マップver更新されました");
+          if(e == 'null'){
+            alert("マップverが更新されました");
+            show_edit_reason();
+          }else{
+            console.log(e);
+            var nodes = JSON.parse(e);
+            for(var i=0; i<Object.keys(nodes).length; i++){
+              NodeVersionUpdate(nodes[i]);
+            }
+            alert("マップverと変更があったノードのverが更新されました");
+            show_edit_reason();
           }
         }
     });

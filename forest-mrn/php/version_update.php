@@ -137,23 +137,25 @@
 	//ノードver更新理由を最新順で取得
 	}else if($_POST["data"] == "get_node_reason"){
 		
-		$node_id = $_POST["node_id"];
-		$sql = "SELECT updated_reason_by_learner FROM node_versions where node_id = '$node_id' ORDER BY id DESC";
+		////// 存在しない
 
-        $i = 0;
-    	$get_array = array(999 => 'temp');	//最初にこれ入れとかないと何故かindex($i)がついてくれない
+		// $node_id = $_POST["node_id"];
+		// $sql = "SELECT updated_reason_by_learner FROM node_versions where node_id = '$node_id' ORDER BY id DESC";
+
+        // $i = 0;
+    	// $get_array = array(999 => 'temp');	//最初にこれ入れとかないと何故かindex($i)がついてくれない
 		
-    	if($result = $mysqli->query($sql)){
+    	// if($result = $mysqli->query($sql)){
 
-    		while($row = mysqli_fetch_assoc($result)){
+    	// 	while($row = mysqli_fetch_assoc($result)){
 
-    			$get_array[$i] = $row["updated_reason_by_learner"];
+    	// 		$get_array[$i] = $row["updated_reason_by_learner"];
 				
-    			$i += 1;
+    	// 		$i += 1;
 
-    		}
-        }
-		echo json_encode($get_array);
+    	// 	}
+        // }
+		echo json_encode("not_exist");
 
 	//ある時間のマップver更新理由を取得
 	}else if($_POST["data"] == "get_map_reason"){
@@ -243,7 +245,8 @@
 	}else if($_POST["data"] == "node_version_log"){
 	
 		$node_id = $_POST["node_id"];
-		$sql = "SELECT * FROM node_versions where node_id = '$node_id' AND updated_reason_by_learner IS NOT NULL AND updated_reason_by_learner != '' ORDER BY id DESC";
+		// Query node versions filtering by non-empty content
+		$sql = "SELECT * FROM node_versions where node_id = '$node_id' AND content IS NOT NULL AND content != '' ORDER BY node_version_id DESC";
 
         $i = 0;
     	$log_array = array();
@@ -252,9 +255,8 @@
 
     		while($row = mysqli_fetch_assoc($result)){
 
-    			$log_array[$i]["updated_reason_by_learner"] = $row["updated_reason_by_learner"];
-				$log_array[$i]["content"] = $row["content"];
-				$log_array[$i]["appeared_at"] = $row["appeared_at"];
+    			$log_array[$i]["content"] = $row["content"];
+    			$log_array[$i]["appeared_at"] = $row["appeared_at"];
     			$i += 1;
 
     		}

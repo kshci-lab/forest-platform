@@ -236,23 +236,52 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     // jmnode 要素の右クリックをガードする (type="answer" のときは無効化)
+    // 2025-12-08変更（川）　answerのとき「ノードver更新」のみに
     setupJmnodeContextGuards() {
         const attachGuard = (el) => {
             try {
                 if (!el) return;
                 const type = el.getAttribute && el.getAttribute('type');
-                if (type === 'answer') {
-                    // 重複登録を避ける
-                    if (!el._answerContextGuarded) {
-                        el.addEventListener('contextmenu', (ev) => {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                            // optional: 小さなコンソールログで確認できるようにする
-                            console.log('右クリック無効（answerノード）:', el.getAttribute('nodeid'));
-                            return false;
-                        }, { capture: true });
-                        el._answerContextGuarded = true;
-                    }
+                if (!el._answerContextGuarded) {
+                    el.addEventListener('contextmenu', (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        try {
+                            const mm_menu = document.getElementById('mindmap_conmenu');
+                            if (!mm_menu) {
+                                console.log('mindmap_conmenu not found; right-click suppressed:', el.getAttribute('nodeid'));
+                                return false;
+                            }
+                            const left = ev.pageX - (document.body.scrollLeft || 0) + 10;
+                            const top = ev.pageY - (document.body.scrollTop || 0) + 10;
+                            mm_menu.style.left = left + 'px';
+                            mm_menu.style.top = top + 'px';
+                            const lis = mm_menu.querySelectorAll('li');
+                            if (type === 'answer') {
+                                // 答えノード: ノードver更新のみ表示
+                                lis.forEach(function(li){
+                                    if (li.querySelector('#updateNodeVer')){
+                                        li.style.display = '';
+                                    } else {
+                                        li.style.display = 'none';
+                                    }
+                                });
+                                mm_menu.classList.add('on');
+                                console.log('答えノード右クリック: ノードver更新のみ表示', el.getAttribute('nodeid'));
+                            } else {
+                                // 答えノード以外: 全て表示
+                                lis.forEach(function(li){
+                                    li.style.display = '';
+                                });
+                                mm_menu.classList.add('on');
+                                console.log('通常ノード右クリック: 全メニュー表示', el.getAttribute('nodeid'));
+                            }
+                        } catch (e) {
+                            console.warn('jmnode contextmenu handler error', e);
+                        }
+                        return false;
+                    }, { capture: true });
+                    el._answerContextGuarded = true;
                 }
             } catch (e) {
                 console.warn('attachGuard error', e);

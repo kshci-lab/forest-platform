@@ -442,6 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'rationalityTitle': '【合理性】',
                 'lang-label-ja': '日本語',
                 'lang-label-en': 'English',
+                'updateNodeVer': 'ノードverを更新',
                 'addWeeklyGoalBtn': '小目標に追加',
                 'addWeeklyGoalMenuLabel': '小目標に追加',
                 'showThinkingProcessMapBtn': '目標手段階層マップ',
@@ -453,6 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'removeNodeText': 'ノードの削除',
                 'zoomInText': '拡大',
                 'zoomOutText': '縮小',
+                'updateMapVer': 'マップver更新',
                 'screenshotLabel': '【Screenshot】',
                 'screenshotText': 'screenshot',
                 'processCloseText': '閉じる',
@@ -491,6 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'reasonPurposeTitle': '[Reason/Purpose]',
                 'rationalityTitle': '[Rationality]',
                 'lang-label-ja': 'Japanese',
+                'updateNodeVer': 'Update NodeVer',
                 'showQuestionsBtnText': '問い一覧',
                 'inquiryAreaTitle': '【情報の表出化】',
                 'mediumGoalTitle': '中目標（半年〜1年目標）',
@@ -517,6 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'removeNodeText': 'Delete Node',
                 'zoomInText': 'Zoom +',
                 'zoomOutText': 'Zoom -',
+                'updateMapVer': 'Update MapVer',
                 'screenshotLabel': '[Screenshot]',
                 'screenshotText': 'Screenshot',
                 'processCloseText': 'Close',
@@ -737,6 +741,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <!-- 【Zoom】 -->
                                     <button class="button3" id="zoomInBtn" onclick="zoomIn();"><span id="zoomInText">拡大</span></button>
                                     <button class="button3" id="zoomOutBtn" onclick="zoomOut();"><span id="zoomOutText">縮小</span></button>
+                                    <button class="button4" id="updateMapVerBtn" onclick="MapSnapShot();RecordRelation();"><span id="updateMapVer">マップver更新</span></button>
                                     <!-- <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
                                         マップver更新 
                                     </button> -->
@@ -868,9 +873,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </li> -->
                                         <!-- <li>
                                             <button class="button4" onclick="NodeVersionUpdate(null);">
-                                                ノードを更新
+                                                ノードverを更新
                                             </button>
                                         </li> -->
+                                        <li>
+                                            <button class="main-action-btn compact-btn" onclick="NodeVersionUpdate(null);"><span id="updateNodeVer">ノードverを更新</span></button>
+                                        </li>
                                         <li>
                                             <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();"><span id="addWeeklyGoalMenuLabel">小目標に追加</span></button>
                                         </li>

@@ -806,7 +806,7 @@ async function add_Pnode(dom_target){ //fujinaka変更
 }
 
 function reflect_Pnode(dom_target){ //fujinaka追加
-  //マップへ反映ボタンでノードを更新する
+  //マップへ反映ボタンでノードverを更新する
   if(window.confirm('本当に反映しますか？')){
     var jmnode = document.getElementsByTagName("jmnode");
     var p_content = dom_target.innerHTML;

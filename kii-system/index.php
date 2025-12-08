@@ -251,7 +251,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
               </li>
               <li>
                 <button class="button4" onclick="NodeVersionUpdate()">
-                    ノードを更新
+                    ノードverを更新
                 </button>
               </li>
               <li>

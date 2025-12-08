@@ -189,7 +189,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         縮小
                                     </button>
                                     <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
-                                        マップver更新 <!--hatakeyama-->
+                                        マップver更新
                                     </button>
                                     
                                     【Screenshot】
@@ -322,7 +322,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         </li>
                                         <li>
                                             <button class="button4" onclick="NodeVersionUpdate(null);">
-                                                ノードを更新
+                                                ノードverを更新
                                             </button>
                                         </li>
                                         <li>

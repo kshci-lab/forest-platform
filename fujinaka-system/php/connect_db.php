@@ -1,11 +1,5 @@
 <?php
 
-	//デスクトップPCから接続するとき．
-	// $db_host = "10.240.186.80";  // ホスト名のみ
-	// $db_port = 8889;  // ポート番号
-	// $db_user = "root";
-	// $db_password = "your_password";
-	// $db_dbname = "forest_platform";
 
 	//ローカルPCから接続するとき．
 	$db_host = "localhost";  // DBサーバのurl

@@ -1528,7 +1528,7 @@ select[name="mttime_list"] {
 }
 
 /* Make question/answer buttons fit their text and avoid wrapping inside the button */
-#addQNodeBtn, #addAnodeBtn {
+#addQNodeBtn, #addAnodeBtn, #updateMapVerBtn {
 	min-width: 0; /* allow button to shrink to text width */
 	padding: 6px 12px;
 	white-space: nowrap; /* prevent text wrapping inside button */
@@ -1537,7 +1537,7 @@ select[name="mttime_list"] {
 }
 
 /* Inner span: prevent wrapping and let button width follow text */
-#addQNodeBtn span, #addAnodeBtn span {
+#addQNodeBtn span, #addAnodeBtn span, #updateMapVerBtn span {
 	display: inline-block;
 	white-space: nowrap;
 }
