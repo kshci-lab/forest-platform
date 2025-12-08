@@ -116,6 +116,10 @@ if(isset($_POST["record"])){
             <input class="button3" type="submit" name="logout" value="ログアウト">
         </form>
 
+        <div style="text-align:center; margin-top:8px;">
+          <input class="button3" type="button" value="モード選択" onclick="location.href='../select_mode.php'">
+        </div>
+
         <form method="POST">
         　<div align="center">
             <p>ミーティングタイムの記録</p>
