@@ -124,7 +124,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                  <li class="active"><a href="#tab03" >リフレクション</a></li>
                  <li class="active"><a href="#record_tab" >履歴</a></li> -->
             <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  <!--hatakeyama-->
-            <li class="active"><a href="#tab05">組織知マップ</a></li> 
+            <!-- <li class="active"><a href="#tab05">組織知マップ</a></li>  -->
 
             <div class="checkbox_mode">
                 <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
