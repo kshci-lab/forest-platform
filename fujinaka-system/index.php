@@ -68,6 +68,8 @@ $ai_output = '';
     <script type="text/javascript">
       window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
     </script>
+    <!-- logging: jQuery依存。ここで読み込んで logEvent を提供 -->
+    <script type="text/javascript" src="js/logging.js"></script>
 
   </head>
   <body id="all">

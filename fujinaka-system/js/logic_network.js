@@ -186,6 +186,23 @@ class LogicNetwork {
     // スタイルを適用
     this.applyNodeStyle(newNode);
     this.nodes.add(newNode);
+
+    // 既存のノード追加・データセット更新が完了した直後に追記
+    try {
+      const content = JSON.stringify({
+        label,
+      });
+      // Ensure userId is defined; use global or empty string
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      if (typeof logEvent === 'function') {
+        logEvent('logic', 'add', content, userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('addNode: logging failed', e);
+    }
+
     return this.nodes;
   }
 
