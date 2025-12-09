@@ -161,37 +161,8 @@ function NodeVersionUpdate(nodes){
 // relationテーブルにINSERTし、現在存在しているノードと新しいマップを結びつける
 function RecordRelation(count){
 
-    var jmnode = document.getElementsByTagName("jmnode");
-    GetMapVersion().then(function (res) { //最新map_version_idを取得
-        const parse = JSON.parse(res)
-
-        if (jmnode.length == 2){  //rootと追加したノードのみならINSERTだけ,後で
-        
-        }else{  //INSERT & UPDATE
-    
-            for(let i=1; i<jmnode.length; i++){ //現存ノードで回す(root抜き)
-    
-                $node_id = jmnode[i].getAttribute("nodeid");
-        // 
-                if ($node_id!=null){
-        
-                    $.ajax({
-                    url: "php/version_update.php",
-                    type: "POST",
-                    data: { data : "relation",
-                            count : count,
-                            node_id : $node_id,
-                            map_version_id : parse[0]
-                            }
-                    });
-        
-                }
-    
-            }
-
-        }
-
-    });
+  var jmnode = document.getElementsByTagName("jmnode");
+  NodeVersionUpdate(NULL);
 
 }
 

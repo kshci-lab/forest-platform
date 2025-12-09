@@ -6,6 +6,9 @@
 	require("connect_db.php");
 	date_default_timezone_set('Asia/Tokyo');
 
+// 安全な POST 値の取得
+$from_mode = isset($_POST['from_mode']) ? $_POST['from_mode'] : '';
+
 	//jsmind.js
 	if($_POST["insert"] == "node"){
 
@@ -28,7 +31,7 @@
 				if(!$result){
 
 					$node_sql = "INSERT INTO nodes (node_id, user_id, node_type_id, from_mode, deleted )
-						VALUES ('".$_POST['id']."','".$_SESSION['USERID']."','".$_POST['type']."', '".$_POST['from_mode']."', '".$deleted."')";
+						VALUES ('".$_POST['id']."','".$_SESSION['USERID']."','".$_POST['type']."', '".$from_mode."', '".$deleted."')";
 					
 					$node_v_sql = "INSERT INTO node_versions (node_version_id, node_id, parent_id, node_type_id, appeared_at, disappeared_at, content, concept_id, x, y)
 						VALUES ('".$node_v_id."', '".$_POST['id']."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$_POST['content']."','".$_POST['concept_id']."','".$_POST['x']."','".$_POST['y']."')";
@@ -77,7 +80,7 @@
 
 
 			$node_sql = "INSERT INTO nodes (node_id, user_id, node_type_id, from_mode, deleted )
-					VALUES ('".$_POST['id']."','".$_SESSION['USERID']."','".$_POST['type']."', '".$_POST['from_mode']."', '".$deleted."')";
+					VALUES ('".$_POST['id']."','".$_SESSION['USERID']."','".$_POST['type']."', '".$from_mode."', '".$deleted."')";
 				
 			$node_v_sql = "INSERT INTO node_versions (node_version_id, node_id, parent_id, node_type_id, appeared_at, disappeared_at, content, concept_id, x, y)
 				VALUES ('".$node_v_id."', '".$_POST['id']."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$_POST['content']."','".$_POST['concept_id']."','".$_POST['x']."','".$_POST['y']."')";
@@ -121,8 +124,8 @@
 		$id = rand();
 
 
-		$sql = "INSERT INTO rationality_nodes(id, user_id, map_id, created_at, rationality_id, node_id)
-		VALUES ('".$id."', '".$_SESSION["USERID"]."', '".$_SESSION['MAPID']."', '".$created_at."', '".$_POST['rationality_id']."', '".$_POST['node_id']."')";
+		$sql = "INSERT INTO rationality_nodes(id, created_at, rationality_id, node_id)
+		VALUES ('".$id."', NOW(), '".$_POST['rationality_id']."', '".$_POST['node_id']."')";
 		$result = $mysqli->query($sql);
 
 	}else if($_POST["insert"] == "edit_reason"){
