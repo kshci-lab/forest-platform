@@ -1,0 +1,14 @@
+# RewriteEngine を有効化
+RewriteEngine On
+
+# RewriteBase を設定（Web上のパスベース）
+RewriteBase /software/
+
+# ファイル・ディレクトリが存在する場合はそのまま提供
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# キャッシュ・静的ファイル（css, js, image）は処理をスキップ
+RewriteCond %{REQUEST_URI} \.(css|js|jpg|jpeg|png|gif|ico|woff|woff2|ttf|svg)$ [NC]
+RewriteRule ^ - [L]
