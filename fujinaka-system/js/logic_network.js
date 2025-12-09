@@ -2074,19 +2074,16 @@ class RecordLogicNetwork{
 }
 window.addEventListener('load', async () => {
     try {
-    console.log("[LogicNetwork] window load: start");
-    defaultLogicNetwork = new LogicNetwork("mynetwork", "load");
-    window.defaultLogicNetwork = defaultLogicNetwork;
-    console.log("[LogicNetwork] instance created:", !!window.defaultLogicNetwork);
+      defaultLogicNetwork = new LogicNetwork("mynetwork", "load");
+      window.defaultLogicNetwork = defaultLogicNetwork;
+      
+      // データベースから復元
+      await defaultLogicNetwork.initializeFromDatabase();
 
-    // データベースから復元
-    await defaultLogicNetwork.initializeFromDatabase();
-
-    // デバッグ用: 初期化確認
-    console.log('[LogicNetwork] initialized:', !!window.defaultLogicNetwork);
-    console.log('[LogicNetwork] ownNetwork exists:', !!window.defaultLogicNetwork.ownNetwork);
-
-    $('#mynetwork').css('visibility', 'visible');
+      
+      $('#logic_area').hide('fast');
+      $('#logic_menu').hide('fast');
+      // $('#mynetwork').css('visibility', 'hidden');
 
   // 既存のイベントリスナー
   $(`#ln_addNode`).on("click", e => {

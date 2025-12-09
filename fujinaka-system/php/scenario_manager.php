@@ -242,6 +242,7 @@ if($purpose === 'record'){
                             slide_id='$slide_id', type='$type', indent='$indent',
                             updated_at='$timestamp', user_id='$user_id', deleted=0
                         WHERE content_id='$content_id' AND sheet_id='$sheet_id'";
+                Console.log
                 $ok = $mysqli->query($upd);
             } else {
                 // 新規→INSERT
