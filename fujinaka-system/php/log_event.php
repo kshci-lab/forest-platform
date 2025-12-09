@@ -37,6 +37,9 @@ try {
     'category'   => $category,
     'subcategory'=> $subcategory,
     'content'    => $content,
+    'node_id'     => $node_id ?? null,
+    'f_node_id'   => $f_node_id ?? null,
+    'p_node_id'   => $p_node_id ?? null,
     'user_id'    => $user_id,
   ];
   $line = json_encode($record, JSON_UNESCAPED_UNICODE) . PHP_EOL;

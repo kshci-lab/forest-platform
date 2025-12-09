@@ -5,3 +5,9 @@
 {"timestamp":"2025-12-09T21:55:55+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"\"}","user_id":"311997332"}
 {"timestamp":"2025-12-09T21:55:55+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"根拠\"}","user_id":"311997332"}
 {"timestamp":"2025-12-09T21:55:55+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-09T22:27:26+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-09T22:35:43+09:00","category":"logic_node","subcategory":"add","content":"","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-09T22:35:43+09:00","category":"logic_node","subcategory":"add","content":"根拠","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-09T22:35:43+09:00","category":"logic_node","subcategory":"add","content":"理由付け","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-09T22:36:56+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"ｇｒ\"}","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-09T22:37:12+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"New Node\"}","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}

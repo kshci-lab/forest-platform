@@ -189,13 +189,10 @@ class LogicNetwork {
 
     // 既存のノード追加・データセット更新が完了した直後に追記
     try {
-      const content = JSON.stringify({
-        label,
-      });
       // Ensure userId is defined; use global or empty string
       const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
       if (typeof logEvent === 'function') {
-        logEvent('logic', 'add', content, userId);
+        logEvent('logic_node', 'add', label, node_id, f_node_id, p_node_id,userId);
       } else {
         console.warn('logEvent is not available. Did you load logging.js?');
       }
@@ -302,6 +299,21 @@ class LogicNetwork {
 
       // データベースに編集状態を記録（edited = 1）
       defaultRecordLogicNetwork.edit_LogicNode(node.id, result_label, true, node.f_node_id || null, node.p_node_id || null);
+
+      // ログ出力（ノード編集）
+      try {
+        const content = JSON.stringify({
+          label: result_label
+        });
+        const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+        if (typeof logEvent === 'function') {
+          logEvent('logic_node', 'edit', content, node.f_node_id || null, node.p_node_id || null, userId);
+        } else {
+          console.warn('logEvent is not available. Did you load logging.js?');
+        }
+      } catch (e) {
+        console.error('editNode: logging failed', e);
+      }
     }
   }
 
