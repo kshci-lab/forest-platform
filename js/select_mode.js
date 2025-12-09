@@ -20,7 +20,8 @@ document.getElementById("selectmodebutton").addEventListener('click', function()
             window.location.href = "fukushima-system/select_sheet.php";
           }else if(selectmodeoption[i].value === "6"){
             // ここ変える必要あり
-            window.location.href = "shimaoka-system/select_sheet.php";
+            console.log("島岡システム：未搭載")
+            // window.location.href = "shimaoka-system/select_sheet.php";
           }
           return;
         }
