@@ -121,8 +121,8 @@
 		$id = rand();
 
 
-		$sql = "INSERT INTO rationality_nodes(id, user_id, map_id, created_at, rationality_id, node_id)
-		VALUES ('".$id."', '".$_SESSION["USERID"]."', '".$_SESSION['MAPID']."', '".$created_at."', '".$_POST['rationality_id']."', '".$_POST['node_id']."')";
+		$sql = "INSERT INTO rationality_nodes(id, created_at, rationality_id, node_id)
+		VALUES ('".$id."', NOW(), '".$_POST['rationality_id']."', '".$_POST['node_id']."')";
 		$result = $mysqli->query($sql);
 
 	}else if($_POST["insert"] == "edit_reason"){

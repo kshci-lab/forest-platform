@@ -23,24 +23,19 @@
 		$relation_id = rand();
 		$node_id = $_POST["node_id"];
 		$map_id = $_SESSION['MAPID'];
-		$map_version_id = $_POST["map_version_id"];
 		$count = $_POST["count"];
 
-		if($count == 1){	//今回が1回目の編集であればappeared_atだけ更新
-
-		//relationをUPDATE
-		$sql_u_relation = "UPDATE map_node_versions SET appeared_at = '".$timestamp."' WHERE disappeared_at IS NULL AND map_version_id = '".$map_version_id."'";
+		$sql_u_relation = "UPDATE node_versions SET disappeared_at = '".$timestamp."' WHERE disappeared_at IS NULL AND node_id = '".$node_id."'";
 		$result_u_relation = $mysqli->query($sql_u_relation);
 
-		}else{				//2回目以降の編集であればrelationテーブルは更新する
-
-		//それぞれのノードの最新node_version_idを取得 福岡さん
-		$sql_get_nvi = "SELECT id FROM node_versions WHERE appeared_at = (SELECT max(appeared_at) FROM node_versions WHERE node_id = '$node_id' GROUP BY node_id )";
+		$sql_get_nvi = "SELECT node_version_id FROM node_versions WHERE appeared_at = (SELECT max(appeared_at) FROM node_versions WHERE node_id = '$node_id' GROUP BY node_id )";
+		
 		if($result_get_nvi = $mysqli->query($sql_get_nvi)) {
-      		while($row = mysqli_fetch_assoc($result_get_nvi)){
-				$node_version_id = $row['id'];
-      		}
+				while($row = mysqli_fetch_assoc($result_get_nvi)){
+					$node_version_id = $row['node_version_id'];
+				}
     	}
+		
 		//relationをUPDATE	disappearedがNULLで最新map_version_idでないものの終了
 		$sql_u_relation = "UPDATE map_node_versions SET disappeared_at = '".$timestamp."' WHERE disappeared_at IS NULL AND map_version_id != '".$map_version_id."'";
 		$result_u_relation = $mysqli->query($sql_u_relation);
@@ -49,10 +44,6 @@
 		$sql_i_relation = "INSERT INTO map_node_versions (id, map_version_id, node_version_id, appeared_at, disappeared_at) 
 		VALUES ($relation_id, $map_version_id, '".$node_version_id."', '".$timestamp."', NULL)";
 		$result_i_relation = $mysqli->query($sql_i_relation);
-
-		}
-		
-		
 
 	}else if($_POST["data"] == "map"){
 		//マップ更新ボタンを押したとき
@@ -301,7 +292,7 @@
 	$result_c = $mysqli->query($sql_c);
 
 	//items
-	$sql_item = "UPDATE items SET updated_at='$timestamp', deleted=1 WHERE map_id='$map_id' deleted = 0";
+	$sql_item = "UPDATE items SET updated_at='$timestamp', deleted=1 WHERE map_id='$map_id' AND deleted = 0";
 	$result = $mysqli->query($sql_item);
     //クエリ($sql)のエラー処理
     if ($mysqli->error) {
@@ -313,7 +304,7 @@
     if ($mysqli->error) {
 		echo "Error item_versions: " . $mysqli->error;
 	}
-	$sql_item_h = "UPDATE item_histories SET disappeared_at='$timestamp' WHERE item_version_id IN (SELECT item_version_id FROM item_versions WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id')) AND disappeared_at ";
+	$sql_item_h = "UPDATE item_histories SET disappeared_at='$timestamp' WHERE item_version_id IN (SELECT item_version_id FROM item_versions WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id')) AND disappeared_at IS NULL";
 	$result = $mysqli->query($sql_item_h);
     //クエリ($sql)のエラー処理
     if ($mysqli->error) {
@@ -321,19 +312,19 @@
 	}
 
 	//items
-	$sql_item = "UPDATE item_contents SET updated_at='$timestamp', deleted=1 WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id') deleted = 0";
+	$sql_item = "UPDATE item_contents SET updated_at='$timestamp', deleted=1 WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id') AND deleted = 0";
 	$result = $mysqli->query($sql_item);
     //クエリ($sql)のエラー処理
     if ($mysqli->error) {
 		echo "Error items: " . $mysqli->error;
 	}
-    $sql_item_v = "UPDATE item_content_versions SET disappeared_at='$timestamp' WHERE item_content_id IN (SELECT item_content_id FROM item_contents WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id') AND disappeared_at IS NULL";
+	$sql_item_v = "UPDATE item_content_versions SET disappeared_at='$timestamp' WHERE item_content_id IN (SELECT item_content_id FROM item_contents WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id') AND deleted = 0) AND disappeared_at IS NULL";
 	$result = $mysqli->query($sql_item_v);
     //クエリ($sql)のエラー処理
     if ($mysqli->error) {
 		echo "Error item_versions: " . $mysqli->error;
 	}
-	$sql_item_h = "UPDATE item_content_histories SET disappeared_at='$timestamp' WHERE item_content_version_id IN (SELECT item_content_version_id FROM item_content_versions WHERE item_content_id IN (SELECT item_content_id FROM item_contents WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id'))) AND disappeared_at ";
+	$sql_item_h = "UPDATE item_content_histories SET disappeared_at='$timestamp' WHERE item_content_version_id IN (SELECT item_content_version_id FROM item_content_versions WHERE item_content_id IN (SELECT item_content_id FROM item_contents WHERE item_id IN (SELECT item_id FROM items WHERE map_id='$map_id'))) AND disappeared_at IS NULL";
 	$result = $mysqli->query($sql_item_h);
     //クエリ($sql)のエラー処理
     if ($mysqli->error) {
@@ -345,7 +336,7 @@
 	$result_sr = $mysqli->query($sql_sr);
 
 	//コンテント関係
-	$sql_cr = "UPDATE item_content_relations SET updated_at='$timestamp', deleted=1 WHERE item_content1_id IN (SELECT item_content_id FROM item_contents WHERE item_id IN (SELECT item_id FROM items WHERE map_id = '$map_id') AND deleted=0";
+	$sql_cr = "UPDATE item_content_relations SET updated_at='$timestamp', deleted=1 WHERE item_content1_id IN (SELECT item_content_id FROM item_contents WHERE item_id IN (SELECT item_id FROM items WHERE map_id = '$map_id') AND deleted=0)";
 	$result_cr = $mysqli->query($sql_cr);
 
 	

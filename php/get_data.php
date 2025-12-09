@@ -8,7 +8,7 @@
 		$map_id = $_SESSION["MAPID"];
 		$rationality_id = $_POST["rationality_id"];
 
-		$sql = "SELECT * FROM rationality_nodes WHERE map_id = ".$map_id." AND rationality_id = '".$rationality_id."'";
+		$sql = "SELECT rationality_id, node_id FROM rationality_nodes WHERE node_id IN (SELECT node_id FROM map_node_links WHERE map_id='$map_id') AND deleted='0'";
 
 		$i = 0;
 		$node_id_array = array();
