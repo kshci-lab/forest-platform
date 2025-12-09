@@ -3188,9 +3188,18 @@ function initializeFragmentsWorkspace(){
                 try{ console && console.debug && console.debug('[kfrag] click.kfragselect add-mode toggle', { addExt: addExt, addKfid: addKfid, uid: uid }); }catch(_){ }
                 var idx = window.kfrag_add_selected.ext.indexOf(uid);
                 if(idx === -1){
-                    window.kfrag_add_selected.ext.push(uid);
-                    window.kfrag_add_selected.kfid.push(String(addKfid));
-                    $wrap.addClass('additional-selected');
+                    // 制限: 追加選択は最大3つまで
+                    try{
+                        var currentCount = (Array.isArray(window.kfrag_add_selected.ext) ? window.kfrag_add_selected.ext.length : 0);
+                        if(currentCount >= 3){
+                            if(window.alert){ alert('追加選択は最大3つまでです'); }
+                            // 追加せず終了（モードは維持）
+                        } else {
+                            window.kfrag_add_selected.ext.push(uid);
+                            window.kfrag_add_selected.kfid.push(String(addKfid));
+                            $wrap.addClass('additional-selected');
+                        }
+                    }catch(_){ }
                 } else {
                     window.kfrag_add_selected.ext.splice(idx,1);
                     window.kfrag_add_selected.kfid.splice(idx,1);
@@ -3204,7 +3213,10 @@ function initializeFragmentsWorkspace(){
                     var display = [];
                     if(primaryId) display.push(primaryId);
                     if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
-                        window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && display.indexOf(ks) === -1) display.push(ks); });
+                        // 追加は最大3件に制限
+                        var added = [];
+                        window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && added.indexOf(ks) === -1) added.push(ks); });
+                        added.slice(0,3).forEach(function(ks){ if(display.indexOf(ks) === -1) display.push(ks); });
                     }
                     window.kfrag_display_list = display;
                     try{ console && console.log && console.log('[kfrag] display_list updated', window.kfrag_display_list, { add_selected: window.kfrag_add_selected, primaryId: primaryId }); }catch(_){ }
@@ -3215,7 +3227,10 @@ function initializeFragmentsWorkspace(){
                     if(window.activeExternalizedId) combined.push(window.activeExternalizedId);
                     else if(window.activeKnowledgeFragmentId) combined.push(window.activeKnowledgeFragmentId);
                     if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
-                        window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
+                        // 追加は最大3件に制限
+                        var extAdded = [];
+                        window.kfrag_add_selected.ext.forEach(function(x){ var sx = String(x); if(sx.length && extAdded.indexOf(sx)===-1) extAdded.push(sx); });
+                        extAdded.slice(0,3).forEach(function(sx){ combined.push(sx); });
                     }
                     combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
                     try{ console && console.log && console.log('[kfrag] fetchDiscussionHistory with combined', combined); }catch(_){ }
@@ -3223,13 +3238,12 @@ function initializeFragmentsWorkspace(){
                     else { fetchDiscussionHistory(combined); }
                 }catch(__){ }
 
-                // Auto-disable add-select mode after toggling selection and update button UI
+                // 1回選択したら自動で追加モードをOFF（従来仕様）
                 try{
                     window.kfrag_add_select_mode = false;
                     var $btnAdd = $('#fragment-add-select-toggle');
                     if($btnAdd && $btnAdd.length){ $btnAdd.removeClass('is-adding'); }
                 }catch(_){ }
-
                 return;
             }
         }catch(_){ }

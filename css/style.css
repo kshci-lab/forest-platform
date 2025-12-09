@@ -3481,6 +3481,7 @@ display: none;
 /* Selected fragments list under the discussion title */
 .fragment-selected-list{ 
 	display:flex; 
+	flex-wrap: wrap;
 	gap:6px; 
 	align-items:center; 
 	margin-top:6px; 
@@ -3519,7 +3520,8 @@ display: none;
 /* Container between title and message list that shows selected nodes */
 .fragment-selected-area{ 
 	display:flex; 
-	align-items:center; 
+    align-items:flex-start; 
+    flex-wrap: wrap;
 	font-size: 14px;
 	gap:8px; 
 	padding:0px 0 4px 0; 
