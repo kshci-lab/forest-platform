@@ -89,23 +89,24 @@ if (isset($_POST["login"])) {
   </head>
   <body>
 
-  <div class="form-wrapper">
-  <h1>Login</h1>
-  <form id="loginForm" name="loginForm" action="" method="POST">
-    <div class="form-item">
-      <label for="username"></label>
-      <input type="text" name="username" required="required" placeholder="User Name" value="<?php if (!empty($_POST["username"])) {echo htmlspecialchars($_POST["username"], ENT_QUOTES);} ?>">
+    <div class="form-wrapper">
+      <h1>Login</h1>
+      <form id="loginForm" name="loginForm" action="" method="POST">
+        <div class="form-item">
+          <label for="username"></label>
+          <input type="text" name="username" required="required" placeholder="User Name" value="<?php if (!empty($_POST["username"])) {echo htmlspecialchars($_POST["username"], ENT_QUOTES);} ?>">
+        </div>
+        <div class="form-item">
+          <label for="password"></label>
+          <input type="password" name="password" required="required" placeholder="Password" value="">
+        </div>
+        <div class="button-panel">
+          <input type="submit" id="login" class="button" name="login" value="Login"></input>
+        </div>
+      </form>
+      <div class="form-footer">
+        <p><a href="create_account.php">Create an account</a></p>
+      </div>
     </div>
-    <div class="form-item">
-      <label for="password"></label>
-      <input type="password" name="password" required="required" placeholder="Password" value="">
-    </div>
-    <div class="button-panel">
-      <input type="submit" id="login" class="button" name="login" value="Login"></input>
-    </div>
-  </form>
-  <div class="form-footer">
-    <p><a href="create_account.php">Create an account</a></p>
-  </div>
-</div>
+  </body>
 </html>
