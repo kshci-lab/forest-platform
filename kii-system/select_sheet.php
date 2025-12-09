@@ -133,6 +133,11 @@ if(isset($_POST['map'])){
         <form name="return" method="POST" align="center">
             <input class="button3" type="submit" name="logout" value="ログアウト">
         </form>
+
+        <div style="text-align:center; margin-top:8px;">
+          <input class="button3" type="button" value="モード選択" onclick="location.href='../select_mode.php'">
+        </div>
+
         <div align="center">
         論文のプレビュー
         </div>

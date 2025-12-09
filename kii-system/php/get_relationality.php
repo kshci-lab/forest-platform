@@ -7,7 +7,7 @@ require "connect_db.php";
 $map_id = $_SESSION["MAPID"];
 $rationality_id = $_POST["rationality_id"];
 
-		$sql = "SELECT * FROM rationality_nodes WHERE map_id = ".$map_id." AND rationality_id = '".$rationality_id."'";
+		$sql = "SELECT * FROM rationality_nodes WHERE rationality_id = '".$rationality_id."'";
 
 		$i = 0;
 		$node_id_array = array();

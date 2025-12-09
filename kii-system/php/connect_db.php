@@ -1,30 +1,27 @@
 <?php
 
 //   各々のローカル
-	$db_host = "localhost";  // ホスト名のみ
-	$db_port = 8889;  // ポート番号
-	$db_user = "root";
-	$db_password = "root";
-	$db_dbname = "forest_platform";
-	
-	// 実験データ参照用
-	// $db_host = "localhost:8889";  // DBサーバのurl
-	// $db_user = "root";
-	// $db_password = "root";
-	// $db_dbname = "FCR-Experiment-Phase1";
 
-	//アプリケーションサーバーにアップロードするとき．
-	// $db_host = "localhost";  // DBサーバのurl
-	// $db_port = 3306;
+	//デスクトップPCから接続するとき．
+	// $db_host = "10.240.186.80";  // ホスト名のみ
+	// $db_port = 8889;  // ポート番号
 	// $db_user = "root";
-	// $db_password = "kslabkslab";
+	// $db_password = "your_password";
 	// $db_dbname = "forest_platform";
 
-	// 　統合環境1
-	// $db_host = "192.168.0.82:3306";  // DBサーバのurl
+	//ローカルPCから接続するとき．
+	// $db_host = "localhost";  // DBサーバのurl
+	// $db_port = 8889;  // ポート番号
 	// $db_user = "root";
-	// $db_password = "kslabkslab";
-	// $db_dbname = "nishida2";
+	// $db_password = "root";
+	// $db_dbname = "forest_platform";
+
+	//アプリケーションサーバーにアップロードするとき．
+	$db_host = "localhost";  // DBサーバのurl
+	$db_port = 3306;
+	$db_user = "root";
+	$db_password = "kslabkslab";
+	$db_dbname = "forest_platform";
 
 	// mysqlへの接続
 	$mysqli = new mysqli($db_host, $db_user, $db_password, $db_dbname, $db_port);

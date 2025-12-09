@@ -67,6 +67,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="../css/ui.css">
         <link rel="stylesheet" type="text/css" href="../css/style.css">
         <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
+        <link rel="stylesheet" type="text/css" href="../css/organizational-map.css" />
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
@@ -81,8 +82,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/get_thinking.js"></script>
         <script type="text/javascript" src="js/jsmind.screenshot.js"></script>
         <script type="text/javascript" src="js/change_tab.js"></script>
-        <script type="text/javascript" src="../js/meeting-reflection-network.js"></script>
-        <link rel="stylesheet" type="text/css" href="../css/meeting-reflection-network.css" />
+        <script type="text/javascript" src="js/meeting-reflection-network.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/meeting-reflection-network.css" />
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         </script>
@@ -123,6 +124,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                  <li class="active"><a href="#tab03" >リフレクション</a></li>
                  <li class="active"><a href="#record_tab" >履歴</a></li> -->
             <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  <!--hatakeyama-->
+            <!-- <li class="active"><a href="#tab05">組織知マップ</a></li>  -->
 
             <div class="checkbox_mode">
                 <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
@@ -187,7 +189,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         縮小
                                     </button>
                                     <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
-                                        マップver更新 <!--hatakeyama-->
+                                        マップver更新
                                     </button>
                                     
                                     【Screenshot】
@@ -320,7 +322,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         </li>
                                         <li>
                                             <button class="button4" onclick="NodeVersionUpdate(null);">
-                                                ノードを更新
+                                                ノードverを更新
                                             </button>
                                         </li>
                                         <li>
@@ -499,9 +501,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </div>
                                     <div id="t_Process_conmenu">
                                         <ul>
-                                            <li><a href="javascript:void(0);" id="process_conmenu1">概念をつける</a></li>
-                                            <li><a href="javascript:void(0);" id="process_conmenu2">マインドマップと対応付ける</a></li>
-                                            <li><a href="javascript:void(0);" id="process_conmenu3" style="display:none">採用/棄却をつける</a></li>
+                                            <li><a href="javascript:void(0);" id="process_conmenu1">組織へ共有</a></li>                                            </li>
                                             <li><a href="javascript:void(0);" id="process_conmenu4">キャンセル</a></li>
                                         </ul>
                                     </div>
@@ -819,6 +819,88 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
             </div>
             <!--履歴 yoshioka -->
 
+            <!-- 0817川 組織知マップ -->
+            <div id="tab05">
+                <div id="layout">
+                    <div id="organizational_container">
+                        <div id="myOrganizationalnetwork_area">
+                            <div id="buttoncluster">
+                                <!-- <input type="button" class="Organizational_network_button"
+                                        id="organizational_addNode" value="思考ノード追加" />
+                                <input type="button" class="Organizational_network_button"
+                                        id="organizational_removeNode" value="ノード削除" />
+                                <input type="button" class="Organizational_network_button"
+                                        id="organizational_startEditEdge" value="エッジ追加" />
+                                <input type="button" class="Organizational_network_button"
+                                        id="organizational_removeEdge" value="エッジ削除" /> -->
+                                <input type="button" class="Organizational_network_button"
+                                        id="organizational_ZoomIn" value="拡大" />
+                                <input type="button" class="Organizational_network_button"
+                                        id="organizational_ZoomOut" value="縮小" />
+                                <!-- <div class="checkbox_organizational">
+                                    <input type="checkbox" id="checkbox_organizational" class="checkbox_organizational" name="check_organizational" onclick="ShowRelatedOrganizational('brother')">
+                                    <label for="checkbox_organizational" data-on-label="On" data-off-label="Off"></label>
+                                    <span class="checkbox_organizational_text">【兄弟ノード表示】<br></span>
+                                </div> -->
+                                <!-- <div class="checkbox_process">
+                                    <input type="checkbox" id="checkbox_process" class="checkbox_process" name="check_process" onclick="ShowRelatedProcess('consistency')">
+                                    <label for="checkbox_process" data-on-label="On" data-off-label="Off"></label>
+                                    <span class="checkbox_process_text">【整合性ノード表示】<br></span>
+                                </div> -->
+                                <!-- 組織選択プルダウン -->
+                                <form id="group_select_form" class="group_select_form">
+                                    <label for="group_select" id="group_select_label">組織選択：</label>
+                                    <select id="group_select" name="group_select">
+                                        <!-- organizational-map.jsでoptionを動的に追加 -->
+                                    </select>
+                                </form>
+                            </div>
+                            <div id="t_Organizational_conmenu">
+                                <ul>
+                                    <li><a href="javascript:void(0);" id="organizational_conmenu1">思考過程表出化マップを表示</a></li>
+                                    <!-- <li><a href="javascript:void(0);" id="organizational_conmenu2">マインドマップと対応付ける</a></li> -->
+                                    <!-- <li><a href="javascript:void(0);" id="organizational_conmenu3" style="display:none">採用/棄却をつける</a></li> -->
+                                    <li><a href="javascript:void(0);" id="organizational_conmenu4">キャンセル</a></li>
+                                </ul>
+                            </div>
+                            <!-- <div id="t_Organizational_labelselect">
+                                <select id="t_Organizational_selectionlist" size="3">
+                                </select>
+                                <input type="button" value="選択完了" id="p_ontology_select">
+                            </div> -->
+                            <div id="t_Organizational_recruitselect">
+                                <select id="t_Organizational_recruitselectionlist">
+                                    <option value="採用">採用</option>
+                                    <option value="棄却">棄却</option>
+                                </select>
+                                <input type="button" value="選択完了" id="p_recruit_select">
+                            </div>
+                            <div id="myOrganizationalnetwork"></div>
+                        </div>
+
+                    <div id="process_others_network_container" oncontextmenu="return false;" >
+                    
+                        <div id="othersProcessnetwork_area">
+                            <div id="buttoncluster">
+                                <input type="button" class="process_close" onclick="closeOthersThinkingProcessMap()"
+                                        id="process_close" value="×" />
+                                <input type="button" class="thinkingProcess_network_button"
+                                        id="process_ZoomIn" value="拡大" />
+                                <input type="button" class="thinkingProcess_network_button"
+                                        id="process_ZoomOut" value="縮小" />
+                                <div id="others_conceptdisplay">あああ</div>
+                                <!-- <div class="checkbox_process">
+                                    <input type="checkbox" id="checkbox_process" class="checkbox_process" name="check_process" onclick="ShowRelatedProcess('brother')">
+                                    <label for="checkbox_process" data-on-label="On" data-off-label="Off"></label>
+                                    <span class="checkbox_process_text">【兄弟ノード表示】<br></span>
+                                </div> -->
+                            </div>
+
+                            <div id="othersProcessnetwork"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>    
         
 
@@ -847,6 +929,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
         <script type="text/javascript" src="../js/thinking-process-network.js"></script>
+        <script type="text/javascript" src="../js/organizational-map.js"></script>
         <script type="text/javascript" src="js/past_sheet.js"></script>
         <script type="text/javascript" src="js/record_presentation.js"></script>
         <script type="text/javascript" src="js/presentation.js"></script>

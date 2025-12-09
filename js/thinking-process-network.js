@@ -39,8 +39,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.edgeEditMode = false; // リンクを編集できるかどうかのモード（Falseは編集不可）
         this.EdgeStartId = []; //エッジの開始ID
         this.EdgeEndId = []; //エッジの終了ID
-        // this.OntologyNodeId = []; //オントロジーノードのノードID
-        // this.OntologyConnectNodeId = []; //オントロジーノードと対応づいているノードID
+        this.OntologyNodeId = []; //オントロジーノードのノードID
+        this.OntologyConnectNodeId = []; //オントロジーノードと対応づいているノードID
         // this.ConnectNetworkNodeId = [];
         // this.ConnectMindMapNodeId = [];
         // this.RecruitNodeId = [];//採用or棄却されたノードID
@@ -62,7 +62,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             this.jmindex = [];
             this.addEventLister();
             // $(`#jsmind_container`).on('click',this.connect_mindmap.bind(this));
-            // $(`#process_conmenu1`).on('click',this.show_select.bind(this));
+            // $(`#process_conmenu1`).on('click',this.selectShareOrganization.bind(this));
             // $(`#process_conmenu2`).on('click',this.connect_network.bind(this));
             // $(`#process_conmenu3`).on('click',this.Recruit_Idea.bind(this));
             $(`#process_conmenu4`).on('click',this.ContentmenuCancel.bind(this));
@@ -154,7 +154,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     addEventLister(){
-        // this.bindconnect_mindmap = this.connect_mindmap.bind(this);
+        this.bindselectShareOrganization = this.selectShareOrganization.bind(this);
         // this.bindshow_select = this.show_select.bind(this);
         // this.bindconnect_network = this.connect_network.bind(this);
         // this.bindRecruit_Idea = this.Recruit_Idea.bind(this);
@@ -164,7 +164,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // this.bindfeedback = this.feedback.bind(this);
         // this.bindNodeblinking = this.Nodeblinking.bind(this);
         // $(`#jsmind_container`).on('click',this.bindconnect_mindmap);
-        // $(`#process_conmenu1`).on('click',this.bindshow_select);
+        $(`#process_conmenu1`).on('click',this.bindselectShareOrganization);
         // $(`#process_conmenu2`).on('click',this.bindconnect_network);
         // $(`#process_conmenu3`).on('click',this.bindRecruit_Idea);
         $(`#process_conmenu4`).on('click',this.bindContentmenuCancel);
@@ -176,7 +176,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     removeEventLister(){
         // $(`#jsmind_container`).off('click',this.bindconnect_mindmap);
-        // $(`#process_conmenu1`).off('click',this.bindshow_select);
+        $(`#process_conmenu1`).off('click',this.bindselectShareOrganization);
         // $(`#process_conmenu2`).off('click',this.bindconnect_network);
         // $(`#process_conmenu3`).off('click',this.bindRecruit_Idea);
         $(`#process_conmenu4`).off('click',this.bindContentmenuCancel);
@@ -455,7 +455,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         };
         defaultThinkingProcess.edges.add(newEdge);
 
-        //triggerとなるノードを追加
+        //triggerとなるノードを追加（既に存在するIDは追加せず更新する）
         const newNode = {
             id: trigger_id,
             label: t_time,
@@ -469,7 +469,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             fixed: false,
             x: node_x, y: node_y,
         };
-        defaultThinkingProcess.nodes.add(newNode);
+
+        const existingNode = defaultThinkingProcess.nodes.get(trigger_id);
+        if (existingNode) {
+            // merge new properties into existing node
+            defaultThinkingProcess.nodes.update(Object.assign({id: trigger_id}, newNode));
+        } else {
+            defaultThinkingProcess.nodes.add(newNode);
+        }
 
         if(flag == "New"){
             defaultRecordThinkingProcess.record_trigger(trigger_id, activity_id, from_node, to_node, t_time, t_type, t_label, node_x, node_y);
@@ -571,7 +578,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             NetworkMenu.style.left = this.BoxDisplay.x;
             NetworkMenu.style.top = this.BoxDisplay.y;
             NetworkMenu.style.display = "block";//ここようわからん未完成かも
-            if(this.OntologyConnectNodeId.indexOf(this.selectId) !== -1){
+            if(this.OntologyConnectNodeId && this.OntologyConnectNodeId.indexOf(this.selectId) !== -1){
                 document.getElementById("process_conmenu3").style.display = "block";
             }
         }
@@ -580,7 +587,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     //ラベルの選択（完了）
     show_select (){
         document.getElementById('t_Process_conmenu').style.display = "none";
-        if(this.OntologyConnectNodeId.indexOf(this.selectId) !== -1){
+        if(this.OntologyConnectNodeId && this.OntologyConnectNodeId.indexOf(this.selectId) !== -1){
             alert('このノードにはすでに概念がつけられているため概念付けできません');
             return;
         }
@@ -590,112 +597,86 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         labelselect.style.top = this.BoxDisplay.y;
     }
 
-    //概念をマップに追加（完了）
-    // addontology (){
-    //     document.getElementById("labelselect").style.display = "none";
-    //     const nodeBoundingBox = this.ownNetwork.getBoundingBox(this.selectId);
-    //     const TopicTagId = this.generateUniqueNumberText();
-    //     const selectionlist = document.getElementById('selectionlist');
-    //     this.addNode(TopicTagId, selectionlist.value, "topic-tag", nodeBoundingBox.left, nodeBoundingBox.top);
-    //     this.OntologyConnectNodeId.push(this.selectId);
-    //     this.OntologyNodeId.push('topic-tag_'+TopicTagId);
-    //     defaultRecordThinkingProcess.record_ontology(this.selectId, 'topic-tag_'+TopicTagId);
-    //     selectionlist.options[2].selected = true;
-    // }
+    selectShareOrganization (){// 右クリックメニューを非表示
+        document.getElementById('t_Process_conmenu').style.display = "none";
+        const selected_node_id = defaultThinkingProcess.ownNetwork.getSelection().nodes[0];
+        const selected_node_group = defaultThinkingProcess.nodes.get(selected_node_id).group;
 
-    // Recruit_Idea (){
-    //     document.getElementById('t_Process_conmenu').style.display = "none";
-    //     if(this.RecruitNodeId.indexOf(this.selectId) !== -1){
-    //         alert('このノードにはすでに採用不採用がつけられています');
-    //         document.getElementById("process_conmenu3").style.display = "none";
-    //         return;
-    //     }
-    //     const t_Process_recruitselect = document.getElementById("t_Process_recruitselect");
-    //     t_Process_recruitselect.style.display = "block";
-    //     t_Process_recruitselect.style.left = this.BoxDisplay.x;
-    //     t_Process_recruitselect.style.top = this.BoxDisplay.y;
-    // }
+        if(selected_node_group != "process"){
+            alert("プロセスノードのみ共有可能です。");
+            return;
+        }
+        
+        // group_selectから動的に組織リストを取得
+        const groupSelect = document.getElementById('group_select');
+        const options = groupSelect.options;
+        
+        // 組織リストを動的に作成
+        let organizationList = "共有する組織を選択してください:\n\n";
+        let organizationMap = {}; // 番号と組織の対応付け
+        
+        let optionIndex = 1;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value !== "") { // 空のoption要素は除外
+                organizationList += optionIndex + ". " + options[i].text + "\n";
+                organizationMap[optionIndex.toString()] = {
+                    value: options[i].value,
+                    text: options[i].text
+                };
+                optionIndex++;
+            }
+        }
+        
+        organizationList += "\n組織番号を入力 (1-" + (optionIndex - 1) + "):";
+        
+        const selectedNumber = prompt(organizationList, "1");
+        
+        if (selectedNumber !== null && selectedNumber.trim() !== "") {
+            if (organizationMap[selectedNumber]) {
+                const selectedOrg = organizationMap[selectedNumber];
+                console.log("選択された組織: " + selectedOrg.text + " (ID: " + selectedOrg.value + ")");
 
-    // Selected_Recruit_Idea (){
-    //     const FeedBackReflectionText = [];
-    //     const FeedBackReflection = [];
-    //     document.getElementById("t_Process_recruitselect").style.display = "none";
-    //     const selectionlist = document.getElementById('t_Process_recruitselectionlist');
-    //     const Ontology_Node_Id = this.OntologyNodeId[this.OntologyConnectNodeId.indexOf(this.selectId)];
-    //     this.RecruitNodeId.push(this.selectId);
-    //     this.Feedback.push(this.selectId);
-    //     this.Recruit.push(selectionlist.value);
-    //     if (selectionlist.value === "採用") { // IDに相当するノードがある場合の中身を編集
-    //         this.nodes.update({
-    //             id : Ontology_Node_Id,
-    //             borderWidth: 5,
-    //             color: {
-    //                 border: "green",
-    //             },
-    //         });
-    //     }else if(selectionlist.value === "棄却"){
-    //         this.nodes.update({
-    //             id : Ontology_Node_Id,
-    //             borderWidth: 5,
-    //             color: {
-    //                 border: "red",
-    //             },
-    //         });
-    //     }
-    //     for(var i=0; i<this.RecruitNodeId.length-1; i++){
-    //         FeedBackReflectionText.push("text"+this.RecruitNodeId[i]);
-    //         FeedBackReflection.push(document.getElementById("text"+this.RecruitNodeId[i]).value);
-    //     }
-    //     const node_info = this.nodes.get(this.selectId);
-    //     document.getElementById("accordion_discussion").innerHTML += "<div id='"+this.selectId+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+node_info.label+"」は"+selectionlist.value+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ this.selectId +"' class='accordion-input'></textarea></div></div>";
-    //     const accordionHeaders = document.querySelectorAll('#accordion_discussion .accordion-header');
-    //     accordionHeaders.forEach(header => {
-    //       header.addEventListener('click', function () {
-    //         const accordionItem = this.parentElement;
-    //         accordionItem.classList.toggle('active');
-    //       });
-    //     });
-    //     //追加したら消えてしまうからおいておく
-    //     for(var i=0; i<this.RecruitNodeId.length-1; i++){
-    //         document.getElementById("text"+this.RecruitNodeId[i]).innerHTML = FeedBackReflection[FeedBackReflectionText.indexOf("text"+this.RecruitNodeId[i])];
-    //     }
-    //     defaultRecordThinkingProcess.record_recruit(this.selectId, Ontology_Node_Id, selectionlist.value);
-    //     document.getElementById("process_conmenu3").style.display = "none";
-    // }
+                this.shareProcessNodeToOrganization(selectedOrg.value, selected_node_id);
+
+                alert("組織 " + selectedOrg.text + " へ共有しました。");
+            } else {
+                alert("無効な番号です。もう一度やり直してください。");
+            }
+        } else if (selectedNumber === null) {
+            // キャンセルされた場合
+            console.log("組織選択がキャンセルされました");
+        } else {
+            alert("組織を選択してください。");
+        }
+    }
+
+    shareProcessNodeToOrganization(organizationId, nodeId) {
+        // バリデーション
+        if (!organizationId || !nodeId) {
+            alert('共有する組織またはノードが選択されていません。');
+            return;
+        }
+
+        $.ajax({
+            url: "../php/organizational_edit_map_maneger.php",
+            type: "POST",
+            data: {
+                purpose: "share",
+                group_id: organizationId,
+                process_node_id: nodeId
+            },
+            success: function(response) {
+                console.log('共有処理が成功しました:', response);
+            },
+            error: function(xhr, status, err) {
+                console.error('shareProcessNodeToOrganization error:', status, err, xhr.responseText);
+            }
+        });
+    }
 
     ContentmenuCancel(){
         document.getElementById('t_Process_conmenu').style.display = "none";
     }
-
-    //マインドマップとネットワークつなげる(今後動作確認はいる多分行けた)，(複雑なので何してるか聞きたいなら大槻まで)
-    // connect_network (){
-    //     document.getElementById('t_Process_conmenu').style.display = "none";
-    //     this.nodeConnectEnabled = true;
-    // }
-
-    // マインドマップのノードがクリックされたときの処理
-    // connect_mindmap (e) {
-    //     const Jsmind = new jsMind({container:'jsmind_container',
-    //                             editable: false});
-    //     if (!this.nodeConnectEnabled) {
-    //         return;
-    //     }else{
-    //         const mm_nodeid = Jsmind.view.get_binded_nodeid(e.target);
-    //         if(mm_nodeid == null){
-    //             alert('ノードのクリックがうまくできませんでした．もう一度試してみてください');
-    //             return;
-    //         }else{
-    //             if(this.ConnectNetworkNodeId.indexOf(this.selectId) !== -1 && this.ConnectMindMapNodeId.indexOf(mm_nodeid) !== -1){
-    //                 alert('このノードはすでに選択されています');
-    //                 return;
-    //             }
-    //             defaultRecordThinkingProcess.record_connection(this.selectId,mm_nodeid);
-    //             this.ConnectNetworkNodeId.push(this.selectId);
-    //             this.ConnectMindMapNodeId.push(mm_nodeid);
-    //             this.nodeConnectEnabled = false;
-    //         }
-    //     }
-    // }
 
     //ノードがクリックされたときの処理
     networkClick (params){
@@ -1086,15 +1067,21 @@ class RecordThinkingProcess{
 /*
  * データベースからの読み込み
  */
-let process_mode;
-let trigger_list;
+let process_mode; // 思考過程表出化マップの表示モードを保持する変数
+let trigger_list;   // データベースから取得した思考過程表出化マップの情報を保持する変数
+let selected_concept_id;  // 選択されている概念IDを保持する変数
+let selected_other_process_id; // 他者の思考過程表出化マップを表示する際に使用する変数
+// ガード用タイムスタンプ（同一操作による二重実行を抑止）
+let _lastShowThinkingProcessCall = 0;
+
 const getProcessMapDataFromDB = (callback) => {
     //選択されているノードIDとconcept_id
     let selected_node_id;
-    let selected_concept_id;
     if(process_mode == "all"){
         selected_node_id = _jm.get_selected_node().id;
         selected_concept_id = Get_NodeInfo(selected_node_id, "concept_id");
+    }else if(process_mode == "who"){
+        selected_node_id = selected_other_process_id;    //選択した他者のprocessノードIDを格納
     }else{
         const conceptDiplay = document.getElementById("conceptdisplay");
         selected_node_id = conceptDiplay.getAttribute('nodeid');
@@ -1114,7 +1101,7 @@ const getProcessMapDataFromDB = (callback) => {
                     },
                 }).success((r) => {
                     trigger_list = JSON.parse(r);
-                    // console.log(trigger_list);
+                    console.log(trigger_list);
                     callback(trigger_list);
                 });
             } catch (error){
@@ -1146,33 +1133,15 @@ const makeTriggerInList = (id, activity_type, concept_label, content, timestamp,
 }
 
 // 思考過程表出化マップを表示
-const displayTriggerData = (mode, display_target_area_id) => {
+const displayTriggerData = (mode, process_display_option) => {
     process_mode = mode;
     let node_x = 0;
     let node_y = 0;
     let from_id = "";
     if(mode=="all" || mode == "allRE"){
         const conceptdisplay_area = $(`#conceptdisplay`); // 何の認知活動かを表示するエリア
-        const target_area = $(`#${display_target_area_id}`); // DOMエリア
+        const target_area = $(`#${process_display_option}`); // DOMエリア
         $('#trigger_area_list').html("");
-        let selected_node_id;
-        let selected_concept_id;
-        // 初回読み込み時に何の認知活動かを表示する
-        if(mode=="all"){
-            selected_node_id = _jm.get_selected_node().id;
-            var jmnode = document.getElementsByTagName("jmnode");
-            for(var i=0; i<jmnode.length; i++){
-                if(selected_node_id == jmnode[i].getAttribute("nodeid")){
-                    selected_concept_id = jmnode[i].getAttribute("concept_id");
-                }
-            }
-            document.getElementById('conceptdisplay').setAttribute('nodeId', selected_node_id);
-            document.getElementById('conceptdisplay').setAttribute('conceptId', selected_concept_id);
-        }else{
-            const conceptDisplay = document.getElementById('conceptdisplay');
-            selected_node_id = conceptDisplay.getAttribute('nodeid');
-            selected_concept_id =conceptDisplay.getAttribute('conceptid');
-        }
 
         getProcessMapDataFromDB ((trigger_list_info) => {
             //concept_labelを表示
@@ -1286,6 +1255,62 @@ const displayTriggerData = (mode, display_target_area_id) => {
             const edges = this.edges;
         })
 
+    }else if(mode=="who"){
+        const conceptdisplay_area = $(`#others_conceptdisplay`); // 何の認知活動かを表示するエリア
+        const others_node = process_display_option; // 選択されているノード
+        selected_other_process_id = others_node.id;
+        selected_concept_id = others_node.concept_id;
+        organizational_selected_user_id = others_node.user_id;
+
+        getProcessMapDataFromDB ((trigger_list_info) => {
+            //concept_labelを表示
+            const concept_label = trigger_list_info['selected_concept'];
+            console.log(concept_label);
+            conceptdisplay_area.html("\""+concept_label+"\"の思考過程");
+            let j = 0;
+
+            // versionノードの表示
+            trigger_list_info.node_versions.forEach((v) => {
+                defaultThinkingProcess.addVersionNode(v.node_version_id, v.content, "versions", v.appeared_at, node_x, node_y);
+                if(from_id != ""){
+                    defaultThinkingProcess.addVersionEdge(from_id, v.node_version_id);
+                }
+                from_id = v.node_version_id;
+                node_x += 300;
+            });
+            // triggerノードの表示
+            trigger_list_info.trigger.forEach((u) => {
+                j++;
+                if(u){
+                    let from_node = u.node_version_from;
+                    let to_node = u.node_version_to;
+                    let edge_ids = defaultThinkingProcess.ownNetwork.getConnectedEdges(from_node);
+                    let num = 0;
+                    for(i = 0; i<edge_ids.length; i++){
+                        if(defaultThinkingProcess.edges.get(edge_ids[i]).group == "versionEdges" || defaultThinkingProcess.edges.get(edge_ids[i]).group == "trigger_from"){
+                            //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
+                            if(defaultThinkingProcess.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
+                                num = i;
+                            }
+                        }
+                    }
+                    let edge_id = edge_ids[num];
+                    defaultThinkingProcess.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, u.x, u.y);
+                }
+            });
+            trigger_list_info.pnode.map((n) => {
+                defaultThinkingProcess.addReloadNode(n.process_node_id, n.content, n.process_node_type, n.node_x, n.node_y);
+            });
+            trigger_list_info.pedge.map((n) => {
+                defaultThinkingProcess.addReloadEdge(n.process_edge_id, n.edge_start, n.edge_end, n.label);
+            });
+
+            const nodes = this.nodes;
+            const edges = this.edges;
+
+            addeventdisplayTriggerData();
+            
+        });
     }
     
 }
@@ -1314,67 +1339,6 @@ const addeventdisplayTriggerData = () => {
     $(`#trigger_area`).on('mouseleave', (e) => {
     // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
         // $(`#trigger_click`).empty();
-    });
-    $(`.trigger_in_list`).on('click', (e) => {
-        // リスト内の発話ノードにマウスイベント(左クリック)を追加
-        const clicked_trigger = e.target;
-        document.getElementById("trigger_click").innerHTML="<input type='button' class='triggerbutton' id='triggerFromList' value='ノードとして追加'>";
-
-        $(`#triggerFromList`).on("click", () => {
-            const selected_node_id = defaultThinkingProcess.ownNetwork.getSelection().nodes[0];
-            const selected_edge_id = defaultThinkingProcess.ownNetwork.getSelection().edges;
-            const activity_id = clicked_trigger.getAttribute('id');
-            const t_label = clicked_trigger.innerHTML;
-            const t_type = clicked_trigger.getAttribute('activity_type');
-            const t_time = clicked_trigger.getAttribute('timestamp');
-            let edge_id =selected_edge_id;
-            let trigger_id = defaultThinkingProcess.generateUniqueNumberText();
-            let num = 0 ;
-            let selected_node_group = defaultThinkingProcess.nodes.get(selected_node_id).group;
-
-            if(selected_node_id && selected_node_group == "versions" || selected_node_group == "versionsBro"){
-                //versionのノードが選択されている時，それにつながるedge_idを取得し，右側のedge_idにつながるnode_idを取得する
-                for(i = 0; i<selected_edge_id.length; i++){
-                    let selected_edge_group = defaultThinkingProcess.edges.get(selected_edge_id[i]).group;
-                    if(selected_edge_group == "versionEdges" || selected_edge_group == "trigger_from"){
-                        //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
-                        if(defaultThinkingProcess.ownNetwork.getConnectedNodes(selected_edge_id[i])[1] != selected_node_id){
-                            num = i;
-                        }
-                    }
-                }
-                edge_id = selected_edge_id[num];
-                const connect_node_ids = defaultThinkingProcess.ownNetwork.getConnectedNodes(selected_edge_id[num]);
-                let from_node = connect_node_ids[0];
-                let to_node = connect_node_ids[1];
-                if(defaultThinkingProcess.edges.get(selected_edge_id[num]).group == "trigger_to"){
-                    // triggerを指しているedgeだった場合，その先のversionノードを取得する
-                    let e = defaultThinkingProcess.ownNetwork.getConnectedEdges(connect_node_ids[1]);
-                    let n = defaultThinkingProcess.ownNetwork.getConnectedNodes(e[1])
-                    to_node = n[1];
-                }
-                defaultThinkingProcess.addTriggerNode("New", trigger_id, edge_id, from_node, to_node, activity_id, t_label, t_type, t_time, null, null);
-                document.getElementById("trigger_click").innerHTML="";
-                return;
-            }else if(selected_edge_id.length == 1 && (defaultThinkingProcess.edges.get(selected_edge_id[0]).group == "versionEdges" || defaultThinkingProcess.edges.get(selected_edge_id[0]).group == "trigger_from")){
-                //versionもしくはtriggerのエッジが選択されている時，それにつながるnode_id(2つ)を取得する
-                const connect_node_ids = defaultThinkingProcess.ownNetwork.getConnectedNodes(selected_edge_id);
-                let from_node = connect_node_ids[0];
-                let to_node = connect_node_ids[1];
-                if(defaultThinkingProcess.edges.get(selected_edge_id[0]).group == "trigger_from"){
-                    // triggerを指しているedgeだった場合，その先のversionノードを取得する
-                    let e = defaultThinkingProcess.ownNetwork.getConnectedEdges(connect_node_ids[1]);
-                    let n = defaultThinkingProcess.ownNetwork.getConnectedNodes(e[1])
-                    to_node = n[1];
-                }
-                defaultThinkingProcess.addTriggerNode("New", trigger_id, selected_edge_id[0], from_node, to_node, activity_id, t_label, t_type, t_time, null, null);
-                document.getElementById("trigger_click").innerHTML="";
-                return;
-            }else{
-                alert('追加したい箇所のノードまたはエッジを選択してください');
-                return;
-            }
-        });
     });
     $(`.trigger_in_list`).on('contextmenu', (e) => {
         // リスト内の発話ノードにマウスイベント(右クリック)を追加
@@ -1562,25 +1526,68 @@ function ShowRelatedProcess(mode){
     
 }
 
-function showThinkingProcessMap(){
-  
-    document.getElementById('feedback_area').style.display = "block";
-    document.getElementById('xml_upload_area').style.display = "block";
-    $('#process_network_container').css('display','flex');
-    // $('#jsmind_container').css('width','calc(100vw - 350px)');
-    $('#jsmind_container').css('width','100%');
-    $('#jsmind_container').css('height','50%');
-    $('#mind').css('height','90%');
-    $('#document').hide();
-    const frame_dom = document.getElementsByClassName("inquiry_area");
-    frame_dom[0].style.border = "solid 5px #ccc";
-    $("#myProcessnetwork").css({
-      width: '100%', 
-      height: '400px' // 必要に応じて調整
-    });
-  
-    defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
-    displayTriggerData("all", "trigger_area_list");
+function showThinkingProcessMap(others_node){
+    // 重複呼び出しを短時間内に受けた場合は無視する（UIからの二重トリガ防止）
+    try{
+        const now = Date.now();
+        if(now - _lastShowThinkingProcessCall < 300){
+            console.log('showThinkingProcessMap: duplicate call ignored');
+            console.trace();
+            return;
+        }
+        _lastShowThinkingProcessCall = now;
+        console.trace('showThinkingProcessMap called');
+    }catch(e){/* no-op */}
+
+    // 共有された思考過程ノードの閲覧かどうか(自分自身の場合は others_node==null )
+    if(others_node){
+        console.log("他者の思考過程表出化マップを表示");
+        document.getElementById('feedback_area').style.display = "block";
+        document.getElementById('xml_upload_area').style.display = "block";
+        $('#process_others_network_container').css('display','block');
+        // organizational_container をフレックスレイアウトに変更して垂直分割対応
+        $('#organizational_container').css({
+            'display':'flex',
+            'flex-direction':'column',
+            'width':'calc(100vw - 350px)',
+            'height':'150%'
+        });
+        // myOrganizationalnetwork_area と process_others_network_container の高さを設定
+        $('#myOrganizationalnetwork_area').css({
+            'height':'50%',
+            'flex':'0 0 50%'
+        });
+        $('#process_others_network_container').css({
+            'width':'100%',
+            'height':'50%',
+            'flex':'0 0 50%',
+            'display':'flex',
+            'flex-direction':'column'
+        });
+    
+        defaultThinkingProcess = new ThinkingProcess("othersProcessnetwork", "load");
+        displayTriggerData("who", others_node);
+    }else{
+        console.log("自分自身の思考過程表出化マップを表示");
+        document.getElementById('feedback_area').style.display = "block";
+        document.getElementById('xml_upload_area').style.display = "block";
+        $('#process_network_container').css('display','flex');
+        // $('#jsmind_container').css('width','calc(100vw - 350px)');
+        $('#jsmind_container').css('width','100%');
+        $('#jsmind_container').css('height','50%');
+        $('#mind').css('height','90%');
+        $('#document').hide();
+        const frame_dom = document.getElementsByClassName("inquiry_area");
+        frame_dom[0].style.border = "solid 5px #ccc";
+        $("#myProcessnetwork").css({
+        width: '100%', 
+        height: '400px' // 必要に応じて調整
+        });
+    
+        defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
+        displayTriggerData("all", "trigger_area_list");
+    }
+    
   
 }
 
