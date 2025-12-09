@@ -2089,6 +2089,7 @@ display: none;
   /* 余白が原因で折り返さないように */
   width: 100%;
   box-sizing: border-box;
+  float: left;
 }
 #jsmind_area {
   float: none !important;

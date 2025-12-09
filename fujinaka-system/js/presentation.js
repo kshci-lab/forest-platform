@@ -1731,7 +1731,7 @@ function Get_ContentRank(forestNodeId){
         const indent = spanEl ? spanEl.getAttribute('name') : null;
         const concept_id = spanEl ? spanEl.getAttribute('concept_id') : null;
         // 追加: f_node_id属性（DB移行対応）
-        const f_node_attr = spanEl ? spanEl.getAttribute('f_node_id') : null;
+        const f_node_attr = spanEl ? spanEl.getAttribute('node_id') : null;
 
         // シナリオ上のnode_id
         const node_id =
@@ -1762,9 +1762,11 @@ function Get_ContentRank(forestNodeId){
         }
 
         // 修正: 引数が無ければ各要素のf_node_id属性から補完
-        const f_node_id = (forestNodeId != null && String(forestNodeId).trim() !== "")
-          ? String(forestNodeId).trim()
-          : (f_node_attr ? String(f_node_attr) : null);
+        // const f_node_id = (forestNodeId != null && String(forestNodeId).trim() !== "")
+        //   ? String(forestNodeId).trim()
+        //   : (f_node_attr ? String(f_node_attr) : null);
+
+        const f_node_id = f_node_attr ? String(f_node_attr) : null;
 
         // 修正: content_id を先頭、次に f_node_id を渡す
         Record_content_rank(
