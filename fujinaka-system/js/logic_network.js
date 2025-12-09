@@ -601,12 +601,9 @@ class LogicNetwork {
       // 可能ならForest（概念）対応のIDも取得（presentation要素側に埋め込まれている場合）
       const conceptIdFromPresentation =
         selectedElement.getAttribute('f_node_id') ||
-        selectedElement.getAttribute('forest_id') ||
-        selectedElement.getAttribute('concept_id') ||
-        selectedElement.getAttribute('conceptid') ||
-        (selectedElement.dataset ? (selectedElement.dataset.fNodeId || selectedElement.dataset.fnodeid || selectedElement.dataset.conceptid || selectedElement.dataset.conceptId) : null) ||
+        selectedElement.getAttribute('fnodeid') ||
+        (selectedElement.dataset ? (selectedElement.dataset.fNodeId || selectedElement.dataset.fnodeid) : null) ||
         null;
-      
       return {
         text: elementText.trim(),
         id: elementId,
@@ -645,7 +642,7 @@ class LogicNetwork {
 
   // 論文シナリオのノードを起点に三角ロジックを作成する関数
   async createTriangleFromScenario() {
-    // マインドマップ側から選択ノード情報を取得
+    // 論文シナリオ側から選択ノード情報を取得
     let selected_pnode = this.getSelectedScenarioContent();
     if (!selected_pnode || !selected_pnode.text) {
       alert("ノードを選択してください");
@@ -761,33 +758,43 @@ class LogicNetwork {
     // presentationから反映されたことを示すためにp_node_idを設定
     const updatedNode = this.nodes.get(selectedLogicNodeId);
     updatedNode.p_node_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
-    updatedNode.presentation_origin = true; // presentationから反映されたことを示すフラグ
+    updatedNode.presentation_origin = true;
 
-    // 追加: presentation要素が conceptid を持っていれば取得してUI側にも反映
-    const conceptIdFromPresentation =
-      selectedElement.getAttribute('concept_id') ||
-      selectedElement.getAttribute('conceptid') ||
-      (selectedElement.dataset ? (selectedElement.dataset.conceptid || selectedElement.dataset.conceptId) : null) || null;
+    // 修正: concept_id ではなく f_node_id を取得
+    const p_element_id = updatedNode.p_node_id;
+    let conceptIdFromPresentation =
+      selectedElement.getAttribute('f_node_id') ||
+      selectedElement.getAttribute('fnodeid') ||
+      (selectedElement.dataset ? (selectedElement.dataset.fNodeId || selectedElement.dataset.fnodeid) : null) ||
+      null;
+
+    if (!conceptIdFromPresentation && p_element_id && typeof this.fetchForestNodeIdByPresentationId === 'function') {
+      this.fetchForestNodeIdByPresentationId(String(p_element_id)).then((mappedFid) => {
+        if (mappedFid) {
+          try {
+            const cur = this.nodes.get(selectedLogicNodeId);
+            cur.f_node_id = String(mappedFid);
+            this.applyNodeStyle(cur);
+            this.nodes.update(cur);
+            defaultRecordLogicNetwork.edit_LogicNode(
+              selectedLogicNodeId,
+              cur.label ? cur.label.split('\n').join('') : elementText,
+              true,
+              String(mappedFid),
+              p_element_id
+            );
+          } catch (_) {}
+        }
+      }).catch(() => {});
+    }
+
     if (conceptIdFromPresentation) {
       updatedNode.f_node_id = conceptIdFromPresentation;
     }
-    
-    // 既存のapplyNodeStyleを使用してスタイルを再適用
+
     this.applyNodeStyle(updatedNode);
     this.nodes.update(updatedNode);
-    
-    // 削除済みノードだった場合の追加処理
-    if (wasDeleted && elementText.length > 0) {
-      console.log("削除済みノードを復元しました");
-    }
-  
-    alert(`論理ネットワークノードの内容を「${elementText}」で更新しました`);
-    
-    // presentation要素のIDを取得
-    const p_element_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
-    console.log("applyPresentationToTriangle: edit_LogicNode 呼び出し (p, concept)", { p_element_id, conceptIdFromPresentation });
 
-    // presentation ID付きでデータベースを更新（conceptidがあれば第四引数に渡す）
     defaultRecordLogicNetwork.edit_LogicNode(
       selectedLogicNodeId,
       elementText,
@@ -1324,7 +1331,7 @@ class LogicNetwork {
     // Forest領域の枠を一時点滅（候補: #mind_all）
     this.pulseElementById('mind_all');
     // トースト表示
-    this.showToast('Forest側に未対応です。マインドマップのノードと対応付けるか、Forestから反映してください。');
+    this.showToast('Forest側に未対応です。マインドマップのノードと対応付ける必要はありませんか。');
   }
 
   // 追加: 欠落側に示唆（Presentation側）
@@ -1332,7 +1339,7 @@ class LogicNetwork {
     // Presentation領域の枠を一時点滅（候補: #document_area）
     this.pulseElementById('document_area');
     // トースト表示
-    this.showToast('シナリオ側に未対応です。シナリオへ内容を反映するか、対応付けを行ってください。');
+    this.showToast('シナリオ側に未対応です。シナリオと対応付ける必要はありませんか。');
   }
 
   // 追加: コンテナを軽くハイライト
