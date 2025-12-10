@@ -646,7 +646,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none">
-                            <div id = "ontology_feedback"></div>
+                            <!-- <div id = "ontology_feedback"></div> -->
                             <div id = "accordion_discussion"></div>
                             <input id = "feedbackrecord" type="button" value="記録">
                         </div>

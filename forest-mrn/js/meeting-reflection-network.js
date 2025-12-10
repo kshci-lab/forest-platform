@@ -1388,7 +1388,7 @@ const getXMLTagInfo = () => {
         // アップロードされたXMLファイルの中身をJSONデータとして取得
         const parser = new DOMParser();
         const meeting_utterances = parser.parseFromString($("#meeting_utterance_xml").html(), "text/xml");
-        
+
         // XMLが正常に解析されなかった場合のエラーチェック
         const parseError = meeting_utterances.querySelector('parsererror');
         if (parseError) {
@@ -1401,7 +1401,7 @@ const getXMLTagInfo = () => {
         }
 
         const utter_list = Array.prototype.slice.call(meeting_utterances.getElementsByTagName("messagedata")).map(u => {
-        return {
+            return {
             message_id: getTaggedInfo(u, "id"),
             content: getTaggedInfo(u, "type"),
             sender: getTaggedInfo(u, "sender_id"),

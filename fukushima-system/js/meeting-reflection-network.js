@@ -10,7 +10,7 @@ $(document).on('click', '#fragment-add-select-toggle', function(){
     try{
         window.kfrag_add_select_mode = !window.kfrag_add_select_mode;
         var $btn = $(this);
-        try{ console && console.debug && console.debug('[kfrag] add-select toggle ->', window.kfrag_add_select_mode, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
+        try{ console && console.log && console.log('[kfrag] add-select toggle ->', window.kfrag_add_select_mode, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         if(window.kfrag_add_select_mode){
             // enable mode
             window.kfrag_add_selected = window.kfrag_add_selected || { ext: [], kfid: [] };
@@ -32,7 +32,7 @@ function updateFragmentSelectedList(){
         // prefer explicit display list if maintained, otherwise build from primary + additional
         var items = [];
         try{
-            console && console.debug && console.debug('[kfrag] updateFragmentSelectedList: inputs', {
+            console && console.log && console.log('[kfrag] updateFragmentSelectedList: inputs', {
                 display_list: window.kfrag_display_list,
                 activeKnowledgeFragmentId: window.activeKnowledgeFragmentId,
                 activeExternalizedId: window.activeExternalizedId,
@@ -48,7 +48,7 @@ function updateFragmentSelectedList(){
                 window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks !== 'null' && ks !== 'undefined' && ks.length && items.indexOf(ks) === -1){ items.push(ks); } });
             }
         }
-        try{ console && console.debug && console.debug('[kfrag] updateFragmentSelectedList: items', items); }catch(_){ }
+        try{ console && console.log && console.log('[kfrag] updateFragmentSelectedList: items', items); }catch(_){ }
         items.forEach(function(k,i){
             var $it = $('<span class="fragment-selected-item" data-kfid="'+k+'"></span>');
             $it.text('#' + k);
@@ -71,7 +71,7 @@ function updateFragmentSelectedList(){
                     var $w = $('.fragment-node-wrapper').filter(function(){
                         try{ return String($(this).data('knowledge-fragment-id')) === String(k) || String($(this).data('externalized-id')) === String(k); }catch(_){ return false; }
                     }).first();
-                    try{ console && console.debug && console.debug('[kfrag] highlight for', k, '-> wrapper', ($w && $w.length) ? { kfid: $(this).data('knowledge-fragment-id'), ext: $(this).data('externalized-id') } : null ); }catch(_){ }
+                    try{ console && console.log && console.log('[kfrag] highlight for', k, '-> wrapper', ($w && $w.length) ? { kfid: $(this).data('knowledge-fragment-id'), ext: $(this).data('externalized-id') } : null ); }catch(_){ }
                     if($w && $w.length){ $w.addClass('kfrag-selected-highlight'); }
                 }catch(_){ }
             });
@@ -87,7 +87,7 @@ $(document).on('contextmenu', '#fragment-selected-list .fragment-selected-item',
         e.preventDefault();
         var $el = $(this);
         var k = String($el.data('kfid'));
-        try{ console && console.debug && console.debug('[kfrag] contextmenu remove badge', k, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
+        try{ console && console.log && console.log('[kfrag] contextmenu remove badge', k, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         // If it's the primary item (first), do not remove primary here
         var $list = $('#fragment-selected-list');
         if(!$list || !$list.length) return;
@@ -123,7 +123,7 @@ $(document).on('contextmenu', '#fragment-selected-list .fragment-selected-item',
             if(window.kfrag_display_list && Array.isArray(window.kfrag_display_list)){
                 window.kfrag_display_list = window.kfrag_display_list.filter(function(x){ return String(x) !== k; });
             }
-            try{ console && console.debug && console.debug('[kfrag] after contextmenu remove', { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
+            try{ console && console.log && console.log('[kfrag] after contextmenu remove', { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
             updateFragmentSelectedList();
         }catch(_){ }
         try{
@@ -134,7 +134,7 @@ $(document).on('contextmenu', '#fragment-selected-list .fragment-selected-item',
                 window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
             }
             combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
-            try{ console && console.debug && console.debug('[kfrag] fetch after contextmenu remove, combined', combined); }catch(_){ }
+            try{ console && console.log && console.log('[kfrag] fetch after contextmenu remove, combined', combined); }catch(_){ }
             if(combined.length === 0){ $('#discussion_message_list').empty(); }
             else { fetchDiscussionHistory(combined); }
         }catch(_){ }
@@ -148,7 +148,7 @@ $(document).on('click', '#fragment-selected-list .remove-btn', function(e){
         var $btn = $(this);
         var $el = $btn.closest('.fragment-selected-item');
         var k = String($el.data('kfid'));
-        try{ console && console.debug && console.debug('[kfrag] click remove badge', k, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
+        try{ console && console.log && console.log('[kfrag] click remove badge', k, { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         // prevent removing primary
         var $list = $('#fragment-selected-list');
         var first = $list.find('.fragment-selected-item').first();
@@ -171,7 +171,7 @@ $(document).on('click', '#fragment-selected-list .remove-btn', function(e){
         // remove visual marker on node wrapper
         try{ var $w = $('.fragment-node-wrapper').filter(function(){ try{ return String($(this).data('knowledge-fragment-id')) === k || String($(this).data('externalized-id')) === k; }catch(_){ return false; } }).first(); if($w && $w.length){ $w.removeClass('additional-selected'); } }catch(_){ }
         // update UI and history
-        try{ console && console.debug && console.debug('[kfrag] after click remove badge', { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
+        try{ console && console.log && console.log('[kfrag] after click remove badge', { add_selected: window.kfrag_add_selected, display_list: window.kfrag_display_list }); }catch(_){ }
         try{ updateFragmentSelectedList(); }catch(_){ }
         try{
             var combined = [];
@@ -181,7 +181,7 @@ $(document).on('click', '#fragment-selected-list .remove-btn', function(e){
                 window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
             }
             combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
-            try{ console && console.debug && console.debug('[kfrag] fetch after click remove, combined', combined); }catch(_){ }
+            try{ console && console.log && console.log('[kfrag] fetch after click remove, combined', combined); }catch(_){ }
             if(combined.length === 0){ $('#discussion_message_list').empty(); }
             else { fetchDiscussionHistory(combined); }
         }catch(_){ }
@@ -2537,7 +2537,7 @@ function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
                     });
                 }catch(__){ }
                 if (extOnly.length){ d.knowledge_fragment_id = extOnly.join(','); }
-                try{ console && console.debug && console.debug('[kfrag] KE submit payload', { areaLabel: areaLabel, parentId: parentId, extOnly: extOnly, data: d }); }catch(_){ }
+                try{ console && console.log && console.log('[kfrag] KE submit payload', { areaLabel: areaLabel, parentId: parentId, extOnly: extOnly, data: d }); }catch(_){ }
                 return d;
             })()
         }).done(function(res){
@@ -3188,9 +3188,18 @@ function initializeFragmentsWorkspace(){
                 try{ console && console.debug && console.debug('[kfrag] click.kfragselect add-mode toggle', { addExt: addExt, addKfid: addKfid, uid: uid }); }catch(_){ }
                 var idx = window.kfrag_add_selected.ext.indexOf(uid);
                 if(idx === -1){
-                    window.kfrag_add_selected.ext.push(uid);
-                    window.kfrag_add_selected.kfid.push(String(addKfid));
-                    $wrap.addClass('additional-selected');
+                    // 制限: 追加選択は最大3つまで
+                    try{
+                        var currentCount = (Array.isArray(window.kfrag_add_selected.ext) ? window.kfrag_add_selected.ext.length : 0);
+                        if(currentCount >= 3){
+                            if(window.alert){ alert('追加選択は最大3つまでです'); }
+                            // 追加せず終了（モードは維持）
+                        } else {
+                            window.kfrag_add_selected.ext.push(uid);
+                            window.kfrag_add_selected.kfid.push(String(addKfid));
+                            $wrap.addClass('additional-selected');
+                        }
+                    }catch(_){ }
                 } else {
                     window.kfrag_add_selected.ext.splice(idx,1);
                     window.kfrag_add_selected.kfid.splice(idx,1);
@@ -3204,10 +3213,13 @@ function initializeFragmentsWorkspace(){
                     var display = [];
                     if(primaryId) display.push(primaryId);
                     if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
-                        window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && display.indexOf(ks) === -1) display.push(ks); });
+                        // 追加は最大3件に制限
+                        var added = [];
+                        window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && added.indexOf(ks) === -1) added.push(ks); });
+                        added.slice(0,3).forEach(function(ks){ if(display.indexOf(ks) === -1) display.push(ks); });
                     }
                     window.kfrag_display_list = display;
-                    try{ console && console.debug && console.debug('[kfrag] display_list updated', window.kfrag_display_list, { add_selected: window.kfrag_add_selected, primaryId: primaryId }); }catch(_){ }
+                    try{ console && console.log && console.log('[kfrag] display_list updated', window.kfrag_display_list, { add_selected: window.kfrag_add_selected, primaryId: primaryId }); }catch(_){ }
                     updateFragmentSelectedList();
                 }catch(_){ }
                 try{
@@ -3215,21 +3227,23 @@ function initializeFragmentsWorkspace(){
                     if(window.activeExternalizedId) combined.push(window.activeExternalizedId);
                     else if(window.activeKnowledgeFragmentId) combined.push(window.activeKnowledgeFragmentId);
                     if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
-                        window.kfrag_add_selected.ext.forEach(function(x){ if(String(x).length) combined.push(x); });
+                        // 追加は最大3件に制限
+                        var extAdded = [];
+                        window.kfrag_add_selected.ext.forEach(function(x){ var sx = String(x); if(sx.length && extAdded.indexOf(sx)===-1) extAdded.push(sx); });
+                        extAdded.slice(0,3).forEach(function(sx){ combined.push(sx); });
                     }
                     combined = combined.filter(function(v,i){ return combined.indexOf(v) === i; });
-                    try{ console && console.debug && console.debug('[kfrag] fetchDiscussionHistory with combined', combined); }catch(_){ }
+                    try{ console && console.log && console.log('[kfrag] fetchDiscussionHistory with combined', combined); }catch(_){ }
                     if(combined.length === 0){ $('#discussion_message_list').empty(); }
                     else { fetchDiscussionHistory(combined); }
                 }catch(__){ }
 
-                // Auto-disable add-select mode after toggling selection and update button UI
+                // 1回選択したら自動で追加モードをOFF（従来仕様）
                 try{
                     window.kfrag_add_select_mode = false;
                     var $btnAdd = $('#fragment-add-select-toggle');
                     if($btnAdd && $btnAdd.length){ $btnAdd.removeClass('is-adding'); }
                 }catch(_){ }
-
                 return;
             }
         }catch(_){ }
@@ -3239,7 +3253,7 @@ function initializeFragmentsWorkspace(){
         var disp = $wrap.data('knowledge-fragment-display') || kfid;
         window.activeKnowledgeFragmentId = kfid;
         try{ window.activeExternalizedId = $wrap.data('externalized-id') || null; }catch(_){ window.activeExternalizedId = null; }
-        try{ console && console.debug && console.debug('[kfrag] primary select', { kfid: kfid, ext: window.activeExternalizedId }); }catch(_){ }
+        try{ console && console.log && console.log('[kfrag] primary select', { kfid: kfid, ext: window.activeExternalizedId }); }catch(_){ }
         try{
             var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
             if($dtitle && $dtitle.length){
@@ -3255,7 +3269,7 @@ function initializeFragmentsWorkspace(){
             // Clear additional selections when primary changes
             try{ if(window.kfrag_add_selected){ window.kfrag_add_selected = { ext: [], kfid: [] }; $('.fragment-node-wrapper.additional-selected').removeClass('additional-selected'); } }catch(_){ }
             try{ updateFragmentSelectedList(); }catch(_){ }
-            try{ console && console.debug && console.debug('[kfrag] fetchDiscussionHistory(primary)', fetchId); }catch(_){ }
+            try{ console && console.log && console.log('[kfrag] fetchDiscussionHistory(primary)', fetchId); }catch(_){ }
             fetchDiscussionHistory(fetchId);
         }catch(_){ }
         // When a fragment is selected, show the post form and remove any placeholder.
@@ -3553,6 +3567,90 @@ function initializeDiscussionBoard(){
         }catch(_){ }
         if(!$form.length || !$input.length || !$list.length) return;
 
+        // 強制上書き: index.php のフォールバック submit リスナーが単一ID送信の原因。
+        // キャプチャフェーズで submit を横取りし、CSV 送信ロジックを実行して既存リスナーを無効化する。
+        try{
+            var formEl = $form.get(0);
+            if(formEl && !formEl._kfragCaptureBound){
+                formEl.addEventListener('submit', function(ev){
+                    try{ console && console.log && console.log('[kfrag] capture-submit override triggered'); }catch(_){ }
+                    try{ if(typeof updateFragmentSelectedList === 'function'){ updateFragmentSelectedList(); } }catch(_){ }
+                    var text = ($input.val()||'').trim();
+                    if(!text){ ev.preventDefault(); ev.stopPropagation(); if(ev.stopImmediatePropagation) ev.stopImmediatePropagation(); return; }
+                    var postData = { content: text };
+                    try{
+                        // Build candidate ids (kfid/display numbers)
+                        var ids = [];
+                        if (Array.isArray(window.kfrag_display_list) && window.kfrag_display_list.length){
+                            ids = window.kfrag_display_list.slice();
+                        } else {
+                            if (typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null) {
+                                ids.push(String(window.activeKnowledgeFragmentId));
+                            }
+                            if (window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+                                window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && ids.indexOf(ks) === -1) ids.push(ks); });
+                            }
+                            try{
+                                var domIds = [];
+                                $('#fragment-selected-list').find('.fragment-selected-item').each(function(){
+                                    var v = String($(this).data('kfid')||'').trim();
+                                    if(v && domIds.indexOf(v)===-1) domIds.push(v);
+                                });
+                                if(domIds.length){ domIds.forEach(function(n){ if(ids.indexOf(n)===-1) ids.push(n); }); }
+                            }catch(_){ }
+                        }
+                        // Map to externalized ids
+                        var extOnly = [];
+                        ids.forEach(function(k){
+                            try{
+                                var $w = $('.fragment-node-wrapper').filter(function(){
+                                    var $t = $(this);
+                                    return String($t.data('knowledge-fragment-id')) === String(k) || String($t.data('externalized-id')) === String(k);
+                                }).first();
+                                var ext = ($w && $w.length) ? $w.data('externalized-id') : null;
+                                if (ext !== null && typeof ext !== 'undefined'){
+                                    var sx = String(ext);
+                                    if (sx && extOnly.indexOf(sx) === -1){ extOnly.push(sx); }
+                                }
+                            }catch(__){ }
+                        });
+                        if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+                            window.kfrag_add_selected.ext.forEach(function(x){ var sx = String(x); if(sx && extOnly.indexOf(sx)===-1) extOnly.push(sx); });
+                        }
+                        if(typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null){
+                            var sxe = String(window.activeExternalizedId);
+                            if(sxe && extOnly.indexOf(sxe)===-1) extOnly.push(sxe);
+                        }
+                        if (extOnly.length) { postData.knowledge_fragment_id = extOnly.join(','); }
+                        try{ console && console.log && console.log('[kfrag] discussion submit payload (capture ext CSV)', { ids: ids, extOnly: extOnly, postData: postData }); }catch(_){ }
+                    }catch(_){ }
+                    ev.preventDefault(); ev.stopPropagation(); if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+                    $.ajax({ url: 'php/save_discussion_history.php', type: 'POST', dataType: 'json', data: postData })
+                      .done(function(res){
+                        if(res && res.status === 'ok'){
+                            var displayUser = (res.user_name && res.user_name.length) ? res.user_name : ($board.data('user-name') || 'ユーザー');
+                            var bodyText = res.content ? res.content : text;
+                            var $card = $('<div class="message-card"></div>').attr('data-discussion-id', res.discussion_history_id || '');
+                            var $author = $('<div class="message-author"></div>').text(displayUser + ' さん');
+                            var $body = $('<div class="message-body"></div>').text(bodyText);
+                            $card.append($author).append($body);
+                            if(res.posted_time){ var $time = $('<div class="message-time" style="margin-top:4px;font-size:11px;color:#888;"></div>').text(res.posted_time); $card.append($time); }
+                            $list.append($card);
+                            try { $list.scrollTop($list.prop('scrollHeight')); } catch(_){ }
+                            $input.val('').focus();
+                        } else {
+                            console && console.warn && console.warn('discussion_history 保存失敗 (capture)', res);
+                            if(window.alert){ alert('投稿の保存に失敗しました。'); }
+                        }
+                      }).fail(function(xhr,st,err){
+                        console && console.error && console.error('discussion_history 保存通信失敗 (capture)', st, err, xhr && xhr.responseText);
+                        if(window.alert){ alert('通信エラーにより投稿できませんでした。'); }
+                      });
+                }, true); // capture
+                formEl._kfragCaptureBound = true;
+            }
+        }catch(_){ }
+
         // 二重バインド防止: ただし既にバウンド済でもボタンが未作成ならボタンだけ追加する
         var alreadyBound = !!$form.data('bound');
         var $dtitle = $('#discussion_history_area').find('.overlay-title').first();
@@ -3635,6 +3733,8 @@ function initializeDiscussionBoard(){
             console.error('discussion_history 初期ロード通信失敗', st, err, xhr && xhr.responseText);
         });
         if(!alreadyBound){
+            // 念のため既存のsubmitハンドラを解除してから、正しいハンドラをバインドする
+            try{ $form.off('submit'); }catch(_){ }
             $form.on('submit', function(e){
                 e.preventDefault();
                 var text = ($input.val()||'').trim();
@@ -3643,40 +3743,58 @@ function initializeDiscussionBoard(){
                 // まずサーバーへ保存要求 (DB挿入) → 成功時UI反映
                 var postData = { content: text };
                 try{
-                    // Build combined from the badge display list to ensure it matches UI selections
-                    var combined = [];
+                    try{ console.log('[kfrag] submit start', { display_list: window.kfrag_display_list, add_selected: window.kfrag_add_selected, activeKnowledgeFragmentId: window.activeKnowledgeFragmentId, activeExternalizedId: window.activeExternalizedId }); }catch(_){}
+                    // 送信直前に選択リストを最新化（非同期のズレ対策）
+                    try{ if(typeof updateFragmentSelectedList === 'function'){ updateFragmentSelectedList(); } }catch(_){}
+                    // knowledge_fragment_id は DBに保存する実ID（外部化ID）で送る
                     var ids = [];
                     if (Array.isArray(window.kfrag_display_list) && window.kfrag_display_list.length){
-                        ids = window.kfrag_display_list.slice();
+                        ids = window.kfrag_display_list.slice(); // これは表示用番号の可能性あり
                     } else {
-                        // fallback to active + add_selected
                         if (typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null) {
                             ids.push(String(window.activeKnowledgeFragmentId));
-                        } else if (typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null) {
-                            ids.push(String(window.activeExternalizedId));
                         }
                         if (window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
                             window.kfrag_add_selected.kfid.forEach(function(k){ var ks = String(k); if(ks && ids.indexOf(ks) === -1) ids.push(ks); });
                         }
-                    }
-                    // Map knowledge/display IDs to externalized IDs by finding wrappers
-                    ids.forEach(function(k){
+                        // さらにフォールバック: バッジDOMから抽出（表示用番号）
                         try{
-                            var $w = $('.fragment-node-wrapper').filter(function(){
-                                var $t = $(this);
-                                return String($t.data('knowledge-fragment-id')) === String(k) || String($t.data('externalized-id')) === String(k);
-                            }).first();
-                            var ext = ($w && $w.length) ? $w.data('externalized-id') : null;
-                            if (ext !== null && typeof ext !== 'undefined'){
-                                var sx = String(ext);
-                                if (sx && combined.indexOf(sx) === -1){ combined.push(sx); }
-                            }
-                        }catch(__){ }
-                    });
-                    if (combined.length) {
-                        postData.knowledge_fragment_id = combined.join(',');
+                            var domIds = [];
+                            $('#fragment-selected-list').find('.fragment-selected-item').each(function(){
+                                var v = String($(this).data('kfid')||'').trim();
+                                if(v && domIds.indexOf(v)===-1) domIds.push(v);
+                            });
+                            if(domIds.length){ domIds.forEach(function(n){ if(ids.indexOf(n)===-1) ids.push(n); }); }
+                        }catch(_){}
                     }
-                    try{ console && console.debug && console.debug('[kfrag] discussion submit payload', { idsFromBadges: ids, combinedExt: combined, postData: postData }); }catch(_){ }
+                    // 表示番号/内部番号から wrapper を用いて外部化ID(ext)へ正規化
+                    var extOnly = [];
+                    try{
+                        ids.forEach(function(k){
+                            try{
+                                var $w = $('.fragment-node-wrapper').filter(function(){
+                                    var $t = $(this);
+                                    return String($t.data('knowledge-fragment-id')) === String(k) || String($t.data('externalized-id')) === String(k);
+                                }).first();
+                                var ext = ($w && $w.length) ? $w.data('externalized-id') : null;
+                                if (ext !== null && typeof ext !== 'undefined'){
+                                    var sx = String(ext);
+                                    if (sx && extOnly.indexOf(sx) === -1){ extOnly.push(sx); }
+                                }
+                            }catch(__){ }
+                        });
+                        // 追加選択の ext が保持されていれば補完
+                        if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+                            window.kfrag_add_selected.ext.forEach(function(x){ var sx = String(x); if(sx && extOnly.indexOf(sx)===-1) extOnly.push(sx); });
+                        }
+                        // 主選択の ext も確実に含める
+                        if(typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null){
+                            var sxe = String(window.activeExternalizedId);
+                            if(sxe && extOnly.indexOf(sxe)===-1) extOnly.push(sxe);
+                        }
+                    }catch(__){ }
+                    if (extOnly.length) { postData.knowledge_fragment_id = extOnly.join(','); }
+                    try{ console && console.log && console.log('[kfrag] discussion submit payload (ext CSV)', { ids: ids, extOnly: extOnly, postData: postData }); }catch(_){ }
                 }catch(_){ }
                 $.ajax({
                     url: 'php/save_discussion_history.php',
@@ -3718,7 +3836,7 @@ function initializeDiscussionBoard(){
                 });
             });
             // mark as bound to avoid duplicate binding later
-            $form.data('bound', true);
+            try{ $form.data('bound', true); }catch(_){ }
         }
         // if a fragment is already active, load its history
         try{ if(window.activeKnowledgeFragmentId){ fetchDiscussionHistory(window.activeKnowledgeFragmentId); } }catch(_){ }
@@ -3819,7 +3937,7 @@ $(document).on('click', '#kra-submit', function(){
                     var nodeTitle = ($('textarea[name="knowledge_content"]').val() || '').trim();
                     var commentText = ($('#kra_comment_input').val() || '').trim();
                     if(nodeTitle){
-                        try{ console && console.debug && console.debug('[kfrag] kra-submit -> saveToKnowledgeExplorer', { areaLabel: areaLabel, nodeTitle: nodeTitle, commentText: commentText }); }catch(_){ }
+                        try{ console && console.log && console.log('[kfrag] kra-submit -> saveToKnowledgeExplorer', { areaLabel: areaLabel, nodeTitle: nodeTitle, commentText: commentText }); }catch(_){ }
                         saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText);
                     } else {
                         try{ console && console.warn && console.warn('[kfrag] kra-submit: nodeTitle が空のため knowledge_explorer 登録はスキップ'); }catch(_){ }

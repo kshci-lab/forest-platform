@@ -202,6 +202,455 @@ table[type] {
 	height: 100%;
 }
 
+/* --- Shared/Combination overlay (covers jsmind_container, utterance_area, mynetwork2) --- */
+#shared_combination_overlay {
+	position: fixed; /* JSで上書きされる前提だがフォールバックで全面表示 */
+	left: 0;
+	/* top: 0; */
+	width: 100vw; /* JS失敗時のフォールバック: 以前 0 だったため内容が全く表示されないケースを防止 */
+	height: 100vh; /* 同上 */
+	background: #ffffff;
+	opacity: 1;
+	pointer-events: auto;
+	z-index: 9999;
+	display: none; /* hidden unless combination tab is active */
+	overflow-y: auto; /* 下部フォーム(knowledge_register_area)が隠れないよう縦スクロール許可 */
+	overflow-x: hidden; /* 横は従来通り抑制 */
+}
+
+/* --- Scoped layout for Shared Combination Overlay --- */
+#shared_combination_overlay .comb-row{
+	display:flex;
+	flex-direction:row;
+	width:100%;
+	height:100%;
+}
+#shared_combination_overlay .comb-left{
+	display:flex;
+	height:100%;
+	flex-direction:column;
+	flex:1 1 75%; /* 親幅に対する75%を基準に伸縮（オーバーフローで右隠れを防止） */
+	min-width:0; /* 内側の横スクロール要素が幅を押し広げない */
+}
+#shared_combination_overlay .comb-left-top,
+#shared_combination_overlay .comb-left-bottom{
+	flex:1 1 0;
+	/* 親では横スクロールを出さず、縦だけに限定する。横は内側リストで制御 */
+	overflow-y:auto;
+	overflow-x:hidden;
+	min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
+}
+#shared_combination_overlay .comb-right{
+	flex:1 1 25%; /* 親幅に対する25%を基準に伸縮 */
+	min-width:0;
+	overflow:auto;
+}
+#shared_combination_overlay .overlay-knowledge-fragments{
+	height:auto;              /* コンテンツに合わせて伸びる */
+	max-height:100%;         /* ただし親の上限は超えない */
+	width:100%;              /* 親幅に追従（固定幅を廃止） */
+	max-width:100%;
+	padding:12px;
+	box-sizing:border-box;
+	min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
+}
+#shared_combination_overlay .overlay-knowledge-fragments{
+	overflow-x: hidden; /* 横スクロールは内側のリストに集約する */
+}
+
+#shared_combination_overlay .overlay-input-area,
+#shared_combination_overlay .overlay-knowledge-tree{
+	height:100%;
+	width:100%;
+	padding:12px;
+	box-sizing:border-box;
+	min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
+	background:#fff; /* ツリー線のマスク色と揃える */
+}
+#overlay_knowledge_tree{
+	font-size:14px;
+}
+
+#overlay_knowledge_tree .kt-node{
+	position:relative;
+	padding-left:18px;
+	line-height:1.6;
+}
+/* 縦の幹（黒・太め） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children{
+	margin-left:14px;
+	border-left:2px solid #000 !important;
+	padding-left:10px;position:relative;
+}
+#overlay_knowledge_tree .kt-content-title,#overlay_knowledge_tree .kt-title{cursor:default;}
+#overlay_knowledge_tree .kt-content-title.editing,#overlay_knowledge_tree .kt-title.editing{background:#f0f0f0;}
+#overlay_knowledge_tree input.kt-edit{font:inherit;padding:2px 4px;width:calc(100% - 24px);} 
+/* 親の縦線から子ノードへ伸びる水平コネクタ（黒・太め） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children> .kt-node::before{
+	content:'';
+	position:absolute;
+	left:-10px;
+	top:0.9em;
+	width:12px;
+	border-top:2px solid #000;
+}
+/* 最後の子の下には縦線を描かない（白マスクで隠す） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children> .kt-node:last-child::after{
+	content:'';
+	position:absolute;
+	left:-12px;
+	top:calc(0.9em + 2px);
+	bottom:0;
+	width:2px;
+	background:#fff;
+}
+/* トグル等 */
+#overlay_knowledge_tree .kt-toggle{
+	position:absolute;
+	left:0;
+	top:0;
+	width:20px;
+	text-align:center;
+	cursor:pointer;
+	user-select:none;
+	color:#666;
+}
+#overlay_knowledge_tree .kt-node-title{
+	cursor:default;
+	font-size:16px;
+	font-weight:600;
+}
+#overlay_knowledge_tree .kt-content-title,
+#overlay_knowledge_tree .kt-title{
+	cursor:default;
+	font-size: 15px;
+}
+#overlay_knowledge_tree .kt-node-title.editing,
+#overlay_knowledge_tree .kt-content-title.editing,
+#overlay_knowledge_tree .kt-title.editing{
+	background:#f0f0f0;
+}
+#overlay_knowledge_tree .kt-comment{
+	margin-top:4px;
+	font-size:13px;
+	color:#333;
+	white-space:pre-wrap;
+}
+#overlay_knowledge_tree .kt-updated{
+	margin-top:3px;
+	font-size:12px;
+	color:#666;
+}
+#overlay_knowledge_tree input.kt-edit{
+	font:inherit;
+	padding:2px 4px;
+	width:calc(100% - 24px);
+} 
+#shared_combination_overlay .overlay-title{
+	font-size: 16px;
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+/* === 統合ワークスペース（フラグメント=ノード） === */
+#shared_combination_overlay #knowledge_fragments_workspace{
+	position: relative;
+	overflow: auto;
+	overflow-x: auto; /* 下部の横スクロールを残す */
+	background: #fff;
+	min-height: 140px;
+}
+#shared_combination_overlay .fragment-node-wrapper{
+	position: absolute;
+	cursor: move;
+}
+
+/* 選択されている（現在表示中の）フラグメントを強調する枠線 */
+#shared_combination_overlay .fragment-node-wrapper.kfrag-selected-highlight .knowledge_fragment,
+#shared_combination_overlay .fragment-node-wrapper.kfrag-selected-highlight .thinking-node{
+	border: 3px solid #6C84E6; /* 太めの青系枠線 */
+	box-shadow: 0 4px 12px rgba(108,132,230,0.12);
+	z-index: 30; /* 前面に出す */
+}
+
+
+/* 議論状態インジケータ（右上） */
+#shared_combination_overlay .fragment-node-wrapper .fragment-discussed-indicator{
+	position:absolute;
+	top:4px;
+	right:4px;
+	background:#d9534f;
+	color:#fff;
+	font-size:11px;
+	font-weight:700;
+	padding:4px 8px;
+	border-radius:14px;
+	line-height:1;
+	box-shadow:0 1px 3px rgba(0,0,0,0.25);
+	pointer-events:none;
+	z-index:15;
+}
+
+/* fragment node number badge (left-top) */
+#shared_combination_overlay .fragment-node-wrapper .fragment-number-badge{
+	position: absolute;
+	left: -4px;
+	top: -8px;
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	text-align: center;
+	/* background: #ffffff; */
+	/* background: #00000000;
+	border: 1px solid #d0d0d0; */
+	/* border-radius: 50%; */
+	font-weight: 700;
+	color: #333;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+	z-index: 10;
+	font-size: 20px;
+	pointer-events: none; /* バッジはドラッグ操作を妨げない */
+}
+/* ノードの見た目は既存の knowledge_fragment のカードスタイルを流用 */
+#shared_combination_overlay .knowledge_fragment{
+	background:#ffe6e6;
+	border:1px solid #ccc;
+	border-radius:10px;
+	padding:12px;
+	width:180px;
+	box-sizing:border-box;
+}
+
+/* overlay-input-area を左右2分割 */
+#shared_combination_overlay .overlay-input-area{
+	display:flex;
+
+/* ディスカッション履歴タイトル行: ボタン右寄せ配置 */
+#discussion_history_area .overlay-title{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:8px;
+	position:relative;
+}
+
+/* 議論開始ボタン */
+#fragment-discussed-toggle.fragment-discussed-btn{
+	/* より柔らかいオレンジ: 暖かく薄めの色合い */
+	background: #ff9a4d;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 6px 14px;
+	font-size: 13px;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+}
+#fragment-discussed-toggle.fragment-discussed-btn:hover{
+	/* hover は少し濃くして識別しやすく。元のオレンジ系を踏襲しつつ濃くする */
+	background: #ff7f3f;
+}
+#fragment-discussed-toggle.fragment-discussed-btn:disabled{
+	background:#999;
+	opacity:0.6;
+	cursor:default;
+}
+/* 議論中の見た目（グレー背景）: ボタンはクリック可能なまま見た目だけ灰色にする */
+#fragment-discussed-toggle.fragment-discussed-btn.is-discussing{
+	background: #999 !important;
+	color: #fff;
+	opacity: 0.9;
+}
+#fragment-discussed-toggle.fragment-discussed-btn.is-discussing:hover{
+	/* hover 時も同系の濃いグレーに留める */
+	background: #7f7f7f !important;
+}
+	flex-direction:row;
+	gap:8px; /* 以前:12px → すき間を少し狭く */
+	align-items:stretch;
+	/* 余白は上の padding で確保済み */
+}
+#shared_combination_overlay #discussion_history_area,
+#shared_combination_overlay #knowledge_register_area{
+	flex:1 1 0;
+	min-width:0;
+	border: 1px solid #aaa;           /* 外枠 */
+	border-radius: 12px;
+	padding: 11px;
+	margin: 0px;
+	box-sizing: border-box;
+	background:#fff;
+}
+
+/* knowledge_register_area 内のフォーム整形 */
+#shared_combination_overlay #knowledge_register_area .kra-row{margin-bottom:10px;}
+#shared_combination_overlay #knowledge_register_area .kra-row.kra-header{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#shared_combination_overlay #knowledge_register_area .kra-row.kra-top{display:flex;gap:8px;align-items:center}
+#shared_combination_overlay #knowledge_register_area .kra-title{margin-right:auto}
+#shared_combination_overlay #knowledge_register_area .kra-label{white-space:nowrap;color:#444}
+
+/* 各入力エリア（コントロール） */
+#shared_combination_overlay #knowledge_register_area .kra-control{
+	border: 1px solid #ccc;
+	border-radius: 8px;
+	padding: 8px;
+	box-sizing:border-box;
+}
+/* 幅の扱い：通常は100%だが、ヘッダ行のセレクトのみ横幅自動 */
+#shared_combination_overlay #knowledge_register_area .kra-row:not(.kra-header) .kra-control{width:100%;}
+#shared_combination_overlay #knowledge_register_area .kra-control.kra-control-inline{width:auto;min-width: 220px;}
+
+/* コメント行はラベル + インプットを横並び可 */
+#shared_combination_overlay #knowledge_register_area .kra-comment{display:flex;gap:8px;align-items:center}
+#shared_combination_overlay #knowledge_register_area .kra-comment .kra-control{flex:1}
+
+/* 送信ボタンを右寄せ */
+#shared_combination_overlay #knowledge_register_area .kra-actions{display:flex;justify-content:flex-end;margin-top:12px}
+
+/* Divider lines for the split layout */
+#shared_combination_overlay .comb-left{
+	border-right: 2px solid #ccc;
+	box-sizing: border-box;
+}
+#shared_combination_overlay .comb-left-top{
+	border-bottom: 2px solid #ccc;
+	box-sizing: border-box;
+}
+
+/* Knowledge fragment cards */
+#shared_combination_overlay .knowledge-fragment-list{
+	display:flex;
+	flex-wrap:nowrap;            /* 横一列に並べる */
+	overflow-x:auto;             /* 横スクロールを許可 */
+	overflow-y:visible;          /* 詳細展開時に縦方向へ広がるのを許可 */
+	align-items:flex-start;      /* 各カードの上端を揃える（高さが変わっても崩れにくい） */
+	gap:12px;
+	margin-top:8px;
+	-webkit-overflow-scrolling:touch; /* スクロール慣性（モバイル） */
+	width: 100%;                 /* 親幅に固定 */
+	max-width: 100%;             /* 親幅を超えない */
+	box-sizing: border-box;
+	min-width: 0;                /* コンテンツ幅に引っ張られて広がらない */
+	scrollbar-width: thin;       /* Firefox: 細いスクロールバー */
+}
+/* WebKit系: スクロールバーの視認性を少し上げる */
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{
+	height:10px
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-track{
+	background:#f1f1f1
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb{
+	background:#c9c9c9;
+	border-radius:8px
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb:hover{
+	background:#b0b0b0
+}
+#shared_combination_overlay .knowledge_fragment{
+	background:#ffe6e6; /* pale pink */
+	border:1px solid #ccc;
+	border-radius:10px;
+	margin-top: 20px;
+	padding:12px;
+	width:180px; /* 旧:200px */
+	box-sizing:border-box;
+	display:flex;
+	flex-direction:column;
+	gap:8px;
+	flex:0 0 auto;               /* 横スクロール内で折り返さず表示 */
+}
+#shared_combination_overlay .knowledge_fragment .card-title{
+	font-size:15px;
+	font-weight: 500;
+	color:#444;
+}
+#shared_combination_overlay .knowledge_fragment .card-body{
+	white-space:pre-wrap;
+	color:#333;
+	font-size:14px;
+	line-height:1.5;
+}
+#shared_combination_overlay .knowledge_fragment .card-actions{
+	margin-top:auto;
+	display:flex;
+	justify-content:flex-end;
+}
+#shared_combination_overlay .knowledge_fragment .detail-button{
+	background:#fff;
+	border:1px solid #bbb;
+	border-radius:4px;
+	padding:4px 8px;
+	font-size:12px;
+	cursor:pointer;
+}
+#shared_combination_overlay .knowledge_fragment .card-detail{
+	display:none;
+	border-top:1px dashed #ccc;
+	padding-top:8px;
+	color:#444;
+	font-size:13px;
+}
+#shared_combination_overlay .knowledge_fragment.is-open .card-detail{
+	display:block;
+}
+/* 簡易Q&Aの体裁 */
+#shared_combination_overlay .knowledge_fragment .qa-item{ margin-top:6px; }
+#shared_combination_overlay .knowledge_fragment .qa-q{ font-weight:600; margin-bottom:2px; }
+#shared_combination_overlay .knowledge_fragment .qa-a{ color:#333; }
+#shared_combination_overlay .no-fragment-note{
+	color:#777;
+	font-size:13px;
+}
+
+/* 思考エリア */
+#shared_combination_overlay .knowledge_thinking_area{
+	position: relative;
+	background: #fff;
+	overflow: auto;
+	min-height: 120px;
+}
+
+/* 思考エリア内 ノード（ピンクカード） */
+#shared_combination_overlay .thinking-node,
+.thinking-node{
+	position: relative; /* wrapper が absolute */
+	min-width: 200px;
+	max-width: 260px;
+	background: #ffe6e6; /* フラグメントと同系の淡いピンク */
+	border: 1px solid #ccc;
+	border-radius: 10px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+	padding: 12px;
+	box-sizing: border-box;
+	user-select: none;
+}
+
+#shared_combination_overlay .thinking-node-wrapper,
+.thinking-node-wrapper{
+	position:absolute;
+	cursor:move;
+	user-select:none;
+	border-radius:10px; /* カード角丸と揃える */
+}
+
+#shared_combination_overlay .thinking-node .node-title,
+.thinking-node .node-title{
+	font-size:15px;
+	font-weight:500;
+	color:#444;
+	margin-bottom:8px;
+}
+
+#shared_combination_overlay .thinking-node .node-body,
+.thinking-node .node-body{
+	font-size:14px;
+	color:#333;
+	line-height:1.5;
+	white-space: pre-wrap;
+}
+
 /* #layout{
 	height:100%;
 } */
@@ -217,7 +666,7 @@ table[type] {
 /* 「問いノード追加」等のボタンがある箇所 */
 #jsmind_nav {
 	width: 100%;
-	height:34px;
+	height:50px;
 	display: inline;
 	font-size: 1em;
 	border-bottom:double 2px #B3E0D8;
@@ -396,7 +845,8 @@ input:checked+label::after {
 	/* height:80vh; */
 	/* height: 100%; */
 	margin-bottom:2vh;
- 	border:solid 5px #B3E0D8;
+ 	/* border:solid 5px #B3E0D8; */
+	border: none;
 	box-sizing: border-box;
  	background:#fff;
 	float:left;
@@ -1018,13 +1468,13 @@ h3 {
 	animation: blink2 1s infinite;
   }
   
-  #ontology_feedback{
+  /* #ontology_feedback{
 	width: 100%;
 	height: 50px;
 	overflow: scroll;
 	text-align: center;
 	
-  }
+  } */
   .feedback_message{
 	width: fit-content;
     background-color: lightgray;
@@ -1404,22 +1854,24 @@ select[name="user_list"] {
 	height:100%;
 	min-height: 450px;
 	/* margin-bottom:2vh; */
-	border:solid 5px #9bb7ba;
+	border:solid 3px #9bb7ba;
+	box-sizing: border-box;
 	background:#fff;
 	overflow: hidden;
 	/* float:right; */
-	display: none;
+	display: flex;
 	resize: both;
 }
 #mynetwork2{
 	width: 100%;
 	min-width: 300px;
+	height: 100%;
 	/* height:70vh; */
 	min-height: 450px;
 	/* margin-bottom:2vh; */
 	border-left:solid 2px #9bb7ba;
 	background:#fff;
-	/* overflow: auto; */
+	overflow: auto;
 	resize: auto;
 }
 #timedisplay{
@@ -1434,7 +1886,7 @@ select[name="user_list"] {
 }
 #utterance_area{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 100px;
+	min-width: 550px;
 	/* height:70vh; */
 	min-height: 450px;
 	/* margin-bottom:2vh; */
@@ -1443,7 +1895,7 @@ select[name="user_list"] {
 }
 #utterance_area2{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 100px;
+	min-width: 500px;
 	margin-bottom:2vh;
 	/* border-top:solid 2px #9bb7ba; */
 	background:#e6edf8;
@@ -1453,6 +1905,20 @@ select[name="user_list"] {
 	cursor: pointer;
 }
 #mynetwork {
+	position: relative;
+	width: 97%;
+	min-width: 300px;
+	/* height:70vh; */
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	border-left: solid 0.5px #a8cde0;
+    border-top: solid 0.5px #a8cde0;
+	background:#fff;
+	overflow: auto;
+	/* resize: auto; */
+}
+
+#externalization_form{
 	position: relative;
 	width: 100%;
 	min-width: 300px;
@@ -1466,8 +1932,152 @@ select[name="user_list"] {
 	/* resize: auto; */
 }
 
-/* only mrn */
+/* 表出化メイン入力セクション */
+.externalization-main-section{
+	display:block;
+	background: #ffc6d0; /* 中間トーンのピンク */
+	border-radius:12px;
+	padding:10px 10px; 
+	margin: 15px 10px 12px 10px;
+}
+.externalization-main-section .externalization-label{
+	display:block;
+	margin-bottom:6px;
+	color:#003049;
+	font-weight:700;
+}
+.externalization-main{
+	width:100%;
+	min-height:100px;
+	resize:vertical; 
+	/*linear-gradient(180deg, #FFF6FB 0%, #F8EAF6 100%); /* pale pink */
+	/*border:2px solid #E8BFE6;*/
+	padding:12px;
+	background:#ffffff; 
+	border-radius:8px; 
+	border:1px solid #e6eef2; 
+	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
+	/*margin: 0px 10px;*/
+	box-sizing:border-box;
+	font-size:14px;
+	resize:vertical;
+}
 
+.qa-pairs{ 
+	display:flex; 
+	flex-direction:column; 
+	gap:12px; 
+	margin-top:15px; 
+}
+.qa{ display:block; 
+	margin-left: 10px; 
+	margin-right: 10px; 
+	background: #bcd8e8; /* 中間トーンの水色 */
+	padding:12px; 
+	border-radius:12px; 
+	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
+}
+.qa-question{ 
+	background:transparent; 
+	color:#003049; 
+	font-weight:700; 
+	/*padding:10px 10px;*/ 
+	border-radius:6px; 
+	margin-bottom:8px; 
+	font-size:16px; 
+}
+
+
+/* 横並びレイアウト（qa-summary 用） */
+.qa-summary{
+	display:flex;
+	flex-direction:row;
+	align-items:center; /* テキストボックス行の中央にラベルを揃える */
+	margin-top:20px; 
+	flex-wrap:wrap; /* 狭い画面で折り返し */
+	min-height:25px; /* 初期の高さを約25pxに */
+	margin-left: 10px; 
+	margin-right: 10px; 
+	background: #bcd8e8; /* 中間トーンの水色 */
+	padding:10px; /* 高さを抑えるために余白も縮小 */
+	border-radius:12px; 
+	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
+}
+.qa-summary .qa-question{
+	margin-bottom:0; /* 横並びなので下マージン不要 */
+	flex: 0 1 30%;
+	/* 高さは固定しない。行の中央に揃えるため */
+	display: flex; /* ラベル内の縦中央寄せ */
+	align-items: center;
+	background:transparent; 
+	color:#003049; 
+	font-weight:700; 
+	padding-left:5px;
+	/*padding:10px 10px;*/ 
+	border-radius:6px; 
+	/* margin-bottom:5px;  */
+	font-size:16px;	
+}
+.qa-summary .qa-answer4{
+	flex: 1 1 58%;
+	width: auto; /* グローバルの width:100% を上書きして横並びにする */
+	background:#ffffff; 
+	font-size: 14px;
+	align-items: center;
+	border-radius:8px; 
+	border:1px solid #e6eef2; 
+	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
+	min-height:40px; /* 初期の高さを合わせる */
+	height:40px; /* 初期表示の高さ */
+	resize:vertical; /* ユーザー操作で拡大可 */
+	padding:8px;
+	box-sizing:border-box;
+}
+/* qa-answer4 のプレースホルダーを中央寄せ（水平方向） */
+.qa-answer4::placeholder{
+	align-items: center;
+}
+/* Fallback: 空欄時はテキスト自体を中央寄せ（入力開始で自動的に左寄せへ戻る）*/
+.qa-answer4:placeholder-shown{
+	align-items: center;
+}
+.qa-answer4:not(:placeholder-shown){
+	text-align:left;
+}
+.qa-answer1, .qa-answer2, .qa-answer3{ 
+	width: 100%; 
+	min-height:68px; 
+	resize:vertical; 
+	padding:8px; 
+	box-sizing:border-box; 
+	background:#ffffff; 
+	border-radius:8px; 
+	border:1px solid #e6eef2; 
+	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03); 
+}
+
+.externalization-footer{ margin-top:12px; }
+.externalization-subhead{ font-weight:bold; margin-top:8px; }
+.externalization-own-answer{ 
+	margin: 15px 10px 10px 10px;
+	background: #c1c1ff; 
+	padding:12px; 
+	border-radius:12px; 
+	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
+}
+
+.externalization-actions {
+  /* Flexコンテナにする */
+  display: flex;
+
+  /* 子要素を右端に寄せる */
+  justify-content: flex-end;
+
+  /* 親要素に右側の余白 (padding) を10px設定 */
+  padding-right: 10px;
+}
+
+/* only mrn */
 
 /********************* リフレクションタブ関係 **********************/
 /*リフレクション関係　yoshioka*/
@@ -1810,6 +2420,7 @@ select[name="user_list"] {
 	width: 50px;
 	height: 25px;
 	font-size: 12px;
+	border:none;
 	margin-left: 0;
 }
 .button3:hover {
@@ -1827,11 +2438,112 @@ select[name="user_list"] {
 	margin-left: 10px;
 	margin-right: 8px;
 	margin-top: 5px;
+	border:none;
 	overflow: auto;
 }
 .button4:hover {
 	background-color: #B3E0D8;
 }
+
+.button-container {
+    display: inline-block;
+	margin-left: 20px; /* 左側の余白を拡大して Screenshot とタブの間隔を調整 */
+}
+
+.button5 {
+    background-color: #90B1AB; /* デフォルトの背景色 */
+    color: #fff;
+    height: 30px;
+    font-size: 15px;
+    margin-left: 1px;
+	margin-right: 1px;
+	margin-top: 1px;
+	border:none;
+    align-items: center; /* 垂直方向の中央寄せ */
+    justify-content: center; /* 水平方向の中央寄せ */
+}
+
+/* アクティブなタブのスタイル */
+.button5.active {
+    background-color: #99cccc; /* アクティブ時の背景色を少し薄く */
+	/* transform: scale(1.15);     1.15倍に拡大  */
+	transform-origin: center bottom;
+    transition: transform 0.15s ease;
+}
+
+/* ホバー時のスタイル */
+.button5:hover {
+    background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
+}
+
+/* ====== タブメニュー（共有知タブ用／UL-LI版） ====== */
+.button-container ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	gap: 0;
+	position: relative;
+}
+
+.button-container ul li {
+	flex: 1;
+	padding: 12px 20px;
+	text-align: center;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	background: #90B1AB; /* デフォルト色 */
+	color: #fff;
+	border-radius: 12px 12px 0 0;
+	margin-right: 4px;
+}
+
+.button-container ul li:last-child {
+	margin-right: 0;
+}
+
+/* mindmap.js は .active を付与するため .selected と両対応に */
+.button-container ul li.selected,
+.button-container ul li.active {
+	background: #99cccc; /* Active 色 */
+	color: #fff;
+	box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+	position: relative;
+	z-index: 2;
+}
+
+/* 吹き出し三角形 */
+/* .button-container ul li.selected::after,
+.button-container ul li.active::after {
+	content: '';
+	position: absolute;
+	bottom: -10px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 0;
+	height: 0;
+	border-left: 10px solid transparent;
+	border-right: 10px solid transparent;
+	border-top: 10px solid #99cccc; 
+} */
+
+.button-container ul li:not(.selected):not(.active):hover {
+	background: #a0c1bc; /* hover 色 */
+	transform: translateY(-2px);
+}
+
+/* ====== タブ内容（任意。現在のページ切替はJSで制御） ====== */
+.tab-content {
+	display: none;
+	padding: 20px;
+	min-height: 120px;
+	background: #fff;
+	border: 2px solid #99cccc;
+	border-top: none;
+	border-radius: 0 0 12px 12px;
+}
+
+.tab-content.selected { display: block; }
 
 /*他者の問いノード表示*/
 .button_q {
@@ -1884,7 +2596,7 @@ select[name="user_list"] {
 	background-color: #88A47C;
 }
 
-.button5 {
+/*.button5 {
 	background-color: #FBC362;
 	color: #fff;
 	width: 70px;
@@ -1895,11 +2607,12 @@ select[name="user_list"] {
 .button5:hover {
 	background-color: #ffa200;
 }
-
+*/
 .button6 {
 	background-color: #90B1AB;
+	border:none;
 	color: #fff;
-	width: 100%;
+	width: 20%;
 	height: 25px;
 }
 .button6:hover {
@@ -2650,4 +3363,183 @@ display: none;
 ピンク(secondary):#ffa8ba
 濃いピンク(tertiary):#fa5246
 */
+
+/* --- KFrag action buttons: Undo / Redo / Reset --- */
+.kfrag-action-btn{
+	display:inline-block;
+	width:35px;
+	height:35px;
+	padding:0;
+	margin-left:6px;
+	margin-right:0;
+	border:0;
+	background: transparent;
+	cursor:pointer;
+	vertical-align:middle;
+	line-height:0; /* hide text height */
+	text-indent: -9999px; /* visually hide label but keep for screen readers */
+}
+
+/* shared gradient used for arrows */
+.kfrag-action-btn.gradient-fill{
+	/* solid midpoint color between #4B33CC and #8DD4FF */
+	background: #6C84E6;
+}
+
+/* Undo: left-pointing arrow mask (no outer circle). Color controlled by background (gradient). */
+#kfrag-undo{
+	/* left-pointing filled arrow (chevron-like) */
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M15 6 L9 12 L15 18 L13 18 L7 12 L13 6 Z'/></svg>") center/70% no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M15 6 L9 12 L15 18 L13 18 L7 12 L13 6 Z'/></svg>") center/70% no-repeat;
+	background: #6C84E6;
+	margin-left: 0px;
+	border-radius:0px;
+}
+
+/* Redo: mirror of undo */
+#kfrag-redo{
+	/* right-pointing filled arrow (chevron-like) */
+	-webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M9 6 L15 12 L9 18 L11 18 L17 12 L11 6 Z'/></svg>") center/70% no-repeat;
+	mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' d='M9 6 L15 12 L9 18 L11 18 L17 12 L11 6 Z'/></svg>") center/70% no-repeat;
+	background: #6C84E6;
+	border-radius:0px;
+}
+
+#kfrag-reset {
+    /* refresh-style circular arrow */
+    -webkit-mask: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+      <path fill='white' d='M17.65 6.35A8 8 0 1 0 12 20a8 8 0 0 0 7.94-7h-2.1A6 6 0 1 1 12 6c1.34 0 2.56.43 3.55 1.15L13 10h7V3l-2.35 2.35z'/>\
+    </svg>") center/80% no-repeat;
+    mask: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+      <path fill='white' d='M17.65 6.35A8 8 0 1 0 12 20a8 8 0 0 0 7.94-7h-2.1A6 6 0 1 1 12 6c1.34 0 2.56.43 3.55 1.15L13 10h7V3l-2.35 2.35z'/>\
+    </svg>") center/80% no-repeat;
+    background: #6C84E6; /* アイコンの色 */
+}
+
+
+/* Hover/active affordance */
+.kfrag-action-btn:hover{ transform: translateY(-1px) scale(1.04); }
+.kfrag-action-btn:active{ transform: translateY(0) scale(0.98); }
+
+/* Ensure text inside buttons is hidden but accessible */
+.kfrag-action-btn span{display:none}
+
+/* tighten spacing specifically between undo and redo */
+.kfrag-action-group > #kfrag-undo{ margin-right:2px; margin-left:4px; }
+.kfrag-action-group > #kfrag-redo{ margin-left:0px; }
+
+/* Visual marker for fragments added to discussion selection */
+.fragment-node-wrapper.additional-selected{
+	box-shadow: 0 0 0 3px rgba(108,132,230,0.18);
+	border-radius: 8px;
+}
+
+/* Add-select button: circular plus icon with tooltip on hover */
+.fragment-add-select-btn{
+	display:inline-block;
+	width:30px;
+	height:30px;
+	padding:0;
+	margin-left:8px;
+	border-radius:50%;
+	border:1px solid #6C84E6;
+	background:transparent;
+	position:relative;
+	cursor:pointer;
+	vertical-align:middle;
+}
+.fragment-add-select-btn .plus-icon{
+	position:absolute;
+	left:50%;
+	top:50%;
+	transform:translate(-50%,-50%);
+	font-size:18px;
+	color:#6C84E6;
+	line-height:1;
+}
+.fragment-add-select-btn .tooltip{
+	position:absolute;
+	left:50%;
+	bottom:calc(100% + 8px);
+	transform:translateX(-50%) translateY(6px);
+	background:rgba(0,0,0,0.85);
+	color:#fff;
+	padding:6px 8px;
+	border-radius:4px;
+	font-size:12px;
+	white-space:nowrap;
+	opacity:0;
+	pointer-events:none;
+	transition:opacity .12s, transform .12s;
+}
+.fragment-add-select-btn:hover .tooltip{
+	opacity:1; 
+	transform:translateX(-50%) translateY(0); 
+}
+.fragment-add-select-btn.is-adding{ 
+	background:#6C84E6; 
+}
+.fragment-add-select-btn.is-adding .plus-icon{
+	color:#fff; 
+}
+
+/* Selected fragments list under the discussion title */
+.fragment-selected-list{ 
+	display:flex; 
+	flex-wrap: wrap;
+	gap:6px; 
+	align-items:center; 
+	margin-top:6px; 
+}
+.fragment-selected-item{ 
+	display:inline-block; 
+	padding:4px 8px; 
+	background:#eef; 
+	border-radius:8px; 
+	font-size:13px; 
+	color:#003049; 
+	border:1px solid rgba(0,0,0,0.04); 
+}
+.fragment-selected-item.primary{ 
+	background:#6C84E6; 
+	color:#fff; 
+	font-weight:600; 
+}
+
+/* remove button inside badge */
+.fragment-selected-item .remove-btn{
+	display:inline-block;
+	width:16px;
+	height:16px;
+	line-height:16px;
+	text-align:center;
+	margin-left:6px;
+	background: rgba(0,0,0,0.06);
+	border-radius:50%;
+	font-size:12px;
+	color:#333;
+	cursor:pointer;
+}
+.fragment-selected-item.primary .remove-btn{ display:none; }
+
+/* Container between title and message list that shows selected nodes */
+.fragment-selected-area{ 
+	display:flex; 
+    align-items:flex-start; 
+    flex-wrap: wrap;
+	font-size: 14px;
+	gap:8px; 
+	padding:0px 0 4px 0; 
+}
+.fragment-selected-area .selected-label{ 
+	color:#003049; 
+	font-weight:600; 
+	margin-right:6px; 
+}
+.fragment-selected-area .fragment-selected-list{ 
+	margin-top:0; 
+}
+
 
