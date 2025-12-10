@@ -4,7 +4,7 @@
 	$db_host = "localhost";  // DBサーバのurl
 	$db_user = "root";
 	$db_password = "root";
-	$db_dbname = "forest_platform";
+	$db_dbname = "forest_platform_logic";
 
 	//アプリケーションサーバーにアップロードするとき．
 	// $db_host = "localhost:3306";  // DBサーバのurl
