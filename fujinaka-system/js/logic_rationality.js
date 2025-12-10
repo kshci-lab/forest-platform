@@ -84,6 +84,9 @@ function renderRationalityAdvice(containerSelector) {
 				const anchorsText = anchorTextList(e.anchor_children);
 					const anchorIdsAttr = (e.anchor_children || []).map(c => String(c.node_id || '')).filter(Boolean).join(',');
 					const logicIdsAttr = (e.logic_matches || []).map(m => String(m.logic_node_id || '')).filter(Boolean).join(',');
+				// 助言本文 & 表示ログ
+				const adviceText = `あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか`;
+				try { if (typeof window.logEvent === 'function') { window.logEvent('advice', 'add', adviceText); } } catch(_) {}
 				const rawKey = `ratAdvice|one|${esc(e.rationality_id)}|${nodesInLogicText}|${nodesNotInLogicText}|${anchorsText}`;
 				const key = encodeURIComponent(rawKey);
 				let saved = '';
@@ -91,7 +94,7 @@ function renderRationalityAdvice(containerSelector) {
 				const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
 				const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
 					return [`<div class="entry rat-advice-item" data-key="${key}" data-title="one" data-rationality-id="${attr(e.rationality_id)}" data-in-logic="${attr(nodesInLogicText)}" data-not-in-logic="${attr(nodesNotInLogicText)}" data-anchors="${attr(anchorsText)}" data-node-ids="${attr(nodeIdsAttr)}" data-anchor-ids="${attr(anchorIdsAttr)}" data-logic-ids="${attr(logicIdsAttr)}">`,
-					`  <div class="advice">あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか</div>`,
+					`  <div class="advice">${adviceText}</div>`,
 					`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
 					`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
 					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
@@ -106,6 +109,9 @@ function renderRationalityAdvice(containerSelector) {
 				const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join('<br>');
 					const anchorIdsAttr = (e.anchor_children || []).map(c => String(c.node_id || '')).filter(Boolean).join(',');
 					const logicIdsAttr = (e.logic_matches || []).map(m => String(m.logic_node_id || '')).filter(Boolean).join(',');
+				// 助言本文 & 表示ログ
+				const adviceText = `あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか`;
+				try { if (typeof window.logEvent === 'function') { window.logEvent('advice', 'add', adviceText); } } catch(_) {}
 				const rawKey = `ratAdvice|both|${nodeTexts}|${anchorTexts}|${logicTexts}`;
 				const key = encodeURIComponent(rawKey);
 				let saved = '';
@@ -113,7 +119,7 @@ function renderRationalityAdvice(containerSelector) {
 				const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
 				const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
 					return [`<div class="entry rat-advice-item" data-key="${key}" data-title="both" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-logic-texts="${attr(logicTexts)}" data-node-ids="${attr(nodeIdsAttr)}" data-anchor-ids="${attr(anchorIdsAttr)}" data-logic-ids="${attr(logicIdsAttr)}">`,
-					`  <div class="advice">あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか</div>`,
+					`  <div class="advice">${adviceText}</div>`,
 					`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
 					`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
 					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
