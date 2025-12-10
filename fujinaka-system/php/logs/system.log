@@ -140,3 +140,18 @@
 {"timestamp":"2025-12-10T10:15:56+09:00","category":"logic_triangle","subcategory":"addfromforest","content":"{\"f_node_id\":\"af7d1594bd9c055c\",\"topic\":\"New Node\"}","user_id":"311997332"}
 {"timestamp":"2025-12-10T10:15:59+09:00","category":"advice","subcategory":"add","content":"あなたは「\"New Node\"」を主張とした三角ロジックを作成しています。また日々の思考で「\"New Node\"」と「\"New Node\"」の合理性について「\"sa\"」と述べています。これらの内容は三角ロジックに反映されていますか","user_id":"311997332"}
 {"timestamp":"2025-12-10T10:16:08+09:00","category":"advice","subcategory":"consider","content":"あなたは「\"New Node\"」を主張とした三角ロジックを作成しています。また日々の思考で「\"New Node\"」と「\"New Node\"」の合理性について「\"sa\"」と述べています。これらの内容は三角ロジックに反映されていますか","user_id":"311997332"}
+{"timestamp":"2025-12-10T12:41:53+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765338113112952970\",\"label\":\"sdasd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T12:41:53+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765338113112444651\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T12:41:53+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765338113112967162\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T12:41:53+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765338113112533088\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T12:41:53+09:00","category":"logic_triangle","subcategory":"addfromforest","content":"{\"f_node_id\":\"ae6a218268cee28c\",\"topic\":\"sdasd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:30:40+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765344640558548972\",\"label\":\"sdasd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:30:40+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765344640558331183\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:30:40+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765344640558518894\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:30:40+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765344640558291368\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:30:40+09:00","category":"logic_triangle","subcategory":"addfromforest","content":"{\"f_node_id\":\"ae6a218268cee28c\",\"topic\":\"sdasd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765344870968248294\",\"label\":\"さふん\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765344870968614637\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765344870968951420\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765344870968147322\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_triangle","subcategory":"addfromforest","content":"{\"f_node_id\":\"b0168e5dbadf0ac2\",\"topic\":\"さふん\"}","user_id":"311997332"}

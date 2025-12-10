@@ -108,4 +108,5 @@ if (isset($_POST["login"])) {
     <p><a href="create_account.php">Create an account</a></p>
   </div>
 </div>
+  </body>
 </html>

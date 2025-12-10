@@ -11,7 +11,7 @@
       }
       $.ajax({
         // Use absolute path to avoid relative path issues from different pages
-        url: '/forest-platform/fujinaka-system/php/log_event.php',
+        url: 'php/log_event.php',
         type: 'POST',
         dataType: 'json',
         data: {
