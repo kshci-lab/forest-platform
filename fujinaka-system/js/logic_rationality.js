@@ -56,13 +56,17 @@ function renderRationalityAdvice(containerSelector) {
 				const nodeB = (nodeContentsArr[1] || '').trim();
 				const nodeTexts = nodeContentsArr.map(s => `"${esc(s)}"`).join(' / ');
 				const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
+				// 助言本文（表示と同じ文）
+				const adviceText = `${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか`;
+				// 追加: 助言ログ（logging.js の logEvent）
+				try { if (typeof window.logEvent === 'function') { window.logEvent('advice', 'add', adviceText); } } catch(_) {}
 				const rawKey = `ratAdvice|none|${nodeTexts}|${anchorTexts}`;
 				const key = encodeURIComponent(rawKey);
 				let saved = '';
 				try { saved = localStorage.getItem(String(key)) || ''; } catch(_) {}
 				const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
 				return [`<div class="entry rat-advice-item" data-key="${key}" data-title="none" data-node-texts="${attr(nodeTexts)}" data-anchor-texts="${attr(anchorTexts)}" data-node-a="${attr(nodeA)}" data-node-b="${attr(nodeB)}" data-node-a-id="${attr(nodeIdsArr[0]||'')}" data-node-b-id="${attr(nodeIdsArr[1]||'')}">`,
-					`  <div class="advice">${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか</div>`,
+					`  <div class="advice">${adviceText}</div>`,
 					`  <button type="button" class="rat-advice-btn rat-consider-btn">考える</button>`,
 					`  <button type="button" class="rat-advice-btn rat-skip-btn">考えない</button>`,
 					`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
@@ -279,6 +283,14 @@ $(document)
 			const $li = $(this).closest('.rat-advice-item');
 			const key = $li.data('key');
 			const title = String($li.data('title') || '');
+      // 追加: ログ（確認/考える）
+      try {
+        const adviceText = $li.find('.advice').text() || '';
+        if (typeof window.logEvent === 'function') {
+          // none は「考える」、one/both は「確認する」とUI文言は異なるが、ログのsubcategoryは統一して 'consider'
+          window.logEvent('advice', 'consider', adviceText);
+        }
+      } catch (_) {}
 			let already = '';
 			try { already = localStorage.getItem(String(key)) || ''; } catch(e) { already = ''; }
 			if (title === 'none') {
@@ -499,6 +511,13 @@ $(document)
 		try {
 			const $li = $(this).closest('.rat-advice-item');
 			const key = $li.data('key');
+      // 追加: ログ（確認しない/考えない）
+      try {
+        const adviceText = $li.find('.advice').text() || '';
+        if (typeof window.logEvent === 'function') {
+          window.logEvent('advice', 'skip', adviceText);
+        }
+      } catch (_) {}
 			try { localStorage.setItem(String(key), 'skip'); } catch(e) {}
 			const title = String($li.data('title') || '');
 			$li.find('.rat-advice-status').text(title === 'none' ? '選択: 考えない' : '選択: 確認しない');

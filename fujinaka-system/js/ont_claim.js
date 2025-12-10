@@ -144,6 +144,14 @@ function renderDiffConceptLabels(containerSelector) {
             try { saved = localStorage.getItem(key) || ''; } catch(e) { saved = ''; }
             const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
 
+            // 追加: 助言ログ（logging.js の logEvent）
+            try {
+              const adviceText = makeLine(title, p);
+              if (typeof window.logEvent === 'function') {
+                window.logEvent('advice', 'add', adviceText);
+              }
+            } catch(_) {}
+
             return [
               `<li class="ai-advice-item" data-key="${key}"` +
               ` data-title="${attr(title)}"` +
@@ -236,6 +244,13 @@ $(document)
       const key = $li.data('key');
       const content = $li.attr('data-content') || '';
       const forestNodeId = $li.attr('data-node-id') || null;
+      // 追加: ログ（考える）
+      try {
+        const adviceText = $li.find('.ai-advice-text').text() || content || '';
+        if (typeof window.logEvent === 'function') {
+          window.logEvent('advice', 'consider', adviceText);
+        }
+      } catch (_) {}
       // すでに"考える"済みなら二重作成を避ける
       let already = '';
       try { already = localStorage.getItem(String(key)) || ''; } catch(e) { already = ''; }
@@ -310,6 +325,13 @@ $(document)
     try {
       const $li = $(this).closest('.ai-advice-item');
       const key = $li.data('key');
+      // 追加: ログ（考えない）
+      try {
+        const adviceText = $li.find('.ai-advice-text').text() || ($li.attr('data-content') || '');
+        if (typeof window.logEvent === 'function') {
+          window.logEvent('advice', 'skip', adviceText);
+        }
+      } catch (_) {}
       try { localStorage.setItem(String(key), 'skip'); } catch(e) {}
       $li.find('.ai-advice-status').text('選択: 考えない');
     } catch(e) { console.error('[ont_claim] skip click failed', e); }
