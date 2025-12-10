@@ -189,10 +189,10 @@ class LogicNetwork {
 
     // 既存のノード追加・データセット更新が完了した直後に追記
     try {
-      // Ensure userId is defined; use global or empty string
       const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
       if (typeof logEvent === 'function') {
-        logEvent('logic_node', 'add', label, node_id, f_node_id, p_node_id,userId);
+        const payload = { node_id, label };
+        logEvent('logic_node', 'add', JSON.stringify(payload), userId);
       } else {
         console.warn('logEvent is not available. Did you load logging.js?');
       }
@@ -302,12 +302,13 @@ class LogicNetwork {
 
       // ログ出力（ノード編集）
       try {
-        const content = JSON.stringify({
-          label: result_label
-        });
         const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+        const payload = {
+          node_id: node.id,
+          label: result_label
+        };
         if (typeof logEvent === 'function') {
-          logEvent('logic_node', 'edit', content, node.f_node_id || null, node.p_node_id || null, userId);
+          logEvent('logic_node', 'edit', JSON.stringify(payload), userId);
         } else {
           console.warn('logEvent is not available. Did you load logging.js?');
         }
@@ -349,6 +350,19 @@ class LogicNetwork {
     }
     // ノードを削除すると三角ロジックの形が崩れてしまうため，データベース側でノードの内容をNULLにする処理にしている（edited = 0で削除状態）
     defaultRecordLogicNetwork.delete_LogicNode(selectNodeId, 0);
+
+    // ログ出力（ノード削除＝内容クリア）
+    try {
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      const payload = { node_id: selectNodeId };
+      if (typeof logEvent === 'function') {
+        logEvent('logic_node', 'delete', JSON.stringify(payload), userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('deleteNode: logging failed', e);
+    }
   }
 
   //エッジを追加する
@@ -440,6 +454,18 @@ class LogicNetwork {
     defaultRecordLogicNetwork.record_LogicNode(fact_id, "根拠", null, null, false, factlevel);
     defaultRecordLogicNetwork.record_LogicNode(reason_id, "理由付け", null, null, false, reasonlevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, claim_id, fact_id, reason_id, "", "");
+    // ログ出力（ノード削除＝内容クリア）
+    try {
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      const payload = { triangle_id: triangle_id };
+      if (typeof logEvent === 'function') {
+        logEvent('logic_triangle', 'add', JSON.stringify(payload), userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('logic_triangle add: logging failed', e);
+    }
 
     // 追加: メモリ上の三角一覧にも反映
     try {
@@ -499,6 +525,18 @@ class LogicNetwork {
     defaultRecordLogicNetwork.record_LogicNode(add_fact_id, "", null, null, false, newNodeLevel);
     defaultRecordLogicNetwork.record_LogicTriangle(triangle_id, baseNode.id, add_fact_id, add_reason_id, "", "");
 
+    try {
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      const payload = { base_node_id: baseNode.id, triangle_id };
+      if (typeof logEvent === 'function') {
+        logEvent('logic_triangle', 'add', JSON.stringify(payload), userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('logic_triangle add: logging failed', e);
+    }
+
     // 追加: メモリ上の三角一覧にも反映
     try {
       this.triangles = this.triangles || [];
@@ -555,6 +593,7 @@ class LogicNetwork {
       console.error("CheckSelectedNode: エラーが発生しました:", error);
       return null;
     }
+    
   }
 
   // Forestのノードを起点に三角ロジックを作成する
@@ -583,6 +622,20 @@ class LogicNetwork {
     console.log("Selected Forest node ID:", forestNodeId);
     // maketriangleを呼び出し、ForestのノードIDを渡す
     this.maketriangle(selected_fnode.topic, forestNodeId, null, 1);
+    try {
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      const payload = { 
+        f_node_id: forestNodeId,
+        topic: selected_fnode.topic
+       };
+      if (typeof logEvent === 'function') {
+        logEvent('logic_triangle', 'addfromforest', JSON.stringify(payload), userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('logic_triangle add: logging failed', e);
+    }
   }
 
   // DBから Forest ノードの type を取得
@@ -684,6 +737,21 @@ class LogicNetwork {
     }
     // maketriangleを呼び出し、presentationノード由来/DB由来のf_node_idがあれば渡す
     this.maketriangle(selected_pnode.text, fNodeId || null, selected_pnode.id, 1);
+    // ログ出力（Triangle追加 from Scenario）
+    try {
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      const payload = { 
+        p_node_id: selected_pnode.id,
+        topic: selected_pnode.text
+       };
+      if (typeof logEvent === 'function') {
+        logEvent('logic_triangle', 'addfromscenario', JSON.stringify(payload), userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('logic_triangle add (scenario): logging failed', e);
+    }
   }
 
   // Forestのノードの内容を三角ロジックに反映する
@@ -747,6 +815,20 @@ class LogicNetwork {
     
     // Forestから反映されたので edited = true を設定して送信（送信側で1/0に変換）
     defaultRecordLogicNetwork.edit_LogicNode(LogicNodeId, f_node.topic, true, f_node_id, null);
+    try {
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      const payload = { 
+        f_node_id: f_node_id,
+        topic: f_node.topic
+       };
+      if (typeof logEvent === 'function') {
+        logEvent('logic_node', 'editfromforest', JSON.stringify(payload), userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('logic_node edit (forest): logging failed', e);
+    }
   }
 
   // 三角ロジックのノードの内容を論文シナリオの内容に反映する
@@ -831,6 +913,20 @@ class LogicNetwork {
       conceptIdFromPresentation || null,
       p_element_id
     );
+    try {
+      const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+      const payload = { 
+        p_node_id: p_element_id,
+        topic: elementText
+       };
+      if (typeof logEvent === 'function') {
+        logEvent('logic_node', 'editfromscenario', JSON.stringify(payload), userId);
+      } else {
+        console.warn('logEvent is not available. Did you load logging.js?');
+      }
+    } catch (e) {
+      console.error('logic_node edit (scenario): logging failed', e);
+    }
   }
 
   // 論理の説明を追加する関数（旧）→ 新モーダルに委譲
@@ -953,6 +1049,24 @@ class LogicNetwork {
       // DB保存（既存のAPIを順に呼ぶ）
       this.saveClaimReasonToDatabase(triangleId, claimReason);
       this.saveConflictToDatabase(triangleId, conflict);
+
+      // ログ出力（説明・葛藤の保存）
+      try {
+        const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
+        const payload = {
+          node_id: String(nodeId),
+          triangle_id: String(triangleId),
+          claim_reason: claimReason,
+          conflict: conflict
+        };
+        if (typeof logEvent === 'function') {
+          logEvent('logic_detail', 'save', JSON.stringify(payload), userId);
+        } else {
+          console.warn('logEvent is not available. Did you load logging.js?');
+        }
+      } catch (e) {
+        console.error('saveLogicDetail: logging failed', e);
+      }
 
       this.closeLogicDetailModal();
       alert((claimReason.length > 0 || conflict.length > 0) ? "説明・葛藤を保存しました" : "説明・葛藤を削除しました");

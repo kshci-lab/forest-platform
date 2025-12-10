@@ -1,13 +1,52 @@
-{"timestamp":"2025-12-09T21:47:28+09:00","category":"logic","subcategory":"add","content":"テスト: ノード追加","user_id":"tester","remote_ip":"::1","ua":"Mozilla\/5.0 (Windows NT; Windows NT 10.0; ja-JP) WindowsPowerShell\/5.1.26100.7019"}
-{"timestamp":"2025-12-09T21:54:52+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"\"}","user_id":"311997332","remote_ip":"::1","ua":"Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/143.0.0.0 Safari\/537.36"}
-{"timestamp":"2025-12-09T21:54:52+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"根拠\"}","user_id":"311997332","remote_ip":"::1","ua":"Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/143.0.0.0 Safari\/537.36"}
-{"timestamp":"2025-12-09T21:54:52+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"理由付け\"}","user_id":"311997332","remote_ip":"::1","ua":"Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/143.0.0.0 Safari\/537.36"}
-{"timestamp":"2025-12-09T21:55:55+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"\"}","user_id":"311997332"}
-{"timestamp":"2025-12-09T21:55:55+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"根拠\"}","user_id":"311997332"}
-{"timestamp":"2025-12-09T21:55:55+09:00","category":"logic","subcategory":"add","content":"{\"label\":\"理由付け\"}","user_id":"311997332"}
-{"timestamp":"2025-12-09T22:27:26+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"sa\"}","user_id":"311997332"}
-{"timestamp":"2025-12-09T22:35:43+09:00","category":"logic_node","subcategory":"add","content":"","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
-{"timestamp":"2025-12-09T22:35:43+09:00","category":"logic_node","subcategory":"add","content":"根拠","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
-{"timestamp":"2025-12-09T22:35:43+09:00","category":"logic_node","subcategory":"add","content":"理由付け","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
-{"timestamp":"2025-12-09T22:36:56+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"ｇｒ\"}","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
-{"timestamp":"2025-12-09T22:37:12+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"New Node\"}","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+
+{"timestamp":"2025-12-10T08:49:20+09:00","category":"logic_node","subcategory":"add","content":"","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-10T08:49:20+09:00","category":"logic_node","subcategory":"add","content":"根拠","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-10T08:49:20+09:00","category":"logic_node","subcategory":"add","content":"理由付け","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-10T08:52:53+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765324373198262224\",\"f_node_id\":null,\"p_node_id\":null,\"label\":\"\"}","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-10T08:52:53+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765324373198692665\",\"f_node_id\":null,\"p_node_id\":null,\"label\":\"根拠\"}","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-10T08:52:53+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765324373198744022\",\"f_node_id\":null,\"p_node_id\":null,\"label\":\"理由付け\"}","node_id":null,"f_node_id":null,"p_node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-10T08:54:49+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"sa\"}","node_id":null,"user_id":"311997332"}
+{"timestamp":"2025-12-10T08:57:04+09:00","category":"logic_node","subcategory":"edit","content":"{\"label\":\"huk\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T08:59:41+09:00","category":"logic_node","subcategory":"edit","content":"{\"node_id\":\"1765287343133218432\",\"label\":\"ds\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:03:25+09:00","category":"logic_node","subcategory":"edit","content":"{\"node_id\":\"1765283333545828834\",\"label\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:04:15+09:00","category":"logic_node","subcategory":"edit","content":"{\"node_id\":\"1765283888612150618\",\"label\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:08:59+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325339628474001\",\"f_node_id\":null,\"p_node_id\":null,\"label\":\"\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:08:59+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325339628332127\",\"f_node_id\":null,\"p_node_id\":null,\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:08:59+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325339628978772\",\"f_node_id\":null,\"p_node_id\":null,\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:09:41+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325381024521832\",\"label\":\"\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:09:41+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325381024117843\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:09:41+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325381024489570\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:09:41+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765325381024624974\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:11:19+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325479744323279\",\"label\":\"\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:11:19+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325479744876259\",\"label\":\"\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:11:19+09:00","category":"logic_triangle","subcategory":"add","content":"{\"base_node_id\":\"1765284892473646045\",\"triangle_id\":\"1765325479744908624\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:11:34+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325494784439281\",\"label\":\"\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:11:34+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325494784276943\",\"label\":\"\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:11:34+09:00","category":"logic_triangle","subcategory":"add","content":"{\"base_node_id\":\"1765325479744323279\",\"triangle_id\":\"1765325494784828951\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:16:52+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325812311235561\",\"label\":\"iu\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:16:52+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325812311061459\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:16:52+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325812311348449\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:16:52+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765325812311179748\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:17:06+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325826390684812\",\"label\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:17:06+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325826390283232\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:17:06+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325826390650336\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:17:06+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765325826390629500\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:17:06+09:00","category":"logic_triangle","subcategory":"addfromforest","content":"{\"f_node_id\":\"af7d16115302c4fd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:18:09+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325889052438461\",\"label\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:18:09+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325889052043139\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:18:09+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765325889052579262\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:18:09+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"176532588905270174\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:18:09+09:00","category":"logic_triangle","subcategory":"addfromforest","content":"{\"f_node_id\":\"af7d16115302c4fd\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:21:48+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765326108733692928\",\"label\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:21:48+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765326108733009987\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:21:48+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765326108733211304\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:21:48+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765326108733601313\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:22:17+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765326137331447138\",\"label\":\"sasasasa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:22:17+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765326137331068959\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:22:17+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765326137331320076\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:22:17+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"176532613733132536\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:22:17+09:00","category":"logic_triangle","subcategory":"add","content":"{\"p_node_id\":\"af7d170622ee7f8b\",\"topic\":\"sasasasa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:23:03+09:00","category":"logic_node","subcategory":"edit","content":"{\"node_id\":\"1765284517961229733\",\"label\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:24:33+09:00","category":"logic_node","subcategory":"edit","content":"{\"node_id\":\"1765283888612471496\",\"label\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:24:34+09:00","category":"logic_triangle","subcategory":"editfromscenario","content":"{\"f_node_id\":\"af7d16115302c4fd\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T09:32:27+09:00","category":"logic_detail","subcategory":"save","content":"{\"node_id\":\"1765092747021468862\",\"triangle_id\":\"1765092747021681927\",\"claim_reason\":\"sa\",\"conflict\":\"fda\"}","user_id":"311997332"}
