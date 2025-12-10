@@ -155,3 +155,240 @@
 {"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765344870968951420\",\"label\":\"理由付け\"}","user_id":"311997332"}
 {"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765344870968147322\"}","user_id":"311997332"}
 {"timestamp":"2025-12-10T14:34:30+09:00","category":"logic_triangle","subcategory":"addfromforest","content":"{\"f_node_id\":\"b0168e5dbadf0ac2\",\"topic\":\"さふん\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"show","content":"{\"rootId\":\"root\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7ca9487f4008\",\"topic\":\"a\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0cab0d4d93b3\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d127c1d935a82\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7ca9487f4008\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7de31da8881d\",\"topic\":\"iu\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d0cab0d4d93b3\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0d44bbaa3aaa\",\"topic\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1332c3e50406\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1377735557dd\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d13be3a0b6bfa\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d140b69c37285\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d14a984a59a65\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1594bd9c055c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d15b948f38156\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16115302c4fd\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16400e44872d\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d166c831e80af\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d169f2cd43743\",\"topic\":\"ロジック\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d170622ee7f8b\",\"topic\":\"sasasasa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d177496fe5dea\",\"topic\":\"hruig\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af80055e6878137f\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7de31da8881d\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05aa29d54aeba7b\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7de31da8881d\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05ac3936e90da74\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d140b69c37285\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1539c206ab6c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d14a984a59a65\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d156da5e05fc9\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d1594bd9c055c\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d41aac7367bc7\",\"topic\":\"なぜこれらは合理的であるといえるのですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d16115302c4fd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b059f4245aa91e28\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d170622ee7f8b\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a2ff35f089a38\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d1539c206ab6c\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a4f1775970b03\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b05d41aac7367bc7\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:25+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d4260a5e24120\",\"topic\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:47+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"b05a4f1775970b03\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:48+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b05a4f1775970b03\"}","user_id":"311997332"}
+{"timestamp":"2025-12-10T23:59:48+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c68c1554284c8\",\"parentId\":\"b05a4f1775970b03\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:01:40+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:01:41+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:01:41+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c844acd7898e8\",\"parentId\":\"b08c68c1554284c8\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:01:55+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"b08c844acd7898e8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:01:55+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"b08c844acd7898e8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:01:55+09:00","category":"mindmap","subcategory":"edit_begin","content":"{\"nodeId\":\"b08c844acd7898e8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:01:57+09:00","category":"mindmap","subcategory":"edit_update","content":"{\"nodeId\":\"b08c844acd7898e8\",\"before\":\"New Node\",\"after\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:02:29+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:02:31+09:00","category":"mindmap","subcategory":"edit_update","content":"{\"nodeId\":\"b08c68c1554284c8\",\"before\":\"New Node\",\"after\":\"ds\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:28+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:28+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08cca6408cee1b0\",\"parentId\":\"b08c68c1554284c8\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:28+09:00","category":"mindmap","subcategory":"edit_begin","content":"{\"nodeId\":\"b08cca6408cee1b0\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"show","content":"{\"rootId\":\"root\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7ca9487f4008\",\"topic\":\"a\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0cab0d4d93b3\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d127c1d935a82\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7ca9487f4008\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7de31da8881d\",\"topic\":\"iu\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0d44bbaa3aaa\",\"topic\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d0cab0d4d93b3\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1332c3e50406\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1377735557dd\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d13be3a0b6bfa\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d140b69c37285\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d14a984a59a65\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1594bd9c055c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d15b948f38156\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16115302c4fd\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16400e44872d\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d166c831e80af\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d169f2cd43743\",\"topic\":\"ロジック\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d170622ee7f8b\",\"topic\":\"sasasasa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:29+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d177496fe5dea\",\"topic\":\"hruig\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af80055e6878137f\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7de31da8881d\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05aa29d54aeba7b\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7de31da8881d\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05ac3936e90da74\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d140b69c37285\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1539c206ab6c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d14a984a59a65\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d156da5e05fc9\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d1594bd9c055c\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d41aac7367bc7\",\"topic\":\"なぜこれらは合理的であるといえるのですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d16115302c4fd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b059f4245aa91e28\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d170622ee7f8b\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a2ff35f089a38\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d1539c206ab6c\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a4f1775970b03\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b05d41aac7367bc7\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d4260a5e24120\",\"topic\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b05a4f1775970b03\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c68c1554284c8\",\"topic\":\"ds\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c844acd7898e8\",\"topic\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:30+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08cca6408cee1b0\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:43+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"af7d14a984a59a65\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:45+09:00","category":"mindmap","subcategory":"update_from_logic_start","content":"{\"source\":\"logic_network\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:45+09:00","category":"mindmap","subcategory":"edit_update","content":"{\"nodeId\":\"af7d14a984a59a65\",\"before\":\"New Node\",\"after\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:45+09:00","category":"mindmap","subcategory":"update_from_logic_apply","content":"{\"nodeId\":\"af7d14a984a59a65\",\"logicNodeId\":\"1765283888612471496\",\"label\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:45+09:00","category":"mindmap","subcategory":"update_from_logic_mark_node","content":"{\"nodeId\":\"af7d14a984a59a65\",\"logicNodeId\":\"1765283888612471496\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:45+09:00","category":"mindmap","subcategory":"update_from_logic_style","content":"{\"nodeId\":\"af7d14a984a59a65\",\"logicNodeId\":\"1765283888612471496\",\"applied\":true}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:45+09:00","category":"mindmap","subcategory":"update_from_logic_sheet","content":"{\"nodeId\":\"af7d14a984a59a65\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:47+09:00","category":"mindmap","subcategory":"update_from_logic_success","content":"{\"nodeId\":\"af7d14a984a59a65\",\"logicNodeId\":\"1765283888612471496\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:47+09:00","category":"mindmap","subcategory":"update_from_logic_db","content":"{\"action\":\"update_node_content\",\"nodeId\":\"af7d14a984a59a65\",\"logicNodeId\":\"1765283888612471496\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:06:47+09:00","category":"mindmap","subcategory":"update_from_logic_db","content":"{\"action\":\"update_logic_link\",\"nodeId\":\"af7d14a984a59a65\",\"logicNodeId\":\"1765283888612471496\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"show","content":"{\"rootId\":\"root\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7ca9487f4008\",\"topic\":\"a\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0cab0d4d93b3\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d127c1d935a82\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7ca9487f4008\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7de31da8881d\",\"topic\":\"iu\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d0cab0d4d93b3\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0d44bbaa3aaa\",\"topic\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1332c3e50406\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1377735557dd\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d13be3a0b6bfa\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d140b69c37285\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d14a984a59a65\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1594bd9c055c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d15b948f38156\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16115302c4fd\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16400e44872d\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d166c831e80af\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d169f2cd43743\",\"topic\":\"ロジック\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d170622ee7f8b\",\"topic\":\"sasasasa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d177496fe5dea\",\"topic\":\"hruig\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d127c1d935a82\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af80055e6878137f\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7de31da8881d\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05aa29d54aeba7b\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7b7de31da8881d\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05ac3936e90da74\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d140b69c37285\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1539c206ab6c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d14a984a59a65\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d156da5e05fc9\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d1594bd9c055c\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d41aac7367bc7\",\"topic\":\"なぜこれらは合理的であるといえるのですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d16115302c4fd\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b059f4245aa91e28\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d170622ee7f8b\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a2ff35f089a38\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"af7d1539c206ab6c\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a4f1775970b03\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b05d41aac7367bc7\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d4260a5e24120\",\"topic\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b05a4f1775970b03\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c68c1554284c8\",\"topic\":\"ds\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c844acd7898e8\",\"topic\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"expand","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:10+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08cca6408cee1b0\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:11+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:11+09:00","category":"mindmap","subcategory":"select","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:11+09:00","category":"mindmap","subcategory":"edit_begin","content":"{\"nodeId\":\"b08c68c1554284c8\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:10:13+09:00","category":"mindmap","subcategory":"edit_update","content":"{\"nodeId\":\"b08c68c1554284c8\",\"before\":\"ds\",\"after\":\"er\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"show","content":"{\"rootId\":\"root\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7ca9487f4008\",\"topic\":\"a\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0cab0d4d93b3\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d127c1d935a82\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7b7de31da8881d\",\"topic\":\"iu\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d0d44bbaa3aaa\",\"topic\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1332c3e50406\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1377735557dd\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d13be3a0b6bfa\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d140b69c37285\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d14a984a59a65\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1594bd9c055c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d15b948f38156\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16115302c4fd\",\"topic\":\"あｓだｓ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d16400e44872d\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d166c831e80af\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d169f2cd43743\",\"topic\":\"ロジック\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d170622ee7f8b\",\"topic\":\"sasasasa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d177496fe5dea\",\"topic\":\"hruig\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af80055e6878137f\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05aa29d54aeba7b\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05ac3936e90da74\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d1539c206ab6c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"af7d156da5e05fc9\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d41aac7367bc7\",\"topic\":\"なぜこれらは合理的であるといえるのですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b059f4245aa91e28\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a2ff35f089a38\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05a4f1775970b03\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b05d4260a5e24120\",\"topic\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c68c1554284c8\",\"topic\":\"er\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08c844acd7898e8\",\"topic\":\"sa\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:03+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b08cca6408cee1b0\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:13+09:00","category":"presentation","subcategory":"content_edit_begin","content":"{\"threadId\":\"19b08dcd5092fe\",\"contentId\":\"contents-19b08dce00f21a\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T00:24:15+09:00","category":"presentation","subcategory":"content_edit","content":"{\"threadId\":\"19b08dcd5092fe\",\"contentId\":\"contents-19b08dce00f21a\",\"before\":\"\",\"after\":\"ｇｒｙ\",\"source\":\"manual\"}","user_id":"311997332"}

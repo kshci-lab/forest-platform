@@ -573,7 +573,8 @@ function MakeChapter(topic){
     Insert_Chapter(uuid, 1);
   }
   
-  let label = "<div class='chapter' id='"+uuid+"' value='章' style='background-color:white; padding:10px;'>"+
+  var _src = (window._creationSource ? window._creationSource : 'manual');
+  let label = "<div class='chapter' id='"+uuid+"' value='章' data-source='"+_src+"' style='background-color:white; padding:10px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
                 "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_Chapter_Title(this,"+quot_uuid+");' placeholder='章タイトル' onkeypress='Keypress(event.keyCode, this);'>"+topic+"</textarea>"+
                 "<input class='simple_btn' type='button' value='×' onclick='Remove_Chapter("+quot_uuid+");Record_ChapterRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
@@ -585,6 +586,12 @@ function MakeChapter(topic){
 
   let area = $("#chapter_area");
   area.append(label);
+
+  if (typeof logEvent === 'function') {
+    try {
+      logEvent('presentation','create_chapter', JSON.stringify({ id: uuid, title: topic || '', source: _src }));
+    } catch (e) { /* noop */ }
+  }
 
   // 追加された chapter に Sortable 適用
   var newChapter = area.find('.chapter').last();
@@ -640,7 +647,8 @@ function MakeSection(topic){
   var section_rank = (section_dom && section_dom.length > 0) ? section_dom.length + 1 : 1;
   Insert_section(uuid, targetChapter.id, section_rank);
 
-  let label = "<div class='section' id='"+uuid+"' value='節' style='background-color:white; padding:10px;'>"+
+  var _src = (window._creationSource ? window._creationSource : 'manual');
+  let label = "<div class='section' id='"+uuid+"' value='節' data-source='"+_src+"' style='background-color:white; padding:10px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
                 "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_section_Title(this,"+quot_uuid+");' placeholder='節タイトル' onkeypress='Keypress(event.keyCode, this);'>"+topic+"</textarea>"+
                 "<input class='simple_btn' type='button' value='×' onclick='Remove_section("+quot_uuid+", false);Record_sectionRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
@@ -653,6 +661,12 @@ function MakeSection(topic){
   // 追加先の章配下に追加
   let area = $('#' + targetChapter.id + " .section_area");
   area.append(label);
+
+  if (typeof logEvent === 'function') {
+    try {
+      logEvent('presentation','create_section', JSON.stringify({ id: uuid, title: topic || '', parentChapterId: targetChapter.id, source: _src }));
+    } catch (e) { /* noop */ }
+  }
 
   // 追加された section に Sortable 適用
   var newsection = area.find('.section').last();
@@ -690,6 +704,7 @@ function SetPurposeonChapter(){
    // (textareaのid名).value = "ノードを選択してください";
    return;
  }else{
+   window._creationSource = 'forest';
    MakeChapter(selected_node.topic);
  }
 }
@@ -716,6 +731,7 @@ function SetPurposeonChapterfromlogic(){
    // (textareaのid名).value = "ノードを選択してください";
    return;
  }else{
+   window._creationSource = 'triangle';
    MakeChapter(selected_logic_node.topic);
  }
 }
@@ -727,6 +743,7 @@ function SetPurposeonSection(){
    // (textareaのid名).value = "ノードを選択してください";
    return;
  }else{
+   window._creationSource = 'forest';
    MakeSection(selected_node.topic);
  }
 }
@@ -753,6 +770,7 @@ function SetPurposeonSectionfromlogic(){
    // (textareaのid名).value = "ノードを選択してください";
    return;
  }else{
+   window._creationSource = 'triangle';
    MakeSection(selected_logic_node.topic);
  }
 }
@@ -806,7 +824,8 @@ function CreateThread(topic, id){
   var paragraph_rank = (paragraph_dom && paragraph_dom.length > 0) ? paragraph_dom.length + 1 : 1;
   Insert_paragraph(uuid, targetSection.id, paragraph_rank);
 
-  let label = "<div class='thread' id='"+uuid+"' value='パラグラフ' data-node_id='"+node_id+"' style='background-color:white; padding:10px; margin-top:10px; margin-bottom:10px; margin-right:10px; margin-left:5px;'>"+
+  var _src = (window._creationSource ? window._creationSource : (window.selected_logic_node && id === window.selected_logic_node.id ? 'triangle' : (window.selected_node && id === window.selected_node.id ? 'forest' : 'manual')));
+  let label = "<div class='thread' id='"+uuid+"' value='パラグラフ' data-node_id='"+node_id+"' data-source='"+_src+"' style='background-color:white; padding:10px; margin-top:10px; margin-bottom:10px; margin-right:10px; margin-left:5px;'>"+
                 "<span class = 'tspan' tabindex='0'>"+topic+"</span>"+
                 "<textarea class='title_slide' class='statement' onFocus='TextboxClick()' onblur='Update_paragraph_Title(this,"+quot_uuid+");'  placeholder='節タイトル' onkeypress='Keypress(event.keyCode, this);'>"+topic+"</textarea>"+
                 "<input class='simple_btn' type='button' value='×' onclick='Removeparagraph("+quot_uuid+", false);Record_paragraphRank();' style='width:25px; height:25px; font-size:10px; float:right;'>"+
@@ -830,6 +849,13 @@ function CreateThread(topic, id){
   // 追加先の節配下に追加
   let area = $('.paragraph', "#" + targetSection.id + "");
   area.append(label);
+
+  if (typeof logEvent === 'function') {
+    try {
+      logEvent('presentation','create_paragraph', JSON.stringify({ id: uuid, title: topic || '', node_id: id || null, concept_id: concept_id || null, source: _src }));
+      logEvent('presentation','content_add', JSON.stringify({ contentId: 'contents-' + setid, threadId: uuid, source: _src }));
+    } catch (e) { /* noop */ }
+  }
 
   // 追加された thread に Sortable 適用
   var newThread = area.find('.thread').last();
@@ -962,6 +988,7 @@ function SetPurpose(){
    return;
  }else{
    $slide_topic.push(selected_node.topic);
+   window._creationSource = 'forest';
    CreateThread(selected_node.topic, selected_node.id);
  }
 }
@@ -990,6 +1017,7 @@ function SetPurposefromLogic(){
    return;
  }else{
    $slide_topic.push(selected_logic_node.topic);
+   window._creationSource = 'triangle';
    CreateThread(selected_logic_node.topic, selected_logic_node.id);
  }
 }
@@ -1878,6 +1906,78 @@ $(function(){
              }
           }
         }
+    });
+
+    // Logging: record title edit begin/end for chapter/section/paragraph
+    $(document).on('focus', '.title_slide', function(){
+      $(this).data('prev', this.value || '');
+      var container = $(this).closest('.chapter, .section, .thread')[0];
+      if (container && typeof logEvent === 'function') {
+        try {
+          var level = container.classList.contains('chapter') ? 'chapter' : (container.classList.contains('section') ? 'section' : 'paragraph');
+          logEvent('presentation','edit_begin', JSON.stringify({ level: level, id: container.id }));
+        } catch (e) { /* noop */ }
+      }
+    });
+    $(document).on('blur', '.title_slide', function(){
+      var prev = $(this).data('prev') || '';
+      var curr = this.value || '';
+      if (prev === curr) { return; }
+      var container = $(this).closest('.chapter, .section, .thread')[0];
+      if (container && typeof logEvent === 'function') {
+        try {
+          var level = container.classList.contains('chapter') ? 'chapter' : (container.classList.contains('section') ? 'section' : 'paragraph');
+          var source = container.getAttribute('data-source') || 'manual';
+          logEvent('presentation','edit_update', JSON.stringify({ level: level, id: container.id, before: prev, after: curr, source: source }));
+        } catch (e) { /* noop */ }
+      }
+    });
+
+    // Logging: record content edits in thread text areas
+    $(document).on('focus', '.text_border', function(){
+      $(this).data('prev', this.value || '');
+      var thread = $(this).closest('.thread')[0];
+      if (thread && typeof logEvent === 'function') {
+        try {
+          logEvent('presentation','content_edit_begin', JSON.stringify({ threadId: thread.id, contentId: this.id }));
+        } catch (e) { /* noop */ }
+      }
+    });
+    $(document).on('blur', '.text_border', function(){
+      var prev = $(this).data('prev') || '';
+      var curr = this.value || '';
+      if (prev === curr) { return; }
+      var thread = $(this).closest('.thread')[0];
+      var source = thread ? (thread.getAttribute('data-source') || 'manual') : 'manual';
+      if (typeof logEvent === 'function') {
+        try {
+          logEvent('presentation','content_edit', JSON.stringify({ threadId: thread ? thread.id : null, contentId: this.id || null, before: prev, after: curr, source: source }));
+        } catch (e) { /* noop */ }
+      }
+    });
+
+    // Logging: deletions for chapter/section/paragraph
+    $(document).on('click', '.simple_btn', function(){
+      if (this.value !== '×') { return; }
+      var container = $(this).closest('.chapter, .section, .thread')[0];
+      if (!container) { return; }
+      var source = container.getAttribute('data-source') || 'manual';
+      var level = container.classList.contains('chapter') ? 'chapter' : (container.classList.contains('section') ? 'section' : 'paragraph');
+      if (typeof logEvent === 'function') {
+        try { logEvent('presentation','delete_'+level, JSON.stringify({ id: container.id, source: source })); } catch (e) {}
+      }
+    });
+
+    // Logging: deletion of content rows
+    $(document).on('click', '.content_delete', function(){
+      var thread = $(this).closest('.thread')[0];
+      var textarea = $(this).siblings('textarea.text_border')[0];
+      var source = thread ? (thread.getAttribute('data-source') || 'manual') : 'manual';
+      if (typeof logEvent === 'function') {
+        try {
+          logEvent('presentation','delete_content', JSON.stringify({ threadId: thread ? thread.id : null, contentId: textarea ? textarea.id : null, source: source }));
+        } catch (e) { /* noop */ }
+      }
     });
 });
 

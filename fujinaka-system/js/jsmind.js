@@ -1194,6 +1194,7 @@
 
                 this.select_node(nodeid);
 
+
                 thisId = nodeid;
 
                 var jmnode = document.getElementsByTagName("jmnode");
@@ -1389,6 +1390,7 @@
                 this.layout.collapse_node(node);
                 this.view.relayout();
                 this.view.restore_location(node);
+                if (typeof logEvent === 'function') { logEvent('mindmap','collapse', JSON.stringify({ nodeId: node.id })); }
             }else{
                 logger.error('the node can not be found.');
             }
@@ -1435,6 +1437,8 @@
             this.view.show(true);
             /*logger.debug('view.show ok');*/
 
+            if (typeof logEvent === 'function') { logEvent('mindmap','show', JSON.stringify({ rootId: this.mind.root && this.mind.root.id })); }
+
             this.invoke_event_handle(jm.event_type.show,{data:[mind]});
         },
 
@@ -1473,6 +1477,7 @@
                     this.view.show(false);
                     this.view.reset_node_custom_style(node);
                     this.expand_node(parent_node);
+                    if (typeof logEvent === 'function') { logEvent('mindmap','add', JSON.stringify({ nodeId: node.id, parentId: parent_node.id, topic: topic || '' })); }
                     this.invoke_event_handle(jm.event_type.edit,{evt:'add_node',data:[parent_node.id,nodeid,topic,data],node:nodeid});
                     this.select_clear();
                 }
@@ -1491,6 +1496,7 @@
                     this.view.add_node(node);
                     this.layout.layout();
                     this.view.show(false);
+                    if (typeof logEvent === 'function') { logEvent('mindmap','add', JSON.stringify({ nodeId: node.id, beforeId: beforeid, topic: topic || '' })); }
                     this.invoke_event_handle(jm.event_type.edit,{evt:'insert_node_before',data:[beforeid,nodeid,topic,data],node:nodeid});
                 }
                 return node;
@@ -1507,6 +1513,7 @@
                     this.view.add_node(node);
                     this.layout.layout();
                     this.view.show(false);
+                    if (typeof logEvent === 'function') { logEvent('mindmap','add', JSON.stringify({ nodeId: node.id, afterOf: node_after.id, topic: topic || '' })); }
                     this.invoke_event_handle(jm.event_type.edit,{evt:'insert_node_after',data:[node_after.id,nodeid,topic,data],node:nodeid});
                 }
                 return node;
@@ -1529,6 +1536,7 @@
                     var nodeid = node.id;
                     var parentid = node.parent.id;
                     var parent_node = this.get_node(parentid);
+                    if (typeof logEvent === 'function') { logEvent('mindmap','remove', JSON.stringify({ nodeId: nodeid, parentId: parentid, topic: node.topic || '' })); }
                     this.view.save_location(parent_node);
                     this.view.remove_node(node);
                     this.mind.remove_node(node);
@@ -1561,6 +1569,8 @@
                         return;
                     }
 
+                    var oldTopic = node.topic;
+
                     //yoshioka登録　ノードを編集したこと
                   //渡す情報（ノードID，親ノードID，操作，テキスト，法造コンセプトID，タイプ，primary）
                   Record_activities(nodeid,
@@ -1578,6 +1588,7 @@
                     this.view.update_node(node);
                     this.layout.layout();
                     this.view.show(false);
+                    if (typeof logEvent === 'function') { logEvent('mindmap','edit_update', JSON.stringify({ nodeId: nodeid, before: oldTopic || '', after: topic })); }
                     this.invoke_event_handle(jm.event_type.edit,{evt:'update_node',data:[nodeid,topic],node:nodeid});
                 }
             }else{
@@ -1593,6 +1604,7 @@
                     this.view.update_node(node);
                     this.layout.layout();
                     this.view.show(false);
+                    if (typeof logEvent === 'function') { logEvent('mindmap','move', JSON.stringify({ nodeId: nodeid, beforeId: beforeid || null, parentId: parentid || null, direction: direction || null })); }
                     this.invoke_event_handle(jm.event_type.edit,{evt:'move_node',data:[nodeid,beforeid,parentid,direction],node:nodeid});
                 }
             }else{
@@ -2733,6 +2745,7 @@
             for (var i=0; i < this.e_panel.children.length; i++) {
                 this.e_panel.children[i].style.transform = 'scale(' + zoom + ')';
             };
+            if (typeof logEvent === 'function') { logEvent('mindmap','zoom', JSON.stringify({ zoom: this.actualZoom })); }
             this.show(true);
             return true;
 
@@ -3344,11 +3357,13 @@
             
             // defaultLogicNetworkが存在するかチェック
             if (!window.defaultLogicNetwork) {
+                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_error', JSON.stringify({ reason: 'defaultLogicNetwork_not_found' })); }
                 alert("ロジックネットワークが初期化されていません (defaultLogicNetwork not found)");
                 return;
             }
             
             if (!window.defaultLogicNetwork.ownNetwork) {
+                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_error', JSON.stringify({ reason: 'ownNetwork_not_found' })); }
                 alert("ロジックネットワークが初期化されていません (ownNetwork not found)");
                 return;
             }
@@ -3357,11 +3372,13 @@
             const selectedNodes = window.defaultLogicNetwork.ownNetwork.getSelection().nodes;
             
             if (selectedNodes.length === 0) {
+                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_error', JSON.stringify({ reason: 'no_logic_selection' })); }
                 alert("logic_networkでノードを選択してください");
                 return;
             }
 
             if (selectedNodes.length > 1) {
+                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_error', JSON.stringify({ reason: 'multi_logic_selection', count: selectedNodes.length })); }
                 alert("複数のノードが選択されています。一つのノードを選択してください");
                 return;
             }
@@ -3370,6 +3387,7 @@
             const nodeData = window.defaultLogicNetwork.nodes.get(selectedNodeId);
             
             if (!nodeData) {
+                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_error', JSON.stringify({ reason: 'logic_node_not_found', logicNodeId: selectedNodeId })); }
                 alert("選択されたノードのデータが見つかりません");
                 return;
             }
@@ -3378,6 +3396,7 @@
             const jmSelectedNode = window._jm ? window._jm.get_selected_node() : null;
             
             if (!jmSelectedNode) {
+                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_error', JSON.stringify({ reason: 'jm_selected_node_not_found' })); }
                 alert("jsMindでノードを選択してください");
                 return;
             }
@@ -3393,6 +3412,7 @@
             if (window._jm) {
                 // ノードの内容を更新
                 window._jm.update_node(jmSelectedNode.id, cleanLabel);
+                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_apply', JSON.stringify({ nodeId: jmSelectedNode.id, logicNodeId: selectedNodeId, label: cleanLabel })); }
                 
                 // DOM要素を取得してスタイルと属性を更新
                 var jmnode = document.getElementsByTagName("jmnode");
@@ -3418,9 +3438,11 @@
                             },
                             success: function(response) {
                                 console.log('Node content updated from logic successfully:', response);
+                                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_db', JSON.stringify({ action: 'update_node_content', nodeId: jmSelectedNode.id, logicNodeId: selectedNodeId })); }
                             },
                             error: function(xhr, status, error) {
                                 console.error('Failed to update node content from logic:', error);
+                                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_error', JSON.stringify({ reason: 'db_update_node_failed', nodeId: jmSelectedNode.id, logicNodeId: selectedNodeId, error: String(error) })); }
                             }
                         });
                         //logic_nodeテーブルにf_node_idを反映
@@ -3435,6 +3457,7 @@
                             },
                             success: function(response) {
                                 console.log('Node content updated from logic successfully:', response);
+                                if (typeof logEvent === 'function') { logEvent('mindmap','update_from_logic_db', JSON.stringify({ action: 'update_logic_link', nodeId: jmSelectedNode.id, logicNodeId: selectedNodeId })); }
                             },
                             error: function(xhr, status, error) {
                                 console.error('Failed to update node content from logic:', error);
