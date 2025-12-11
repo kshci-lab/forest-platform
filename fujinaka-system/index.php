@@ -167,14 +167,6 @@ $ai_output = '';
               <input type="button" id="ln_deleteNode" value="ノード削除">
               <input type="button" id="ln_maketriangle" value="三角ロジックを作成する">
               <input type="button" id="ln_createtriangle" value="三角ロジックを追加する">
-              <!-- 追加: 合理性ペア助言表示ボタン（論理メニュー側） -->
-              <button class="button4" onclick="window.showRationalityAdvice && window.showRationalityAdvice('#rationality_advice');">
-                合理性ペア助言
-              </button>
-              <!-- 追加: 差分助言表示ボタン（AI出力エリアに描画） -->
-              <button class="button4" onclick="window.showDiffAdvice && window.showDiffAdvice();">
-                差分助言
-              </button>
             </div>
 
             <div class="menu_css" id ="presen_menu">
@@ -206,8 +198,14 @@ $ai_output = '';
               <button class="button4" onclick="Unreflected_node();">
                 未反映ノード
               </button>
+              <button class="button4" onclick="window.showDiffAdvice && window.showDiffAdvice();">
+                助言１
+              </button>
+              <button class="button4" onclick="window.showRationalityAdvice && window.showRationalityAdvice('#rationality_advice');">
+                助言２
+              </button>
               <button class="button4" onclick="window.finalizeScenarioAndShowAI();">
-                論文シナリオ構成終了
+                助言３
               </button>
               <!-- <button class="button4" onclick="recommend_xmlLoad();">
                 test
