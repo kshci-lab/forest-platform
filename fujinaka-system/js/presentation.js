@@ -184,34 +184,34 @@ $(document).on('click', '.thread', function(){
     // document.getElementById('advice_frame').textContent = "";
 
     //コンセプトid取得+micro.js
-
-    //console.log($('#'+target).data('node_id'));
     var arr = $('#'+target).data('node_id');//nodeidの配列
-    //console.log(arr);
-    //console.log(arr[0]);
-
     micro_concept_id = [];
-    //console.log(micro_concept_id[0]);
-
-
     for(i=0; i<jmnode.length; i++){
       jmnode[i].style.border = "";
     }
-
+    console.log('IDリスト(arr):', arr);
     for(m=0; m<arr.length; m++){
       for(i=0; i<jmnode.length; i++){
         if(jmnode[i].getAttribute("nodeid") == arr[m]){//回ってきたidが選択中ノードの時
             console.log(jmnode[i]);
             micro_concept_id[m] = jmnode[i].getAttribute("concept_id");//コンセプトidを代入（答えノードは問いのコンセプトidを持つ）
-            // jmnode[i].style.backgroundColor = "#ff69b4";
             jmnode[i].style.border = "3px solid #444444";
         }
         if(micro_concept_id[m] != undefined){//同じコンセプトIDがいくつか存在するから
           break;
         }
       }
-      //console.log(micro_concept_id);
+    }
 
+    // --- 追加: 三角ロジックノードのp_node_idがarrに含まれるものをハイライト ---
+    if (window.defaultLogicNetwork && defaultLogicNetwork.nodes && defaultLogicNetwork.ownNetwork) {
+      const allNodes = defaultLogicNetwork.nodes.get();
+      const highlightIds = allNodes
+        .filter(n => n.p_node_id && arr.includes(String(n.p_node_id)))
+        .map(n => n.id);
+      if (highlightIds.length > 0) {
+        defaultLogicNetwork.ownNetwork.selectNodes(highlightIds, false);
+      }
     }
 
 });
