@@ -1576,3 +1576,201 @@
 {"timestamp":"2025-12-11T16:45:37+09:00","category":"advice","subcategory":"add","content":"根拠として挙げられている内容は具体性に欠けており、主張を支持するための客観的なデータや事実が示されていないため、主張の妥当性に疑問が残る可能性がある。具体的な事例やデータを挙げることで、主張をより説得力のあるものにすることが望ましい。","user_id":"311997332"}
 {"timestamp":"2025-12-11T16:45:37+09:00","category":"advice","subcategory":"add","content":"根拠として挙げられている内容は具体的ではなく、主張を支持するための客観的なデータや事実が示されていないため、主張の妥当性に疑問が残る可能性がある。具体的な例やデータを示すことで、主張をより強固にすることが求められる。","user_id":"311997332"}
 {"timestamp":"2025-12-11T16:46:06+09:00","category":"advice","subcategory":"consider","content":"根拠として挙げられている内容は、三角ロジックの構成要素を説明しているに過ぎず、主張を支持する具体的なデータや事例が示されていないため、主張の妥当性に疑問が残る可能性がある。具体的には、どのように三角ロジックが整理を助けるのか、具体的な例を挙げることで説得力を高めることが望ましい。","user_id":"311997332"}
+{"timestamp":"2025-12-11T16:50:31+09:00","category":"presentation","subcategory":"create_chapter","content":"{\"id\":\"19b0c63e3d0341\",\"title\":\"章タイトル\",\"source\":\"manual\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T16:50:45+09:00","category":"presentation","subcategory":"create_section","content":"{\"id\":\"19b0c6419fc57\",\"title\":\"\",\"parentChapterId\":\"19a2583a6b1332\",\"source\":\"manual\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T16:50:56+09:00","category":"presentation","subcategory":"create_paragraph","content":"{\"id\":\"19b0c6445923b6\",\"title\":\"論文執筆では、日々の研究を元に首尾一貫したシナリオを構成する必要である\",\"node_id\":\"a0fced3a18f05a92\",\"concept_id\":\"1509010690559_n257\",\"source\":\"forest\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T16:50:56+09:00","category":"presentation","subcategory":"content_add","content":"{\"contentId\":\"contents-19b0c6445922c1\",\"threadId\":\"19b0c6445923b6\",\"source\":\"forest\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T16:57:39+09:00","category":"presentation","subcategory":"edit_begin","content":"{\"level\":\"chapter\",\"id\":\"19b0c63e3d0341\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T16:57:40+09:00","category":"presentation","subcategory":"edit_update","content":"{\"level\":\"chapter\",\"id\":\"19b0c63e3d0341\",\"before\":\"章タイトル\",\"after\":\"ふ\",\"source\":\"manual\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:13:06+09:00","category":"mindmap","subcategory":"zoom","content":"{\"zoom\":0.9}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:13:06+09:00","category":"mindmap","subcategory":"zoom","content":"{\"zoom\":0.8}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:13:06+09:00","category":"mindmap","subcategory":"zoom","content":"{\"zoom\":0.7000000000000001}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:13:06+09:00","category":"mindmap","subcategory":"zoom","content":"{\"zoom\":0.6000000000000001}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:19:38+09:00","category":"presentation","subcategory":"content_edit_begin","content":"{\"threadId\":\"19b0c7e7c48225\",\"contentId\":\"contents-19b0c7e87da6f\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:19:40+09:00","category":"presentation","subcategory":"content_edit","content":"{\"threadId\":\"19b0c7e7c48225\",\"contentId\":\"contents-19b0c7e87da6f\",\"before\":\"\",\"after\":\"さ\",\"source\":\"manual\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:20:05+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441205629466863\",\"label\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:20:05+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441205629404342\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:20:05+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441205629820309\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:20:05+09:00","category":"logic_triangle","subcategory":"addfromscenario","content":"{\"p_node_id\":\"19b0c7e87da25\",\"topic\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:20:05+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765441205629346957\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"show","content":"{\"rootId\":\"root\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5f977bfaec043\",\"topic\":\"先行研究\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46998db763dbbd1c\",\"topic\":\"学習者の活動\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"934040d2d468f0b2\",\"topic\":\"どのような新規性がありますか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"934055149ad26fb1\",\"topic\":\"どのような問題を発見しましたか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"934069bfba2ce715\",\"topic\":\"研究背景はどのようなものですか\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9341261455b44e48\",\"topic\":\"学習の支援方法は何ですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9a587efc5f55b1e0\",\"topic\":\"なぜ三角ロジックを論文の文脈で考えさせるのか\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1af0725e992d9\",\"topic\":\"三角ロジックを考えることの難しさ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1c6904f2c2297\",\"topic\":\"アプローチ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fce9b29bdf7789\",\"topic\":\"研究背景はどのように位置づけられますか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a55bd85df14030\",\"topic\":\"他者への説明を前提とした言語化活動は、自身の考えの不整合や不備への気づきを促し、自己内対話を活性化することが知られている\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5746337177cff\",\"topic\":\"内容を知らない他者への説明を想定する場面で、特にその効果の高まりが報告されている\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed078be837708e1\",\"topic\":\"具体例\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46998fbfa74a0231\",\"topic\":\"日々の研究活動や議論を通じて研究成果を積み上げていく\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe5ccace5e65f5\",\"topic\":\"日々の研究活動\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe65904ff2eca4\",\"topic\":\"論文のアウトライン\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe8fc7ccb55b9f\",\"topic\":\"これらの活動を往還しながら研究を精緻化していく\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a2421c7b78253d3f\",\"topic\":\"それらと整合した形で論文シナリオを構成する必要がある\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cb2461dfba5ef\",\"topic\":\"論文添削\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cc1fbbadccbae\",\"topic\":\"論文執筆\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"93408108587a4d54\",\"topic\":\"論文執筆では論証を行うことが大切\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9340ccdb263cbe58\",\"topic\":\"他者への説明を前提とした言語化活動は自身の考えの不整合や不備への気づきを促し、自己内対話を活性化することが知られている\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9c99ad99e6b74a3a\",\"topic\":\"三角ロジックアプローチを用いる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9c99b3657df5d071\",\"topic\":\"競争研究者との議論の場に認知的葛藤や三角ロジックの作成意図ぉあげさせる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9a5883b1f323c223\",\"topic\":\"普段から三角ロジックを考えるのは適切でない\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1b6e6d1238260\",\"topic\":\"適切な主張を選択することが難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1bce08ac25ec3\",\"topic\":\"主張の事実と理由付けを考えることが難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1d1e3e81de3a8\",\"topic\":\"議論の場で三角ロジックを考える活動の過程を説明するのが難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1da3b1b22c710\",\"topic\":\"適切な主張を提案する助言を出す\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1dddd0478acfe\",\"topic\":\"適切な裏付けを提案する助言を出す\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1e32441e7a5a8\",\"topic\":\"学習デザインを提案する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"469996cb78241446\",\"topic\":\"使用モデル\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46f7f20cab2afed7\",\"topic\":\"学習者の抱える困難性はどのようなものですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"4717c7128cd63f54\",\"topic\":\"研究目的は何ですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fced3a18f05a92\",\"topic\":\"論文執筆では、日々の研究を元に首尾一貫したシナリオを構成する必要である\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd149873af6691\",\"topic\":\"この論証を行うことが、自身の研究を見直し、研究を精緻化する機会となる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd245c1faa2f92\",\"topic\":\"具体例\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd5447d24b1c09\",\"topic\":\"このような認知的葛藤が産出されるかどうかが鍵となる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd5e7e02446ddb\",\"topic\":\"認知的葛藤とは\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a24117c04dd6b1cf\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a24118405a0a8c76\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed07a46d90f3402\",\"topic\":\"論文シナリオを構成する際に、自身がどのような主張をしているのか、その主張がどのような根拠や裏付けによって支えられているのかを検討することは、研究内容の論理的整合性の吟味を促し、研究内容の理解を深め、思考の精緻化につながる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fde6f966b9e6fb\",\"topic\":\"研究成果は日々の研究活動を通じて蓄積され、それと整合する形で設計される必要がある\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a022651ddeb8b7f8\",\"topic\":\"日々蓄積された研究成果を取捨選択し、順序付けながら論文のアウトラインを作成する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe69869b99a90d\",\"topic\":\"論文ではすべての論点をざっくばらんに書くことは不可能\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe8cf08e59c1c5\",\"topic\":\"三角ロジック\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cb4d12ceb1f6a\",\"topic\":\"作成した論文シナリオを教授などの共同研究者に添削してもらう\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cc41c344b7aa5\",\"topic\":\"論文シナリオをもとに文章化していく\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"93409f76c2eab022\",\"topic\":\"論証を行うときに認知的葛藤が産出されるかどうかが鍵となる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a76c08d462631600\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a76cd28871216299\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9a5bc412649606b7\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46999ede4521ae25\",\"topic\":\"三角ロジックで整理させる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5b4ab85f90fb5\",\"topic\":\"研究経験が浅い学習者の場合、適切な主張を選択し、その裏付けや根拠を考え、第三者でが納得可能な形で考えることは難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9c999bc463344d89\",\"topic\":\"認知的葛藤を自己産出しても解消を回避してしまうかもしれない\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5dc2a23e87207\",\"topic\":\"三角ロジックで研究を整理させることで認知的葛藤の誘発と葛藤解消を目掛けた知識構築活動の活性化、それによる思考の精緻化を促すシステムを開発する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a29343f76f68d74a\",\"topic\":\"ｄｙｙｔｄ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd26fa84a61b2d\",\"topic\":\"はじめは論文を書くときには、三角ロジックを考えることが効果的とという主張に対して\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a1119a684664ddcf\",\"topic\":\"教育心理学や学習科学の中で非常に重要な概念で、 学習者が「自分の考え」と「新しい情報」や「他者の意見」との矛盾や不一致に気づいたときに生じる心的なズレ・不安・揺らぎ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a022726669ab529e\",\"topic\":\"アウトラインをもとに三角ロジックを作成する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe2ab68c88e7f9\",\"topic\":\"研究成果を普遍化可能な形で主張する（論証する）必要がある\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25d549b00aa2894\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46996434254c895c\",\"topic\":\"認知的葛藤とは\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"469a50187b163982\",\"topic\":\"三角ロジックとは\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fda5886ffdaef0\",\"topic\":\"なぜ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0c5ecc29a4b00e2\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a11636b5d5e99c1b\",\"topic\":\"ぱー\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a7cb207b8954cc67\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a9b2a009bfa6cfca\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a9b05938c1c3692a\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a2f016c73cd5605c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a2dc58406335068e\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25d6078ad88db49\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"4699664dc75ceda5\",\"topic\":\"他者の理解や課題とのずれを認識することで換気される葛藤状態のこと\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a111de99d06dbece\",\"topic\":\"研究や教育実践の中で「主張（Claim）」を論理的に支える構造を明示するための枠組みのひとつ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fdab52660b88ec\",\"topic\":\"三角ロジックを考えることで執筆者自身が暗黙的に（客観的に見ても）正しいと思いこんでいる因果関係が，自分の解釈が抜けていたり，自分の解釈と先行研究（事実）の間に乖離・混同があることに気づくきっかけになるため\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a7d0da13d89d389c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a11960afc1c5785f\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"938c5f9de823c7cf\",\"topic\":\"認知的葛藤が産出されれば知識構築活動につながる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a99f29387335f952\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:24+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0c2c3fe3cfeefce\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:41+09:00","category":"presentation","subcategory":"content_edit_begin","content":"{\"threadId\":\"19b0c7e7c48225\",\"contentId\":\"contents-19b0c814fd5394\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:42+09:00","category":"presentation","subcategory":"content_edit","content":"{\"threadId\":\"19b0c7e7c48225\",\"contentId\":\"contents-19b0c814fd5394\",\"before\":\"\",\"after\":\"ふじ\",\"source\":\"manual\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:45+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"176544136547593995\",\"label\":\"ふじ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:45+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441365475317914\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:45+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441365475494673\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:45+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765441365475832326\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:22:45+09:00","category":"logic_triangle","subcategory":"addfromscenario","content":"{\"p_node_id\":\"1765441365437944268\",\"topic\":\"ふじ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"show","content":"{\"rootId\":\"root\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5f977bfaec043\",\"topic\":\"先行研究\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46998db763dbbd1c\",\"topic\":\"学習者の活動\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"934040d2d468f0b2\",\"topic\":\"どのような新規性がありますか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"934055149ad26fb1\",\"topic\":\"どのような問題を発見しましたか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"934069bfba2ce715\",\"topic\":\"研究背景はどのようなものですか\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9341261455b44e48\",\"topic\":\"学習の支援方法は何ですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9a587efc5f55b1e0\",\"topic\":\"なぜ三角ロジックを論文の文脈で考えさせるのか\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1af0725e992d9\",\"topic\":\"三角ロジックを考えることの難しさ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1c6904f2c2297\",\"topic\":\"アプローチ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fce9b29bdf7789\",\"topic\":\"研究背景はどのように位置づけられますか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a55bd85df14030\",\"topic\":\"他者への説明を前提とした言語化活動は、自身の考えの不整合や不備への気づきを促し、自己内対話を活性化することが知られている\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5746337177cff\",\"topic\":\"内容を知らない他者への説明を想定する場面で、特にその効果の高まりが報告されている\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed078be837708e1\",\"topic\":\"具体例\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46998fbfa74a0231\",\"topic\":\"日々の研究活動や議論を通じて研究成果を積み上げていく\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe5ccace5e65f5\",\"topic\":\"日々の研究活動\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe65904ff2eca4\",\"topic\":\"論文のアウトライン\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe8fc7ccb55b9f\",\"topic\":\"これらの活動を往還しながら研究を精緻化していく\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a2421c7b78253d3f\",\"topic\":\"それらと整合した形で論文シナリオを構成する必要がある\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cb2461dfba5ef\",\"topic\":\"論文添削\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cc1fbbadccbae\",\"topic\":\"論文執筆\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"93408108587a4d54\",\"topic\":\"論文執筆では論証を行うことが大切\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9340ccdb263cbe58\",\"topic\":\"他者への説明を前提とした言語化活動は自身の考えの不整合や不備への気づきを促し、自己内対話を活性化することが知られている\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9c99ad99e6b74a3a\",\"topic\":\"三角ロジックアプローチを用いる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9c99b3657df5d071\",\"topic\":\"競争研究者との議論の場に認知的葛藤や三角ロジックの作成意図ぉあげさせる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9a5883b1f323c223\",\"topic\":\"普段から三角ロジックを考えるのは適切でない\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1b6e6d1238260\",\"topic\":\"適切な主張を選択することが難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1bce08ac25ec3\",\"topic\":\"主張の事実と理由付けを考えることが難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1d1e3e81de3a8\",\"topic\":\"議論の場で三角ロジックを考える活動の過程を説明するのが難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1da3b1b22c710\",\"topic\":\"適切な主張を提案する助言を出す\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1dddd0478acfe\",\"topic\":\"適切な裏付けを提案する助言を出す\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed1e32441e7a5a8\",\"topic\":\"学習デザインを提案する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"469996cb78241446\",\"topic\":\"使用モデル\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46f7f20cab2afed7\",\"topic\":\"学習者の抱える困難性はどのようなものですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"4717c7128cd63f54\",\"topic\":\"研究目的は何ですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fced3a18f05a92\",\"topic\":\"論文執筆では、日々の研究を元に首尾一貫したシナリオを構成する必要である\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd149873af6691\",\"topic\":\"この論証を行うことが、自身の研究を見直し、研究を精緻化する機会となる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd245c1faa2f92\",\"topic\":\"具体例\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd5447d24b1c09\",\"topic\":\"このような認知的葛藤が産出されるかどうかが鍵となる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd5e7e02446ddb\",\"topic\":\"認知的葛藤とは\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a24117c04dd6b1cf\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a24118405a0a8c76\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9ed07a46d90f3402\",\"topic\":\"論文シナリオを構成する際に、自身がどのような主張をしているのか、その主張がどのような根拠や裏付けによって支えられているのかを検討することは、研究内容の論理的整合性の吟味を促し、研究内容の理解を深め、思考の精緻化につながる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fde6f966b9e6fb\",\"topic\":\"研究成果は日々の研究活動を通じて蓄積され、それと整合する形で設計される必要がある\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a022651ddeb8b7f8\",\"topic\":\"日々蓄積された研究成果を取捨選択し、順序付けながら論文のアウトラインを作成する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe69869b99a90d\",\"topic\":\"論文ではすべての論点をざっくばらんに書くことは不可能\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe8cf08e59c1c5\",\"topic\":\"三角ロジック\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cb4d12ceb1f6a\",\"topic\":\"作成した論文シナリオを教授などの共同研究者に添削してもらう\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25cc41c344b7aa5\",\"topic\":\"論文シナリオをもとに文章化していく\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"93409f76c2eab022\",\"topic\":\"論証を行うときに認知的葛藤が産出されるかどうかが鍵となる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a76c08d462631600\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a76cd28871216299\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9a5bc412649606b7\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46999ede4521ae25\",\"topic\":\"三角ロジックで整理させる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5b4ab85f90fb5\",\"topic\":\"研究経験が浅い学習者の場合、適切な主張を選択し、その裏付けや根拠を考え、第三者でが納得可能な形で考えることは難しい\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"9c999bc463344d89\",\"topic\":\"認知的葛藤を自己産出しても解消を回避してしまうかもしれない\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"43a5dc2a23e87207\",\"topic\":\"三角ロジックで研究を整理させることで認知的葛藤の誘発と葛藤解消を目掛けた知識構築活動の活性化、それによる思考の精緻化を促すシステムを開発する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a29343f76f68d74a\",\"topic\":\"ｄｙｙｔｄ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fd26fa84a61b2d\",\"topic\":\"はじめは論文を書くときには、三角ロジックを考えることが効果的とという主張に対して\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a1119a684664ddcf\",\"topic\":\"教育心理学や学習科学の中で非常に重要な概念で、 学習者が「自分の考え」と「新しい情報」や「他者の意見」との矛盾や不一致に気づいたときに生じる心的なズレ・不安・揺らぎ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a022726669ab529e\",\"topic\":\"アウトラインをもとに三角ロジックを作成する\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fe2ab68c88e7f9\",\"topic\":\"研究成果を普遍化可能な形で主張する（論証する）必要がある\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25d549b00aa2894\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"46996434254c895c\",\"topic\":\"認知的葛藤とは\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"469a50187b163982\",\"topic\":\"三角ロジックとは\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fda5886ffdaef0\",\"topic\":\"なぜ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0c5ecc29a4b00e2\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a11636b5d5e99c1b\",\"topic\":\"ぱー\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a7cb207b8954cc67\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a9b2a009bfa6cfca\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a9b05938c1c3692a\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a2f016c73cd5605c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a2dc58406335068e\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a25d6078ad88db49\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"4699664dc75ceda5\",\"topic\":\"他者の理解や課題とのずれを認識することで換気される葛藤状態のこと\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a111de99d06dbece\",\"topic\":\"研究や教育実践の中で「主張（Claim）」を論理的に支える構造を明示するための枠組みのひとつ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a0fdab52660b88ec\",\"topic\":\"三角ロジックを考えることで執筆者自身が暗黙的に（客観的に見ても）正しいと思いこんでいる因果関係が，自分の解釈が抜けていたり，自分の解釈と先行研究（事実）の間に乖離・混同があることに気づくきっかけになるため\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a7d0da13d89d389c\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a11960afc1c5785f\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"938c5f9de823c7cf\",\"topic\":\"認知的葛藤が産出されれば知識構築活動につながる\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"a99f29387335f952\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:06+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0c2c3fe3cfeefce\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:12+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441512950744034\",\"label\":\"ふじ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:12+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441512950012369\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:12+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441512950413118\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:13+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"1765441512950104529\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:25:13+09:00","category":"logic_triangle","subcategory":"addfromscenario","content":"{\"p_node_id\":null,\"topic\":\"ふじ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:28:24+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441704287562951\",\"label\":\"ふじ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:28:24+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441704287173970\",\"label\":\"根拠\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:28:24+09:00","category":"logic_node","subcategory":"add","content":"{\"node_id\":\"1765441704287651378\",\"label\":\"理由付け\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:28:24+09:00","category":"logic_triangle","subcategory":"add","content":"{\"triangle_id\":\"176544170428764672\"}","user_id":"311997332"}
+{"timestamp":"2025-12-11T17:28:24+09:00","category":"logic_triangle","subcategory":"addfromscenario","content":"{\"p_node_id\":null,\"topic\":\"ふじ\"}","user_id":"311997332"}
