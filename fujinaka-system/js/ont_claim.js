@@ -182,58 +182,8 @@ function renderDiffConceptLabels(containerSelector) {
 		});
 }
 
-// 連動: 「論文シナリオ構成終了」ボタンに紐づけて #ai_output へ描画
-$(function(){
-  try {
-    // finalizeScenarioAndShowAI をラップして、元の処理後に描画を追加
-    if (typeof window.finalizeScenarioAndShowAI === 'function') {
-      const original = window.finalizeScenarioAndShowAI;
-      window.finalizeScenarioAndShowAI = function() {
-        try { original.apply(this, arguments); } catch(e) { console.warn('[ont_claim] original finalizeScenarioAndShowAI error', e); }
-        try {
-          var panel = document.getElementById('ai_output_panel');
-          var body = document.getElementById('ai_output_body');
-          var header = document.getElementById('ai_output_header');
-          var icon = document.getElementById('ai_toggle_icon');
-          if (panel) panel.style.display = 'block';
-          if (body && header && icon) {
-            body.style.display = 'block';
-            icon.textContent = '▼';
-            header.setAttribute('aria-expanded', 'true');
-          }
-          if (typeof renderDiffConceptLabels === 'function') {
-            renderDiffConceptLabels('#ai_output');
-            console.log('[ont_claim] renderDiffConceptLabels invoked via finalizeScenarioAndShowAI');
-          }
-        } catch(e) { console.error('[ont_claim] finalizeScenarioAndShowAI render hook failed', e); }
-      };
-      console.log('[ont_claim] finalizeScenarioAndShowAI hooked');
-    } else {
-      // 直接ボタンのクリックにハンドラを追加（フォールバック）
-      $(document).on('click.ont_claim_bind', 'button.button4[onclick*="finalizeScenarioAndShowAI"]', function(){
-        try {
-          var panel = document.getElementById('ai_output_panel');
-          var body = document.getElementById('ai_output_body');
-          var header = document.getElementById('ai_output_header');
-          var icon = document.getElementById('ai_toggle_icon');
-          if (panel) panel.style.display = 'block';
-          if (body && header && icon) {
-            body.style.display = 'block';
-            icon.textContent = '▼';
-            header.setAttribute('aria-expanded', 'true');
-          }
-          if (typeof renderDiffConceptLabels === 'function') {
-            renderDiffConceptLabels('#ai_output');
-            console.log('[ont_claim] renderDiffConceptLabels invoked via button click');
-          }
-        } catch(e) { console.error('[ont_claim] button bind render failed', e); }
-      });
-      console.log('[ont_claim] button click binding added (fallback)');
-    }
-  } catch(e) {
-    console.error('[ont_claim] finalizeScenarioAndShowAI binding failed', e);
-  }
-});
+// 連動削除: finalizeScenarioAndShowAI の上書き・フックは行わない（AI助言のみを表示するため）
+// 差分助言は独立ボタン（"差分助言"）から `showDiffAdvice()` を用いて表示します。
 
 // 考える/考えない ボタンのハンドラ（委譲）
 $(document)

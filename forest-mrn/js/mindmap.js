@@ -623,6 +623,7 @@ async function add_Pnode(){//マップへ反映ボタンでノードを追加す
                   jmnode[j].setAttribute("concept_id",p_concept);
                   jmnode[j].setAttribute("type","answer");
                   jmnode[j].setAttribute("parent_id",parent_id);
+
                   $.ajax({
                     url: "php/insert_node.php",
                     type: "POST",
@@ -643,6 +644,25 @@ async function add_Pnode(){//マップへ反映ボタンでノードを追加す
                             reject(error);
                           }
                   });
+
+                  // hatakeyama 「答えノード追加」ボタン
+                  NodeInsert(
+                    versionid, 
+                    nodeid, 
+                    parent_id, 
+                    jmnode[j].innerHTML, 
+                    "",
+                    "add_new_node"
+                  );
+                  RecordRelation(2);   //relationテーブル
+                  //ここから大槻修正
+                  $("#reason").html("");
+                  //ここまで大槻修正
+                  check_edit_reason(nodeid);
+                  $('#comment_balloon').hide();
+                  $('#comment_balloon').fadeIn(1000);
+
+
                   //yoshioka登録　追加ボタンより答えを追加したこと
                   //渡す情報（ノードID，親ノードID，操作，テキスト，法造コンセプトID，タイプ，primary）
                   Record_activities(nodeid,
@@ -650,25 +670,24 @@ async function add_Pnode(){//マップへ反映ボタンでノードを追加す
                                     "add",
                                     jmnode[j].innerHTML,
                                     p_concept,
-                                    "s_answer",
+                                    "answer",
                                     jsMind.util.uuid.newid()
                                    );
+
+
               }
+
           }
+
           $.ajax({
+
               url: "php/update_node.php",
               type: "POST",
               data: { update : "map" }
-          });
-          dom_target.setAttribute("node_id", nodeid);
-          var thread_id = dom_target.parentNode.parentNode.parentNode.id;
-          var arr = $('#'+thread_id).data('node_id');
-          console.log(arr);
-          arr.push(nodeid);
-          console.log(arr);
-          $('#'+thread_id).data('node_id', arr);
 
-  }else if(p_type == 'toi'){//問いの場合
+          });
+
+      }else if(p_type == 'toi'){//問いの場合
           var parent_node = _jm.get_selected_node();
           for(key in parent_node){
               if(key == "id"){
@@ -726,15 +745,15 @@ async function add_Pnode(){//マップへ反映ボタンでノードを追加す
               type: "POST",
               data: { update : "map" }
           });
-  }
-  dom_target.setAttribute("node_id", nodeid);
-  var thread_id = dom_target.parentNode.parentNode.parentNode.id;
-  var arr = $('#'+thread_id).data('node_id');
-  console.log(arr);
-  arr.push(nodeid);
-  console.log(arr);
-  $('#'+thread_id).data('node_id', arr);
-  // Record_rank();
+      }
+      dom_target.setAttribute("node_id", nodeid);
+      var thread_id = dom_target.parentNode.parentNode.parentNode.id;
+      var arr = $('#'+thread_id).data('node_id');
+      console.log(arr);
+      arr.push(nodeid);
+      console.log(arr);
+      $('#'+thread_id).data('node_id', arr);
+      // Record_rank();
 }
 
 
@@ -845,7 +864,26 @@ function checkRationality(nodeid){
                       console.log(parse[i]);
                       console.log(jmnode[j]);
 
-                        jmnode[j].style.backgroundColor = "#ff69b4";
+                        try {
+                          // CSSの上書きを回避するためにimportantで背景色を設定（黄色系）
+                          jmnode[j].style.setProperty('background-color', '#ffd54f', 'important'); // amber 300
+                          jmnode[j].style.setProperty('background', '#ffd54f', 'important');
+                          // 輪郭の強調（ピンクの枠）で視認性アップ
+                          jmnode[j].style.setProperty('outline', '3px solid #ff4081', 'important');
+                          jmnode[j].style.setProperty('outline-offset', '2px', 'important');
+                          jmnode[j].style.setProperty('box-shadow', '0 0 0 3px rgba(255,64,129,0.5)', 'important');
+                        } catch (_) {
+                          jmnode[j].style.backgroundColor = "#ffd54f";
+                        }
+
+                        // jsMindのAPIが利用できる場合は併用して色設定
+                        try {
+                          if (window._jm && typeof window._jm.set_node_color === 'function') {
+                            window._jm.set_node_color(parse[i], null, '#ffd54f');
+                          }
+                        } catch (e) {
+                          console.warn('[mindmap] set_node_color failed', e);
+                        }
 
                     }
 
@@ -1721,7 +1759,19 @@ window.onload = function(){
       dm_menu.classList.remove('on');
     }
 
-   
+    // 追加: 概念IDが 1519483811401_n426 のノードをクリックしたら合理性ハイライト
+    try {
+      const sel = _jm && typeof _jm.get_selected_node === 'function' ? _jm.get_selected_node() : null;
+      if (sel && sel.id) {
+        const el = document.querySelector("jmnode[nodeid='" + sel.id + "']");
+        const cid = el ? (el.getAttribute('concept_id') || '') : '';
+        if (cid === '1519483811401_n426') {
+          checkRationality(sel.id);
+        }
+      }
+    } catch (e) {
+      console.error('[mindmap] rationality highlight hook failed', e);
+    }
   });
 
   Rebuild_title();
@@ -1897,7 +1947,8 @@ function MoveSecond(){
         let label = "<div class='final_model'>"+
                       "● "+
                       ""+check[i].parentNode.parentNode.getAttribute("concept")+""+
-                    "</div>";
+                    "</div>"+
+                    "<br/>";
         subject_area.append(label);
       }else if(check[i].checked && check[i].value=="必要ない"){
         $first_advice_log.push(["", check[i].value, ""]);
@@ -1974,7 +2025,7 @@ function MoveFinish(){
                         "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);' checked>見直さない</span>"+
                         "<br/>"+
                         "<p>→ 見直さない理由をお書きください</p>"+
-                        "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'>"+$second_advice_log[i][2]+"</textarea>"+
+                        "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'></textarea>"+
                       "</div>"+
                       "<br/><br/>";
         }else{
@@ -2076,8 +2127,8 @@ function FinalReflection(){
         f_mtfile += "<span class='disc'><input type='checkbox' onchange='Highlight(this);'>議論</span><br/>"+
                     "<div class='first_model'>"+
                       ""+f_advice_log[i]+"<br>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='必要ある' onchange='Need_check(this);' checked>必要ある</span>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='必要ない' onchange='NotNeed_check(this);'>必要ない</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='必要ある' onchange='Need_check(this);'>必要ある</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='必要ない' onchange='NotNeed_check(this);' checked>必要ない</span>"+
                       "<br/>"+
                       "<p>→ 目標に沿った内容であるか，プレゼンシナリオを見直してみましょう．<br>もしプレゼンシナリオを修正した場合は修正内容を記載してください</p>"+
                       "<textarea class='t_ad' placeholder='修正内容 OR 必要ない理由' style='width:600px; height:120px;'></textarea>"+
@@ -2109,45 +2160,30 @@ function FinalReflection(){
   }
 
   for(var i=0; i<$second_advice_log.length; i++){
-    if($second_advice_log[i][1]=="見直す"){
+    if($second_advice_log[i][1]=="見直さない"){
       if($second_advice_log[i][2] == ""){
-        var label = "<div class='final_model'>"+
-                      "<p class='f_ref'><span class='ad_font'><span style ='font-weight:bold;'>"+$second_advice_log[i][0]+"</span>という助言に対して，見直すを選択しました．"+
-                      "この助言が出てきたときに，どのような気づきを得ましたか？</span></p>"+
-                      "<textarea class='t_ref' placeholder='助言を通じて得た気づき' style='width:600px; height:120px;'></textarea>"+
-                    "</div>"+
-                    "<br/>";
-        area.append(label);
-        f_count++;
+        // mtfile += $second_advice_log[i][0]+"」という助言に対して，見直さないを選択しました．\n\n";
         random_num = Math.random().toString(32).substring(2);
         s_mtfile += "<span class='disc'><input type='checkbox' onchange='Highlight(this);'>議論</span><br/>"+
                     "<div class='first_model'>"+
                       ""+s_advice_log[i]+"<br>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);' checked>見直す</span>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);'>見直さない</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);'>見直す</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);' checked>見直さない</span>"+
                       "<br/>"+
-                      "<p>→ 助言をもとにプレゼンシナリオを見直してみましょう．プレゼンシナリオを修正した場合は修正内容を記載してください</p>"+
-                      "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'>"+$second_advice_log[i][2]+"</textarea>"+
+                      "<p>→ 見直さない理由をお書きください</p>"+
+                      "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'></textarea>"+
                     "</div>"+
                     "<br/><br/>";
       }else{
-        var label = "<div class='final_model'>"+
-                      "<p class='f_ref'><span class='ad_font'><span style ='font-weight:bold;'>"+$second_advice_log[i][0]+"</span>という助言に対して，見直すを選択し,"+
-                      "「"+$second_advice_log[i][2]+"」という修正を加えました．"+
-                      "この助言が出てきたときに，どのような気づきを得ましたか？</span></p>"+
-                      "<textarea class='t_ref' placeholder='助言を通じて得た気づき' style='width:600px; height:120px;'></textarea>"+
-                    "</div>"+
-                    "<br/>";
-        area.append(label);
-        f_count++;
+        // mtfile += $second_advice_log[i][0]+"」という助言に対して，「"+$second_advice_log[i][2]+"」という理由で，見直さないを選択しました．\n\n";
         random_num = Math.random().toString(32).substring(2);
         s_mtfile += "<span class='disc'><input type='checkbox' onchange='Highlight(this);'>議論</span><br/>"+
                     "<div class='first_model'>"+
                       ""+s_advice_log[i]+"<br>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);' checked>見直す</span>"+
-                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);'>見直さない</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直す' onchange='re_check(this);'>見直す</span>"+
+                      "<span><input class='f_ad' name='"+random_num+"' type='radio' value='見直さない' onchange='Not_re_check(this);' checked>見直さない</span>"+
                       "<br/>"+
-                      "<p>→ 助言をもとにプレゼンシナリオを見直してみましょう．プレゼンシナリオを修正した場合は修正内容を記載してください</p>"+
+                      "<p>→ 見直さない理由をお書きください</p>"+
                       "<textarea class='t_ad' placeholder='修正内容 OR 見直さない理由' style='width:600px; height:120px;'>"+$second_advice_log[i][2]+"</textarea>"+
                     "</div>"+
                     "<br/><br/>";
@@ -2155,71 +2191,47 @@ function FinalReflection(){
     }
   }
 
-  var done_btn = "<br/>"+
-                 "<div id='final_btn'>"+
-                    "<input type='button' value='学習を終了する' onclick='MoveFinish();Get_SlideRank();Get_ContentRank();'>"+
-                 "</div>";
-  area.append(done_btn);
-
-  if(f_count == 0){
-    MoveFinish();
+  var final_advice_dom = document.getElementById("macro_feedback_area");
+  let dbid = getUniqueStr();
+  console.log(final_advice_dom.innerText);
+  var final_advice_tmp = final_advice_dom.innerText;
+  var ref_values = document.getElementsByClassName("t_ref");
+  for(var i=0; i<ref_values.length; i++){
+    final_advice_tmp += "【回答文】"+ref_values[i].value;
   }
 
+  $.ajax({
+      url: "php/record_final_advice.php",
+      type: "POST",
+      data: {id : dbid,
+             final_advice : final_advice_tmp,},
+      success: function () {
+        console.log("登録成功");
+      },
+      error: function () {
+      console.log("登録失敗");},
+  });
+
+  for(var i=final_advice_dom.childNodes.length - 1; i>=0; i--){
+    final_advice_dom.removeChild(final_advice_dom.childNodes[i]);
+  }
+
+  var area = $("#macro_feedback_area");
+  var label = "<div class='finish_model'>"+
+                "<p class='f_ref nor_font'>プレゼンシナリオ作成お疲れ様でした．システムの利用は以上で終了です．"+
+                "<br>"+
+                "2つの出力ファイル（プレゼンシナリオ.txt, 助言ログ.html）を手元に保存した後，ブラウザを閉じてください．</p>"+
+                "<a href='https://1drv.ms/u/s!Am39JzOgDfpjnGqx4EIvYb2M7aqb?e=XWO6qF' target='_blank' class = 'nor_font'>最後にアンケート（アンケート用紙2）のご協力お願いいたします．</a>"+
+                "<p class='f_ref nor_font'>アンケートに答え終わりましたら，アンケート用紙1,2(.docx)と2つの出力ファイルを正門まで送っていただくようお願い致します．</p>"+
+                "<br/>"+
+              "</div>"+
+              "<br/>";
+  area.append(label);
+  //テキストファイルの出力
+  OutputTxtFile();
+  OutputScenario();
+  // OutputFile();
 }
-
-var $second_advice_log = [];
-var s_advice_log = [];
-
-function MoveThird(){
-
-  var check = document.getElementsByClassName("f_ad");
-  var check_count = 0;
-  for(var i=0; i<check.length; i++){
-    if(check[i].checked){
-      check_count++;
-    }
-  }
-  console.log(check.length);
-  console.log(check_count);
-
-  if(check_count < check.length / 2){
-    window.alert("見直す OR 見直さない　のどちらかを選んでください");
-  }else{
-
-    var rbtn = document.getElementsByClassName("f_ad");
-
-    for(var i=0; i<rbtn.length; i++){
-      // console.log(rbtn[i].name);
-      // console.log(rbtn[i].value);
-      // console.log(rbtn[i].checked);
-      // console.log(rbtn[i].dataset.id);
-      if(rbtn[i].checked && rbtn[i].value=="見直す"){
-        $second_advice_log.push(["", rbtn[i].value, ""]);
-      }else if(rbtn[i].checked && rbtn[i].value=="見直さない"){
-        $second_advice_log.push(["", rbtn[i].value, ""]);
-      }
-    }
-
-    console.log($second_advice_log);
-
-    var first_model = document.getElementsByClassName("first_model");
-    var m_ad = document.getElementsByClassName("m_ad");
-    var t_ad = document.getElementsByClassName("t_ad");
-
-    for(var i=0; i<first_model.length; i++){
-      console.log(t_ad[i]);
-      $second_advice_log[i][0] = m_ad[i].innerText;
-      $second_advice_log[i][2] = t_ad[i].value;
-      s_advice_log.push(m_ad[i].innerHTML);
-    }
-    console.log($second_advice_log);
-    FinalReflection();
-  }
-
-}
-
-// --------------------------------------------------------------
-
 
 //--------------- 論理構成意図設定のための関数-----------
 // <select>要素の参照を取得
@@ -2477,6 +2489,3 @@ function CancelButton_Click(type){
     dm_menu.classList.remove('on');
   }
 }
-
-
-// -------------------------------------------------

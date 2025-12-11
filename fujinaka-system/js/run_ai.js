@@ -18,25 +18,35 @@ function collectTriangleLogic() {
       const hit = cand.find(v => typeof v === 'string' && v.trim());
       return hit ? hit.trim().replace(/\s+/g, ' ') : '';
     };
-    const wrap = (t) => t && t.length ? t : '（未設定）';
-    // triple行のフォーマット
-    const tripleLine = (claimText, factText, reasonText) =>
-      `[claim_id: ${wrap(claimText)}, fact_id: ${wrap(factText)}, reason_id: ${wrap(reasonText)}]`;
+    const wrapId = (id) => {
+      const s = String(id ?? '').trim();
+      return s ? s : '（未設定）';
+    };
+    const wrapText = (t) => (t && t.trim()) ? t.trim().replace(/\s+/g, ' ') : '（未設定）';
+    // トリプル行のフォーマットを id と内容の両方に変更
+    const tripleLine = (claimId, claimText, factId, factText, reasonId, reasonText) =>
+      `[claim_id: ${wrapId(claimId)}, claim: ${wrapText(claimText)}, ` +
+      `fact_id: ${wrapId(factId)}, fact: ${wrapText(factText)}, ` +
+      `reason_id: ${wrapId(reasonId)}, reason: ${wrapText(reasonText)}]`;
     // すべての三角ロジックを単純に列挙（重複や階層の再帰展開は行わない）
     const lines = [];
     for (const tr of triangles) {
       const claimLabel = getLabel(getNode(tr.claim_id));
       const factLabel = getLabel(getNode(tr.fact_id));
       const reasonLabel = getLabel(getNode(tr.reason_id));
-      lines.push(tripleLine(claimLabel, factLabel, reasonLabel));
+      lines.push(tripleLine(tr.claim_id, claimLabel, tr.fact_id, factLabel, tr.reason_id, reasonLabel));
     }
     if (!lines.length) {
-      return '[claim_id: （未設定）, fact_id: （未設定）, reason_id: （未設定）]';
+      return `[claim_id: （未設定）, claim: （未設定）, ` +
+             `fact_id: （未設定）, fact: （未設定）, ` +
+             `reason_id: （未設定）, reason: （未設定）]`;
     }
     return lines.join('\n');
   } catch (e) {
     console.error('collectTriangleLogic error:', e);
-    return '[claim_id: （未設定）, fact_id: （未設定）, reason_id: （未設定）]';
+    return `[claim_id: （未設定）, claim: （未設定）, ` +
+           `fact_id: （未設定）, fact: （未設定）, ` +
+           `reason_id: （未設定）, reason: （未設定）]`;
   }
 }
 
