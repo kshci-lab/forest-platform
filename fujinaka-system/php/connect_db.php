@@ -3,7 +3,7 @@
 	//　統合環境
 	$db_host = "localhost";  // DBサーバのurl
 	$db_user = "root";
-	$db_password = "kslabkslab";
+	$db_password = "root";
 	$db_dbname = "fujinaka";
 
 	// $db_host = "192.168.0.82:3306";  // DBサーバのurl

@@ -3,7 +3,7 @@
 	
 	$db_host = "localhost";  // DBサーバのurl
 	$db_user = "root";
-	$db_password = "kslabkslab";
+	$db_password = "root";
 	$db_dbname = "forest_platform_logic";
 
 	//アプリケーションサーバーにアップロードするとき．
