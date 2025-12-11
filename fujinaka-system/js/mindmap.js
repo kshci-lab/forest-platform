@@ -824,11 +824,12 @@ function checkRationality(nodeid){
 
                 for(j=0; j<jmnode.length; j++){
 
-                    if(parse[i].node_id == jmnode[j].getAttribute("nodeid")){
+                    if(parse[i] === jmnode[j].getAttribute("nodeid")){
                       console.log("成功はしている？");
-                      console.log(parse[i]);
-                      console.log(jmnode[j]);
+                      // console.log(parse[i]);
+                      // console.log( $(jmnode[j]).css({'background-color': 'black !important'}));
 
+                      // parse[i].style.backgroundColor = "#ff69b4";
                       jmnode[j].style.backgroundColor = "#ff69b4";
 
                     }
