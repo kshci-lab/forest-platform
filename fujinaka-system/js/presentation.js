@@ -1452,7 +1452,7 @@ function NodeAppendfromLogic(){
 
 // コンテンツ(パラグラフの中身)の新規作成
 function NewContent_Append(type){ //fujinaka追加
-    // 追加ログ出力
+  // 追加ログ出力
     if (typeof logEvent === 'function') {
       try {
         logEvent('presentation', 'add_new_content', JSON.stringify({ node_id: nodeid, content_id: setid, type: type, thread_id: data || null }));

@@ -3081,3 +3081,18 @@
 {"timestamp":"2025-12-11T23:57:43+09:00","category":"mindmap","subcategory":"update_from_logic_apply","content":"{\"nodeId\":\"b0dea9299a5bf411\",\"logicNodeId\":\"1765462147827314420\",\"label\":\"ふ\"}","user_id":"311997332"}
 {"timestamp":"2025-12-11T23:57:44+09:00","category":"mindmap","subcategory":"update_from_logic_db","content":"{\"action\":\"update_node_content\",\"nodeId\":\"b0dea9299a5bf411\",\"logicNodeId\":\"1765462147827314420\"}","user_id":"311997332"}
 {"timestamp":"2025-12-11T23:57:44+09:00","category":"mindmap","subcategory":"update_from_logic_db","content":"{\"action\":\"update_logic_link\",\"nodeId\":\"b0dea9299a5bf411\",\"logicNodeId\":\"1765462147827314420\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"show","content":"{\"rootId\":\"root\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0db5b161ee9ed06\",\"topic\":\"学習目標は何ですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0db613a5aa2f525\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0dbe0d72840ec17\",\"topic\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0dbe138add5b605\",\"topic\":\"し\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0db5b81b7f3467b\",\"topic\":\"こんちは\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0db619768576c80\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0dbe58ae442bf5c\",\"topic\":\"なぜこれらは合理的であるといえるのですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0db62dd3874c4f0\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0db644a1ac4b4da\",\"topic\":\"なぜこれらは合理的であるといえるのですか？\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0ddc1b5b5c56f19\",\"topic\":\"New Node\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0dbe5e9f8ac7a85\",\"topic\":\"さ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0db64b9b36867e1\",\"topic\":\"さｄさ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:11+09:00","category":"mindmap","subcategory":"add","content":"{\"nodeId\":\"b0dea9299a5bf411\",\"topic\":\"ふ\"}","user_id":"311997332"}
+{"timestamp":"2025-12-12T01:13:19+09:00","category":"presentation","subcategory":"add_new_content","content":"{\"type\":\"問い\",\"thread_id\":null}","user_id":"311997332"}
