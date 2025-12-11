@@ -1188,13 +1188,14 @@ function NodeAppend(){
     console.log(arr);
     $('#'+target).data('node_id', arr);
 
-    var setid = getUniqueStr();  //contentID
+    var setid = getUniqueStr();
+    var s_id = getUniqueStr();  //contentID
     var quot_setid = "\"" + setid + "\"";
 
     //内容テキストエリアにノード内容を挿入
     let area = document.getElementById("target")
     let label = "<div id='"+setid+"' class='scenario_content'>"+
-                  "<span node_id='"+id+"' concept_id='"+c_id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_node.topic+"</span>"+
+                  "<span node_id='"+s_id+"' f_id='"+id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_node.topic+"</span>"+
                   "<textarea id='contents-"+setid+"' class='text_border' class='statement' onFocus='TextboxClick()' onblur='Edit_save(this,"+quot_setid+");' placeholder='内容' style='width:calc(100% - 25px)' onkeypress='Keypress(event.keyCode, this);'>"+selected_node.topic+"</textarea>"+
                   "<input class='content_delete' type='button' value='×' onclick='RemoveAppendNode("+quot_setid+");Get_ContentRank();'>"+
                 "</div>";
@@ -1759,7 +1760,7 @@ function Get_ContentRank(forestNodeId){
         const indent = spanEl ? spanEl.getAttribute('name') : null;
         const concept_id = spanEl ? spanEl.getAttribute('concept_id') : null;
         // 追加: f_node_id属性（DB移行対応）
-        const f_node_attr = spanEl ? spanEl.getAttribute('node_id') : null;
+        const f_node_attr = spanEl ? spanEl.getAttribute('f_id') : null;
 
         // シナリオ上のnode_id
         const node_id =
