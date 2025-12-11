@@ -184,34 +184,34 @@ $(document).on('click', '.thread', function(){
     // document.getElementById('advice_frame').textContent = "";
 
     //コンセプトid取得+micro.js
-
-    //console.log($('#'+target).data('node_id'));
     var arr = $('#'+target).data('node_id');//nodeidの配列
-    //console.log(arr);
-    //console.log(arr[0]);
-
     micro_concept_id = [];
-    //console.log(micro_concept_id[0]);
-
-
     for(i=0; i<jmnode.length; i++){
       jmnode[i].style.border = "";
     }
-
+    console.log('IDリスト(arr):', arr);
     for(m=0; m<arr.length; m++){
       for(i=0; i<jmnode.length; i++){
         if(jmnode[i].getAttribute("nodeid") == arr[m]){//回ってきたidが選択中ノードの時
             console.log(jmnode[i]);
             micro_concept_id[m] = jmnode[i].getAttribute("concept_id");//コンセプトidを代入（答えノードは問いのコンセプトidを持つ）
-            // jmnode[i].style.backgroundColor = "#ff69b4";
             jmnode[i].style.border = "3px solid #444444";
         }
         if(micro_concept_id[m] != undefined){//同じコンセプトIDがいくつか存在するから
           break;
         }
       }
-      //console.log(micro_concept_id);
+    }
 
+    // --- 追加: 三角ロジックノードのp_node_idがarrに含まれるものをハイライト ---
+    if (window.defaultLogicNetwork && defaultLogicNetwork.nodes && defaultLogicNetwork.ownNetwork) {
+      const allNodes = defaultLogicNetwork.nodes.get();
+      const highlightIds = allNodes
+        .filter(n => n.p_node_id && arr.includes(String(n.p_node_id)))
+        .map(n => n.id);
+      if (highlightIds.length > 0) {
+        defaultLogicNetwork.ownNetwork.selectNodes(highlightIds, false);
+      }
     }
 
 });
@@ -705,6 +705,11 @@ function SetPurposeonChapter(){
    return;
  }else{
    window._creationSource = 'forest';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'chapter', topic: selected_node.topic, node_id: selected_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeChapter(selected_node.topic);
  }
 }
@@ -732,6 +737,11 @@ function SetPurposeonChapterfromlogic(){
    return;
  }else{
    window._creationSource = 'triangle';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'chapter', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeChapter(selected_logic_node.topic);
  }
 }
@@ -744,6 +754,11 @@ function SetPurposeonSection(){
    return;
  }else{
    window._creationSource = 'forest';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'section', topic: selected_node.topic, node_id: selected_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeSection(selected_node.topic);
  }
 }
@@ -771,6 +786,11 @@ function SetPurposeonSectionfromlogic(){
    return;
  }else{
    window._creationSource = 'triangle';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'section', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeSection(selected_logic_node.topic);
  }
 }
@@ -989,6 +1009,11 @@ function SetPurpose(){
  }else{
    $slide_topic.push(selected_node.topic);
    window._creationSource = 'forest';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'purpose', topic: selected_node.topic, node_id: selected_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    CreateThread(selected_node.topic, selected_node.id);
  }
 }
@@ -1018,6 +1043,11 @@ function SetPurposefromLogic(){
  }else{
    $slide_topic.push(selected_logic_node.topic);
    window._creationSource = 'triangle';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'purpose', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    CreateThread(selected_logic_node.topic, selected_logic_node.id);
  }
 }
@@ -1188,13 +1218,14 @@ function NodeAppend(){
     console.log(arr);
     $('#'+target).data('node_id', arr);
 
-    var setid = getUniqueStr();  //contentID
+    var setid = getUniqueStr();
+    var s_id = getUniqueStr();  //contentID
     var quot_setid = "\"" + setid + "\"";
 
     //内容テキストエリアにノード内容を挿入
     let area = document.getElementById("target")
     let label = "<div id='"+setid+"' class='scenario_content'>"+
-                  "<span node_id='"+id+"' concept_id='"+c_id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_node.topic+"</span>"+
+                  "<span node_id='"+s_id+"' f_id='"+id+"' class = 'cspan' name = '0' style = 'width:calc(100% - 25px)' tabindex='0'>"+selected_node.topic+"</span>"+
                   "<textarea id='contents-"+setid+"' class='text_border' class='statement' onFocus='TextboxClick()' onblur='Edit_save(this,"+quot_setid+");' placeholder='内容' style='width:calc(100% - 25px)' onkeypress='Keypress(event.keyCode, this);'>"+selected_node.topic+"</textarea>"+
                   "<input class='content_delete' type='button' value='×' onclick='RemoveAppendNode("+quot_setid+");Get_ContentRank();'>"+
                 "</div>";
@@ -1215,8 +1246,12 @@ function NodeAppend(){
       $('#'+target).children('.purpose').append(label);
     }
 
-
     $slide_topic.push(selected_node.topic);
+    if (typeof logEvent === 'function') {
+      try {
+        logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'node', topic: selected_node.topic, node_id: selected_node.id || null, content_id: setid }));
+      } catch (e) { /* noop */ }
+    }
     console.log($slide_topic);
   }
   var concept_id = GetConceptId(id);  //conceptID
@@ -1289,6 +1324,11 @@ function NodeAppendfromLogic(){
   
   if(selected_logic_node == null || selected_logic_node.topic == undefined){
    return;
+  }
+  if (typeof logEvent === 'function') {
+    try {
+      logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'node', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null, content_id: setid }));
+    } catch (e) { /* noop */ }
   }
   
   var id = selected_logic_node.id;  //logic nodeID
@@ -1412,6 +1452,12 @@ function NodeAppendfromLogic(){
 
 // コンテンツ(パラグラフの中身)の新規作成
 function NewContent_Append(type){ //fujinaka追加
+  // 追加ログ出力
+    if (typeof logEvent === 'function') {
+      try {
+        logEvent('presentation', 'add_new_content', JSON.stringify({ node_id: nodeid, content_id: setid, type: type, thread_id: data || null }));
+      } catch (e) { /* noop */ }
+    }
   var nodeid = getUniqueStr();  //nodeID fujinaka追加 labelにも追加　Recordにも追加
   var setid = getUniqueStr();  //contentID
   var quot_setid = "\"" + setid + "\"";
@@ -1759,7 +1805,7 @@ function Get_ContentRank(forestNodeId){
         const indent = spanEl ? spanEl.getAttribute('name') : null;
         const concept_id = spanEl ? spanEl.getAttribute('concept_id') : null;
         // 追加: f_node_id属性（DB移行対応）
-        const f_node_attr = spanEl ? spanEl.getAttribute('node_id') : null;
+        const f_node_attr = spanEl ? spanEl.getAttribute('f_id') : null;
 
         // シナリオ上のnode_id
         const node_id =

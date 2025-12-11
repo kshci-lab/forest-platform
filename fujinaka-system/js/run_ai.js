@@ -1,3 +1,24 @@
+// run_ai.js独自の「考える」「考えない」ボタンのイベントハンドラ
+document.addEventListener('click', function(ev){
+  const t = ev.target;
+  if (!(t && t.classList && (t.classList.contains('ai-aiadvice-consider-btn') || t.classList.contains('ai-aiadvice-skip-btn')))) return;
+  try {
+    const li = t.closest('.ai-aiadvice-item');
+    if (!li) return;
+    const key = li.getAttribute('data-key') || '';
+    const claim = li.getAttribute('data-claim') || '';
+    const adviceText = (li.querySelector('.ai-aiadvice-text')?.textContent || claim || '').replace(/^助言:\s*/, '');
+    const isConsider = t.classList.contains('ai-aiadvice-consider-btn');
+    try {
+      if (typeof window.logEvent === 'function') {
+        window.logEvent('advice', isConsider ? 'consider' : 'skip', adviceText || claim);
+      }
+    } catch(_) {}
+    try { localStorage.setItem(String(key), isConsider ? 'consider' : 'skip'); } catch(_) {}
+    const statusEl = li.querySelector('.ai-aiadvice-status');
+    if (statusEl) statusEl.textContent = isConsider ? '選択: 考える' : '選択: 考えない';
+  } catch(e) { console.error('ai-aiadvice button handler failed', e); }
+});
 function collectTriangleLogic() {
   try {
     const dln = window.defaultLogicNetwork;
@@ -83,7 +104,56 @@ function runAi() {
     })
   })
   .then(r => r.ok ? r.json() : Promise.reject(r.status + ' ' + r.statusText))
-  .then(j => { out.textContent = (j && j.output) ? j.output : ''; })
+  .then(j => {
+    // LLMからの出力はJSON配列文字列を想定
+    let arr = [];
+    try {
+      const raw = (j && j.output) ? String(j.output) : '[]';
+      arr = JSON.parse(raw);
+    } catch (e) {
+      console.error('AI output JSON.parse failed', e, j && j.output);
+      arr = [];
+    }
+
+    // ont_claim.js のハンドラ仕様に合わせて描画
+    const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const attr = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    const items = (Array.isArray(arr) ? arr : [])
+      .map(p => {
+        const claimId = String(p.claim_id ?? '').trim();
+        const claim = String(p.claim ?? '').trim();
+        const advice = String(p.advice ?? '').trim();
+        // 助言がないものは表示しない（プロンプト仕様）
+        if (!advice) return '';
+        const rawKey = `aiJsonAdvice|${claimId}|${claim}|${advice}`;
+        const key = encodeURIComponent(rawKey);
+        let saved = '';
+        try { saved = localStorage.getItem(key) || ''; } catch(_) {}
+        const statusLabel = saved === 'considered' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
+
+        // 追加ログ（logging.js があれば）
+        try { if (typeof window.logEvent === 'function') window.logEvent('advice', 'add', advice || claim); } catch(_) {}
+
+        // [主張]〇〇\n理由 形式で表示
+        const adviceText = `[主張]${claim}\n${advice}`;
+
+        return [
+          `<li class=\"ai-aiadvice-item\" data-key=\"${key}\"` +
+          ` data-claim-id=\"${attr(claimId)}\"` +
+          ` data-claim=\"${attr(claim)}\"` +
+          ` data-content=\"${attr(claim)}\">`,
+          `  <span class=\"ai-aiadvice-text\">${esc(adviceText).replace(/\n/g, '<br>')}</span>`,
+          `  <button type=\"button\" class=\"ai-aiadvice-btn ai-aiadvice-consider-btn\">考える</button>`,
+          `  <button type=\"button\" class=\"ai-aiadvice-btn ai-aiadvice-skip-btn\">考えない</button>`,
+          `  <span class=\"ai-aiadvice-status\">${esc(statusLabel)}</span>`,
+          `</li>`
+        ].join('');
+      })
+      .filter(Boolean)
+      .join('');
+    const html = `<ul class=\"ai-aiadvice-list\">${items}</ul>`;
+    out.innerHTML = html;
+  })
   .catch(e => { out.textContent = ''; console.error(e); })
   .finally(() => { btn.disabled = false; btn.textContent = org; });
 }

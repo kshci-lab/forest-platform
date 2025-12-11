@@ -305,7 +305,8 @@ class LogicNetwork {
         const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
         const payload = {
           node_id: node.id,
-          label: result_label
+          before: node.label || '',
+          after: result_label
         };
         if (typeof logEvent === 'function') {
           logEvent('logic_node', 'edit', JSON.stringify(payload), userId);
@@ -679,17 +680,18 @@ class LogicNetwork {
         return null;
       }
       // 要素のIDを取得
-      const elementId = selectedElement.id || selectedElement.getAttribute('node_id') || this.generateUniqueNumberText();
+      const elementId = selectedElement.getAttribute('node_id');
+      console.log(selectedElement)
       // 可能ならForest（概念）対応のIDも取得（presentation要素側に埋め込まれている場合）
       const conceptIdFromPresentation =
         selectedElement.getAttribute('f_node_id') ||
-        selectedElement.getAttribute('fnodeid') ||
+        selectedElement.getAttribute('f_id') ||
         (selectedElement.dataset ? (selectedElement.dataset.fNodeId || selectedElement.dataset.fnodeid) : null) ||
         null;
       return {
         text: elementText.trim(),
         id: elementId,
-        f_node_id: conceptIdFromPresentation || null
+        f_node_id: conceptIdFromPresentation
       };
       
     } catch (error) {
@@ -698,45 +700,20 @@ class LogicNetwork {
     }
   }
 
-  // DBから Presentation ノードIDに対応する Forest 概念ID を取得
-  async fetchForestNodeIdByPresentationId(pNodeId) {
-    try {
-      const res = await $.ajax({
-        url: "php/logic_maneger.php",
-        type: "POST",
-        data: {
-          purpose: 'get',
-          get_thing: 'pnode_to_fid',
-          p_node_id: pNodeId
-        },
-        dataType: "json"
-      });
-      if (res && res.status === 'success' && res.f_node_id) {
-        return res.f_node_id;
-      }
-      console.warn("fetchForestNodeIdByPresentationId: not found", res);
-      return null;
-    } catch (e) {
-      console.warn("fetchForestNodeIdByPresentationId error:", e);
-      return null;
-    }
-  }
-
   // 論文シナリオのノードを起点に三角ロジックを作成する関数
   async createTriangleFromScenario() {
     // 論文シナリオ側から選択ノード情報を取得
     let selected_pnode = this.getSelectedScenarioContent();
+    console.log("Selected Presentation node:", selected_pnode);
     if (!selected_pnode || !selected_pnode.text) {
       alert("ノードを選択してください");
       return;
     }
     // f_node_id が無い場合は DB から補完
     let fNodeId = selected_pnode.f_node_id || null;
-    if (!fNodeId && selected_pnode.id) {
-      fNodeId = await this.fetchForestNodeIdByPresentationId(String(selected_pnode.id));
-    }
     // maketriangleを呼び出し、presentationノード由来/DB由来のf_node_idがあれば渡す
     this.maketriangle(selected_pnode.text, fNodeId || null, selected_pnode.id, 1);
+    console.log("Triangle created from Scenario node:", selected_pnode);
     // ログ出力（Triangle追加 from Scenario）
     try {
       const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
@@ -834,16 +811,15 @@ class LogicNetwork {
   // 三角ロジックのノードの内容を論文シナリオの内容に反映する
   applyPresentationToTriangle() {
     // presentation側で現在選択されている要素を取得
-    const selectedElement = document.querySelector('.cspan[style*="border: 2px solid gray"], .tspan:focus, .text_border:focus');
-    console.log("applyPresentationToTriangle: selectedElement =", selectedElement);
+    let selected_pnode = this.getSelectedScenarioContent();
       
-    if (!selectedElement) {
+    if (!selected_pnode || !selected_pnode.text) {
       alert("presentation側で章、節、またはパラグラフを選択してください");
       return;
     }
 
     // 選択された要素のテキスト内容を取得
-    const elementText = selectedElement.textContent || selectedElement.innerHTML || selectedElement.value || "";
+    const elementText = selected_pnode.text;
 
     if (!elementText || elementText.trim() === "") {
       alert("選択された要素に内容がありません");
@@ -860,57 +836,30 @@ class LogicNetwork {
 
     // 論理ネットワークノードの現在の状態をチェック
     const currentLogicNode = this.nodes.get(selectedLogicNodeId);
-    const wasDeleted = !currentLogicNode.label || currentLogicNode.label === null || currentLogicNode.label === '';
 
     // 論理ネットワークノードのラベルをpresentation要素の内容で更新（edited=1で実線に）
     console.log("applyPresentationToTriangle: editNodeを呼び出し");
     this.editNode(selectedLogicNodeId, elementText);
     
-    // presentationから反映されたことを示すためにp_node_idを設定
-    const updatedNode = this.nodes.get(selectedLogicNodeId);
-    updatedNode.p_node_id = selectedElement.id || selectedElement.getAttribute('node_id') || "default";
-    updatedNode.presentation_origin = true;
 
     // 修正: concept_id ではなく f_node_id を取得
-    const p_element_id = updatedNode.p_node_id;
-    let conceptIdFromPresentation =
-      selectedElement.getAttribute('f_node_id') ||
-      selectedElement.getAttribute('fnodeid') ||
-      (selectedElement.dataset ? (selectedElement.dataset.fNodeId || selectedElement.dataset.fnodeid) : null) ||
-      null;
-
-    if (!conceptIdFromPresentation && p_element_id && typeof this.fetchForestNodeIdByPresentationId === 'function') {
-      this.fetchForestNodeIdByPresentationId(String(p_element_id)).then((mappedFid) => {
-        if (mappedFid) {
-          try {
-            const cur = this.nodes.get(selectedLogicNodeId);
-            cur.f_node_id = String(mappedFid);
-            this.applyNodeStyle(cur);
-            this.nodes.update(cur);
-            defaultRecordLogicNetwork.edit_LogicNode(
-              selectedLogicNodeId,
-              cur.label ? cur.label.split('\n').join('') : elementText,
-              true,
-              String(mappedFid),
-              p_element_id
-            );
-          } catch (_) {}
-        }
-      }).catch(() => {});
-    }
-
-    if (conceptIdFromPresentation) {
-      updatedNode.f_node_id = conceptIdFromPresentation;
-    }
-
-    this.applyNodeStyle(updatedNode);
-    this.nodes.update(updatedNode);
-
+    const p_element_id = selected_pnode.id || null;
+    const updatedNode = this.nodes.get(selectedLogicNodeId);
+    // presentationから反映されたノードに特別なスタイルを適用
+    const p_f_id = selected_pnode.f_node_id || null;
+    const styledNode = {
+      ...updatedNode,
+      f_node_id: p_f_id || "default", // presentationノードから取得したForestノードID
+      p_node_id: p_element_id,
+      edited: true
+    };
+    this.applyNodeStyle(styledNode);
+    this.nodes.update(styledNode);
     defaultRecordLogicNetwork.edit_LogicNode(
       selectedLogicNodeId,
       elementText,
       true,
-      conceptIdFromPresentation || null,
+      p_f_id || null,
       p_element_id
     );
     try {

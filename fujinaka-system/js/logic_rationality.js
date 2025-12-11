@@ -170,8 +170,68 @@ window.showRationalityAdvice = function(selector){
 			header.setAttribute('aria-expanded', 'true');
 		}
 	} catch(e) {}
+	// 合理性ペア助言では noneinlogic を除外して oneinlogic/bothinlogic のみ表示
 	const target = '#ai_output';
-	renderRationalityAdvice(target);
+	window.getRationalityStatus().done(function(res){
+		const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+		const nodeContentList = (nodes) => (nodes||[]).map(n => `node_id:${esc(n.node_id)} content:"${esc(n.content)}"`).join(' / ');
+		const anchorContentList = (children) => (children||[]).map(c => `#${esc(c.node_id)} "${esc(c.content)}"`).join(', ');
+		const logicContentList = (matches) => (matches||[]).map(m => `logic_node_id:${esc(m.logic_node_id)} f_node_id:${esc(m.f_node_id)} content:"${esc(m.content)}"`).join('<br>');
+		const oneArr  = res.oneinlogic  || (res.displayEntries && res.displayEntries.oneinlogic)  || [];
+		const bothArr = res.bothinlogic || (res.displayEntries && res.displayEntries.bothinlogic) || [];
+		const lineOne = (e) => {
+			const matchedSet = new Set((e.logic_matches || []).map(m => String(m.f_node_id)));
+			const nodesInLogicArr = (e.nodes || []).filter(n => matchedSet.has(String(n.node_id)));
+			const nodesNotInLogicArr = (e.nodes || []).filter(n => !matchedSet.has(String(n.node_id)));
+			const nodesInLogicText = nodeContentList(nodesInLogicArr);
+			const nodesNotInLogicText = nodeContentList(nodesNotInLogicArr);
+			const anchorsText = anchorContentList(e.anchor_children);
+			const logicIdsAttr = (e.logic_matches || []).map(m => String(m.logic_node_id || '')).filter(Boolean).join(',');
+			const adviceText = `あなたは「${nodesInLogicText}」を主張とした三角ロジックを作成しています。また日々の思考で「${nodesInLogicText}」と「${nodesNotInLogicText}」の合理性について「${anchorsText}」と述べています。これらの内容は三角ロジックに反映されていますか`;
+			const rawKey = `ratAdvice|one|${esc(e.rationality_id)}|${nodesInLogicText}|${nodesNotInLogicText}|${anchorsText}`;
+			const key = encodeURIComponent(rawKey);
+			let saved = '';
+			try { saved = localStorage.getItem(String(key)) || ''; } catch(e) { saved = ''; }
+			const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
+			const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
+			return [`<div class="entry rat-advice-item" data-key="${key}" data-title="one" data-rationality-id="${esc(e.rationality_id)}" data-in-logic="${esc(nodesInLogicText)}" data-not-in-logic="${esc(nodesNotInLogicText)}" data-anchors="${esc(anchorsText)}" data-node-ids="${esc(nodeIdsAttr)}" data-logic-ids="${esc(logicIdsAttr)}">`,
+				`  <div class="advice">${adviceText}</div>`,
+				`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
+				`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
+				`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
+				`</div>`
+			].join('');
+		};
+		const lineBoth = (e) => {
+			const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
+			const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
+			const logicTexts = (e.logic_matches || []).map(m => `"${esc(m.content)}"`).join('<br>');
+			const logicIdsAttr = (e.logic_matches || []).map(m => String(m.logic_node_id || '')).filter(Boolean).join(',');
+			const adviceText = `あなたは「${logicTexts}」を主張とする三角ロジックを作成しています。また日々の思考整理では、「${nodeTexts}」についての合理性「${anchorTexts}」を述べています。これらは三角ロジックに反映されていますか`;
+			const rawKey = `ratAdvice|both|${nodeTexts}|${anchorTexts}|${logicTexts}`;
+			const key = encodeURIComponent(rawKey);
+			let saved = '';
+			try { saved = localStorage.getItem(String(key)) || ''; } catch(e) { saved = ''; }
+			const statusLabel = saved === 'consider' ? '選択: 確認する' : (saved === 'skip' ? '選択: 確認しない' : '');
+			const nodeIdsAttr = (e.nodes || []).map(n => String(n.node_id || '')).filter(Boolean).join(',');
+			return [`<div class="entry rat-advice-item" data-key="${key}" data-title="both" data-node-texts="${esc(nodeTexts)}" data-anchor-texts="${esc(anchorTexts)}" data-logic-texts="${esc(logicTexts)}" data-node-ids="${esc(nodeIdsAttr)}" data-logic-ids="${esc(logicIdsAttr)}">`,
+				`  <div class="advice">${adviceText}</div>`,
+				`  <button type="button" class="rat-advice-btn rat-consider-btn">確認する</button>`,
+				`  <button type="button" class="rat-advice-btn rat-skip-btn">確認しない</button>`,
+				`  <span class="rat-advice-status">${esc(statusLabel)}</span>`,
+				`</div>`
+			].join('');
+		};
+		const oneItems = oneArr.map(lineOne).join('');
+		const bothItems = bothArr.map(lineBoth).join('');
+		const htmlParts = [];
+		htmlParts.push(oneItems ? `<h4>oneinlogic</h4><div class="rationality-advice-list">${oneItems}</div>` : '<div class="empty">one の対象がありません。</div>');
+		htmlParts.push(bothItems ? `<h4>bothinlogic</h4><div class="rationality-advice-list">${bothItems}</div>` : '<div class="empty">both の対象がありません。</div>');
+		document.querySelector(target).innerHTML = '<div class="rationality-advice">'+htmlParts.join('')+'</div>';
+	}).fail(function(err){
+		console.error('getRationalityStatus failed:', err);
+		document.querySelector(target).innerHTML = '<div class="error">rationality取得に失敗しました</div>';
+	});
 };
 
 // 追加: noneのみを表示する関数（第一助言）
