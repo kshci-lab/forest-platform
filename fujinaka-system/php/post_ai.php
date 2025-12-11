@@ -1,4 +1,77 @@
 <?php
+// JSONで返す
+header('Content-Type: application/json; charset=UTF-8');
+header('X-Content-Type-Options: nosniff');
+
+// 入力を取得（JSONボディ）
+$raw = file_get_contents('php://input');
+$triangle = '';
+if ($raw) {
+    $j = json_decode($raw, true);
+    if (is_array($j) && isset($j['triangle'])) {
+        $triangle = (string)$j['triangle'];
+    }
+}
+
+// Windowsでも動くようにプロセスと標準入出力を設定
+$pythonPath = 'python'; // 必要なら環境に合わせて変更
+$scriptPath = __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'test.py';
+
+// test.pyが存在するか確認
+if (!is_file($scriptPath)) {
+    http_response_code(500);
+    echo json_encode([ 'ok' => false, 'error' => 'test.py not found', 'output' => '' ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$cmd = escapeshellcmd($pythonPath) . ' ' . escapeshellarg($scriptPath);
+$descriptorspec = [
+    0 => ['pipe', 'r'],  // stdin
+    1 => ['pipe', 'w'],  // stdout
+    2 => ['pipe', 'w'],  // stderr
+];
+$proc = proc_open($cmd, $descriptorspec, $pipes, dirname($scriptPath));
+
+if (!is_resource($proc)) {
+    http_response_code(500);
+    echo json_encode([ 'ok' => false, 'error' => 'proc_open failed', 'output' => '' ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// triangleをstdinへ渡す
+if (isset($pipes[0])) {
+    fwrite($pipes[0], $triangle);
+    fclose($pipes[0]);
+}
+
+$stdout = '';
+$stderr = '';
+if (isset($pipes[1])) {
+    $stdout = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+}
+if (isset($pipes[2])) {
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[2]);
+}
+
+$status = proc_close($proc);
+
+// LLMはJSON配列のみを返す前提。余計な文字が混じった場合の最低限の保護。
+$output = trim($stdout);
+// 先頭が'['でない場合は空配列にフォールバック
+if ($output === '' || $output[0] !== '[') {
+    $output = '[]';
+}
+
+// クライアント仕様に合わせ、文字列のまま格納
+echo json_encode([
+    'ok' => true,
+    'output' => $output,
+    'stderr' => $stderr,
+], JSON_UNESCAPED_UNICODE);
+?>
+<?php
 session_start();
 header('Content-Type: application/json; charset=UTF-8');
 
