@@ -305,7 +305,8 @@ class LogicNetwork {
         const userId = (typeof window !== 'undefined' && window.currentUserId) ? window.currentUserId : '';
         const payload = {
           node_id: node.id,
-          label: result_label
+          before: node.label || '',
+          after: result_label
         };
         if (typeof logEvent === 'function') {
           logEvent('logic_node', 'edit', JSON.stringify(payload), userId);

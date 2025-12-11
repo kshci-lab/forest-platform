@@ -300,10 +300,99 @@ window.showDiffAdvice = function() {
       icon.textContent = '▼';
       header.setAttribute('aria-expanded', 'true');
     }
-    if (typeof renderDiffConceptLabels === 'function') {
-      renderDiffConceptLabels('#ai_output');
-      console.log('[ont_claim] showDiffAdvice: rendered to #ai_output');
-    }
+    // 差分助言と合理性ペアnoneを両方取得して結合表示
+    Promise.all([
+      typeof getDiffConceptLabels === 'function' ? getDiffConceptLabels() : Promise.resolve(null),
+      typeof window.getRationalityStatus === 'function' ? window.getRationalityStatus() : Promise.resolve(null)
+    ]).then(function([diffRes, ratRes]) {
+      let htmlParts = [];
+      // 差分助言
+      if (diffRes && diffRes.ok) {
+        const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const makeLine = (title, p) => {
+          if (title === 'map - logic') {
+            return `教育システム学研究において「${esc(p.class_constraint)}」は重要です。あなたは「${esc(p.class_constraint)}」として「${esc(p.content)}」を述べています。これを主張として三角ロジックを構成する必要はありませんか`;
+          } else if (title === 'map - claim') {
+            return `教育システム学研究において「${esc(p.class_constraint)}」は重要です。あなたは「${esc(p.class_constraint)}」として「${esc(p.content)}」を述べています。これを主張として三角ロジックを構成する必要はありませんか`;
+          }
+          return `「${esc(p.class_constraint)}」「${esc(p.content)}」これを検討する必要はありませんか`;
+        };
+        const section = (title, arr) => {
+          const attr = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+          const items = (arr || [])
+            .filter(p => p.class_constraint && p.class_constraint.trim() !== '')
+            .map(p => {
+              const rawKey = `diffAdvice|${title}|${p.concept_id ?? ''}|${p.node_id ?? ''}|${p.class_constraint ?? ''}|${p.content ?? ''}`;
+              const key = encodeURIComponent(rawKey);
+              let saved = '';
+              try { saved = localStorage.getItem(key) || ''; } catch(e) { saved = ''; }
+              const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
+              try {
+                const adviceText = makeLine(title, p);
+                if (typeof window.logEvent === 'function') {
+                  window.logEvent('advice', 'add', adviceText);
+                }
+              } catch(_) {}
+              return [
+                `<li class="ai-advice-item" data-key="${key}"` +
+                ` data-title="${attr(title)}"` +
+                ` data-concept-id="${attr(p.concept_id ?? '')}"` +
+                ` data-node-id="${attr(p.node_id ?? '')}"` +
+                ` data-class-constraint="${attr(p.class_constraint ?? '')}"` +
+                ` data-content="${attr(p.content ?? '')}">`,
+                `  <span class="ai-advice-text">${makeLine(title, p)}</span>`,
+                `  <button type="button" class="ai-advice-btn ai-consider-btn">考える</button>`,
+                `  <button type="button" class="ai-advice-btn ai-skip-btn">考えない</button>`,
+                `  <span class="ai-advice-status">${esc(statusLabel)}</span>`,
+                `</li>`
+              ].join('');
+            }).join('');
+          return `<h4>${esc(title)}</h4><ul class="ai-advice-list">${items}</ul>`;
+        };
+        htmlParts.push('<div class="diff-concepts">');
+        htmlParts.push(section('map - logic', diffRes.mapMinusLogic));
+        htmlParts.push(section('map - claim', diffRes.mapMinusClaim));
+        htmlParts.push('</div>');
+      }
+      // 合理性ペアnoneinlogic
+      if (ratRes && (ratRes.noneinlogic || (ratRes.displayEntries && ratRes.displayEntries.noneinlogic))) {
+        const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const noneArr = ratRes.noneinlogic || (ratRes.displayEntries && ratRes.displayEntries.noneinlogic) || [];
+        const lineNone = (e) => {
+          const nodeTexts = (e.nodes || []).map(n => `"${esc(n.content)}"`).join(' / ');
+          const anchorTexts = (e.anchor_children || []).map(c => `"${esc(c.content)}"`).join(', ');
+          // localStorage 用キー（差分助言と同じ生成規則でOK）
+          const rawKey = `diffAdvice|noneinlogic|${(e.nodes && e.nodes.map(n=>n.node_id).join('|'))||''}|${(e.nodes && e.nodes.map(n=>n.content).join('|'))||''}|${anchorTexts}`;
+          const key = encodeURIComponent(rawKey);
+          let saved = '';
+          try { saved = localStorage.getItem(key) || ''; } catch(e) { saved = ''; }
+          const statusLabel = saved === 'consider' ? '選択: 考える' : (saved === 'skip' ? '選択: 考えない' : '');
+          // 追加: noneinlogic表示時のログ
+          try {
+            const adviceText = `${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか`;
+            if (typeof window.logEvent === 'function') {
+              window.logEvent('advice', 'add', adviceText);
+            }
+          } catch(_) {}
+          return [
+            `<li class="ai-advice-item" data-key="${key}" data-title="noneinlogic" data-node-ids="${esc((e.nodes && e.nodes.map(n=>n.node_id).join(','))||'')}" data-anchor-texts="${esc(anchorTexts)}" data-content="${esc((e.nodes && e.nodes.map(n=>n.content).join(' / '))||'')}">`,
+            `  <span class="ai-advice-text">${nodeTexts}に対する合理性として${anchorTexts}を日々の思考整理で述べていますがこれらを三角ロジックとして考えなくてよいですか</span>`,
+            `  <button type="button" class="ai-advice-btn ai-consider-btn">考える</button>`,
+            `  <button type="button" class="ai-advice-btn ai-skip-btn">考えない</button>`,
+            `  <span class="ai-advice-status">${esc(statusLabel)}</span>`,
+            `</li>`
+          ].join('');
+        };
+        const items = noneArr.map(lineNone).join('');
+        const html = items ? `<h4>noneinlogic</h4><ul class="ai-advice-list">${items}</ul>` : '<div class="empty">none の対象がありません。</div>';
+        htmlParts.push('<div class="rationality-advice">'+html+'</div>');
+      }
+      // 結合して表示
+      document.getElementById('ai_output').innerHTML = htmlParts.join('');
+    }).catch(function(err){
+      document.getElementById('ai_output').innerHTML = '<div class="error">差分・合理性情報の取得に失敗しました</div>';
+      console.error('[ont_claim] showDiffAdvice failed', err);
+    });
   } catch(e) {
     console.error('[ont_claim] showDiffAdvice failed', e);
   }

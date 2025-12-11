@@ -705,6 +705,11 @@ function SetPurposeonChapter(){
    return;
  }else{
    window._creationSource = 'forest';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'chapter', topic: selected_node.topic, node_id: selected_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeChapter(selected_node.topic);
  }
 }
@@ -732,6 +737,11 @@ function SetPurposeonChapterfromlogic(){
    return;
  }else{
    window._creationSource = 'triangle';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'chapter', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeChapter(selected_logic_node.topic);
  }
 }
@@ -744,6 +754,11 @@ function SetPurposeonSection(){
    return;
  }else{
    window._creationSource = 'forest';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'section', topic: selected_node.topic, node_id: selected_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeSection(selected_node.topic);
  }
 }
@@ -771,6 +786,11 @@ function SetPurposeonSectionfromlogic(){
    return;
  }else{
    window._creationSource = 'triangle';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'section', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    MakeSection(selected_logic_node.topic);
  }
 }
@@ -989,6 +1009,11 @@ function SetPurpose(){
  }else{
    $slide_topic.push(selected_node.topic);
    window._creationSource = 'forest';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'purpose', topic: selected_node.topic, node_id: selected_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    CreateThread(selected_node.topic, selected_node.id);
  }
 }
@@ -1018,6 +1043,11 @@ function SetPurposefromLogic(){
  }else{
    $slide_topic.push(selected_logic_node.topic);
    window._creationSource = 'triangle';
+   if (typeof logEvent === 'function') {
+     try {
+       logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'purpose', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null }));
+     } catch (e) { /* noop */ }
+   }
    CreateThread(selected_logic_node.topic, selected_logic_node.id);
  }
 }
@@ -1216,8 +1246,12 @@ function NodeAppend(){
       $('#'+target).children('.purpose').append(label);
     }
 
-
     $slide_topic.push(selected_node.topic);
+    if (typeof logEvent === 'function') {
+      try {
+        logEvent('presentation', 'add_from_forest', JSON.stringify({ type: 'node', topic: selected_node.topic, node_id: selected_node.id || null, content_id: setid }));
+      } catch (e) { /* noop */ }
+    }
     console.log($slide_topic);
   }
   var concept_id = GetConceptId(id);  //conceptID
@@ -1290,6 +1324,11 @@ function NodeAppendfromLogic(){
   
   if(selected_logic_node == null || selected_logic_node.topic == undefined){
    return;
+  }
+  if (typeof logEvent === 'function') {
+    try {
+      logEvent('presentation', 'add_from_logic', JSON.stringify({ type: 'node', topic: selected_logic_node.topic, node_id: selected_logic_node.id || null, content_id: setid }));
+    } catch (e) { /* noop */ }
   }
   
   var id = selected_logic_node.id;  //logic nodeID
@@ -1413,6 +1452,12 @@ function NodeAppendfromLogic(){
 
 // コンテンツ(パラグラフの中身)の新規作成
 function NewContent_Append(type){ //fujinaka追加
+    // 追加ログ出力
+    if (typeof logEvent === 'function') {
+      try {
+        logEvent('presentation', 'add_new_content', JSON.stringify({ node_id: nodeid, content_id: setid, type: type, thread_id: data || null }));
+      } catch (e) { /* noop */ }
+    }
   var nodeid = getUniqueStr();  //nodeID fujinaka追加 labelにも追加　Recordにも追加
   var setid = getUniqueStr();  //contentID
   var quot_setid = "\"" + setid + "\"";

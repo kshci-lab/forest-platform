@@ -134,12 +134,15 @@ function runAi() {
         // 追加ログ（logging.js があれば）
         try { if (typeof window.logEvent === 'function') window.logEvent('advice', 'add', advice || claim); } catch(_) {}
 
+        // [主張]〇〇\n理由 形式で表示
+        const adviceText = `[主張]${claim}\n${advice}`;
+
         return [
           `<li class=\"ai-aiadvice-item\" data-key=\"${key}\"` +
           ` data-claim-id=\"${attr(claimId)}\"` +
           ` data-claim=\"${attr(claim)}\"` +
           ` data-content=\"${attr(claim)}\">`,
-          `  <span class=\"ai-aiadvice-text\">${esc(advice)}</span>`,
+          `  <span class=\"ai-aiadvice-text\">${esc(adviceText).replace(/\n/g, '<br>')}</span>`,
           `  <button type=\"button\" class=\"ai-aiadvice-btn ai-aiadvice-consider-btn\">考える</button>`,
           `  <button type=\"button\" class=\"ai-aiadvice-btn ai-aiadvice-skip-btn\">考えない</button>`,
           `  <span class=\"ai-aiadvice-status\">${esc(statusLabel)}</span>`,
