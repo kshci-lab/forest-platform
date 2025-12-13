@@ -4,6 +4,19 @@ try{ console && console.log && console.log('meeting-reflection-network.js loaded
 window.addEventListener && window.addEventListener('error', function(evt){
     try{ console && console.error && console.error('JS error caught:', evt && (evt.message || evt.error)); }catch(_){ }
 });
+// ガード: kt-node 用メニュー要素と参照の存在を保証（$menu 未定義エラー対策）
+try{
+    if(typeof window.$menu === 'undefined' || !window.$menu){
+        var $existing = $('#kt-node-conmenu');
+        if(!$existing.length){
+            $existing = $('<div id="kt-node-conmenu" style="position:absolute;z-index:9999;padding:6px;border:1px solid #ccc;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:none;font-size:13px;border-radius:4px;"></div>');
+            $existing.append('<div id="kt-conmenu-delete" style="padding:6px 10px;cursor:pointer;color:#b30000;">削除する</div>');
+            $existing.append('<div id="kt-conmenu-cancel" style="padding:6px 10px;cursor:pointer;color:#333;">キャンセル</div>');
+            $(document.body).append($existing);
+        }
+        window.$menu = $existing;
+    }
+}catch(_){ }
 
 // 追加のフラグメント選択モード切替ボタン
 $(document).on('click', '#fragment-add-select-toggle', function(){
@@ -2158,6 +2171,12 @@ function renderTreeNode(node, byParent){
     var wrapper = document.createElement('div');
     wrapper.className = 'kt-node';
     wrapper.setAttribute('data-node-id', node.node_id);
+    try{
+        var ext = null;
+        if(node && typeof node.externalized_contents_id !== 'undefined' && node.externalized_contents_id !== null){ ext = parseInt(node.externalized_contents_id,10); }
+        else if(node && typeof node.knowledge_fragment_id !== 'undefined' && node.knowledge_fragment_id !== null){ ext = parseInt(node.knowledge_fragment_id,10); }
+        if(ext && !isNaN(ext) && ext>0){ wrapper.setAttribute('data-ext-id', String(ext)); }
+    }catch(_){ }
     if(hasChildren){
         var toggle = document.createElement('span');
         toggle.className = 'kt-toggle';
@@ -2247,141 +2266,141 @@ $(document).on('click', '.kt-toggle', function(){
 });
 
 // 右クリックメニュー（コンテキストメニュー）: ノード削除機能
-(function(){
-    // 重複初期化を防ぐフラグ
-    if(window.ktNodeConmenu){ return; }
-    // 軽量なコンテキストメニュー要素を用意
-    var $menu = $('<div id="kt-node-conmenu" style="position:absolute;z-index:9999;padding:6px;border:1px solid #ccc;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:none;font-size:13px;border-radius:4px;"></div>');
-    $menu.append('<div id="kt-conmenu-delete" style="padding:6px 10px;cursor:pointer;color:#b30000;">削除する</div>');
-    $menu.append('<div id="kt-conmenu-cancel" style="padding:6px 10px;cursor:pointer;color:#333;">キャンセル</div>');
-    $(document.body).append($menu);
-    // mark that menu was successfully appended
-    window.ktNodeConmenu = true;
-    console && console.debug && console.debug('kt-node-conmenu appended by main JS');
+// (function(){
+//     // 重複初期化を防ぐフラグ
+//     if(window.ktNodeConmenu){ return; }
+//     // 軽量なコンテキストメニュー要素を用意
+//     // var $menu = $('<div id="kt-node-conmenu" style="position:absolute;z-index:9999;padding:6px;border:1px solid #ccc;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:none;font-size:13px;border-radius:4px;"></div>');
+//     // $menu.append('<div id="kt-conmenu-delete" style="padding:6px 10px;cursor:pointer;color:#b30000;">削除する</div>');
+//     // $menu.append('<div id="kt-conmenu-cancel" style="padding:6px 10px;cursor:pointer;color:#333;">キャンセル</div>');
+//     // $(document.body).append($menu);
+//     // mark that menu was successfully appended
+//     window.ktNodeConmenu = true;
+//     console && console.debug && console.debug('kt-node-conmenu appended by main JS');
 
-    // キャプチャ段階で contextmenu を傍受して、親要素の oncontextmenu による阻害を回避
-    document.addEventListener('contextmenu', function(e){
-        try{
-            console && console.debug && console.debug('contextmenu event captured (capture phase)');
-            var el = e.target || e.srcElement;
-            while(el && el !== document){
-                if(el.classList && el.classList.contains && el.classList.contains('kt-node')){
-                    // 対象ノードを見つけたらカスタムメニューを表示
-                    console && console.debug && console.debug('contextmenu target is kt-node', el.tagName, el.className, el.getAttribute('data-node-id'));
-                    e.preventDefault();
-                    e.stopPropagation();
-                    var nodeId = el.getAttribute('data-node-id') || (el.dataset && el.dataset.nodeId);
-                    if(!nodeId) return;
-                    var x = e.pageX || (e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft));
-                    var y = e.pageY || (e.clientY + (document.documentElement.scrollTop||document.body.scrollTop));
-                    $menu.css({ left: x + 'px', top: y + 'px' });
-                    $menu.data('target-node', nodeId);
-                    $menu.show();
-                    return;
-                }
-                el = el.parentNode;
-            }
-        }catch(err){ console && console.error && console.error('contextmenu capture handler error', err); }
-    }, true);
+//     // キャプチャ段階で contextmenu を傍受して、親要素の oncontextmenu による阻害を回避
+//     document.addEventListener('contextmenu', function(e){
+//         try{
+//             console && console.debug && console.debug('contextmenu event captured (capture phase)');
+//             var el = e.target || e.srcElement;
+//             while(el && el !== document){
+//                 if(el.classList && el.classList.contains && el.classList.contains('kt-node')){
+//                     // 対象ノードを見つけたらカスタムメニューを表示
+//                     console && console.debug && console.debug('contextmenu target is kt-node', el.tagName, el.className, el.getAttribute('data-node-id'));
+//                     e.preventDefault();
+//                     e.stopPropagation();
+//                     var nodeId = el.getAttribute('data-node-id') || (el.dataset && el.dataset.nodeId);
+//                     if(!nodeId) return;
+//                     var x = e.pageX || (e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft));
+//                     var y = e.pageY || (e.clientY + (document.documentElement.scrollTop||document.body.scrollTop));
+//                     $menu.css({ left: x + 'px', top: y + 'px' });
+//                     $menu.data('target-node', nodeId);
+//                     $menu.show();
+//                     return;
+//                 }
+//                 el = el.parentNode;
+//             }
+//         }catch(err){ console && console.error && console.error('contextmenu capture handler error', err); }
+//     }, true);
 
-    // メニューを閉じるユーティリティ
-    function hideMenu(){ $menu.hide(); $menu.data('target-node', null); }
+//     // メニューを閉じるユーティリティ
+//     function hideMenu(){ $menu.hide(); $menu.data('target-node', null); }
 
-    // ドキュメントクリックでメニューを閉じる
-    $(document).on('mousedown', function(e){
-        if($menu.is(':visible')){
-            var t = e.target;
-            if(!$menu.is(t) && $menu.has(t).length===0){ hideMenu(); }
-        }
-    });
+//     // ドキュメントクリックでメニューを閉じる
+//     $(document).on('mousedown', function(e){
+//         if($menu.is(':visible')){
+//             var t = e.target;
+//             if(!$menu.is(t) && $menu.has(t).length===0){ hideMenu(); }
+//         }
+//     });
 
-    // kt-node の右クリックイベント
-    $(document).on('contextmenu', '.kt-node', function(e){
-        try{
-            e.preventDefault();
-            // event.target may be a child; find closest .kt-node to get attribute reliably
-            var $targetNode = $(e.target).closest('.kt-node');
-            if(!$targetNode.length) { return; }
-            var nodeIdAttr = $targetNode.attr('data-node-id');
-            var nodeId = (typeof nodeIdAttr !== 'undefined' && nodeIdAttr !== null && nodeIdAttr !== '') ? parseInt(nodeIdAttr, 10) : null;
-            if(!nodeId || isNaN(nodeId) || nodeId <= 0){
-                // 無効な node_id の場合はメニューを出さない
-                console && console.warn && console.warn('contextmenu on kt-node but node_id invalid', nodeIdAttr);
-                return;
-            }
-            // メニュー位置調整（画面端考慮）
-            var x = e.pageX || e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft);
-            var y = e.pageY || e.clientY + (document.documentElement.scrollTop||document.body.scrollTop);
-            $menu.css({ left: x + 'px', top: y + 'px' });
-            $menu.data('target-node', nodeId);
-            $menu.show();
-        }catch(err){ console && console.error && console.error('kt-node contextmenu handler error', err); }
-    });
+//     // kt-node の右クリックイベント
+//     $(document).on('contextmenu', '.kt-node', function(e){
+//         try{
+//             e.preventDefault();
+//             // event.target may be a child; find closest .kt-node to get attribute reliably
+//             var $targetNode = $(e.target).closest('.kt-node');
+//             if(!$targetNode.length) { return; }
+//             var nodeIdAttr = $targetNode.attr('data-node-id');
+//             var nodeId = (typeof nodeIdAttr !== 'undefined' && nodeIdAttr !== null && nodeIdAttr !== '') ? parseInt(nodeIdAttr, 10) : null;
+//             if(!nodeId || isNaN(nodeId) || nodeId <= 0){
+//                 // 無効な node_id の場合はメニューを出さない
+//                 console && console.warn && console.warn('contextmenu on kt-node but node_id invalid', nodeIdAttr);
+//                 return;
+//             }
+//             // メニュー位置調整（画面端考慮）
+//             var x = e.pageX || e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft);
+//             var y = e.pageY || e.clientY + (document.documentElement.scrollTop||document.body.scrollTop);
+//             $menu.css({ left: x + 'px', top: y + 'px' });
+//             $menu.data('target-node', nodeId);
+//             $menu.show();
+//         }catch(err){ console && console.error && console.error('kt-node contextmenu handler error', err); }
+//     });
 
-    // 削除ボタン（メインJSが生成したメニューの要素からのクリックのみ処理する）
-    $(document).on('click', '#kt-conmenu-delete', function(e){
-        try{
-            // このハンドラは document デリゲーションなので、同じ id を持つ別の要素（フォールバック）からのクリックも捕まえてしまう。
-            // そこで、実際にクリックされた要素が main の $menu 内にあるか確認する。
-            if(!$menu || !$menu.length){ return; }
-            var el = this;
-            if($menu[0] !== el && $.contains($menu[0], el) === false){
-                // main のメニュー要素以外からのクリックは無視
-                return;
-            }
-            var nodeId = $menu.data('target-node');
-            if(!nodeId){ hideMenu(); return; }
-            if(!confirm('本当にこのノードを削除しますか？（表示上は非表示になります）')){ return; }
-            // サーバーへ削除フラグを立てる
-            console && console.log && console.log('mark_delete send node_id=', nodeId);
-            // 重複送信防止ロック
-            window._ktNodeDeleteInProgress = window._ktNodeDeleteInProgress || {};
-            if(window._ktNodeDeleteInProgress[nodeId]){
-                console && console.warn && console.warn('mark_delete already in progress for', nodeId);
-                hideMenu();
-                return;
-            }
-            window._ktNodeDeleteInProgress[nodeId] = true;
-            $.ajax({
-                url: 'php/mark_delete_knowledge_node.php',
-                method: 'POST',
-                dataType: 'json',
-                data: { node_id: nodeId }
-            }).done(function(res){
-                if(res && res.status === 'ok'){
-                    // DOMから該当ノードを取り除く（または再取得）
-                    try{
-                        // 最終的に再取得で整合性を保つ
-                        fetchKnowledgeTree();
-                    }catch(_){
-                        $('.kt-node[data-node-id="'+nodeId+'"]').remove();
-                    }
-                } else {
-                    // エラー内容をログ表示
-                    console && console.error && console.error('mark_delete failed', res);
-                    if(res && res.message){ alert('ノード削除に失敗しました: ' + res.message); }
-                    else { alert('ノード削除に失敗しました。'); }
-                }
-            }).fail(function(xhr,st,err){
-                alert('通信エラーで削除できませんでした。');
-                console && console.error && console.error('mark_delete ajax fail', st, err, xhr && xhr.responseText);
-            }).always(function(){
-                window._ktNodeDeleteInProgress[nodeId] = false;
-                hideMenu();
-            });
-        }catch(err){ console && console.error && console.error('kt-conmenu-delete handler error', err); }
-    });
+//     // 削除ボタン（メインJSが生成したメニューの要素からのクリックのみ処理する）
+//     $(document).on('click', '#kt-conmenu-delete', function(e){
+//         try{
+//             // このハンドラは document デリゲーションなので、同じ id を持つ別の要素（フォールバック）からのクリックも捕まえてしまう。
+//             // そこで、実際にクリックされた要素が main の $menu 内にあるか確認する。
+//             if(!$menu || !$menu.length){ return; }
+//             var el = this;
+//             if($menu[0] !== el && $.contains($menu[0], el) === false){
+//                 // main のメニュー要素以外からのクリックは無視
+//                 return;
+//             }
+//             var nodeId = $menu.data('target-node');
+//             if(!nodeId){ hideMenu(); return; }
+//             if(!confirm('本当にこのノードを削除しますか？（表示上は非表示になります）')){ return; }
+//             // サーバーへ削除フラグを立てる
+//             console && console.log && console.log('mark_delete send node_id=', nodeId);
+//             // 重複送信防止ロック
+//             window._ktNodeDeleteInProgress = window._ktNodeDeleteInProgress || {};
+//             if(window._ktNodeDeleteInProgress[nodeId]){
+//                 console && console.warn && console.warn('mark_delete already in progress for', nodeId);
+//                 hideMenu();
+//                 return;
+//             }
+//             window._ktNodeDeleteInProgress[nodeId] = true;
+//             $.ajax({
+//                 url: 'php/mark_delete_knowledge_node.php',
+//                 method: 'POST',
+//                 dataType: 'json',
+//                 data: { node_id: nodeId }
+//             }).done(function(res){
+//                 if(res && res.status === 'ok'){
+//                     // DOMから該当ノードを取り除く（または再取得）
+//                     try{
+//                         // 最終的に再取得で整合性を保つ
+//                         fetchKnowledgeTree();
+//                     }catch(_){
+//                         $('.kt-node[data-node-id="'+nodeId+'"]').remove();
+//                     }
+//                 } else {
+//                     // エラー内容をログ表示
+//                     console && console.error && console.error('mark_delete failed', res);
+//                     if(res && res.message){ alert('ノード削除に失敗しました: ' + res.message); }
+//                     else { alert('ノード削除に失敗しました。'); }
+//                 }
+//             }).fail(function(xhr,st,err){
+//                 alert('通信エラーで削除できませんでした。');
+//                 console && console.error && console.error('mark_delete ajax fail', st, err, xhr && xhr.responseText);
+//             }).always(function(){
+//                 window._ktNodeDeleteInProgress[nodeId] = false;
+//                 hideMenu();
+//             });
+//         }catch(err){ console && console.error && console.error('kt-conmenu-delete handler error', err); }
+//     });
 
-    // キャンセル（main メニューの要素からのクリックのみ処理）
-    $(document).on('click', '#kt-conmenu-cancel', function(e){
-        try{
-            if(!$menu || !$menu.length) return;
-            var el = this;
-            if($menu[0] !== el && $.contains($menu[0], el) === false){ return; }
-            hideMenu();
-        }catch(err){ }
-    });
-})();
+//     // キャンセル（main メニューの要素からのクリックのみ処理）
+//     $(document).on('click', '#kt-conmenu-cancel', function(e){
+//         try{
+//             if(!$menu || !$menu.length) return;
+//             var el = this;
+//             if($menu[0] !== el && $.contains($menu[0], el) === false){ return; }
+//             hideMenu();
+//         }catch(err){ }
+//     });
+// })();
 
 // ダブルクリックで編集
 // 新クラス名で編集可能。旧クラス名も後方互換で許容（トップ=kt-node-title, 子=kt-content-title）
@@ -2410,6 +2429,42 @@ $(document).on('dblclick', '.kt-node-title, .kt-content-title, .kt-title', funct
         }
     });
     $input.on('blur', function(){ commit(oldText); });
+});
+
+// コンテンツタイトルをクリックで元フラグメント詳細をポップアップ表示（表示専用）
+$(document).on('click', '.kt-content-title', function(e){
+    try{
+        e.preventDefault(); e.stopPropagation();
+        var $span = $(this);
+        var $node = $span.closest('.kt-node');
+        if(!$node.length){ return; }
+        var extAttr = $node.attr('data-ext-id');
+        var extId = extAttr ? parseInt(extAttr,10) : null;
+        var nodeIdAttr = $node.attr('data-node-id');
+        var nodeId = nodeIdAttr ? parseInt(nodeIdAttr,10) : null;
+        var ajaxData = {};
+        if(extId && !isNaN(extId) && extId>0){ ajaxData.externalized_contents_id = extId; }
+        else if(nodeId && !isNaN(nodeId) && nodeId>0){ ajaxData.node_id = nodeId; }
+        else { return; }
+        $.ajax({ url: 'php/get_knowledge_fragment_detail.php', type: 'GET', dataType: 'html', data: ajaxData })
+            .done(function(html){
+                var modal = document.getElementById('kfrag-detail-modal');
+                if(!modal){
+                    modal = document.createElement('div'); modal.id='kfrag-detail-modal'; modal.style.position='fixed'; modal.style.left='0'; modal.style.top='0'; modal.style.width='100%'; modal.style.height='100%'; modal.style.background='rgba(0,0,0,0.35)'; modal.style.zIndex='100000'; modal.style.display='none';
+                    var inner = document.createElement('div'); inner.id='kfrag-detail-inner'; inner.style.position='absolute'; inner.style.left='50%'; inner.style.top='50%'; inner.style.transform='translate(-50%, -50%)'; inner.style.background='#fff'; inner.style.maxWidth='800px'; inner.style.width='90%'; inner.style.maxHeight='80%'; inner.style.overflow='auto'; inner.style.borderRadius='8px'; inner.style.boxShadow='0 8px 24px rgba(0,0,0,0.2)'; inner.style.padding='16px';
+                    var close = document.createElement('div'); close.textContent='×'; close.style.position='absolute'; close.style.right='12px'; close.style.top='8px'; close.style.cursor='pointer'; close.style.fontSize='20px'; close.setAttribute('aria-label','閉じる'); close.addEventListener('click', function(){ modal.style.display='none'; }, false);
+                    inner.appendChild(close); modal.appendChild(inner); document.body.appendChild(modal);
+                    modal.addEventListener('mousedown', function(ev){ if(ev.target === modal){ modal.style.display='none'; } }, true);
+                }
+                var inner = document.getElementById('kfrag-detail-inner');
+                inner.innerHTML = '';
+                var close = document.createElement('div'); close.textContent='×'; close.style.position='absolute'; close.style.right='12px'; close.style.top='8px'; close.style.cursor='pointer'; close.style.fontSize='20px'; close.setAttribute('aria-label','閉じる'); close.addEventListener('click', function(){ modal.style.display='none'; }, false);
+                inner.appendChild(close);
+                var contentWrap = document.createElement('div'); contentWrap.innerHTML = html; inner.appendChild(contentWrap);
+                modal.style.display='block';
+            })
+            .fail(function(xhr,st,err){ try{ console && console.error && console.error('get_knowledge_fragment_detail fail', st, err, xhr && xhr.responseText); }catch(_){ } alert('詳細を取得できませんでした'); });
+    }catch(ex){ try{ console && console.error && console.error('kt-content-title click error', ex); }catch(_){ } }
 });
 
 function saveNodeTitleHistory(nodeId, newTitle){
@@ -3888,6 +3943,209 @@ $(document).on('click', '#fragment-discussed-toggle', function(){
         console.error('update_discussed_status fail', st, err, xhr && xhr.responseText);
     });
 });
+
+// Context menu: right-click on fragment wrapper to delete
+$(document).on('contextmenu', '.fragment-node-wrapper, .fragment-node-wrapper .knowledge_fragment', function(e){
+    try{
+        e.preventDefault(); e.stopPropagation();
+        try{ console && console.log && console.log('[kfrag] contextmenu on fragment wrapper'); }catch(_){ }
+        var $wrap = $(this).closest('.fragment-node-wrapper');
+        if(!$wrap.length) return;
+        var extId = null;
+        try{
+            var raw = $wrap.data('externalized-id');
+            if(typeof raw !== 'undefined' && raw !== null){
+                var p = parseInt(raw,10);
+                extId = isNaN(p) ? null : p;
+            } else {
+                extId = null;
+            }
+        }catch(_){ extId = null; }
+        if(extId === null){ alert('このフラグメントは削除できません（ID不明）'); return; }
+        var menu = document.getElementById('kt-node-conmenu');
+        if(!menu){
+            // simple inline menu (fallback if kt-node menu not present)
+            menu = document.createElement('div');
+            menu.id = 'kt-node-conmenu';
+            menu.style.position = 'absolute';
+            menu.style.zIndex = 99999;
+            menu.style.padding = '6px';
+            menu.style.border = '1px solid #ccc';
+            menu.style.background = '#fff';
+            menu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)';
+            menu.style.display = 'none';
+            menu.style.fontSize = '13px';
+            menu.style.borderRadius = '4px';
+            var del = document.createElement('div'); del.id = 'kt-conmenu-delete-fragment'; del.textContent = '削除する'; del.style.padding='6px 10px'; del.style.cursor='pointer'; del.style.color='#b30000';
+            var cancel = document.createElement('div'); cancel.id = 'kt-conmenu-cancel-fragment'; cancel.textContent = 'キャンセル'; cancel.style.padding='6px 10px'; cancel.style.cursor='pointer'; cancel.style.color='#333';
+            menu.appendChild(del); menu.appendChild(cancel);
+            document.body.appendChild(menu);
+            cancel.addEventListener('click', function(){ menu.style.display='none'; menu._target=null; }, false);
+            del.addEventListener('click', function(){
+                try{
+                    var targetExt = (menu._targetExtId || null);
+                    if(!targetExt){ menu.style.display='none'; return; }
+                    if(!confirm('本当にこのフラグメントを削除しますか？')){ menu.style.display='none'; return; }
+                    // lock
+                    window._kfragDeleteInProgress = window._kfragDeleteInProgress || {};
+                    if(window._kfragDeleteInProgress[targetExt]){ alert('削除処理が進行中です'); menu.style.display='none'; return; }
+                    window._kfragDeleteInProgress[targetExt] = true;
+                    try{ console && console.log && console.log('[kfrag] deleting fragment extId', targetExt); }catch(_){ }
+                    $.ajax({
+                        url: '/fukushima-system/php/mark_delete_externalized_fragment.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { externalized_contents_id: targetExt }
+                    }).done(function(res){
+                        try{ console && console.log && console.log('[kfrag] delete response', res); }catch(_){ }
+                        if(res && res.status === 'ok'){
+                            try{
+                                var $w = $('.fragment-node-wrapper').filter(function(){
+                                    var r = $(this).data('externalized-id');
+                                    var p = (typeof r !== 'undefined' && r !== null) ? parseInt(r,10) : null;
+                                    return p === targetExt;
+                                }).first();
+                                if($w && $w.length){ $w.remove(); }
+                            }catch(_){ }
+                        } else {
+                            alert('削除に失敗しました: ' + (res && res.message ? res.message : ''));
+                        }
+                        window._kfragDeleteInProgress[targetExt] = false;
+                    }).fail(function(xhr,st,err){
+                        alert('通信エラーで削除できませんでした');
+                        try{ console && console.error && console.error('[kfrag] delete fail', st, err, xhr && xhr.responseText); }catch(_){ }
+                        window._kfragDeleteInProgress[targetExt] = false;
+                    });
+                    menu.style.display='none';
+                }catch(e){ console && console.error && console.error('fragment delete click error', e); menu.style.display='none'; }
+            }, false);
+            document.addEventListener('mousedown', function(ev){ if(menu.style.display==='block'){ if(ev.target !== menu && !menu.contains(ev.target)){ menu.style.display='none'; menu._target=null; } } }, true);
+        }
+        var x = e.pageX || (e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft));
+        var y = e.pageY || (e.clientY + (document.documentElement.scrollTop||document.body.scrollTop));
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.style.display = 'block';
+        menu._targetExtId = extId;
+        // ショートカット: Shift+右クリックで確認なしで即削除（デバッグ用）
+        if(e.shiftKey){
+            try{ console && console.log && console.log('[kfrag] shift+contextmenu immediate delete', extId); }catch(_){ }
+            window._kfragDeleteInProgress = window._kfragDeleteInProgress || {};
+            if(!window._kfragDeleteInProgress[extId]){
+                window._kfragDeleteInProgress[extId] = true;
+                $.ajax({ url: '/fukushima-system/php/mark_delete_externalized_fragment.php', type: 'POST', dataType: 'json', data: { externalized_contents_id: extId } })
+                    .done(function(res){ try{ console && console.log && console.log('[kfrag] immediate delete response', res); }catch(_){ }
+                        if(res && res.status === 'ok'){ $('.fragment-node-wrapper').filter(function(){ var r=$(this).data('externalized-id'); var p=(typeof r!=='undefined'&&r!==null)?parseInt(r,10):null; return p===extId; }).first().remove(); }
+                        window._kfragDeleteInProgress[extId] = false; })
+                    .fail(function(xhr,st,err){ try{ console && console.error && console.error('[kfrag] immediate delete fail', st, err, xhr && xhr.responseText); }catch(_){ } window._kfragDeleteInProgress[extId] = false; });
+                menu.style.display='none';
+            }
+        }
+    }catch(ex){ console && console.warn && console.warn('fragment contextmenu error', ex); }
+});
+
+// フラグメント削除用: 親要素の oncontextmenu="return false" に阻害されないようキャプチャ段階で傍受
+try{
+    document.addEventListener('contextmenu', function(e){
+        try{
+            var el = e.target;
+            var wrap = null;
+            while(el && el !== document){
+                if(el.classList && el.classList.contains('fragment-node-wrapper')){ wrap = el; break; }
+                el = el.parentNode;
+            }
+            if(wrap){
+                e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+                try{ console && console.log && console.log('[kfrag] capture contextmenu on fragment wrapper'); }catch(_){ }
+                var $wrap = $(wrap);
+                var raw = null; try{ raw = $wrap.data('externalized-id'); }catch(_){ raw = null; }
+                try{ console && console.log && console.log('[kfrag] wrapper data-externalized-id raw=', raw); }catch(_){ }
+                // Fallback: read from inner knowledge_fragment's data-ext-id
+                if((raw === null || typeof raw === 'undefined') && $wrap.length){
+                    try{
+                        var inner = $wrap.find('.knowledge_fragment').first();
+                        var innerAttr = inner && inner.length ? inner.attr('data-ext-id') : null;
+                        raw = innerAttr;
+                        try{ console && console.log && console.log('[kfrag] inner .knowledge_fragment data-ext-id=', innerAttr); }catch(_){ }
+                    }catch(_){ raw = raw; }
+                }
+                var extId = null; if(raw !== null && typeof raw !== 'undefined'){ var p = parseInt(raw,10); extId = isNaN(p) ? null : p; }
+                try{ console && console.log && console.log('[kfrag] parsed extId=', extId); }catch(_){ }
+                if(extId === null){ alert('このフラグメントは削除できません（ID不明）'); return; }
+                // デバッグ: Ctrl キー押下時はメニューを介さず即削除を試行
+                if(e.ctrlKey){
+                    try{ console && console.log && console.log('[kfrag] ctrl+contextmenu immediate delete (capture) extId', extId); }catch(_){ }
+                    window._kfragDeleteInProgress = window._kfragDeleteInProgress || {};
+                    if(!window._kfragDeleteInProgress[extId]){
+                        window._kfragDeleteInProgress[extId] = true;
+                        $.ajax({ url: '/fukushima-system/php/mark_delete_externalized_fragment.php', type: 'POST', dataType: 'json', data: { externalized_contents_id: extId } })
+                            .done(function(res){ try{ console && console.log && console.log('[kfrag] capture immediate delete response', res); }catch(_){ }
+                                if(res && res.status === 'ok'){
+                                    $('.fragment-node-wrapper').filter(function(){ var r=$(this).data('externalized-id'); var p=(typeof r!=='undefined'&&r!==null)?parseInt(r,10):null; return p===extId; }).first().remove();
+                                } else { alert('削除に失敗しました: ' + (res && res.message ? res.message : '')); }
+                                window._kfragDeleteInProgress[extId] = false; })
+                            .fail(function(xhr,st,err){ try{ console && console.error && console.error('[kfrag] capture immediate delete fail', st, err, xhr && xhr.responseText); }catch(_){ } alert('通信エラーで削除できませんでした'); window._kfragDeleteInProgress[extId] = false; });
+                    }
+                    return; // メニュー表示はスキップ
+                }
+                var menu = document.getElementById('kt-node-conmenu');
+                if(!menu){
+                    menu = document.createElement('div');
+                    menu.id = 'kt-node-conmenu';
+                    menu.style.position = 'absolute';
+                    menu.style.zIndex = 99999;
+                    menu.style.padding = '6px';
+                    menu.style.border = '1px solid #ccc';
+                    menu.style.background = '#fff';
+                    menu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)';
+                    menu.style.display = 'none';
+                    menu.style.fontSize = '13px';
+                    menu.style.borderRadius = '4px';
+                    var del = document.createElement('div'); del.id = 'kt-conmenu-delete-fragment'; del.textContent = '削除する'; del.style.padding='6px 10px'; del.style.cursor='pointer'; del.style.color='#b30000';
+                    var cancel = document.createElement('div'); cancel.id = 'kt-conmenu-cancel-fragment'; cancel.textContent = 'キャンセル'; cancel.style.padding='6px 10px'; cancel.style.cursor='pointer'; cancel.style.color='#333';
+                    menu.appendChild(del); menu.appendChild(cancel);
+                    document.body.appendChild(menu);
+                    cancel.addEventListener('click', function(){ menu.style.display='none'; menu._target=null; }, false);
+                    del.addEventListener('click', function(){
+                        try{
+                            var targetExt = (menu._targetExtId || null);
+                            if(!targetExt){ menu.style.display='none'; return; }
+                            if(!confirm('本当にこのフラグメントを削除しますか？')){ menu.style.display='none'; return; }
+                            window._kfragDeleteInProgress = window._kfragDeleteInProgress || {};
+                            if(window._kfragDeleteInProgress[targetExt]){ alert('削除処理が進行中です'); menu.style.display='none'; return; }
+                            window._kfragDeleteInProgress[targetExt] = true;
+                            $.ajax({ url: '/fukushima-system/php/mark_delete_externalized_fragment.php', type: 'POST', dataType: 'json', data: { externalized_contents_id: targetExt } })
+                                .done(function(res){
+                                    if(res && res.status === 'ok'){
+                                        try{
+                                            var $w = $('.fragment-node-wrapper').filter(function(){
+                                                var r = $(this).data('externalized-id');
+                                                var p = (typeof r !== 'undefined' && r !== null) ? parseInt(r,10) : null;
+                                                return p === targetExt;
+                                            }).first();
+                                            if($w && $w.length){ $w.remove(); }
+                                        }catch(_){ }
+                                    } else {
+                                        alert('削除に失敗しました: ' + (res && res.message ? res.message : ''));
+                                    }
+                                    window._kfragDeleteInProgress[targetExt] = false;
+                                })
+                                .fail(function(xhr,st,err){ try{ console && console.error && console.error('[kfrag] capture delete fail', st, err, xhr && xhr.responseText); }catch(_){ } alert('通信エラーで削除できませんでした'); window._kfragDeleteInProgress[targetExt] = false; });
+                            menu.style.display='none';
+                        }catch(e){ console && console.error && console.error('fragment delete click error', e); menu.style.display='none'; }
+                    }, false);
+                    document.addEventListener('mousedown', function(ev){ if(menu.style.display==='block'){ if(ev.target !== menu && !menu.contains(ev.target)){ menu.style.display='none'; menu._target=null; } } }, true);
+                }
+                var x = e.pageX || (e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft));
+                var y = e.pageY || (e.clientY + (document.documentElement.scrollTop||document.body.scrollTop));
+                menu.style.left = x + 'px';
+                menu.style.top = y + 'px';
+                menu.style.display = 'block';
+                menu._targetExtId = extId;
+            }
+        }catch(err){ console && console.warn && console.warn('fragment contextmenu capture error', err); }
+    }, true);
+}catch(_){ }
 
 // KRA 登録ボタン押下時: 議論を終了して表示を '議論終了' に変更し、外部化テーブルを DONE に更新
 $(document).on('click', '#kra-submit', function(){

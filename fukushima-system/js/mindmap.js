@@ -2001,6 +2001,91 @@ function RemoveThread(data){
   // $('#'+data).fadeOut('fast').queue(function() {
   //   $('#'+data).remove();
   // });
+
+  // フラグメント削除の確実化: 親の oncontextmenu に阻害されても削除メニューを出す（キャプチャ段階）
+  try{
+    document.addEventListener('contextmenu', function(e){
+      try{
+        var el = e.target;
+        var kfrag = null;
+        var wrap = null;
+        while(el && el !== document){
+          if(!kfrag && el.classList && el.classList.contains('knowledge_fragment')){ kfrag = el; }
+          if(el.classList && el.classList.contains('fragment-node-wrapper')){ wrap = el; break; }
+          el = el.parentNode;
+        }
+        if(!wrap && kfrag){
+          var p = kfrag.parentNode;
+          while(p && p !== document){ if(p.classList && p.classList.contains('fragment-node-wrapper')){ wrap = p; break; } p = p.parentNode; }
+        }
+        if(wrap){
+          e.preventDefault(); e.stopPropagation();
+          var extId = null;
+          try{
+            var raw = null;
+            if(kfrag){ raw = kfrag.getAttribute('data-ext-id'); }
+            if(!raw || raw === ''){ raw = $(wrap).data('externalized-id'); }
+            if(typeof raw !== 'undefined' && raw !== null){ var pInt = parseInt(raw,10); extId = isNaN(pInt) ? null : pInt; }
+          }catch(_){ extId = null; }
+          if(extId === null){ return; }
+          var menu = document.getElementById('kt-node-conmenu');
+          if(!menu){
+            menu = document.createElement('div');
+            menu.id = 'kt-node-conmenu';
+            menu.style.position = 'absolute';
+            menu.style.zIndex = 99999;
+            menu.style.padding = '6px';
+            menu.style.border = '1px solid #ccc';
+            menu.style.background = '#fff';
+            menu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.12)';
+            menu.style.display = 'none';
+            menu.style.fontSize = '13px';
+            menu.style.borderRadius = '4px';
+            var del = document.createElement('div'); del.id = 'kt-conmenu-delete-fragment'; del.textContent = '削除する'; del.style.padding='6px 10px'; del.style.cursor='pointer'; del.style.color='#b30000';
+            var cancel = document.createElement('div'); cancel.id = 'kt-conmenu-cancel-fragment'; cancel.textContent = 'キャンセル'; cancel.style.padding='6px 10px'; cancel.style.cursor='pointer'; cancel.style.color='#333';
+            menu.appendChild(del); menu.appendChild(cancel);
+            document.body.appendChild(menu);
+            cancel.addEventListener('click', function(){ menu.style.display='none'; menu._target=null; }, false);
+            del.addEventListener('click', function(){
+              try{
+                var targetExt = (menu._targetExtId || null);
+                if(!targetExt){ menu.style.display='none'; return; }
+                if(!confirm('本当にこのフラグメントを削除しますか？')){ menu.style.display='none'; return; }
+                window._kfragDeleteInProgress = window._kfragDeleteInProgress || {};
+                if(window._kfragDeleteInProgress[targetExt]){ alert('削除処理が進行中です'); menu.style.display='none'; return; }
+                window._kfragDeleteInProgress[targetExt] = true;
+                $.ajax({ url: 'php/mark_delete_externalized_fragment.php', type: 'POST', dataType: 'json', data: { externalized_contents_id: targetExt } })
+                  .done(function(res){
+                    if(res && res.status === 'ok'){
+                      try{
+                        var $w = $('.fragment-node-wrapper').filter(function(){
+                          var r = $(this).data('externalized-id');
+                          var p2 = (typeof r !== 'undefined' && r !== null) ? parseInt(r,10) : null;
+                          return p2 === targetExt;
+                        }).first();
+                        if($w && $w.length){ $w.remove(); }
+                      }catch(_){ }
+                    } else {
+                      alert('削除に失敗しました: ' + (res && res.message ? res.message : ''));
+                    }
+                    window._kfragDeleteInProgress[targetExt] = false;
+                  })
+                  .fail(function(){ alert('通信エラーで削除できませんでした'); window._kfragDeleteInProgress[targetExt] = false; });
+                menu.style.display='none';
+              }catch(e){ try{ console.error('fragment delete click error', e); }catch(_){ } menu.style.display='none'; }
+            }, false);
+            document.addEventListener('mousedown', function(ev){ if(menu.style.display==='block'){ if(ev.target !== menu && !menu.contains(ev.target)){ menu.style.display='none'; menu._target=null; } } }, true);
+          }
+          var x = e.pageX || (e.clientX + (document.documentElement.scrollLeft||document.body.scrollLeft));
+          var y = e.pageY || (e.clientY + (document.documentElement.scrollTop||document.body.scrollTop));
+          menu.style.left = x + 'px';
+          menu.style.top = y + 'px';
+          menu.style.display = 'block';
+          menu._targetExtId = extId;
+        }
+      }catch(err){ try{ console.warn('mindmap contextmenu capture error', err); }catch(_){ } }
+    }, true);
+  }catch(_){ }
 }
 
 function RemoveStatement(data){

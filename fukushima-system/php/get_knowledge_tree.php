@@ -48,6 +48,8 @@ $colTitle = null;   // node_title / title / name / label
 $colComment = null; // comment / comments / note / notes / memo
 $colUpdated = null; // updated_at / update_at / updated / modified_at
 $colUpdatedBy = null; // updated_by （ユーザID）
+$colKFragId = null;   // knowledge_fragment_id（外部化IDと同一扱い）
+$colExtContentsId = null; // externalized_contents_id（外部化のPK）
 $hasDeleted = false;
 $idIsAutoInc = false;
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
@@ -60,6 +62,8 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
         if($colComment===null && in_array($lf, ['comment','comments','note','notes','memo'])){ $colComment = $f; }
         if($colUpdated===null && in_array($lf, ['updated_at','update_at','updated','modified_at'])){ $colUpdated = $f; }
         if($colUpdatedBy===null && in_array($lf, ['updated_by'])){ $colUpdatedBy = $f; }
+        if($colKFragId===null && in_array($lf, ['knowledge_fragment_id','knowledgefragment_id','kfrag_id'])){ $colKFragId = $f; }
+        if($colExtContentsId===null && in_array($lf, ['externalized_contents_id','externalizedcontent_id','externalized_id'])){ $colExtContentsId = $f; }
         if($lf === 'deleted'){ $hasDeleted = true; }
         if($f === $colId && isset($c['Extra']) && stripos($c['Extra'], 'auto_increment') !== false){ $idIsAutoInc = true; }
     }
@@ -166,6 +170,9 @@ if($resAll = $mysqli->query($sqlAll)){
         $updatedById = null; $updatedByName = null;
         if($colUpdatedBy && array_key_exists($colUpdatedBy,$row)) { $updatedById = $row[$colUpdatedBy]; }
         if(array_key_exists('updated_by_name',$row)) { $updatedByName = $row['updated_by_name']; }
+        // 参照ID（存在すれば付与）
+        $kfragVal = null; if($colKFragId && array_key_exists($colKFragId,$row)) { $kfragVal = (int)$row[$colKFragId]; }
+        $extIdVal = null; if($colExtContentsId && array_key_exists($colExtContentsId,$row)) { $extIdVal = (int)$row[$colExtContentsId]; }
         $nodes[] = [
             'node_id'=>$nid,
             'parent_id'=>$pid,
@@ -173,7 +180,9 @@ if($resAll = $mysqli->query($sqlAll)){
             'comment'=> $commentVal !== null ? $commentVal : null,
             'updated_at'=> $updatedVal !== null ? $updatedVal : null,
             'updated_by'=> $updatedById !== null ? (int)$updatedById : null,
-            'updated_by_name'=> $updatedByName !== null ? $updatedByName : null
+            'updated_by_name'=> $updatedByName !== null ? $updatedByName : null,
+            'knowledge_fragment_id'=> $kfragVal !== null ? $kfragVal : null,
+            'externalized_contents_id'=> $extIdVal !== null ? $extIdVal : null
         ];
     }
     $resAll->close();
