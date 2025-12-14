@@ -40,29 +40,26 @@ if (isset($_POST["login"])) {
       exit();
     }
 
-    $db_hashed_pwd = null;
-    $user_id = null;
     while ($row = $result->fetch_assoc()) {
+      // パスワード(暗号化済み）の取り出し
       $db_hashed_pwd = $row['password'];
       $user_id = $row['user_id'];
+
     }
 
-    // ３．パスワード検証に成功した場合のみ、login_time を更新
-    if ($db_hashed_pwd !== null && password_verify($_POST["password"], $db_hashed_pwd)) {
-      date_default_timezone_set('Asia/Tokyo');
-      $timestamp = time();
-      $updated_at = date("Y-m-d H:i:s", $timestamp);
-      // 安全のためプリペアドステートメントを使用
-      if ($user_id !== null) {
-        if ($stmt = $mysqli->prepare("UPDATE users SET login_time = ? WHERE user_id = ?")) {
-          $stmt->bind_param('si', $updated_at, $user_id);
-          $stmt->execute();
-          $stmt->close();
-        }
-      }
-      
-      // データベースの切断
-      $mysqli->close();
+    //login_timeの更新
+    date_default_timezone_set('Asia/Tokyo');
+    $timestamp = time();
+    $updated_at = date("Y-m-d H:i:s", $timestamp);
+
+    $l_query = "UPDATE users SET login_time = '".$updated_at."' WHERE user_id = ".$user_id."";
+    $l_result = $mysqli->query($l_query);
+
+    // データベースの切断
+    $mysqli->close();
+
+    // ３．画面から入力されたパスワードとデータベースから取得したパスワードのハッシュを比較します。
+    if (password_verify($_POST["password"], $db_hashed_pwd)) {
       // ４．認証成功なら、セッションIDを新規に発行する
       session_regenerate_id(true);
       $_SESSION["USERNAME"] = $_POST["username"];
@@ -71,8 +68,6 @@ if (isset($_POST["login"])) {
       exit;
     }
     else {
-      // データベースの切断
-      $mysqli->close();
       // 認証失敗
       $errorMessage = "ユーザIDあるいはパスワードに誤りがあります。";
     }

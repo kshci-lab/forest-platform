@@ -1,30 +1,12 @@
 <?php
 
 	
-	//ローカルPCから接続するとき．
-	// $db_host = "localhost";  // DBサーバのurl
+	// $db_host = "localhost";  // ホスト名のみ
 	// $db_port = 8889;  // ポート番号
 	// $db_user = "root";
 	// $db_password = "root";
 	// $db_dbname = "forest_platform";
 
-	// デスクトップPCに接続
-	// $db_host = "10.250.63.6";  // ホスト名のみ
-	// $db_port = 8889;  // ポート番号
-	// $db_user = "root";
-	// $db_password = "your_password";
-	// $db_dbname = "forest_platform";
-
-<<<<<<< HEAD
-=======
-	//ローカルPCから接続するとき．
-	// $db_host = "localhost";  // DBサーバのurl
-	// $db_port = 8889;  // ポート番号
-	// $db_user = "root";
-	// $db_password = "root";
-	// $db_dbname = "forest_platform";
-
->>>>>>> parent of a5e081a (Merge branch 'new-fukushima-system' into develop_system)
 	//アプリケーションサーバーにアップロードするとき．
 	$db_host = "localhost";  // DBサーバのurl
 	$db_port = 3306;
