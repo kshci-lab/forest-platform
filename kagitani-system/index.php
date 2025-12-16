@@ -368,8 +368,53 @@ document.addEventListener('DOMContentLoaded', function() {
              <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous"> -->
 
     </head>
+        <style>
+            /* 高級感のある教訓一覧ボタン（メタリックゴールド） */
+            #show-lessons-btn{
+                position:fixed;top:10px;right:360px;z-index:9999;
+                padding:6px 14px;font-size:14px;font-weight:600;letter-spacing:0.02em;
+                color:#2b2000;
+                background:linear-gradient(120deg,#f7e7b8 0%,#d9b44a 20%,#f7e7b8 40%,#c99c2f 60%,#f7e7b8 80%,#d9b44a 100%);
+                border:1px solid #d8ac35;border-radius:11px;
+                box-shadow:0 10px 22px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.22), 0 0 10px rgba(244,197,66,0.48);
+                backdrop-filter:saturate(120%) contrast(110%);
+                overflow:hidden;
+                cursor:pointer;
+                transition:transform .14s ease, box-shadow .24s ease, background .24s ease, color .2s ease, border-color .2s ease;
+            }
+            #show-lessons-btn::after{
+                content:"";
+                position:absolute;
+                inset:2px 3px auto 3px;
+                height:48%;
+                border-radius:9px;
+                background:linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0));
+                pointer-events:none;
+            }
+            #show-lessons-btn:hover{
+                transform:translateY(-2px);
+                background:linear-gradient(120deg,#fff3ca 0%,#e1bb4e 18%,#fff3ca 38%,#d1a63a 58%,#fff3ca 78%,#e1bb4e 100%);
+                border-color:#e7c15c;
+                box-shadow:0 14px 26px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.30), 0 0 12px rgba(255,215,102,0.62);
+                color:#241900;
+            }
+            #show-lessons-btn:active{
+                transform:translateY(0);
+                box-shadow:0 8px 16px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.16);
+                background:linear-gradient(120deg,#e7c55c 0%,#c89c2d 25%,#e7c55c 50%,#b78721 75%,#e7c55c 100%);
+            }
+            #show-lessons-btn:focus{outline:none;}
+            #show-lessons-btn:focus-visible{
+                box-shadow:0 0 0 3px rgba(255,215,102,0.55), 0 10px 22px rgba(0,0,0,0.24);
+                border-color:#e7c15c;
+            }
+        </style>
     <body id="all">
         <!-- 言語切替スライダー -->
+                <!-- 教訓一覧を表示ボタン（言語トグルの左隣に配置） -->
+                <button id="show-lessons-btn">
+                    教訓一覧を表示
+                </button>
                 <div id="language-toggle-container" style="position:fixed;top:10px;right:30px;z-index:9999;">
                         <label style="display:flex;align-items:center;gap:8px;font-size:15px;">
                                 <span id="lang-label-ja">日本語</span>
@@ -1666,6 +1711,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <script type="text/javascript" src="js/presentation.js"></script>
         <script type="text/javascript" src="js/micro.js"></script>
         <script type="text/javascript" src="js/macro.js"></script>
+        <script type="text/javascript" src="js/lesson-learned-list.js"></script>
         <script type="text/javascript" src="js/macrolevel_advice.js"></script>
         <script type="text/javascript" src="js/rationality.js"></script>
         <script type="text/javascript" src="plugins/Sortable-master/Sortable.js"></script>

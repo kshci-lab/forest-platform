@@ -1,5 +1,9 @@
 <?php
 require_once('../../php/connect_db.php');
+// 明示的にタイムゾーンを設定（サーバ既定がUTCの場合のズレ防止）
+if (function_exists('date_default_timezone_set')) {
+    date_default_timezone_set('Asia/Tokyo');
+}
 
 $object_goal_id = $_POST['object_goal_id'] ?? '';
 $content = $_POST['content'] ?? '';
@@ -18,10 +22,11 @@ $stmt->fetch();
 $stmt->close();
 
 if ($node_id) {
-    // 論理削除
-    $update_sql = "UPDATE object_goal_nodes SET deleted = 1 WHERE object_goal_id = ? AND node_id = ?";
+    // 論理削除: deleted フラグと update_at を更新
+    $update_sql = "UPDATE object_goal_nodes SET deleted = 1, update_at = ? WHERE object_goal_id = ? AND node_id = ?";
     $update_stmt = $mysqli->prepare($update_sql);
-    $update_stmt->bind_param('ss', $object_goal_id, $node_id);
+    $now = date('Y-m-d H:i:s');
+    $update_stmt->bind_param('sss', $now, $object_goal_id, $node_id);
     if ($update_stmt->execute()) {
         echo 'OK';
     } else {

@@ -1,5 +1,9 @@
 <?php
 session_start();
+// 明示的にタイムゾーンを設定（サーバ既定がUTCの場合のズレ防止）
+if (function_exists('date_default_timezone_set')) {
+    date_default_timezone_set('Asia/Tokyo');
+}
 // require("connect_db.php");
 // PDO接続（connect_db.phpはmysqliのみ）
 $db_host = "localhost";
@@ -22,6 +26,22 @@ $label = $_POST['label'] ?? null;
 $start_date = $_POST['start_date'] ?? '';
 $finish_date = $_POST['finish_date'] ?? '';
 
+// map_id を取得（優先: POST -> SESSION）
+$map_id = null;
+if (isset($_POST['map_id'])) {
+    $map_id = $_POST['map_id'];
+} elseif (isset($_SESSION['MAPID'])) {
+    $map_id = $_SESSION['MAPID'];
+}
+
+if ($map_id === null || $map_id === '') {
+    // map_id がないとテーブル定義上 INSERT に失敗するので早期エラー
+    echo json_encode(['success' => false, 'error' => 'map_id が指定されていません']);
+    exit;
+}
+
+$map_id = (int)$map_id;
+
 
 
 $object_goal_id = uniqid('goal_', true);
@@ -42,16 +62,39 @@ try {
     }
 } catch (Exception $e) {}
 
+$hasMapColumn = false;
+try {
+    $result = $pdo->query("DESCRIBE object_goals");
+    foreach ($result as $row) {
+        if ($row['Field'] === 'map_id') {
+            $hasMapColumn = true;
+            break;
+        }
+    }
+} catch (Exception $e) {}
+
+// map_id カラムがある前提で INSERT 文に map_id を含める
 if ($hasLabel) {
-    $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+    if ($hasMapColumn) {
+        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `map_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :map_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+    } else {
+        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+    }
 } else {
-    $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+    if ($hasMapColumn) {
+        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `map_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :map_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+    } else {
+        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+    }
 }
 $stmt = $pdo->prepare($sql);
 $stmt->bindValue(':object_goal_id', $object_goal_id, PDO::PARAM_STR);
 $stmt->bindValue(':goal_type', $goal_type, PDO::PARAM_STR);
 if ($hasLabel) {
     $stmt->bindValue(':label', $label, PDO::PARAM_STR);
+}
+if ($hasMapColumn) {
+    $stmt->bindValue(':map_id', $map_id, PDO::PARAM_INT);
 }
 $stmt->bindValue(':start_date', $start_date, PDO::PARAM_STR);
 $stmt->bindValue(':finish_date', $finish_date, PDO::PARAM_STR);

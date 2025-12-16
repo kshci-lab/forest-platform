@@ -60,13 +60,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             configure: {
                 enabled: false
             },
-            // HTMLツールチップを有効にする
-            tooltip: {
-                delay: 200,
-                fontSize: 12,
-                fontColor: 'black',
-                fontBackground: 'white'
-            }
+            // カスタムツールチップの設定は vis の options ではなく
+            // setupCustomTooltip()/ノードの `title` で制御します。
+            // ここに不正な `tooltip` オブジェクトを残すと vis.Network が
+            // "Unknown option detected: 'tooltip'" と投げるため削除しました。
         };
         this.nodeConnectEnabled = false; // マインドマップとの対応づけを可能にする（マインドマップのノードクリックが，議論内省マップノードとの対応を付与するのかそうでないのかを判定するよう）
         this.latest_selected_node_info = {

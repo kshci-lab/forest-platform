@@ -97,17 +97,26 @@ function macro_disp(){
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 //
+// 教訓一覧ボタンのクリックイベント登録
+(function(){
+	function attachLessonsButton(){
+		var btn = document.getElementById('show-lessons-btn');
+		if(!btn) return;
+		if(btn._lessonsBound) return; // 二重バインド防止
+		btn.addEventListener('click', function(){
+			if(typeof window.showLessonLearnedList === 'function'){
+				window.showLessonLearnedList();
+			} else {
+				alert('教訓一覧モジュールが読み込まれていません');
+			}
+		});
+		btn._lessonsBound = true;
+	}
+
+	if(document.readyState === 'loading'){
+		document.addEventListener('DOMContentLoaded', attachLessonsButton);
+	} else {
+		attachLessonsButton();
+	}
+})();

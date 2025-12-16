@@ -6,6 +6,8 @@ ini_set('display_errors', 0); // 本番は0, デバッグは1
 error_reporting(E_ALL);
 header('Content-Type: application/json; charset=UTF-8');
 
+$map_id = $_SESSION['MAPID']; 
+
 try {
     require_once('../../php/connect_db.php');
     if (!isset($mysqli) || !$mysqli) {
