@@ -235,8 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             saveBtn.onclick = function() {
-                var startDate = startInput.value;
-                var endDate = endInput.value;
+                var startDate = (startInput && typeof startInput.value !== 'undefined') ? startInput.value : '';
+                var endDate = (endInput && typeof endInput.value !== 'undefined') ? endInput.value : '';
                 if (!startDate || !endDate) {
                     alert(t('pleaseEnterDates'));
                     return;
@@ -600,8 +600,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 saveBtn.style.fontSize = '15px';
                 saveBtn.style.cursor = 'pointer';
                 saveBtn.onclick = function() {
-                    var newStart = startInput.value;
-                    var newEnd = endInput.value;
+                    var newStart = (startInput && typeof startInput.value !== 'undefined') ? startInput.value : '';
+                    var newEnd = (endInput && typeof endInput.value !== 'undefined') ? endInput.value : '';
                     if (!newStart || !newEnd) {
                         alert('開始日と終了日を入力してください');
                         return;

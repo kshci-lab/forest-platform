@@ -438,6 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'processMenuPause': '中断',
                 'processMenuReason': '理由を記述',
                 'processMenuDeadline': '完了予定を設定',
+                'processMenuAIAdvice': '生成AIアドバイス',
                 'processMenuCancel': 'キャンセル',
                 'reasonPurposeTitle': '【理由・目的】',
                 'rationalityTitle': '【合理性】',
@@ -487,6 +488,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 'processMenuComplete': 'Complete',
                 'processMenuPause': 'Pause',
                 'processMenuReason': 'Add Reason',
+                'processMenuDeadline': 'Set Deadline',
+                'processMenuAIAdvice': 'AI Advice',
+                'processMenuCancel': 'Cancel',
                 'processMenuDeadline': 'Set Deadline',
                 'processMenuCancel': 'Cancel',
                 'reasonPurposeTitle': '[Reason/Purpose]',
@@ -1111,6 +1115,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     <span class="context-menu-text" id="processMenuDeadline">完了予定を設定</span>
                                                 </a>
                                             </li>
+                                            <li class="context-menu-item ai-advice-action" role="none">
+                                                <a href="javascript:void(0);" id="process_conmenu_ai_advice" class="context-menu-link" role="menuitem"
+                                                   title="生成AIからアドバイスを取得します" aria-label="生成AIアドバイス">
+                                                    <span class="context-menu-icon" aria-hidden="true">🤖</span>
+                                                    <span class="context-menu-text" id="processMenuAIAdvice">生成AIアドバイス</span>
+                                                </a>
+                                            </li>
                                             <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
                                             <li class="context-menu-item cancel-action" role="none">
                                                 <a href="javascript:void(0);" id="process_conmenu4" class="context-menu-link" role="menuitem"
@@ -1443,6 +1454,17 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="rationality"></div>
                             </div>
 
+                        <!-- ボタン追加: inquiry_area と feedback_area の間 -->
+                        <div style="padding:6px 0;">
+                            <button id="inquiryToFeedbackBtn" type="button" 
+                                style="display:block;width:100%;background:#17a2b8;color:#fff;border:none;border-radius:4px;padding:8px 0;font-size:13px;font-weight:bold;cursor:pointer;"
+                                title="XMLファイルをアップロードします"
+                                onclick="document.getElementById('meetingUtteranceXmlFileUploader').click();">
+                                XMLアップロード
+                            </button>
+                            <input id="meetingUtteranceXmlFileUploader" name="xmlFile" type="file" accept=".xml,application/xml" style="display:none;" />
+                        </div>
+
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none; width: 100%; overflow: auto; box-sizing: border-box;">
                             
@@ -1681,6 +1703,70 @@ document.addEventListener('DOMContentLoaded', function() {
         <script type="text/javascript" src="js/ont_scenario_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_audience_model.js"></script>
         <script type="text/javascript" src="js/upload.js"></script>     
+        <script>
+        // XML upload handler for the hidden file input
+        (function(){
+            var fileInput = document.getElementById('meetingUtteranceXmlFileUploader');
+            if (!fileInput) return;
+            fileInput.addEventListener('change', async function(e){
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+                if (!file.name.toLowerCase().endsWith('.xml')) {
+                    alert('XMLファイルを選択してください');
+                    e.target.value = '';
+                    return;
+                }
+
+                // 1) まず既存の import_discussion_xml.php にアップロードして取り込み
+                var fd = new FormData();
+                fd.append('xml_file', file);
+                try {
+                    var resp = await fetch('php/import_discussion_xml.php', { method: 'POST', body: fd });
+                    var data = await resp.json();
+                    if (data && data.success) {
+                        var msg = 'インポート完了\n' +
+                                  'ファイル: ' + data.file + '\n' +
+                                  '挿入: ' + data.inserted + '\n' +
+                                  '更新: ' + data.updated + '\n' +
+                                  'スキップ: ' + data.skipped;
+                        if (data.errors && data.errors.length > 0) {
+                            msg += '\nエラー:\n' + data.errors.join('\n');
+                        }
+                        alert(msg);
+                    } else {
+                        alert('インポート失敗: ' + (data && data.error ? data.error : '不明なエラー'));
+                    }
+                } catch (err) {
+                    console.error('import xml error', err);
+                    alert('ネットワークエラーでインポートできませんでした');
+                }
+
+                // 2) 次にファイルの中身を読み取り、OpenAI に送信する
+                try {
+                    var text = await file.text();
+                    // 送信ペイロード
+                    var payload = { filename: file.name, content: text };
+                    var resp2 = await fetch('php/send_xml_to_openai.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    var r2 = await resp2.json();
+                    if (r2 && r2.success) {
+                        // 簡易表示: アラートで返答を表示
+                        alert('OpenAI 解析結果:\n' + r2.ai_response);
+                    } else {
+                        alert('OpenAI 送信失敗: ' + (r2 && r2.error ? r2.error : '不明なエラー'));
+                    }
+                } catch (err) {
+                    console.error('send to OpenAI error', err);
+                    alert('OpenAI に送信できませんでした');
+                }
+
+                e.target.value = '';
+            });
+        })();
+        </script>
         <!-- 2022.shimizu -->
         <script type="text/javascript" src="js/html2canvas.min.js"></script>
         <script type="text/javascript" src="js/add_OntologyArea.js"></script>

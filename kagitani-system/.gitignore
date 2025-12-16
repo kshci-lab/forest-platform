@@ -1,0 +1,8 @@
+# Ignore local environment file
+.env
+
+# Ignore IDE/editor temp files
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
