@@ -884,6 +884,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Duplicate language dictionary removed to avoid redeclaration of `langDict`. Using the main `langDict` defined earlier. -->
         </script>
                                         </li>
+                                        <li>
+                                            <button id="mindmap_conmenu_ai_advice" class="main-action-btn compact-btn">生成AIアドバイス</button>
+                                        </li>
                                        
                                         <!-- <li>
                                             ノードを資料へ追加
@@ -1463,6 +1466,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                 XMLアップロード
                             </button>
                             <input id="meetingUtteranceXmlFileUploader" name="xmlFile" type="file" accept=".xml,application/xml" style="display:none;" />
+
+                            <!-- 追加: PDF/Word アップロードボタン -->
+                            <button id="materialUploadBtn" type="button"
+                                style="display:block;width:100%;background:#6f42c1;color:#fff;border:none;border-radius:4px;padding:8px 0;margin-top:8px;font-size:13px;font-weight:bold;cursor:pointer;"
+                                title="PDF / Word ファイルをアップロードします"
+                                onclick="document.getElementById('meetingMaterialFileUploader').click();">
+                                資料アップロード (PDF/Word)
+                            </button>
+                            <input id="meetingMaterialFileUploader" name="materialFile" type="file" accept=".pdf,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none;" />
                         </div>
 
                         <!--ここから大槻修正-->
@@ -1704,66 +1716,160 @@ document.addEventListener('DOMContentLoaded', function() {
         <script type="text/javascript" src="js/ont_audience_model.js"></script>
         <script type="text/javascript" src="js/upload.js"></script>     
         <script>
-        // XML upload handler for the hidden file input
+        // XML + 資料アップロードハンドラ
         (function(){
-            var fileInput = document.getElementById('meetingUtteranceXmlFileUploader');
-            if (!fileInput) return;
-            fileInput.addEventListener('change', async function(e){
-                var file = e.target.files && e.target.files[0];
-                if (!file) return;
-                if (!file.name.toLowerCase().endsWith('.xml')) {
-                    alert('XMLファイルを選択してください');
+            // XML uploader
+            var xmlInput = document.getElementById('meetingUtteranceXmlFileUploader');
+            if (xmlInput) {
+                xmlInput.addEventListener('change', async function(e){
+                    var file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    if (!file.name.toLowerCase().endsWith('.xml')) {
+                        alert('XMLファイルを選択してください');
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // 1) import -> DB
+                    var fd = new FormData();
+                    fd.append('xml_file', file);
+                    try {
+                        var resp = await fetch('php/import_discussion_xml.php', { method: 'POST', body: fd });
+                        var data = await resp.json();
+                        if (data && data.success) {
+                            var msg = 'インポート完了\n' +
+                                      'ファイル: ' + data.file + '\n' +
+                                      '挿入: ' + data.inserted + '\n' +
+                                      '更新: ' + data.updated + '\n' +
+                                      'スキップ: ' + data.skipped;
+                            if (data.errors && data.errors.length > 0) {
+                                msg += '\nエラー:\n' + data.errors.join('\n');
+                            }
+                            alert(msg);
+                        } else {
+                            alert('インポート失敗: ' + (data && data.error ? data.error : '不明なエラー'));
+                        }
+                    } catch (err) {
+                        console.error('import xml error', err);
+                        alert('ネットワークエラーでインポートできませんでした');
+                    }
+
+                    // 2) OpenAI 送信
+                    try {
+                        var text = await file.text();
+                        var payload = { filename: file.name, content: text };
+                        var resp2 = await fetch('php/send_xml_to_openai.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        var r2 = await resp2.json();
+                        if (r2 && r2.success) {
+                            alert('OpenAI 解析結果:\n' + r2.ai_response);
+                        } else {
+                            alert('OpenAI 送信失敗: ' + (r2 && r2.error ? r2.error : '不明なエラー'));
+                        }
+                    } catch (err) {
+                        console.error('send to OpenAI error', err);
+                        alert('OpenAI に送信できませんでした');
+                    }
+
                     e.target.value = '';
+                });
+            }
+
+            // 資料 (PDF/Word) uploader
+            var matInput = document.getElementById('meetingMaterialFileUploader');
+            if (matInput) {
+                matInput.addEventListener('change', async function(e){
+                    var file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    var name = file.name.toLowerCase();
+                    if (!(name.endsWith('.pdf') || name.endsWith('.doc') || name.endsWith('.docx'))) {
+                        alert('PDF または Word (.doc/.docx) を選択してください');
+                        e.target.value = '';
+                        return;
+                    }
+
+                    var fd2 = new FormData();
+                    fd2.append('material_file', file);
+                    try {
+                        var resp = await fetch('php/upload_material.php', { method: 'POST', body: fd2 });
+                        var resj = await resp.json();
+                        if (resj && resj.success) {
+                            alert('アップロード完了:\n' + (resj.file_path || resj.file_name || '保存されました'));
+                        } else {
+                            alert('アップロード失敗: ' + (resj && resj.error ? resj.error : '不明なエラー'));
+                        }
+                    } catch (err) {
+                        console.error('material upload error', err);
+                        alert('ネットワークエラーでアップロードできませんでした');
+                    }
+
+                    e.target.value = '';
+                });
+            }
+        })();
+
+        // マインドマップ右クリックメニューの「生成AIアドバイス」ハンドラ
+        (function(){
+            var btn = document.getElementById('mindmap_conmenu_ai_advice');
+            if (!btn) return;
+            btn.addEventListener('click', async function(e){
+                e.preventDefault();
+                // 現在選択中のノードIDを取得
+                var nid = null;
+                try {
+                    if (typeof _jm !== 'undefined' && _jm) {
+                        var sn = _jm.get_selected_node();
+                        if (sn && sn.id) nid = sn.id;
+                    }
+                } catch (err) {
+                    console.error('get selected node error', err);
+                }
+
+                if (!nid) {
+                    alert('ノードが選択されていません');
                     return;
                 }
 
-                // 1) まず既存の import_discussion_xml.php にアップロードして取り込み
-                var fd = new FormData();
-                fd.append('xml_file', file);
-                try {
-                    var resp = await fetch('php/import_discussion_xml.php', { method: 'POST', body: fd });
-                    var data = await resp.json();
-                    if (data && data.success) {
-                        var msg = 'インポート完了\n' +
-                                  'ファイル: ' + data.file + '\n' +
-                                  '挿入: ' + data.inserted + '\n' +
-                                  '更新: ' + data.updated + '\n' +
-                                  'スキップ: ' + data.skipped;
-                        if (data.errors && data.errors.length > 0) {
-                            msg += '\nエラー:\n' + data.errors.join('\n');
-                        }
-                        alert(msg);
-                    } else {
-                        alert('インポート失敗: ' + (data && data.error ? data.error : '不明なエラー'));
+                // DOM 上の jmnode から内容を取得
+                var content = '';
+                var title = '';
+                var jmnodes = document.getElementsByTagName('jmnode');
+                for (var i=0;i<jmnodes.length;i++){
+                    if (jmnodes[i].getAttribute('nodeid') == nid) {
+                        // innerText を使って HTML を除去
+                        content = jmnodes[i].innerText || jmnodes[i].textContent || '';
+                        title = content.split('\n')[0] || content;
+                        break;
                     }
-                } catch (err) {
-                    console.error('import xml error', err);
-                    alert('ネットワークエラーでインポートできませんでした');
                 }
 
-                // 2) 次にファイルの中身を読み取り、OpenAI に送信する
+                if (!content) {
+                    alert('ノードの内容を取得できませんでした');
+                    return;
+                }
+
+                // ステータスは不明 -> unknown
+                var payload = { node_title: title, node_content: content, node_status: 'unknown' };
                 try {
-                    var text = await file.text();
-                    // 送信ペイロード
-                    var payload = { filename: file.name, content: text };
-                    var resp2 = await fetch('php/send_xml_to_openai.php', {
+                    var resp = await fetch('php/get_ai_advice.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    var r2 = await resp2.json();
-                    if (r2 && r2.success) {
-                        // 簡易表示: アラートで返答を表示
-                        alert('OpenAI 解析結果:\n' + r2.ai_response);
+                    var j = await resp.json();
+                    if (j && j.success) {
+                        // 簡易表示（将来的にモーダル化可）
+                        alert('生成AIアドバイス:\n' + j.advice);
                     } else {
-                        alert('OpenAI 送信失敗: ' + (r2 && r2.error ? r2.error : '不明なエラー'));
+                        alert('生成AIアドバイス取得失敗: ' + (j && j.error ? j.error : '不明なエラー'));
                     }
                 } catch (err) {
-                    console.error('send to OpenAI error', err);
-                    alert('OpenAI に送信できませんでした');
+                    console.error('get ai advice error', err);
+                    alert('生成AI取得でエラーが発生しました');
                 }
-
-                e.target.value = '';
             });
         })();
         </script>
