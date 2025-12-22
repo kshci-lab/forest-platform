@@ -135,7 +135,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   <select name="add_criticism" id="s_criticism_node">
                     <optgroup label="批評の観点（タグ）付与">
                     <option value="criticism">批評ノード追加</option>
-                      <option value="evaluation">価値判断</option>
+                      <option value="evaluation_good">価値判断</option>
                           <optgroup label="----L価値判断">
                               <option value="e_1">---L有用性</option>
                               <option value="e_2">---L新規性</option>
@@ -377,7 +377,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   <select name="change_criticism" id="s_criticism_node" class="button4">
                   <optgroup label="批評の観点（タグ）付与">
                           <option value="criticism">批評の観点追加</option>
-                            <option value="evaluation">価値判断</option>
+                            <option value="evaluation_good">価値判断</option>
                                 <optgroup label="----L評価">
                                     <option value="e_1">---L有用性</option>
                                     <option value="e_2">---L新規性</option>

@@ -14,18 +14,18 @@ try {
         throw new Exception('DB接続失敗 ($mysqli未定義)');
     }
 
-    $object_goal_id = isset($_GET['object_goal_id']) ? $_GET['object_goal_id'] : '';
-    if (!$object_goal_id) {
-        echo json_encode(['success' => false, 'error' => 'object_goal_id missing']);
+    $object_journal_id = isset($_GET['object_journal_id']) ? $_GET['object_journal_id'] : '';
+    if (!$object_journal_id) {
+        echo json_encode(['success' => false, 'error' => 'object_journal_id missing']);
         exit;
     }
 
-    $sql = "SELECT node_id FROM object_goal_nodes WHERE object_goal_id = ? AND deleted = 0";
+    $sql = "SELECT node_id FROM object_goal_nodes WHERE object_journal_id = ? AND deleted = 0";
     $stmt = $mysqli->prepare($sql);
     if (!$stmt) {
         throw new Exception('SQLプリペア失敗: ' . $mysqli->error);
     }
-    $stmt->bind_param("s", $object_goal_id);
+    $stmt->bind_param("s", $object_journal_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $node_ids = [];

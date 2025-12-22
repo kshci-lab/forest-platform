@@ -98,19 +98,19 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function(res) {
                 console.log('get_latest_object_goal.php response:', res);
                 if (res.success && Array.isArray(res.goals)) {
-                    // object_goal_idごとにnode_idをまとめる
+                    // object_journal_idごとにnode_idをまとめる
                     var goalMap = {};
                     res.goals.forEach(function(row) {
-                        if (!goalMap[row.object_goal_id]) {
-                            goalMap[row.object_goal_id] = {
+                        if (!goalMap[row.object_journal_id]) {
+                            goalMap[row.object_journal_id] = {
                                 start: row.start_date,
                                 end: row.finish_date,
-                                object_goal_id: row.object_goal_id,
+                                object_journal_id: row.object_journal_id,
                                 contents: []
                             };
                         }
                         if (row.content) {
-                            goalMap[row.object_goal_id].contents.push(row.content);
+                            goalMap[row.object_journal_id].contents.push(row.content);
                         }
                     });
                     var goals = Object.values(goalMap);
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('insert_object_goal.php response:', res);
                         if (res.success) {
                             var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
-                            goals.unshift({ start: startDate, end: endDate, createdAt: new Date().toISOString(), object_goal_id: res.object_goal_id });
+                            goals.unshift({ start: startDate, end: endDate, createdAt: new Date().toISOString(), object_journal_id: res.object_journal_id });
                             localStorage.setItem('weeklyGoals', JSON.stringify(goals));
                             document.body.removeChild(modal);
                             renderWeeklyGoals();
@@ -606,13 +606,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         alert('開始日と終了日を入力してください');
                         return;
                     }
-                    var object_goal_id = goals[idx].object_goal_id;
+                    var object_journal_id = goals[idx].object_journal_id;
                     // DB更新
                     $.ajax({
                         url: 'php/update_object_goal.php',
                         type: 'POST',
                         data: {
-                            object_goal_id: object_goal_id,
+                            object_journal_id: object_journal_id,
                             start_date: newStart,
                             finish_date: newEnd
                         },
@@ -670,7 +670,7 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
             url: 'php/delete_goal_node.php',
             type: 'POST',
             data: {
-                object_goal_id: goals[goalIdx].object_goal_id,
+                object_journal_id: goals[goalIdx].object_journal_id,
                 content: deletedContent
             },
             success: function(res) {
@@ -697,11 +697,11 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
             if (!confirm('Are you sure you want to delete this weekly goal?')) return;
         }
 
-        if (goal && goal.object_goal_id) {
+        if (goal && goal.object_journal_id) {
             $.ajax({
                 url: 'php/delete_object_goal.php',
                 type: 'POST',
-                data: { object_goal_id: goal.object_goal_id },
+                data: { object_journal_id: goal.object_journal_id },
                 dataType: 'json',
                 success: function(res) {
                     console.log('delete_object_goal.php response:', res);

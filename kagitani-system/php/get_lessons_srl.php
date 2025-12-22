@@ -1,5 +1,5 @@
 <?php
-// SRL由来の教訓: object_nodes_histories の challenges_learnings を返す（map_idで絞り込み）
+// SRL由来の教訓: object_nodes_histories の application を返す（map_idで絞り込み）
 header('Content-Type: application/json; charset=UTF-8');
 
 date_default_timezone_set('Asia/Tokyo');
@@ -29,11 +29,11 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
-        // SRLジャーナル: object_goals テーブルから取得
-        // 条件: challenges_learnings が空でない、delete = 0、かつ map に紐づく node_id のもの
-        $sql = "SELECT update_at AS updated_at, challenges_learnings, start_date, finish_date, object_goal_id, node_id, map_id
-                        FROM object_goals
-                        WHERE (challenges_learnings IS NOT NULL AND TRIM(challenges_learnings) <> '')
+        // SRLジャーナル: object_journals テーブルから取得
+        // 条件: application が空でない、delete = 0、かつ map に紐づく node_id のもの
+        $sql = "SELECT update_at AS updated_at, application, start_date, finish_date, object_journal_id, node_id, map_id
+                        FROM object_journals
+                        WHERE (application IS NOT NULL AND TRIM(application) <> '')
                             AND `delete` = 0
                             AND map_id = :map_id
                         ORDER BY update_at DESC";

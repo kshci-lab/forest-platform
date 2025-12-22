@@ -81,7 +81,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     /*
         * 目標手段階層マップのノードデータの取得    	
     */
-    $result_object_node = $mysqli->query("SELECT object_node_id, content, object_nodes_type, node_x, node_y, status, purpose, action_reason, completion_reason, challenges_learnings, estimated_time FROM object_nodes
+        // Select new column names (evaluation_good/attribution/application) and alias them to the old names for compatibility
+        $result_object_node = $mysqli->query("SELECT object_node_id, content, object_nodes_type, node_x, node_y, status, purpose, evaluation_good AS evaluation_good, attribution AS attribution, '' AS application, estimated_time FROM object_nodes
             WHERE node_id = '".$selected_node_id."' AND deleted = 0");
     $object_node = [];
     while ($row = $result_object_node->fetch_assoc()) {
@@ -388,8 +389,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $sql_histories = "
         SELECT 
             onh.object_node_id, onh.content, onh.object_node_type, onh.x, onh.y, onh.status, 
-            onh.appeared_at, onh.disappeared_at, onh.purpose, onh.action_reason, 
-            onh.completion_reason, onh.challenges_learnings, onh.estimated_time
+            onh.appeared_at, onh.disappeared_at, onh.purpose, onh.evaluation_good AS evaluation_good, 
+            onh.attribution AS attribution, '' AS application, onh.estimated_time
         FROM 
             object_nodes_histories onh
         INNER JOIN 

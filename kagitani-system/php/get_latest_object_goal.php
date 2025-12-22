@@ -35,10 +35,10 @@ if ($map_id === null || $map_id === '') {
     exit;
 }
 
-// object_goals の列名（map_id/MAPID）を検出
+// object_journals の列名（map_id/MAPID）を検出
 $mapCol = 'map_id';
 try {
-    $colsStmt = $pdo->query("DESCRIBE object_goals");
+    $colsStmt = $pdo->query("DESCRIBE object_journals");
     $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN, 0) : [];
     if (is_array($cols)) {
         if (in_array('map_id', $cols, true)) { $mapCol = 'map_id'; }
@@ -49,15 +49,15 @@ try {
 // 週次目標と紐づくノードの content を返す
 $sql = "
     SELECT 
-        g.object_goal_id,
+        g.object_journal_id,
         g.goal_type,
         g.start_date,
         g.finish_date,
         n.node_id,
         nl.content
-    FROM object_goals g
+    FROM object_journals g
     LEFT JOIN object_goal_nodes n
-        ON g.object_goal_id = n.object_goal_id
+        ON g.object_journal_id = n.object_journal_id
        AND (n.deleted IS NULL OR n.deleted = 0)
     LEFT JOIN node_latest nl
         ON n.node_id = nl.node_id

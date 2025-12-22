@@ -9,7 +9,7 @@ select_c.onchange = event => {
     case 'criticism':
             add_Cnode(value, "批評：");
             break;
-    case 'evaluation':
+    case 'evaluation_good':
             add_Cnode(value, "価値判断：");
             break;
             case 'objection':
@@ -47,7 +47,7 @@ select_c.onchange = event => {
             add_Cnode(value, "論理の整合性："); 
       break;
     default:
-        // それ以外はevaluation
+        // それ以外はevaluation_good
         add_Cnode("criticism", "New node");
     //   console.log('住所はその他です');
   }
@@ -154,7 +154,7 @@ function switch_tag(select_cc){
           case 'criticism':
               change_tag(value, "批評：");
               break;
-          case 'evaluation':
+          case 'evaluation_good':
               change_tag(value, "価値判断：");
               break;
           case 'objection':

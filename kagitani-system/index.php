@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
             /* 高級感のある教訓一覧ボタン（メタリックゴールド） */
             #show-lessons-btn{
                 position:fixed;top:10px;right:360px;z-index:9999;
-                padding:6px 14px;font-size:14px;font-weight:600;letter-spacing:0.02em;
+                padding:4px 14px;font-size:14px;font-weight:600;letter-spacing:0.02em;
                 color:#2b2000;
                 background:linear-gradient(120deg,#f7e7b8 0%,#d9b44a 20%,#f7e7b8 40%,#c99c2f 60%,#f7e7b8 80%,#d9b44a 100%);
                 border:1px solid #d8ac35;border-radius:11px;
@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
             #show-lessons-btn::after{
                 content:"";
                 position:absolute;
-                inset:2px 3px auto 3px;
+                inset:1px 3px auto 3px;
                 height:48%;
                 border-radius:9px;
                 background:linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0));

@@ -2,10 +2,10 @@
 // update_object_goal_node.php
 header('Content-Type: application/json; charset=UTF-8');
 
-$object_goal_id = $_POST['object_goal_id'] ?? '';
+$object_journal_id = $_POST['object_journal_id'] ?? '';
 $node_id = $_POST['node_id'] ?? '';
-if (!$object_goal_id || !$node_id) {
-    echo json_encode(['success' => false, 'error' => 'object_goal_idまたはnode_idがありません']);
+if (!$object_journal_id || !$node_id) {
+    echo json_encode(['success' => false, 'error' => 'object_journal_idまたはnode_idがありません']);
     exit;
 }
 
@@ -21,9 +21,9 @@ try {
     exit;
 }
 
-$sql = "UPDATE object_goals SET node_id=:node_id, update_at=NOW() WHERE object_goal_id=:object_goal_id";
+$sql = "UPDATE object_journals SET node_id=:node_id, update_at=NOW() WHERE object_journal_id=:object_journal_id";
 $stmt = $pdo->prepare($sql);
-$stmt->bindValue(':object_goal_id', $object_goal_id, PDO::PARAM_STR);
+$stmt->bindValue(':object_journal_id', $object_journal_id, PDO::PARAM_STR);
 $stmt->bindValue(':node_id', $node_id, PDO::PARAM_STR);
 try {
     $stmt->execute();

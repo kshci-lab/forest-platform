@@ -2,9 +2,9 @@
 // delete_object_goal.php
 header('Content-Type: application/json; charset=UTF-8');
 
-$object_goal_id = $_POST['object_goal_id'] ?? '';
-if (!$object_goal_id) {
-    echo json_encode(['success' => false, 'error' => 'object_goal_idがありません']);
+$object_journal_id = $_POST['object_journal_id'] ?? '';
+if (!$object_journal_id) {
+    echo json_encode(['success' => false, 'error' => 'object_journal_idがありません']);
     exit;
 }
 
@@ -20,9 +20,9 @@ try {
     exit;
 }
 
-$sql = "UPDATE object_goals SET `delete`=1 WHERE object_goal_id=:object_goal_id";
+$sql = "UPDATE object_journals SET `delete`=1 WHERE object_journal_id=:object_journal_id";
 $stmt = $pdo->prepare($sql);
-$stmt->bindValue(':object_goal_id', $object_goal_id, PDO::PARAM_STR);
+$stmt->bindValue(':object_journal_id', $object_journal_id, PDO::PARAM_STR);
 try {
     $stmt->execute();
     echo json_encode(['success' => true]);

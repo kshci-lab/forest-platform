@@ -11,7 +11,7 @@ $appeared_at = $_POST['appeared_at'] ?? date('Y-m-d H:i:s');
 $update_at = date('Y-m-d H:i:s');
 $delete = 0;
 
-$sql = "INSERT INTO object_goals (MAPID, goal_type, label, start_date, finish_date, appeared_at, update_at, delete)
+$sql = "INSERT INTO object_journals (MAPID, goal_type, label, start_date, finish_date, appeared_at, update_at, delete)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $mysqli->prepare($sql);
 $stmt->bind_param('issssssi', $map_id, $goal_type, $label, $start_date, $finish_date, $appeared_at, $update_at, $delete);

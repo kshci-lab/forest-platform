@@ -687,7 +687,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
 
     // ノードの追加（リロード用）(完了)
-    addReloadNode(node_id, node_label, node_type, node_x, node_y, status, purpose = null, action_reason = null, completion_reason = null, challenges_learnings = null, estimated_time = null) {
+    addReloadNode(node_id, node_label, node_type, node_x, node_y, status, purpose = null, evaluation_good = null, attribution = null, application = null, estimated_time = null) {
         const existingNode = this.nodes.get(node_id);
         if (existingNode) {
             console.log(`Node with ID ${node_id} already exists. Skipping addition.`);
@@ -772,15 +772,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // ツールチップの設定（理由と内省情報がある場合）
         let tooltip = result_label;
-        if (purpose && purpose.trim() !== '') {
-            tooltip += '\n\n理由: ' + purpose;
-        }
-            if (action_reason || completion_reason || challenges_learnings) {
-            tooltip += '\n\n内省情報:';
-            tooltip += '\n行動意図: ' + (action_reason || '未記入');
-            tooltip += '\n完了基準: ' + (completion_reason || '未記入');
-            tooltip += '\n学び: ' + (challenges_learnings || '未記入');
-        }
+            if (purpose && purpose.trim() !== '') {
+                tooltip += '\n\n理由: ' + purpose;
+            }
+            if (evaluation_good || attribution || application) {
+                tooltip += '\n\n内省情報:';
+                tooltip += '\n行動意図: ' + (evaluation_good || '未記入');
+                tooltip += '\n完了基準: ' + (attribution || '未記入');
+                tooltip += '\n学び: ' + (application || '未記入');
+            }
 
         // ノード作成
         const newNode = {
@@ -879,11 +879,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         // 内省情報がある場合、青色の内省タグを右上に追加
-        if (action_reason || completion_reason || challenges_learnings) {
+        if (evaluation_good || attribution || application) {
             setTimeout(() => {
                 const nodeBoundingBox = defaultThinkingProcess.ownNetwork.getBoundingBox(`${node_id}`);
                 const reflectionTagId = `reflection-tag-${node_id}`;
-                const reflectionTitle = `行動評価: ${action_reason || "未記入"}\n原因分析: ${completion_reason || "未記入"}\n学び: ${challenges_learnings || "未記入"}`;
+                const reflectionTitle = `行動評価: ${evaluation_good || "未記入"}\n原因分析: ${attribution || "未記入"}\n学び: ${application || "未記入"}`;
                 const reflectionTag = {
                     id: reflectionTagId,
                     label: '💭',
@@ -2407,16 +2407,41 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     </div>
     <div style="padding: 10px;">
         <form id="formFeedbackInput">
-            <label for="actionReason">評価：この活動でうまくいった点、うまくいかなかった点は何ですか？</label><br>
-            <textarea id="actionReason" name="actionReason" rows="3" placeholder="例：文献レビューは網羅的だったが、想定より時間がかかった。入手困難な資料があった。" style="width: 100%;"></textarea><br><br>
+            <div style="margin-bottom:8px;"><strong>評価</strong></div>
+            <div style="display:flex; gap:12px;">
+                <div style="flex:1;">
+                    <label for="successPoints">この活動でうまくいった点はありますか？</label>
+                    <textarea id="successPoints" name="successPoints" rows="6" placeholder="例：文献レビューは網羅的だった。" style="width: 100%; height:120px; box-sizing: border-box;"></textarea>
+                </div>
+                <div style="flex:1;">
+                    <label for="failurePoints">この活動でうまくいかなかった点はありますか？</label>
+                    <textarea id="failurePoints" name="failurePoints" rows="6" placeholder="例：想定より時間がかかった。入手困難な資料があった。" style="width: 100%; height:120px; box-sizing: border-box;"></textarea>
+                </div>
+            </div>
 
-            <label for="completionReason">原因分析：その結果が生じた理由は何だと考えますか？</label><br>
-            <textarea id="completionReason" name="completionReason" rows="3" placeholder="例：検索戦略が不十分だったため時間を要した。特定のキーワードを用いたことで重要な論文を見つけられた。" style="width: 100%;"></textarea><br><br>
+            <div style="margin-top:10px;">
+                <label for="completionReason">原因帰属：そのような結果になった理由は何だと思いますか？</label>
+                <textarea id="completionReason" name="completionReason" rows="3" placeholder="例：検索戦略が不十分だったため時間を要した。特定のキーワードを用いたことで重要な論文を見つけられた。" style="width: 100%;"></textarea>
+            </div>
 
-            <label for="challengesAndLearnings">学び：この活動を経て，どのような学びがありましたか？</label><br>
-            <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="4" placeholder="例：次回は事前に検索プランを作成し、必要なアクセス権を確認する。" style="width: 100%;"></textarea><br><br>
+            <div style="margin-top:10px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <label for="challengesAndLearnings" style="flex:1;">教訓：今後の活動ではどのようなことを意識すればよいと思いますか？その教訓は次にどのような時に活かせそうですか？</label>
+                </div>
+                <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="3" placeholder="例：次回は事前に検索プランを作成し、必要なアクセス権を確認する。" style="width: 100%; margin-top:6px;"></textarea>
 
-            <button type="button" id="btnSaveFeedback">保存</button>
+                <div id="additionalLessonsContainer" style="margin-top:8px;">
+                    <!-- 追加の教訓テキストエリアはここに動的に追加されます -->
+                </div>
+                <div style="margin-top:6px;">
+                    <button type="button" id="btnAddLessonInfo" style="background:#fff;border:1px dashed #999;padding:6px 10px;border-radius:6px;color:#333;cursor:pointer;font-size:0.9em;">複数の教訓を追加できます（＋ボタンで追加）。</button>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top:8px;">
+                <button type="button" id="btnCancelFeedback" style="margin-right:8px;">キャンセル</button>
+                <button type="button" id="btnSaveFeedback">保存</button>
+            </div>
         </form>
     </div>
 </div>
@@ -2428,22 +2453,71 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // 保存ボタンのイベントリスナーを設定
         this.setupTooltipSaveButton(tooltip);
         this.setupTooltipDrag(tooltip);
+            // 追加教訓のプラスボタンを動作させる（複数追加可能にする）
+        try {
+            const infoBtn = document.getElementById('btnAddLessonInfo');
+            const container = document.getElementById('additionalLessonsContainer');
+            const makeLessonField = (text) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'additional-lesson-wrap';
+                wrap.style.marginTop = '8px';
+                const label = document.createElement('label');
+                label.textContent = '追加の教訓';
+                label.style.display = 'block';
+                const ta = document.createElement('textarea');
+                ta.className = 'additional-lesson';
+                ta.name = 'additionalLesson[]';
+                ta.rows = 3;
+                ta.placeholder = '追記：別の教訓や詳細をここに書いてください。';
+                ta.style.width = '100%';
+                if (text) ta.value = text;
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = '削除';
+                removeBtn.style.marginTop = '6px';
+                removeBtn.style.marginLeft = '6px';
+                removeBtn.addEventListener('click', () => {
+                    try {
+                        if (!confirm('本当に削除しますか？')) return;
+                        wrap.remove();
+                    } catch (e) { console.warn('remove unsaved lesson handler', e); }
+                });
+                wrap.appendChild(label);
+                wrap.appendChild(ta);
+                wrap.appendChild(removeBtn);
+                return wrap;
+            };
+
+            if (infoBtn && container) {
+                infoBtn.addEventListener('click', (ev) => {
+                    try {
+                        const newField = makeLessonField('');
+                        container.appendChild(newField);
+                        const ta = newField.querySelector('textarea');
+                        if (ta) ta.focus();
+                    } catch (e) { console.warn('btnAddLessonInfo handler error', e); }
+                });
+            }
+        } catch (e) { /* ignore */ }
         // 既存の内省タグがあれば、そのタイトルから値を抽出して textarea に流し込む
         try {
             const reflectionTagNode = this.nodes.get(`reflection-tag-${this.selectId}`);
             if (reflectionTagNode && reflectionTagNode.title) {
                 const titleText = reflectionTagNode.title || '';
                 // 複数のフォーマットに対応して抽出
-                let actionReason = '';
+                let successPoints = '';
+                let failurePoints = '';
                 let completionReason = '';
                 let challengesAndLearnings = '';
                 try {
                     const lines = titleText.split(/\n|\r\n/).map(s => s.trim());
                     for (const line of lines) {
-                        if (/行動意図|行動評価|評価[:：]/.test(line)) {
-                            // 行動意図/評価: 値部分を抽出
+                        if (/(うまくいった点|行動意図|行動評価|評価)[:：]?/.test(line)) {
                             const m = line.split(/[:：]/);
-                            actionReason = (m.slice(1).join(':') || '').trim();
+                            successPoints = (m.slice(1).join(':') || '').trim();
+                        } else if (/(うまくいかなかった点|うまくいかなかった|失敗|問題)[:：]?/.test(line)) {
+                            const m = line.split(/[:：]/);
+                            failurePoints = (m.slice(1).join(':') || '').trim();
                         } else if (/原因分析|完了基準|原因[:：]/.test(line)) {
                             const m = line.split(/[:：]/);
                             completionReason = (m.slice(1).join(':') || '').trim();
@@ -2457,12 +2531,109 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 }
                 // textarea 要素に値をセット
                 try {
-                    const aEl = document.getElementById('actionReason');
+                    const sEl = document.getElementById('successPoints');
+                    const fEl = document.getElementById('failurePoints');
                     const cEl = document.getElementById('completionReason');
                     const lEl = document.getElementById('challengesAndLearnings');
-                    if (aEl) aEl.value = actionReason || '';
+                    if (sEl) sEl.value = successPoints || '';
+                    if (fEl) fEl.value = failurePoints || '';
                     if (cEl) cEl.value = completionReason || '';
-                    if (lEl) lEl.value = challengesAndLearnings || '';
+                    if (lEl) {
+                        // 初期値としてタイトルからの抽出を入れる
+                        lEl.value = challengesAndLearnings || '';
+                        // DB の `object_lesson-learneds` に教訓があれば、それぞれのフィールドとして表示する
+                        try {
+                            const container = document.getElementById('additionalLessonsContainer');
+                            $.ajax({
+                                url: 'php/get_lessons.php',
+                                type: 'GET',
+                                dataType: 'json',
+                                data: { object_node_id: this.selectId },
+                                success: function(res) {
+                                    try {
+                                        // If server returned evaluation_bad, prefer it for the failure textarea
+                                        if (res && res.success && typeof res.evaluation_bad !== 'undefined' && res.evaluation_bad !== null) {
+                                            try { if (fEl) fEl.value = res.evaluation_bad || ''; } catch(e) {}
+                                        }
+                                        if (res && res.success && Array.isArray(res.items) && res.items.length) {
+                                            // 最初の教訓はメインの textarea に入れ、残りは追加フィールドとして作成
+                                            var items = res.items;
+                                            if (items.length > 0) {
+                                                lEl.value = items[0].lesson_learned || items[0].application || '';
+                                            }
+                                            if (container) {
+                                                // 既存の追加フィールドをクリア
+                                                container.innerHTML = '';
+                                                for (var i = 1; i < items.length; i++) {
+                                                    try {
+                                                        var text = items[i].lesson_learned || items[i].application || '';
+                                                        var wrap = document.createElement('div');
+                                                        wrap.className = 'additional-lesson-wrap';
+                                                        wrap.style.marginTop = '8px';
+                                                        var label = document.createElement('label');
+                                                        label.textContent = '追加の教訓';
+                                                        label.style.display = 'block';
+                                                        var ta = document.createElement('textarea');
+                                                        ta.className = 'additional-lesson';
+                                                        ta.name = 'additionalLesson[]';
+                                                        ta.rows = 3;
+                                                        ta.placeholder = '追記：別の教訓や詳細をここに書いてください。';
+                                                        ta.style.width = '100%';
+                                                        ta.value = text;
+                                                        var removeBtn = document.createElement('button');
+                                                        removeBtn.type = 'button';
+                                                        removeBtn.textContent = '削除';
+                                                        removeBtn.style.marginTop = '6px';
+                                                        removeBtn.style.marginLeft = '6px';
+                                                        // mark this wrap with the DB lesson id so deletion can call the server
+                                                        if (items[i].object_le_id) {
+                                                            wrap.dataset.objectLeId = items[i].object_le_id;
+                                                        }
+                                                        (function(r, w){
+                                                            r.addEventListener('click', function(){
+                                                                try {
+                                                                    if (!confirm('本当に削除しますか？')) return;
+                                                                    var leId = w.dataset.objectLeId;
+                                                                    if (leId) {
+                                                                        r.disabled = true;
+                                                                        $.ajax({
+                                                                            url: 'php/delete_lesson.php',
+                                                                            type: 'POST',
+                                                                            dataType: 'json',
+                                                                            data: { object_le_id: leId },
+                                                                            success: function(res) {
+                                                                                try {
+                                                                                    if (res && res.success) {
+                                                                                        w.remove();
+                                                                                    } else {
+                                                                                        alert('教訓の削除に失敗しました');
+                                                                                        r.disabled = false;
+                                                                                    }
+                                                                                } catch(e) { console.warn('delete lesson success handler', e); r.disabled = false; }
+                                                                            },
+                                                                            error: function() { alert('教訓の削除に失敗しました'); r.disabled = false; }
+                                                                        });
+                                                                    } else {
+                                                                        // not persisted yet, just remove from DOM
+                                                                        w.remove();
+                                                                    }
+                                                                } catch(e) { console.warn('remove lesson handler', e); }
+                                                            });
+                                                        })(removeBtn, wrap);
+                                                        wrap.appendChild(label);
+                                                        wrap.appendChild(ta);
+                                                        wrap.appendChild(removeBtn);
+                                                        container.appendChild(wrap);
+                                                    } catch(e) { console.warn('failed to create lesson field', e); }
+                                                }
+                                            }
+                                        }
+                                    } catch(e) { console.warn('lessons success handler error', e); }
+                                },
+                                error: function() { /* ignore */ }
+                            });
+                        } catch (e) { console.warn('failed to fetch lessons', e); }
+                    }
                 } catch (e) {
                     console.warn('failed to set textarea values for feedbackTooltip', e);
                 }
@@ -2474,29 +2645,54 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
     setupTooltipSaveButton(tooltip) {
         const saveButton = document.getElementById("btnSaveFeedback");
+        const cancelButton = document.getElementById("btnCancelFeedback");
+        if (cancelButton) {
+            cancelButton.addEventListener("click", () => {
+                try { tooltip.style.display = "none"; } catch (e) { console.warn('failed to close tooltip on cancel', e); }
+            });
+        }
         saveButton.addEventListener("click", () => {
-            const actionReason = document.getElementById("actionReason").value.trim();
-            const completionReason = document.getElementById("completionReason").value.trim();
-            const challengesAndLearnings = document.getElementById("challengesAndLearnings").value.trim();
-    
-            // サーバーにデータを送信
+            const successPoints = (document.getElementById("successPoints") || {value:''}).value.trim();
+            const failurePoints = (document.getElementById("failurePoints") || {value:''}).value.trim();
+            const completionReason = (document.getElementById("completionReason") || {value:''}).value.trim();
+            let challengesAndLearnings = (document.getElementById("challengesAndLearnings") || {value:''}).value.trim();
+            // 追加の教訓がある場合はすべて結合して送る（複数対応）
+            try {
+                const nodes = document.querySelectorAll('.additional-lesson');
+                if (nodes && nodes.length) {
+                    const extras = Array.from(nodes).map(n => (n.value || '').trim()).filter(Boolean);
+                    if (extras.length) {
+                        const combinedExtras = extras.join('\n\n');
+                        if (challengesAndLearnings) challengesAndLearnings = challengesAndLearnings + '\n\n' + combinedExtras;
+                        else challengesAndLearnings = combinedExtras;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+
+            // 互換性のため、従来の evaluation_good には成功・失敗を結合して送る
+            const combinedActionReason = [successPoints, failurePoints].filter(Boolean).join('\n');
+
+            // サーバーにデータを送信（新しいフィールドも追加）
             $.ajax({
                 url: "php/object_maneger.php",
                 type: "POST",
                 data: {
-                    action_reason: actionReason,
-                    completion_reason: completionReason,
-                    challenges_learnings: challengesAndLearnings,
+                    evaluation_good: combinedActionReason,
+                    success_points: successPoints,
+                    failure_points: failurePoints,
+                    attribution: completionReason,
+                    application: challengesAndLearnings,
                     object_node_id: this.selectId,
                     purpose: 'record',
                     record_thing: 'reflection'
                 },
                 success: (response) => {
                     console.log("サーバーの応答:", response);
-    
+
                     // ノードの title を更新（入力内容を簡略化して表示）
                     const title = `
-                        行動意図: ${actionReason || "未記入"}\n
+                        うまくいった点: ${successPoints || "未記入"}\n
+                        うまくいかなかった点: ${failurePoints || "未記入"}\n
                         完了基準: ${completionReason || "未記入"}\n
                         学び: ${challengesAndLearnings || "未記入"}
                     `;
@@ -2507,10 +2703,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     });
 
                     // 内省情報がある場合、青色の内省タグを右上に追加
-                    if (actionReason || completionReason || challengesAndLearnings) {
+                    if (successPoints || failurePoints || completionReason || challengesAndLearnings) {
                         const nodeBoundingBox = this.ownNetwork.getBoundingBox(this.selectId);
                         const reflectionTagId = `reflection-tag-${this.selectId}`;
-                        const reflectionTitle = `行動意図: ${actionReason || "未記入"}\n完了基準: ${completionReason || "未記入"}\n学び: ${challengesAndLearnings || "未記入"}`;
+                        const reflectionTitle = `うまくいった点: ${successPoints || "未記入"}\nうまくいかなかった点: ${failurePoints || "未記入"}\n完了基準: ${completionReason || "未記入"}\n学び: ${challengesAndLearnings || "未記入"}`;
                         
                         // 既存の内省タグがあるかチェック
                         const existingReflectionTag = this.nodes.get(reflectionTagId);
@@ -2553,7 +2749,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                             console.log('新しい内省タグを追加しました:', reflectionTagId);
                         }
                     }
-    
+
                     console.log(`ノード ${this.selectId} のタイトルを更新しました。`);
                     tooltip.style.display = "none"; // 保存後に吹き出しを閉じる
                 },
@@ -3644,9 +3840,9 @@ const getPassDataFromDB = (selected_date) => {
                                 node.y,
                                 node.status,
                                 node.purpose,
-                                node.action_reason,
-                                node.completion_reason,
-                                node.challenges_learnings,
+                                node.evaluation_good,
+                                node.attribution,
+                                node.application,
                                 node.estimated_time
                             );
                         }
@@ -4085,7 +4281,7 @@ const displayTriggerData = (mode, display_target_area_id) => {
             console.log("datesの中身:", trigger_list_info.dates);
 
             trigger_list_info.onode.map((n) => {
-                defaultThinkingProcess.addReloadNode(n.object_node_id, n.content, n.object_nodes_type, n.node_x, n.node_y, n.status, n.purpose, n.action_reason, n.completion_reason, n.challenges_learnings, n.estimated_time);
+                defaultThinkingProcess.addReloadNode(n.object_node_id, n.content, n.object_nodes_type, n.node_x, n.node_y, n.status, n.purpose, n.evaluation_good, n.attribution, n.application, n.estimated_time);
             });
             trigger_list_info.pedge.map((n) => {
                 console.log("🔍 エッジデータ確認:", n);

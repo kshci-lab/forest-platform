@@ -271,9 +271,9 @@ jmnode[class="criticism"]:hover{background-color:#ff89a1;border-radius: 0px;}
 jmnode[class="criticism selected"]{background-color:#ff89a1;color:#000;border-radius: 0px;}
 
 /* classで指定しているのでおそらくいらない
-jmnode[type="evaluation"]{background-color:#ff7792;color:#000;border-radius: 0px;}
-jmnode[type="evaluation"]:hover{background-color:#ff7792;border-radius: 0px;}
-jmnode[type="evaluation"].selected{background-color:#ff7792;color:#000;border-radius: 0px;}
+jmnode[type="evaluation_good"]{background-color:#ff7792;color:#000;border-radius: 0px;}
+jmnode[type="evaluation_good"]:hover{background-color:#ff7792;border-radius: 0px;}
+jmnode[type="evaluation_good"].selected{background-color:#ff7792;color:#000;border-radius: 0px;}
 
 jmnode[type="criticism"]{background-color:#ff7792;color:#000;border-radius: 0px;}
 jmnode[type="criticism"]:hover{background-color:#ff7792;border-radius: 0px;}

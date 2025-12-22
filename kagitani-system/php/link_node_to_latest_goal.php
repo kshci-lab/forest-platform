@@ -12,18 +12,18 @@ if ($node_id === '') {
 }
 
 // 最新のgoal取得
-$sql = "SELECT object_goal_id FROM object_goals ORDER BY update_at DESC LIMIT 1";
+$sql = "SELECT object_journal_id FROM object_journals ORDER BY update_at DESC LIMIT 1";
 $result = $mysqli->query($sql);
 if ($result && $row = $result->fetch_assoc()) {
-    $latest_goal_id = $row['object_goal_id'];
+    $latest_goal_id = $row['object_journal_id'];
     // ノードリンク挿入
     // 新しいテーブル構造に合わせてカラムを指定
-    // object_goal_node_id, object_goal_id, node_id, deleted, create_at, update_at
+    // object_goal_node_id, object_journal_id, node_id, deleted, create_at, update_at
     $object_goal_node_id = uniqid('goalnode_', true);
     $created_at = date('Y-m-d H:i:s');
     $updated_at = $created_at;
     $deleted = 0;
-    $insert_sql = "INSERT INTO object_goal_nodes (object_goal_node_id, object_goal_id, node_id, deleted, create_at, update_at) VALUES (?, ?, ?, ?, ?, ?)";
+    $insert_sql = "INSERT INTO object_goal_nodes (object_goal_node_id, object_journal_id, node_id, deleted, create_at, update_at) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $mysqli->prepare($insert_sql);
     $stmt->bind_param('sssiss', $object_goal_node_id, $latest_goal_id, $node_id, $deleted, $created_at, $updated_at);
     if ($stmt->execute()) {

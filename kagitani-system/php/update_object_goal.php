@@ -2,11 +2,11 @@
 require_once('connect_db.php');
 header('Content-Type: application/json; charset=utf-8');
 
-$object_goal_id = isset($_POST['object_goal_id']) ? $_POST['object_goal_id'] : null;
+$object_journal_id = isset($_POST['object_journal_id']) ? $_POST['object_journal_id'] : null;
 $start_date = isset($_POST['start_date']) ? $_POST['start_date'] : null;
 $finish_date = isset($_POST['finish_date']) ? $_POST['finish_date'] : null;
 
-if (!$object_goal_id || !$start_date || !$finish_date) {
+if (!$object_journal_id || !$start_date || !$finish_date) {
     echo json_encode(['success' => false, 'error' => 'Missing parameters']);
     exit;
 }
@@ -17,14 +17,14 @@ if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
     exit;
 }
 
-$sql = "UPDATE object_goals SET start_date = ?, finish_date = ? WHERE object_goal_id = ?";
+$sql = "UPDATE object_journals SET start_date = ?, finish_date = ? WHERE object_journal_id = ?";
 $stmt = $mysqli->prepare($sql);
 if (!$stmt) {
     echo json_encode(['success' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
     exit;
 }
 
-$stmt->bind_param('sss', $start_date, $finish_date, $object_goal_id);
+$stmt->bind_param('sss', $start_date, $finish_date, $object_journal_id);
 $res = $stmt->execute();
 if ($res) {
     echo json_encode(['success' => true]);

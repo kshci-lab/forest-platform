@@ -108,7 +108,7 @@
           cl.style.marginTop = '6px';
           cl.style.fontSize = '13px';
           cl.style.color = '#111827';
-          cl.innerHTML = escapeHtml(item.challenges_learnings || '');
+          cl.innerHTML = escapeHtml(item.application || '');
 
           const period = document.createElement('div');
           period.style.marginTop = '6px';
@@ -165,7 +165,7 @@
           cl.style.marginTop = '6px';
           cl.style.fontSize = '13px';
           cl.style.color = '#111827';
-          cl.innerHTML = escapeHtml(item.challenges_learnings || '');
+          cl.innerHTML = escapeHtml(item.application || '');
 
           const period = document.createElement('div');
           period.style.marginTop = '6px';

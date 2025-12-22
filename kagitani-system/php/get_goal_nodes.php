@@ -1,15 +1,15 @@
 <?php
-// object_goal_idから紐づくnode_id一覧を返すAPI
+// object_journal_idから紐づくnode_id一覧を返すAPI
 require("../php/connect_db.php");
 header('Content-Type: application/json; charset=utf-8');
 
-$object_goal_id = isset($_GET['object_goal_id']) ? $_GET['object_goal_id'] : '';
-if ($object_goal_id === '') {
-    echo json_encode(['success' => false, 'error' => 'object_goal_idがありません']);
+$object_journal_id = isset($_GET['object_journal_id']) ? $_GET['object_journal_id'] : '';
+if ($object_journal_id === '') {
+    echo json_encode(['success' => false, 'error' => 'object_journal_idがありません']);
     exit;
 }
 
-$sql = "SELECT node_id FROM goal_nodes WHERE object_goal_id = '" . $mysqli->real_escape_string($object_goal_id) . "' AND deleted = 0";
+$sql = "SELECT node_id FROM goal_nodes WHERE object_journal_id = '" . $mysqli->real_escape_string($object_journal_id) . "' AND deleted = 0";
 $result = $mysqli->query($sql);
 $nodeIds = [];
 if ($result) {

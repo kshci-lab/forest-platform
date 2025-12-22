@@ -44,7 +44,7 @@ $map_id = (int)$map_id;
 
 
 
-$object_goal_id = uniqid('goal_', true);
+$object_journal_id = uniqid('goal_', true);
 $appeared_at = date('Y-m-d H:i:s');
 $update_at = $appeared_at;
 $delete = 0;
@@ -53,7 +53,7 @@ $delete = 0;
 // テーブルにlabelカラムがある場合はlabelを使う。なければlabelを除外。
 $hasLabel = false;
 try {
-    $result = $pdo->query("DESCRIBE object_goals");
+    $result = $pdo->query("DESCRIBE object_journals");
     foreach ($result as $row) {
         if ($row['Field'] === 'label') {
             $hasLabel = true;
@@ -64,7 +64,7 @@ try {
 
 $hasMapColumn = false;
 try {
-    $result = $pdo->query("DESCRIBE object_goals");
+    $result = $pdo->query("DESCRIBE object_journals");
     foreach ($result as $row) {
         if ($row['Field'] === 'map_id') {
             $hasMapColumn = true;
@@ -76,19 +76,19 @@ try {
 // map_id カラムがある前提で INSERT 文に map_id を含める
 if ($hasLabel) {
     if ($hasMapColumn) {
-        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `map_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :map_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `map_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :map_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     } else {
-        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     }
 } else {
     if ($hasMapColumn) {
-        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `map_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :map_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `map_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :map_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     } else {
-        $sql = "INSERT INTO `object_goals`(`object_goal_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_goal_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     }
 }
 $stmt = $pdo->prepare($sql);
-$stmt->bindValue(':object_goal_id', $object_goal_id, PDO::PARAM_STR);
+$stmt->bindValue(':object_journal_id', $object_journal_id, PDO::PARAM_STR);
 $stmt->bindValue(':goal_type', $goal_type, PDO::PARAM_STR);
 if ($hasLabel) {
     $stmt->bindValue(':label', $label, PDO::PARAM_STR);
@@ -104,7 +104,7 @@ $stmt->bindValue(':delete', $delete, PDO::PARAM_INT);
 
 try {
     $stmt->execute();
-    echo json_encode(['success' => true, 'object_goal_id' => $object_goal_id]);
+    echo json_encode(['success' => true, 'object_journal_id' => $object_journal_id]);
 } catch (Exception $e) {
     file_put_contents('debug.txt', "SQL Error: " . $e->getMessage() . "\n", FILE_APPEND);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

@@ -65,7 +65,8 @@ if ($rows) {
 
         // Order histories so that records with the same object_node_id are consecutive.
         // Sort groups by the group's earliest appeared_at (oldest first), then by object_node_id, then by appeared_at (oldest first).
-        $sql_hist = "SELECT `object_node_history_id`, `object_node_id`, `object_node_type`, `status`, `appeared_at`, `disappeared_at`, `content`, `x`, `y`, `purpose`, `estimated_time`, `action_reason`, `completion_reason`, `challenges_learnings`, `drag`, `activity` FROM `object_nodes_histories` WHERE object_node_id IN (" . $inClause . ") AND drag = 0 " . $histDateClause . " ORDER BY (SELECT MIN(h2.appeared_at) FROM `object_nodes_histories` h2 WHERE h2.object_node_id = object_nodes_histories.object_node_id) ASC, object_node_id ASC, appeared_at ASC";
+        // Return new column names (evaluation_good/attribution/application) and alias them to old names for compatibility
+        $sql_hist = "SELECT `object_node_history_id`, `object_node_id`, `object_node_type`, `status`, `appeared_at`, `disappeared_at`, `content`, `x`, `y`, `purpose`, `estimated_time`, evaluation_good AS evaluation_good, evaluation_good AS evaluation_good, attribution AS attribution, attribution AS attribution, application AS application, application AS application, `drag`, `activity` FROM `object_nodes_histories` WHERE object_node_id IN (" . $inClause . ") AND drag = 0 " . $histDateClause . " ORDER BY (SELECT MIN(h2.appeared_at) FROM `object_nodes_histories` h2 WHERE h2.object_node_id = object_nodes_histories.object_node_id) ASC, object_node_id ASC, appeared_at ASC";
         $result_hist = $mysqli->query($sql_hist);
         if ($result_hist) {
             while ($h = $result_hist->fetch_assoc()) {
@@ -182,6 +183,23 @@ if ($rows) {
         }
     }
 
+    // --- 教訓(lessons) を取得 ---
+    $lessons = [];
+    if (!empty($objectNodeIds)) {
+        // $inClause は上で定義済み
+        $sql_lessons = "SELECT object_le_id, object_node_id, lesson_learned, created_at, updated_at FROM `object_lesson-learneds` WHERE object_node_id IN (" . $inClause . ") AND deleted = 0 ORDER BY created_at ASC";
+        $result_lessons = $mysqli->query($sql_lessons);
+        if ($result_lessons) {
+            while ($lr = $result_lessons->fetch_assoc()) {
+                $nid = $lr['object_node_id'];
+                if (!isset($lessons[$nid])) $lessons[$nid] = [];
+                $lessons[$nid][] = $lr;
+            }
+        } else {
+            error_log('教訓取得失敗: ' . $mysqli->error . " SQL=" . $sql_lessons);
+        }
+    }
+
     // 子・親マッピングを作成して返却（フロントで階層表示に使う）
     $node_children = $adj; // parent => [children]
     $node_parents = [];
@@ -200,6 +218,7 @@ if ($rows) {
         'ordered_object_node_ids' => $orderedObjectNodeIds,
         'object_node_history_ids' => $objectNodeHistoryIds,
         'histories' => $histories,
+        'lessons' => $lessons,
         'node_children' => $node_children,
         'node_parents' => $node_parents
     ]);

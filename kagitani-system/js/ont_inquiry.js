@@ -118,7 +118,7 @@ function c_disp(){
 	'研究目的は何ですか？': { ja: '研究目的は何ですか？', en: 'What is the research purpose?' },
 	'システムデザインはどのようなものですか？': { ja: 'システムデザインはどのようなものですか？', en: 'What is the system design like?' },
 	'問題を課題に分解するとどうなりますか？': { ja: '問題を課題に分解するとどうなりますか？', en: 'How does the problem break down into tasks?' },
-	'評価方法はどのようなものですか？': { ja: '評価方法はどのようなものですか？', en: 'What are the evaluation methods?' },
+	'評価方法はどのようなものですか？': { ja: '評価方法はどのようなものですか？', en: 'What are the evaluation_good methods?' },
 	'特徴は何ですか？': { ja: '特徴は何ですか？', en: 'What are the characteristics?' },
 	'実践のデザインはどのようなものですか？': { ja: '実践のデザインはどのようなものですか？', en: 'What is the design of the practice?' },
 	'研究背景はどのように位置づけられますか？': { ja: '研究背景はどのように位置づけられますか？', en: 'How is the research background positioned?' },

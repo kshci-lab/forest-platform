@@ -21,8 +21,8 @@
                 var idx = parseInt(btn.getAttribute('data-idx'), 10);
                 var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
                 var goal = goals[idx];
-                if (!goal || !goal.object_goal_id) {
-                    console.warn('weekly_report: object_goal_id が見つかりません');
+                if (!goal || !goal.object_journal_id) {
+                    console.warn('weekly_report: object_journal_id が見つかりません');
                     return;
                 }
                 var startDate = goal.start || goal.start_date;
@@ -33,7 +33,7 @@
                     url: 'php/get_object_goal_nodes.php',
                     type: 'GET',
                     dataType: 'json',
-                    data: { object_goal_id: goal.object_goal_id },
+                    data: { object_journal_id: goal.object_journal_id },
                     success: function(res) {
                         if (!(res && res.success && Array.isArray(res.node_ids))) {
                             console.warn('weekly_report: node_ids が見つかりません', res);
@@ -137,7 +137,7 @@
                             periodHeading.textContent = (startDate || '') + '~' + (endDate || '') + ((getCurrentLang() === 'ja') ? 'に行ったこと' : ' activities');
                             modalContent.appendChild(periodHeading);
 
-                            // Add editable areas for action_reason, completion_reason, challenges_learnings
+                            // Add editable areas for evaluation_good, attribution, application
                             var infoWrap = document.createElement('div');
                             infoWrap.style.display = 'grid';
                             infoWrap.style.gridTemplateColumns = '1fr';
@@ -172,13 +172,13 @@
                             }
 
                             // Prefill from goal if available
-                            var pre_action = (goal && goal.action_reason) ? goal.action_reason : '';
-                            var pre_completion = (goal && goal.completion_reason) ? goal.completion_reason : '';
-                            var pre_challenges = (goal && goal.challenges_learnings) ? goal.challenges_learnings : '';
+                            var pre_action = (goal && goal.evaluation_good) ? goal.evaluation_good : '';
+                            var pre_completion = (goal && goal.attribution) ? goal.attribution : '';
+                            var pre_challenges = (goal && goal.application) ? goal.application : '';
 
-                            infoWrap.appendChild(makeLabeledTextarea('wr_action_reason', (getCurrentLang() === 'ja') ? '内省' : 'Action reason', pre_action));
-                            infoWrap.appendChild(makeLabeledTextarea('wr_completion_reason', (getCurrentLang() === 'ja') ? '完了理由' : 'Completion reason', pre_completion));
-                            infoWrap.appendChild(makeLabeledTextarea('wr_challenges_learnings', (getCurrentLang() === 'ja') ? '学び・課題' : 'Challenges & Learnings', pre_challenges));
+                            infoWrap.appendChild(makeLabeledTextarea('wr_evaluation_good', (getCurrentLang() === 'ja') ? '評価：この期間の活動でうまくいった点はありますか？うまくいかなかった点はありますか？' : 'Action reason', pre_action));
+                            infoWrap.appendChild(makeLabeledTextarea('wr_attribution', (getCurrentLang() === 'ja') ? '原因帰属：そのような結果になった理由は何だと思いますか？' : 'Completion reason', pre_completion));
+                            infoWrap.appendChild(makeLabeledTextarea('wr_application', (getCurrentLang() === 'ja') ? '教訓：今後の活動ではどのようなことを意識すればよいと思いますか？その教訓は次にどのような時に活かせそうですか？' : 'Challenges & Learnings', pre_challenges));
 
                             modalContent.appendChild(infoWrap);
 
@@ -189,13 +189,13 @@
                                     url: fetchUrl,
                                     type: 'GET',
                                     dataType: 'json',
-                                    data: { object_goal_id: goal.object_goal_id },
+                                    data: { object_journal_id: goal.object_journal_id },
                                     success: function(fres) {
                                         if (fres && fres.success) {
                                             try {
-                                                if (document.getElementById('wr_action_reason')) document.getElementById('wr_action_reason').value = fres.action_reason || '';
-                                                if (document.getElementById('wr_completion_reason')) document.getElementById('wr_completion_reason').value = fres.completion_reason || '';
-                                                if (document.getElementById('wr_challenges_learnings')) document.getElementById('wr_challenges_learnings').value = fres.challenges_learnings || '';
+                                                if (document.getElementById('wr_evaluation_good')) document.getElementById('wr_evaluation_good').value = fres.evaluation_good || '';
+                                                if (document.getElementById('wr_attribution')) document.getElementById('wr_attribution').value = fres.attribution || '';
+                                                if (document.getElementById('wr_application')) document.getElementById('wr_application').value = fres.application || '';
                                             } catch(e) { console.error('apply fetched fields error', e); }
                                         } else {
                                             console.warn('get_object_goal_fields: not found or error', fres);
@@ -469,9 +469,9 @@
                                                     detail = h.estimated_time || '';
                                                 } else if (act === 8) {
                                                     var parts = [];
-                                                    if (h.action_reason) parts.push(h.action_reason);
-                                                    if (h.completion_reason) parts.push(h.completion_reason);
-                                                    if (h.challenges_learnings) parts.push(h.challenges_learnings);
+                                                    if (h.evaluation_good) parts.push(h.evaluation_good);
+                                                    if (h.attribution) parts.push(h.attribution);
+                                                    if (h.application) parts.push(h.application);
                                                     detail = parts.join(' / ');
                                                 } else {
                                                     detail = '';
@@ -565,9 +565,9 @@
                             dlBtn.style.boxShadow = '0 6px 14px rgba(2,48,89,0.12)';
                                 dlBtn.onclick = function() {
                                 // read editable fields
-                                var ar = document.getElementById('wr_action_reason') ? document.getElementById('wr_action_reason').value : '';
-                                var cr = document.getElementById('wr_completion_reason') ? document.getElementById('wr_completion_reason').value : '';
-                                var cl = document.getElementById('wr_challenges_learnings') ? document.getElementById('wr_challenges_learnings').value : '';
+                                var ar = document.getElementById('wr_evaluation_good') ? document.getElementById('wr_evaluation_good').value : '';
+                                var cr = document.getElementById('wr_attribution') ? document.getElementById('wr_attribution').value : '';
+                                var cl = document.getElementById('wr_application') ? document.getElementById('wr_application').value : '';
 
                                 function escapeHtml(str) {
                                     if (!str && str !== 0) return '';
@@ -582,15 +582,15 @@
                                 html += '<h2>' + escapeHtml((getCurrentLang() === 'ja') ? ('週次レポート (' + (startDate||'') + ' ~ ' + (endDate||'') + ')') : ('Weekly Goal Report (' + (startDate||'') + ' ~ ' + (endDate||'') + ')')) + '</h2>';
                                 // include the three notes if present
                                 if (ar && ar.trim()) {
-                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '内省 (action_reason)' : 'Action reason') + '</h3>';
+                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '内省 (evaluation_good)' : 'Action reason') + '</h3>';
                                     html += '<p>' + nl2br_escaped(ar) + '</p>';
                                 }
                                 if (cr && cr.trim()) {
-                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '完了理由 (completion_reason)' : 'Completion reason') + '</h3>';
+                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '完了理由 (attribution)' : 'Completion reason') + '</h3>';
                                     html += '<p>' + nl2br_escaped(cr) + '</p>';
                                 }
                                 if (cl && cl.trim()) {
-                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '学び・課題 (challenges_learnings)' : 'Challenges & Learnings') + '</h3>';
+                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '学び・課題 (application)' : 'Challenges & Learnings') + '</h3>';
                                     html += '<p>' + nl2br_escaped(cl) + '</p>';
                                 }
 
@@ -711,9 +711,9 @@
                                                         detail = h.estimated_time || '';
                                                     } else if (act === 8) {
                                                         var parts = [];
-                                                        if (h.action_reason) parts.push(h.action_reason);
-                                                        if (h.completion_reason) parts.push(h.completion_reason);
-                                                        if (h.challenges_learnings) parts.push(h.challenges_learnings);
+                                                        if (h.evaluation_good) parts.push(h.evaluation_good);
+                                                        if (h.attribution) parts.push(h.attribution);
+                                                        if (h.application) parts.push(h.application);
                                                         detail = parts.join(' / ');
                                                     } else {
                                                         detail = '';
@@ -788,16 +788,16 @@
                             saveBtn.style.boxShadow = '0 6px 14px rgba(43,122,120,0.12)';
                             saveBtn.onclick = function() {
                                 try {
-                                    var object_goal_id = (goal && goal.object_goal_id) ? goal.object_goal_id : null;
-                                    if (!object_goal_id) {
-                                        alert((getCurrentLang() === 'ja') ? 'object_goal_id が見つかりません' : 'object_goal_id not found');
+                                    var object_journal_id = (goal && goal.object_journal_id) ? goal.object_journal_id : null;
+                                    if (!object_journal_id) {
+                                        alert((getCurrentLang() === 'ja') ? 'object_journal_id が見つかりません' : 'object_journal_id not found');
                                         return;
                                     }
                                     var data = {
-                                        object_goal_id: object_goal_id,
-                                        action_reason: (document.getElementById('wr_action_reason') ? document.getElementById('wr_action_reason').value : ''),
-                                        completion_reason: (document.getElementById('wr_completion_reason') ? document.getElementById('wr_completion_reason').value : ''),
-                                        challenges_learnings: (document.getElementById('wr_challenges_learnings') ? document.getElementById('wr_challenges_learnings').value : ''),
+                                        object_journal_id: object_journal_id,
+                                        evaluation_good: (document.getElementById('wr_evaluation_good') ? document.getElementById('wr_evaluation_good').value : ''),
+                                        attribution: (document.getElementById('wr_attribution') ? document.getElementById('wr_attribution').value : ''),
+                                        application: (document.getElementById('wr_application') ? document.getElementById('wr_application').value : ''),
                                         start_date: startDate,
                                         finish_date: endDate,
                                         // other fields are optional/left empty when not available

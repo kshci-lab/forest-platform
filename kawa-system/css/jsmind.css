@@ -299,9 +299,9 @@ jmnode.horisage.selected{
 
 
 
-jmnode[type="evaluation"]{background-color:#FF597B;color:#000;border-radius: 0px;}
-jmnode[type="evaluation"]:hover{background-color:#FF597B;border-radius: 0px;}
-jmnode[type="evaluation"].selected{background-color:#FF597B;color:#000;border-radius: 0px;}
+jmnode[type="evaluation_good"]{background-color:#FF597B;color:#000;border-radius: 0px;}
+jmnode[type="evaluation_good"]:hover{background-color:#FF597B;border-radius: 0px;}
+jmnode[type="evaluation_good"].selected{background-color:#FF597B;color:#000;border-radius: 0px;}
 
 jmnode[type="criticism"]{background-color:#FF597B;color:#000;border-radius: 0px;}
 jmnode[type="criticism"]:hover{background-color:#FF597B;border-radius: 0px;}
