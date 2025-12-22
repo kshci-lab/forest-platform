@@ -21,7 +21,27 @@
                 var idx = parseInt(btn.getAttribute('data-idx'), 10);
                 var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
                 var goal = goals[idx];
-                if (!goal || !goal.object_journal_id) {
+                // Debug: dump relevant variables to console to help trace missing object_journal_id
+                try {
+                    console.group('weekly_report debug');
+                    console.log('clicked export button element:', btn);
+                    console.log('data-idx (attr):', btn.getAttribute('data-idx'));
+                    console.log('parsed idx:', idx);
+                    console.log('weeklyGoals (localStorage):', goals);
+                    console.log('goal at idx:', goal);
+                    console.log('goal.object_journal_id:', (goal && goal.object_journal_id) ? goal.object_journal_id : null);
+                    console.groupEnd();
+                } catch (dbgErr) { console.warn('weekly_report debug log failed', dbgErr); }
+
+                // Normalize journal id: accept several possible property names (object_journal_id, object_goal_id, etc.)
+                var objectJournalId = null;
+                try {
+                    if (goal) {
+                        objectJournalId = goal.object_journal_id || goal.object_goal_id || goal.object_goal || goal.objectJournalId || goal.objectGoalId || null;
+                    }
+                } catch(e) { objectJournalId = null; }
+
+                if (!goal || !objectJournalId) {
                     console.warn('weekly_report: object_journal_id が見つかりません');
                     return;
                 }
@@ -33,7 +53,7 @@
                     url: 'php/get_object_goal_nodes.php',
                     type: 'GET',
                     dataType: 'json',
-                    data: { object_journal_id: goal.object_journal_id },
+                    data: { object_journal_id: objectJournalId },
                     success: function(res) {
                         if (!(res && res.success && Array.isArray(res.node_ids))) {
                             console.warn('weekly_report: node_ids が見つかりません', res);
@@ -189,7 +209,7 @@
                                     url: fetchUrl,
                                     type: 'GET',
                                     dataType: 'json',
-                                    data: { object_journal_id: goal.object_journal_id },
+                                    data: { object_journal_id: objectJournalId },
                                     success: function(fres) {
                                         if (fres && fres.success) {
                                             try {
@@ -788,7 +808,7 @@
                             saveBtn.style.boxShadow = '0 6px 14px rgba(43,122,120,0.12)';
                             saveBtn.onclick = function() {
                                 try {
-                                    var object_journal_id = (goal && goal.object_journal_id) ? goal.object_journal_id : null;
+                                    var object_journal_id = objectJournalId || null;
                                     if (!object_journal_id) {
                                         alert((getCurrentLang() === 'ja') ? 'object_journal_id が見つかりません' : 'object_journal_id not found');
                                         return;
@@ -882,7 +902,7 @@
                             document.body.appendChild(modal);
                         }).catch(function(err){ console.error('weekly_report: Promise.all error', err); });
                     },
-                    error: function(xhr, status, error) { console.error('weekly_report: get_object_goal_nodes.php error', error); }
+                    error: function(xhr, status, error) { console.error('weekly_report: get_object_journal_nodes.php error', error); }
                 });
             } catch (err) {
                 console.error('weekly_report click handler error', err);

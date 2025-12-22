@@ -101,16 +101,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     // object_journal_idごとにnode_idをまとめる
                     var goalMap = {};
                     res.goals.forEach(function(row) {
-                        if (!goalMap[row.object_journal_id]) {
-                            goalMap[row.object_journal_id] = {
+                        // Accept multiple possible column names from server: prefer object_journal_id, fall back to object_journal_id
+                        var journalId = row.object_journal_id || row.object_goal_id || row.object_goal || row.objectJournalId || row.objectGoalId || null;
+                        // If still null, synthesize an id from date range and any legacy id available
+                        if (!journalId) journalId = (row.start_date || '') + '::' + (row.finish_date || '') + '::' + (row.object_journal_id || row.object_goal_id || '');
+
+                        if (!goalMap[journalId]) {
+                            goalMap[journalId] = {
                                 start: row.start_date,
                                 end: row.finish_date,
-                                object_journal_id: row.object_journal_id,
+                                object_journal_id: journalId,
                                 contents: []
                             };
                         }
                         if (row.content) {
-                            goalMap[row.object_journal_id].contents.push(row.content);
+                            goalMap[journalId].contents.push(row.content);
                         }
                     });
                     var goals = Object.values(goalMap);
@@ -129,6 +134,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    // Ensure weeklyGoals entries always have `object_journal_id` normalized
+    function normalizeWeeklyGoalsStorage() {
+        try {
+            var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+            if (!Array.isArray(goals) || !goals.length) return;
+            var changed = false;
+            goals = goals.map(function(g){
+                if (!g) return g;
+                // If old property exists, migrate it into object_journal_id then remove deprecated keys
+                var migrated = false;
+                if (!g.object_journal_id) {
+                    var fallback = g.object_goal_id || g.object_goal || g.objectGoalId || g.objectJournalId || null;
+                    if (fallback) {
+                        g.object_journal_id = fallback;
+                        migrated = true;
+                    }
+                }
+                // remove deprecated variants to avoid future confusion
+                if (typeof g.object_goal_id !== 'undefined') { delete g.object_goal_id; migrated = true; }
+                if (typeof g.object_goal !== 'undefined') { delete g.object_goal; migrated = true; }
+                if (typeof g.objectGoalId !== 'undefined') { delete g.objectGoalId; migrated = true; }
+                if (typeof g.objectJournalId !== 'undefined') { delete g.objectJournalId; /* this may be a duplicate form; remove to keep canonical */ migrated = true; }
+                if (migrated) changed = true;
+                return g;
+            });
+            if (changed) localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+        } catch (e) {
+            console.warn('normalizeWeeklyGoalsStorage failed', e);
+        }
+    }
+    // Normalize any existing stored weeklyGoals before doing network fetches or rendering.
+    try { normalizeWeeklyGoalsStorage(); } catch(e) { console.warn('initial normalizeWeeklyGoalsStorage failed', e); }
     fetchWeeklyGoalsFromDB();
     // 小目標
     var addWeeklyBtn = document.getElementById('addWeeklyGoalBtn');
@@ -272,6 +309,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
     window.renderWeeklyGoals = function() {
+        // Normalize stored goals to ensure object_journal_id is present (fallback from object_goal_id)
+        normalizeWeeklyGoalsStorage();
         var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
         if (!weeklyListDiv) return;
         if (goals.length === 0) {

@@ -18,14 +18,14 @@ if ($result && $row = $result->fetch_assoc()) {
     $latest_goal_id = $row['object_journal_id'];
     // ノードリンク挿入
     // 新しいテーブル構造に合わせてカラムを指定
-    // object_goal_node_id, object_journal_id, node_id, deleted, create_at, update_at
-    $object_goal_node_id = uniqid('goalnode_', true);
+    // object_journal_node_id, object_journal_id, node_id, deleted, create_at, update_at
+    $object_journal_node_id = uniqid('goalnode_', true);
     $created_at = date('Y-m-d H:i:s');
     $updated_at = $created_at;
     $deleted = 0;
-    $insert_sql = "INSERT INTO object_goal_nodes (object_goal_node_id, object_journal_id, node_id, deleted, create_at, update_at) VALUES (?, ?, ?, ?, ?, ?)";
+    $insert_sql = "INSERT INTO object_journal_nodes (object_journal_node_id, object_journal_id, node_id, deleted, create_at, update_at) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $mysqli->prepare($insert_sql);
-    $stmt->bind_param('sssiss', $object_goal_node_id, $latest_goal_id, $node_id, $deleted, $created_at, $updated_at);
+    $stmt->bind_param('sssiss', $object_journal_node_id, $latest_goal_id, $node_id, $deleted, $created_at, $updated_at);
     if ($stmt->execute()) {
         echo 'OK';
     } else {

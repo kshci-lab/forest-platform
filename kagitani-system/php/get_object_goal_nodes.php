@@ -20,7 +20,7 @@ try {
         exit;
     }
 
-    $sql = "SELECT node_id FROM object_goal_nodes WHERE object_journal_id = ? AND deleted = 0";
+    $sql = "SELECT node_id FROM object_journal_nodes WHERE object_journal_id = ? AND deleted = 0";
     $stmt = $mysqli->prepare($sql);
     if (!$stmt) {
         throw new Exception('SQLプリペア失敗: ' . $mysqli->error);

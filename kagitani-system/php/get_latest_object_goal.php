@@ -50,13 +50,11 @@ try {
 $sql = "
     SELECT 
         g.object_journal_id,
-        g.goal_type,
         g.start_date,
         g.finish_date,
         n.node_id,
-        nl.content
     FROM object_journals g
-    LEFT JOIN object_goal_nodes n
+    LEFT JOIN object_journal_nodes n
         ON g.object_journal_id = n.object_journal_id
        AND (n.deleted IS NULL OR n.deleted = 0)
     LEFT JOIN node_latest nl
