@@ -1284,7 +1284,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                     <textarea class="qa-answer1" placeholder="ここに記入"></textarea>
                                                 </div>
                                                 <div class="qa">
-                                                    <div class="qa-question">その発言には、どんな前提や背景がありますか？</div>
+                                                    <div class="qa-question">この発言には、どんな前提や背景がありますか？</div>
                                                     <textarea class="qa-answer2" placeholder="ここに記入"></textarea>
                                                 </div>
                                                 <div class="qa">

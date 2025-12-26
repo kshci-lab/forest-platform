@@ -156,7 +156,7 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
             <div class="selected-utterance">発言内容: <?php echo nl2br(htmlspecialchars($__sel, ENT_QUOTES, 'UTF-8')); ?></div>
         <?php } ?>
         <div class="qa-item"><div class="qa-q">質問: なぜこの発言が印象に残りましたか？</div><div class="qa-a">回答: <?php echo nl2br(htmlspecialchars($__s1, ENT_QUOTES, 'UTF-8')); ?></div></div>
-        <div class="qa-item"><div class="qa-q">質問: その発言には、どんな前提や背景がありますか？</div><div class="qa-a">回答: <?php echo nl2br(htmlspecialchars($__s2, ENT_QUOTES, 'UTF-8')); ?></div></div>
+        <div class="qa-item"><div class="qa-q">質問: この発言には、どんな前提や背景がありますか？</div><div class="qa-a">回答: <?php echo nl2br(htmlspecialchars($__s2, ENT_QUOTES, 'UTF-8')); ?></div></div>
         <div class="qa-item"><div class="qa-q">質問: この発言には、他の場面でも使える考え方の指針はありますか？</div><div class="qa-a">回答: <?php echo nl2br(htmlspecialchars($__s3, ENT_QUOTES, 'UTF-8')); ?></div></div>
       </div>
       <div class="card-actions">
