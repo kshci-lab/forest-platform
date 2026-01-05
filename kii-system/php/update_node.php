@@ -188,12 +188,11 @@
 
 		}
 
-	}
-	else if ($_POST["update"] == "reflection") {
+	}else if ($_POST["update"] == "reflection") {
 		// $sql = "UPDATE nodes SET reflection = '".$_POST["text"]."', class = 'other_to_myanswer', type = 'other_to_myanswer' WHERE id = '".$_POST["nodeid"]."'";
 		// $result = $mysqli->query($sql);
 		// echo $sql;
-		echo "reflection"
+		echo "reflection";
 	}
 
 	else if ($_POST["update"] == "summary") {
