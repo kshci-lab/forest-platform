@@ -1,72 +1,62 @@
 <?php
 // get_latest_object_goal.php
 header('Content-Type: application/json; charset=UTF-8');
-
-$db_host = "localhost";
-$db_user = "root";
-$db_password = "root";
-$db_dbname = "forest_platform";
-// タイムゾーン（表示に影響はないがログの整合性のため）
 if (function_exists('date_default_timezone_set')) {
     date_default_timezone_set('Asia/Tokyo');
 }
-try {
-    // DB 接続
-    $pdo = new PDO("mysql:host=$db_host;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => 'DB接続失敗: ' . $e->getMessage()]);
+
+// ensure session is started so we can access MAPID
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+// require DB connection (provides $mysqli)
+require_once(__DIR__ . '/../../php/connect_db.php');
+
+$map_id = isset($_SESSION['MAPID']) ? $_SESSION['MAPID'] : '';
+if (!$map_id) {
+    echo json_encode(['success' => false, 'error' => 'map_id missing']);
     exit;
 }
 
-// セッション開始
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// map_id を取得（優先: GET > POST > SESSION）
-$map_id = null;
-if (isset($_GET['map_id'])) { $map_id = $_GET['map_id']; }
-elseif (isset($_POST['map_id'])) { $map_id = $_POST['map_id']; }
-elseif (isset($_SESSION['MAPID'])) { $map_id = $_SESSION['MAPID']; }
-
-if ($map_id === null || $map_id === '') {
-    echo json_encode(['success' => false, 'error' => 'map_id が指定されていません']);
-    exit;
-}
-
-// object_journals の列名（map_id/MAPID）を検出
-$mapCol = 'map_id';
 try {
-    $colsStmt = $pdo->query("DESCRIBE object_journals");
-    $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN, 0) : [];
-    if (is_array($cols)) {
-        if (in_array('map_id', $cols, true)) { $mapCol = 'map_id'; }
-        elseif (in_array('MAPID', $cols, true)) { $mapCol = 'MAPID'; }
+    // detect whether object_journals has a `deleted` column to avoid SQL errors
+    $hasDeleted = false;
+    $colRes = $mysqli->query("SHOW COLUMNS FROM `object_journals` LIKE 'deleted'");
+    if ($colRes && $colRes->num_rows) $hasDeleted = true;
+
+    // Build WHERE fragment conditionally
+    $deletedFilter = $hasDeleted ? "AND (g.deleted IS NULL OR g.deleted = 0)" : "";
+
+    // Return weekly goals joined with node content (if any)
+    $sql = "
+        SELECT 
+            g.object_journal_id,
+            g.start_date,
+            g.finish_date,
+            nl.content AS content
+        FROM object_journals g
+        LEFT JOIN object_journal_nodes n
+            ON g.object_journal_id = n.object_journal_id
+            AND (n.deleted IS NULL OR n.deleted = 0)
+        LEFT JOIN node_latest nl
+            ON n.node_id = nl.node_id
+        WHERE g.map_id = ?
+          " . $deletedFilter . "
+        ORDER BY g.appeared_at DESC
+        LIMIT 50";
+
+    $stmt = $mysqli->prepare($sql);
+    if (!$stmt) throw new Exception('SQL prepare failed: ' . $mysqli->error . ' SQL=' . $sql);
+    $stmt->bind_param('s', $map_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $goals = [];
+    while ($row = $res->fetch_assoc()) {
+        $goals[] = $row;
     }
-} catch (Exception $e) { /* fallback: map_id */ }
+    $stmt->close();
+    echo json_encode(['success' => true, 'map_id' => $map_id, 'has_deleted_column' => $hasDeleted, 'goals' => $goals]);
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+}
 
-// 週次目標と紐づくノードの content を返す
-$sql = "
-    SELECT 
-        g.object_journal_id,
-        g.start_date,
-        g.finish_date,
-        n.node_id,
-    FROM object_journals g
-    LEFT JOIN object_journal_nodes n
-        ON g.object_journal_id = n.object_journal_id
-       AND (n.deleted IS NULL OR n.deleted = 0)
-    LEFT JOIN node_latest nl
-        ON n.node_id = nl.node_id
-    WHERE g.`$mapCol` = :map_id
-      AND g.goal_type = 'weekly'
-      AND g.`delete` = 0
-    ORDER BY g.appeared_at DESC
-    LIMIT 50
-";
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute([':map_id' => (int)$map_id]);
-$goals = $stmt->fetchAll(PDO::FETCH_ASSOC);
-echo json_encode(['success' => true, 'goals' => $goals]);
+?>

@@ -20,9 +20,6 @@ try {
 
 
 // POSTで受け取る
-
-$goal_type = $_POST['goal_type'] ?? '';
-$label = $_POST['label'] ?? null;
 $start_date = $_POST['start_date'] ?? '';
 $finish_date = $_POST['finish_date'] ?? '';
 
@@ -76,20 +73,20 @@ try {
 // map_id カラムがある前提で INSERT 文に map_id を含める
 if ($hasLabel) {
     if ($hasMapColumn) {
-        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `map_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :map_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `map_id`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :map_id, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     } else {
-        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `goal_type`, `label`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :goal_type, :label, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     }
 } else {
     if ($hasMapColumn) {
-        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `map_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :map_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `map_id`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :map_id, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     } else {
-        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `goal_type`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :goal_type, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
+        $sql = "INSERT INTO `object_journals`(`object_journal_id`, `start_date`, `finish_date`, `appeared_at`, `update_at`, `delete`) VALUES (:object_journal_id, :start_date, :finish_date, :appeared_at, :update_at, :delete)";
     }
 }
 $stmt = $pdo->prepare($sql);
 $stmt->bindValue(':object_journal_id', $object_journal_id, PDO::PARAM_STR);
-$stmt->bindValue(':goal_type', $goal_type, PDO::PARAM_STR);
+
 if ($hasLabel) {
     $stmt->bindValue(':label', $label, PDO::PARAM_STR);
 }

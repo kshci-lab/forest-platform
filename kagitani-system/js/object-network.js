@@ -2410,11 +2410,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             <div style="margin-bottom:8px;"><strong>評価</strong></div>
             <div style="display:flex; gap:12px;">
                 <div style="flex:1;">
-                    <label for="successPoints">この活動でうまくいった点はありますか？</label>
+                    <label for="successPoints">うまくいった点はありますか？</label>
                     <textarea id="successPoints" name="successPoints" rows="6" placeholder="例：文献レビューは網羅的だった。" style="width: 100%; height:120px; box-sizing: border-box;"></textarea>
                 </div>
                 <div style="flex:1;">
-                    <label for="failurePoints">この活動でうまくいかなかった点はありますか？</label>
+                    <label for="failurePoints">うまくいかなかった点はありますか？</label>
                     <textarea id="failurePoints" name="failurePoints" rows="6" placeholder="例：想定より時間がかかった。入手困難な資料があった。" style="width: 100%; height:120px; box-sizing: border-box;"></textarea>
                 </div>
             </div>

@@ -29,14 +29,17 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
-        // SRLジャーナル: object_journals テーブルから取得
-        // 条件: application が空でない、delete = 0、かつ map に紐づく node_id のもの
-        $sql = "SELECT update_at AS updated_at, application, start_date, finish_date, object_journal_id, node_id, map_id
-                        FROM object_journals
-                        WHERE (application IS NOT NULL AND TRIM(application) <> '')
-                            AND `delete` = 0
-                            AND map_id = :map_id
-                        ORDER BY update_at DESC";
+        // SRLジャーナル: object_journal_reflections と object_journal_lesson-learneds を参照して教訓を取得
+        // 仕様: lesson-learneds が存在すればそれを優先、なければ reflection_text を使用する
+        $sql = "SELECT COALESCE(ll.lesson_learned, r.reflection_text) AS application,
+                COALESCE(r.update_at, r.created_at) AS updated_at,
+                j.start_date, j.finish_date, r.object_journal_id, j.node_id, j.map_id
+            FROM object_journal_reflections r
+            LEFT JOIN `object_journal_lesson-learneds` ll ON ll.object_journal_reflection_id = r.object_journal_reflection_id AND (ll.deleted IS NULL OR ll.deleted = 0)
+            LEFT JOIN object_journals j ON j.object_journal_id = r.object_journal_id
+            WHERE j.map_id = :map_id
+              AND ((ll.lesson_learned IS NOT NULL AND TRIM(ll.lesson_learned) <> '') OR (r.reflection_text IS NOT NULL AND TRIM(r.reflection_text) <> ''))
+            ORDER BY updated_at DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':map_id', $map_id, PDO::PARAM_STR);

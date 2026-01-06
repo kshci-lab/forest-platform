@@ -278,12 +278,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert(t('pleaseEnterDates'));
                     return;
                 }
-                var goal_type = 'weekly';
                 $.ajax({
                     url: 'php/insert_object_goal.php',
                     type: 'POST',
                     data: {
-                        goal_type: goal_type,
                         start_date: startDate,
                         finish_date: endDate
                     },
@@ -291,9 +289,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     success: function(res) {
                         console.log('insert_object_goal.php response:', res);
                         if (res.success) {
+                            var ojId = res.object_journal_id;
                             var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
-                            goals.unshift({ start: startDate, end: endDate, createdAt: new Date().toISOString(), object_journal_id: res.object_journal_id });
+                            goals.unshift({ start: startDate, end: endDate, createdAt: new Date().toISOString(), object_journal_id: ojId });
                             localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+
+                            // Also create an initial reflection record linked to this object_journal
+                            try {
+                                $.ajax({
+                                    url: 'php/insert_object_journal_reflection.php',
+                                    type: 'POST',
+                                    dataType: 'json',
+                                    data: { object_journal_id: ojId },
+                                    success: function(rres){
+                                        console.log('insert_object_journal_reflection.php response:', rres);
+                                        try {
+                                            if (rres && rres.success && rres.object_journal_reflection_id) {
+                                                // persist the reflection id into localStorage for this newly created goal (it's at index 0)
+                                                try {
+                                                    var stored = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                                                    if (stored && stored.length && stored[0] && stored[0].object_journal_id == ojId) {
+                                                        stored[0].object_journal_reflection_id = rres.object_journal_reflection_id;
+                                                        localStorage.setItem('weeklyGoals', JSON.stringify(stored));
+                                                    }
+                                                } catch(e) { console.warn('failed to persist reflection id for new weekly goal', e); }
+                                            }
+                                        } catch(e){}
+                                    },
+                                    error: function(xhr, status, err){
+                                        console.warn('insert_object_journal_reflection failed', status, err, xhr && xhr.responseText);
+                                    }
+                                });
+                            } catch (e) { console.warn('reflection insert ajax failed', e); }
+
                             document.body.removeChild(modal);
                             renderWeeklyGoals();
                         } else {
@@ -691,9 +719,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.appendChild(modal);
             });
         });
-        // レポート出力は外部モジュールに委譲（weekly_report.js）
+        // レポート出力は外部モジュールに委譲（journal_report.js）
         var exportBtns = weeklyListDiv.querySelectorAll('.export-weekly-btn');
-        // ハンドラは `weekly_report.js` の `window.initWeeklyReportHandlers` が設定します
+        // ハンドラは `journal_report.js` の `window.initWeeklyReportHandlers` が設定します
         if (window.initWeeklyReportHandlers && typeof window.initWeeklyReportHandlers === 'function') {
             try { window.initWeeklyReportHandlers(window._goalListHelpers || {}); } catch(e){ console.warn('initWeeklyReportHandlers failed', e); }
         }
@@ -910,7 +938,7 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
     // 初期化
     setupYearSelect();
     renderWeeklyGoals();
-    // expose minimal helpers for weekly_report.js to reuse
+    // expose minimal helpers for journal_report.js to reuse
     try {
         window._goalListHelpers = {
             t: t,

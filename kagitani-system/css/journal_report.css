@@ -1,0 +1,60 @@
+/* Styles for journal_report modal and elements */
+.jr-modal{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.45);
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.jr-modal-content{
+  background: #ffffff;
+  padding: 36px 28px;
+  border-radius: 12px;
+  border: 1px solid #e8f3f1;
+  box-shadow: 0 8px 30px rgba(35,48,67,0.12);
+  width: 95vw;
+  max-width: 1100px;
+  min-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.jr-title{ margin-bottom: 12px; color: #2b7a78; font-size: 20px; font-weight:700 }
+.jr-period-heading{ margin:0 0 12px 0; font-size:15px; font-weight:600; color:#233043 }
+.jr-info-wrap{ display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px;
+  /* Card-like styling */
+  background: linear-gradient(180deg, #ffffff 0%, #fbffff 100%);
+  border: 1px solid #e6f0ef;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 6px 18px rgba(35,48,67,0.06);
+}
+.jr-info-header{ font-size:15px; color:#233043; margin-bottom:8px; font-weight:700 }
+.jr-eval-wrap{ display:flex; gap:12px }
+.jr-success-div, .jr-failure-div{ flex:1 }
+.jr-label{ display:block; font-weight:600; margin-bottom:6px }
+.jr-textarea{ width:100%; box-sizing:border-box; padding:8px; border-radius:8px; border:1px solid #e8f3f1; background:#fbffff; color:#233043 }
+.jr-textarea-small{ rows:2 }
+.jr-additional-container{ margin-top:8px }
+.jr-add-btn{ background:#fff; border:1px dashed #999; padding:6px 10px; border-radius:6px; cursor:pointer }
+.jr-add-reflection-btn{ background:#2b7a78; color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; box-shadow:0 6px 12px rgba(43,122,120,0.08); }
+.jr-add-reflection-btn:hover{ filter:brightness(0.97); }
+.jr-add-btn-wrap{ margin-top:6px }
+.jr-additional-item{ margin-top:8px }
+.jr-remove-btn{ margin-top:6px; margin-left:6px }
+.jr-item-wrap{ border:1px solid #e8f3f1; border-radius:8px; padding:12px 14px; margin:12px 0; background:#fff; max-height:360px; overflow-y:auto }
+.jr-heading{ margin:0 0 8px 0; font-weight:700; font-size:16px }
+.jr-table{ width:100%; border-collapse:collapse; font-size:14px }
+.jr-ch{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin:6px 0; transition:background 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease; border-radius:6px }
+.jr-ch-text{ font-weight:600; flex:1; color:#233043 }
+.jr-ch-icon{ margin-left:12px; font-weight:700; color:#6b7785; transition:transform 0.25s ease, color 0.15s ease }
+.jr-inner-table{ width:100%; border-collapse:collapse }
+.jr-details{ display:none; margin-top:8px; overflow:hidden; max-height:0px; opacity:0; transition:max-height 0.28s ease, opacity 0.18s ease }
+.jr-dl-btn{ margin-top:18px; padding:8px 24px; background:#0056b3; color:#fff; border:none; border-radius:8px; font-size:15px; cursor:pointer; box-shadow:0 6px 14px rgba(2,48,89,0.12) }
+.jr-save-btn{ margin-left:12px; padding:8px 20px; background:#2b7a78; color:#fff; border:none; border-radius:8px; font-size:15px; cursor:pointer; box-shadow:0 6px 14px rgba(43,122,120,0.12) }
+.jr-close-btn{ margin-left:8px; padding:8px 24px; background:#d0d6da; color:#233043; border:none; border-radius:8px; font-size:15px; cursor:pointer }

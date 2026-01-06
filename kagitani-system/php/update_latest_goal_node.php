@@ -1,6 +1,5 @@
 <?php
 // update_latest_goal_node.php
-// 最新の小目標（goal_type='小目標'）のnode_idを更新する
 
 require_once('../../php/connect_db.php');
 // 明示的にタイムゾーンを設定（サーバ既定がUTCの場合のズレ防止）
@@ -15,7 +14,7 @@ if ($node_id === '') {
 }
 
 // 最新の小目標を取得
-$sql = "SELECT object_journal_id FROM object_journals WHERE goal_type='weekly' AND `delete`=0 ORDER BY update_at DESC LIMIT 1";
+$sql = "SELECT object_journal_id FROM object_journals WHERE `delete`=0 ORDER BY update_at DESC LIMIT 1";
 $result = $mysqli->query($sql);
 if ($result && $row = $result->fetch_assoc()) {
     $latest_goal_id = $row['object_journal_id'];
