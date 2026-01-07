@@ -34,6 +34,7 @@ if (isset($_POST['map_id'])) $map_id = $_POST['map_id'];
 elseif (isset($_SESSION['MAPID'])) $map_id = $_SESSION['MAPID'];
 
 $object_journal_reflection_id = isset($_POST['object_journal_reflection_id']) && trim($_POST['object_journal_reflection_id']) !== '' ? trim($_POST['object_journal_reflection_id']) : uniqid('ojr_', true);
+$forceInsert = (isset($_POST['force_insert']) && ($_POST['force_insert'] == '1' || $_POST['force_insert'] === 1 || $_POST['force_insert'] === 'true')) ? true : false;
 $appeared_at = date('Y-m-d H:i:s');
 $update_at = $appeared_at;
 $deleted = 0;
@@ -93,7 +94,7 @@ if (empty($insertCols)) {
 // Otherwise, try to find an existing reflection for the same object_journal_id (+ map_id if present) and update it.
 try {
     $existing_reflection_id = null;
-    if (isset($_POST['object_journal_reflection_id']) && trim($_POST['object_journal_reflection_id']) !== '') {
+    if (!$forceInsert && isset($_POST['object_journal_reflection_id']) && trim($_POST['object_journal_reflection_id']) !== '') {
         // check that the provided id exists
         $chk = $pdo->prepare('SELECT `object_journal_reflection_id` FROM `object_journal_reflections` WHERE `object_journal_reflection_id` = :rid LIMIT 1');
         $chk->execute([':rid' => trim($_POST['object_journal_reflection_id'])]);
@@ -102,7 +103,7 @@ try {
         if ($debugMode) { $debug[] = 'checked provided reflection id, exists=' . ($existing_reflection_id ? 'yes' : 'no'); }
     }
 
-    if ($existing_reflection_id === null) {
+    if ($existing_reflection_id === null && !$forceInsert) {
         // Attempt to find by object_journal_id (+ map_id if present)
         $where = '`object_journal_id` = :object_journal_id';
         $params = [':object_journal_id' => $object_journal_id];
@@ -260,6 +261,12 @@ try {
     }
 
     // No existing reflection -> perform INSERT (bindings already prepared)
+    // Ensure object_journal_reflection_id is included so caller receives a stable PK
+    if (!in_array('`object_journal_reflection_id`', $insertCols)) {
+        array_unshift($insertCols, '`object_journal_reflection_id`');
+        array_unshift($placeholders, ':object_journal_reflection_id');
+        $bindings[':object_journal_reflection_id'] = $object_journal_reflection_id;
+    }
     $sql = 'INSERT INTO `object_journal_reflections` (' . implode(', ', $insertCols) . ') VALUES (' . implode(', ', $placeholders) . ')';
     $stmt = $pdo->prepare($sql);
     foreach ($bindings as $k => $v) {

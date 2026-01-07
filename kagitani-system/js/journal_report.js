@@ -95,6 +95,8 @@
                                                     return txt;
                                                 }
                                             });
+                                        // Debug: log the raw response and the built content array for this node
+                                        try { console.log('journal_report: get_object_node_info', { nodeId: nodeId, raw: objRes, contentArr: contentArr }); } catch (e) { /* ignore logging errors */ }
                                         } catch (e) { console.error('build contentArr error', e); }
                                         resolve({ display: goalContents[i] || '', content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
                                     },
@@ -105,24 +107,23 @@
                             });
                         });
 
-                        Promise.all(promises).then(function (results) {
-                            // build preview modal (copied structure from original goal_list.js)
-
-                            // Theme palette for unified design
-                            var theme = {
-                                primary: '#2b7a78',   // teal-ish primary
-                                accent: '#0056b3',    // deep blue for secondary actions
-                                bg: '#ffffff',
                                 border: '#e8f3f1',
-                                text: '#233043',
-                                muted: '#6b7785',
-                                overlay: 'rgba(0,0,0,0.45)'
-                            };
-
+                                                            Promise.all(promises).then(function(results){
                             var modal = document.createElement('div');
-                            modal.className = 'jr-modal';
-
+                            modal.className = 'jr-modal-overlay';
+                            modal.style.position = 'fixed';
+                            modal.style.left = '0';
+                            modal.style.top = '0';
+                            modal.style.right = '0';
+                            modal.style.bottom = '0';
+                            modal.style.zIndex = '10000';
+                            modal.style.overflow = 'auto';
+                            modal.style.background = 'rgba(0,0,0,0.4)';
                             var modalContent = document.createElement('div');
+                            modalContent.className = 'jr-modal-content';
+                            // guard to avoid rendering reflections twice (two separate AJAX calls below)
+                            var _reflectionsRendered = false;
+                            var theme = (typeof window.theme !== 'undefined') ? window.theme : { border:'#e6eaf0', text:'#233043', muted:'#7a8698', accent:'#1363df', primary:'#2b7a78' };
                             modalContent.className = 'jr-modal-content';
 
                             var title = document.createElement('h3');
@@ -185,29 +186,96 @@
                                 } catch (e) { console.warn('wireInfoWrapInteractions failed', e); }
                             }
 
+                            // capture the weeklyGoals index for use when persisting new reflections
+                            var _weeklyGoalIdx_for_clones = idx;
                             addReflectionBtn.addEventListener('click', function () {
                                 try {
                                     // clone the infoWrap visually and insert before the download button
                                     if (!infoWrap) return;
                                     var clone = infoWrap.cloneNode(true);
                                     // rename any ids inside clone to avoid duplicate ids (append index)
-                                    var idx = _jrInfoCloneIdx++;
+                                    var cloneIdx = _jrInfoCloneIdx++;
                                     var elemsWithId = clone.querySelectorAll('[id]');
                                     elemsWithId.forEach(function (el) {
                                         var old = el.id;
-                                        el.id = old + '_' + idx;
+                                        el.id = old + '_' + cloneIdx;
                                     });
                                     // set header text for clone to show ordinal
                                     var headerEl = clone.querySelector('.jr-info-header');
-                                    if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja') ? ('内省 #' + (idx + 1)) : ('Reflection #' + (idx + 1));
+                                    if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja') ? ('内省 #' + (cloneIdx + 1)) : ('Reflection #' + (cloneIdx + 1));
+                                    // clear any persisted ids on the clone so it becomes a fresh entry
+                                    try {
+                                        // remove any data attributes that would tie clone to existing DB rows
+                                        var dataKeys = ['objectLeId','objectJournalReflectionId','objectJournalReflectionId'];
+                                        dataKeys.forEach(function(k){
+                                            var els = clone.querySelectorAll('[data-'+k.replace(/([A-Z])/g,'-$1').toLowerCase()+']');
+                                            els.forEach(function(el){ el.removeAttribute('data-'+k.replace(/([A-Z])/g,'-$1').toLowerCase()); });
+                                        });
+                                    } catch(e){}
+                                    // clear values inside clone so cloned fields aren't identical
+                                    try {
+                                        var inputs = clone.querySelectorAll('textarea, input');
+                                        inputs.forEach(function(inp){ if (inp.tagName.toLowerCase() === 'textarea' || inp.type === 'text' || inp.type === 'search') inp.value = ''; if (inp.type === 'checkbox' || inp.type === 'radio') inp.checked = false; });
+                                    } catch(e){}
                                     // ensure additional container id for cloned wrap exists uniquely
                                     var addCont = clone.querySelector('#wr_additionalLessonsContainer');
                                     if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + idx;
-                                    // insert clone just before dlBtn (download) if available, otherwise append to modalContent
-                                    if (typeof dlBtn !== 'undefined' && dlBtn.parentNode) dlBtn.parentNode.insertBefore(clone, dlBtn);
-                                    else modalContent.appendChild(clone);
+                                    // insert clone at the top of existing info cards (before the first .jr-info-wrap)
+                                    var firstWrap = modalContent.querySelector('.jr-info-wrap');
+                                    if (firstWrap) {
+                                        modalContent.insertBefore(clone, firstWrap);
+                                    } else if (typeof dlBtn !== 'undefined' && dlBtn.parentNode) {
+                                        // fallback: insert before download button
+                                        dlBtn.parentNode.insertBefore(clone, dlBtn);
+                                    } else {
+                                        modalContent.appendChild(clone);
+                                    }
                                     // wire interactions in the clone
                                     wireInfoWrapInteractions(clone);
+                                    // ensure cloned wrapper does not carry an object_journal_reflection id
+                                    try { clone.dataset.objectJournalReflectionId = ''; } catch(e){}
+
+                                    // Create a new reflection row on the server immediately and attach returned id to clone.
+                                    try {
+                                        // show temporary unsaved label while awaiting server
+                                        try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成中...'; } catch(e){}
+                                        var createPayload = {
+                                            object_journal_id: objectJournalId,
+                                            force_insert: 1,
+                                            reflection_text: '',
+                                            lessons: JSON.stringify([]),
+                                            debug: 1
+                                        };
+                                        $.ajax({
+                                            url: './php/insert_object_journal_reflection.php',
+                                            type: 'POST',
+                                            dataType: 'json',
+                                            data: createPayload,
+                                            success: function(resp) {
+                                                try {
+                                                    if (resp && resp.success && resp.object_journal_reflection_id) {
+                                                        var newId = resp.object_journal_reflection_id;
+                                                        try { clone.dataset.objectJournalReflectionId = newId; } catch(e){}
+                                                        // persist into localStorage.weeklyGoals at position 0 for this weekly index
+                                                        try {
+                                                            var stored = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                                                            if (!(stored && stored.length > _weeklyGoalIdx_for_clones && stored[_weeklyGoalIdx_for_clones])) stored[_weeklyGoalIdx_for_clones] = stored[_weeklyGoalIdx_for_clones] || {};
+                                                            if (!Array.isArray(stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids)) stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids = [];
+                                                            // insert at front
+                                                            stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids.unshift(newId);
+                                                            localStorage.setItem('weeklyGoals', JSON.stringify(stored));
+                                                        } catch(e) { console.warn('failed to persist new reflection id on clone', e); }
+                                                        // update header to show saved id
+                                                        try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 保存済み (' + newId + ')'; } catch(e){}
+                                                    } else {
+                                                        console.warn('create reflection on add failed', resp);
+                                                        try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成失敗'; } catch(e){}
+                                                    }
+                                                } catch(e) { console.warn('handle create resp failed', e); }
+                                            },
+                                            error: function(xhr, st, err) { console.warn('create reflection ajax failed', st, err); try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成失敗'; } catch(e){} }
+                                        });
+                                    } catch(e) { console.warn('create reflection on clone failed', e); }
                                 } catch (e) { console.warn('wr add reflection button failed', e); }
                             });
 
@@ -321,36 +389,43 @@
                                     data: { object_journal_id: objectJournalId, debug: 1 },
                                     success: function (rres) {
                                         console.log('journal_report: reflection (always) response', rres);
+                                        if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (first fetch) - skipping'); return; }
+                                        if (rres && Array.isArray(rres.reflections)) console.log('journal_report: reflections array', rres.reflections);
                                         try {
-                                            if (rres && rres.success && rres.reflection) {
-                                                var rf = rres.reflection;
-                                                if (typeof rf.evaluation_good !== 'undefined' && rf.evaluation_good !== null) {
-                                                    var el = document.getElementById('wr_successPoints'); if (el) el.value = rf.evaluation_good || '';
+                                            // if reflections array present, render one card per reflection
+                                            if (rres && rres.success && Array.isArray(rres.reflections) && rres.reflections.length) {
+                                                var refls = rres.reflections;
+                                                // populate first (existing) infoWrap then create clones for the rest
+                                                for (var ri = 0; ri < refls.length; ri++) {
+                                                    var rf = refls[ri];
+                                                    if (ri === 0) {
+                                                        populateWrapWithReflection(infoWrap, rf);
+                                                    } else {
+                                                        try {
+                                                            var clone = infoWrap.cloneNode(true);
+                                                            var cidx = _jrInfoCloneIdx++;
+                                                            var elemsWithId = clone.querySelectorAll('[id]');
+                                                            elemsWithId.forEach(function(el){ var old = el.id; el.id = old + '_' + cidx; });
+                                                            var headerEl = clone.querySelector('.jr-info-header'); if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja') ? ('内省 #' + (cidx+1)) : ('Reflection #' + (cidx+1));
+                                                            var addCont = clone.querySelector('#wr_additionalLessonsContainer'); if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + cidx;
+                                                            // insert before existing first infoWrap to keep newest at top
+                                                            var firstWrap = modalContent.querySelector('.jr-info-wrap');
+                                                            if (firstWrap) modalContent.insertBefore(clone, firstWrap);
+                                                            else modalContent.appendChild(clone);
+                                                            wireInfoWrapInteractions(clone);
+                                                            populateWrapWithReflection(clone, rf);
+                                                        } catch(e) { console.warn('clone populate failed', e); }
+                                                    }
                                                 }
-                                                if (typeof rf.evaluation_bad !== 'undefined' && rf.evaluation_bad !== null) {
-                                                    var el2 = document.getElementById('wr_failurePoints'); if (el2) el2.value = rf.evaluation_bad || '';
+                                                _reflectionsRendered = true;
+                                            } else {
+                                                var rf = null;
+                                                if (rres && rres.success && rres.reflection) rf = rres.reflection;
+                                                else if (rres && rres.debug) console.log('journal_report: reflection debug', rres.debug);
+                                                if (rf) {
+                                                    populateWrapWithReflection(infoWrap, rf);
+                                                    _reflectionsRendered = true;
                                                 }
-                                                if (typeof rf.attribution !== 'undefined' && rf.attribution !== null) {
-                                                    var el3 = document.getElementById('wr_completionReason'); if (el3) el3.value = rf.attribution || '';
-                                                }
-                                                // if lessons provided, populate lesson fields
-                                                if (Array.isArray(rf.lessons) && rf.lessons.length) {
-                                                    try {
-                                                        var lf = rf.lessons;
-                                                        if (lf[0] && lf[0].lesson_learned) {
-                                                            var focusEl = document.getElementById('wr_lesson_focus'); if (focusEl) focusEl.value = lf[0].lesson_learned || '';
-                                                        }
-                                                        if (lf[0] && typeof lf[0].opportunity !== 'undefined') {
-                                                            var whenEl = document.getElementById('wr_lesson_when'); if (whenEl) whenEl.value = lf[0].opportunity || '';
-                                                        }
-                                                        var container = document.getElementById('wr_additionalLessonsContainer'); if (container) container.innerHTML = '';
-                                                        for (var li = 1; li < lf.length; li++) {
-                                                            try { var fld = makeAdditionalLessonField(lf[li].lesson_learned || '', lf[li].opportunity || '', lf[li]['object_journal_lesson-learned_id']); if (container) container.appendChild(fld); } catch (e) { console.warn('append lesson from rf.lessons failed', e); }
-                                                        }
-                                                    } catch (e) { console.warn('populate lessons from reflection failed', e); }
-                                                }
-                                            } else if (rres && rres.debug) {
-                                                console.log('journal_report: reflection debug', rres.debug);
                                             }
                                         } catch (e) { console.warn('apply canonical reflection failed', e); }
                                     },
@@ -407,6 +482,38 @@
                                 wrap.appendChild(taW);
                                 wrap.appendChild(removeBtn);
                                 return wrap;
+                            }
+
+                            // Populate a jr-info-wrap with a reflection object
+                            function populateWrapWithReflection(wrap, rf) {
+                                try {
+                                    if (!wrap || !rf) return;
+                                    // attach reflection id
+                                    try { if (rf.object_journal_reflection_id) wrap.dataset.objectJournalReflectionId = rf.object_journal_reflection_id; } catch(e){}
+                                    // set evaluation and attribution
+                                    var sp = wrap.querySelector('.wr-successPoints'); if (sp) sp.value = rf.evaluation_good || '';
+                                    var fb = wrap.querySelector('.wr-failurePoints'); if (fb) fb.value = rf.evaluation_bad || '';
+                                    var cr = wrap.querySelector('.wr-completionReason'); if (cr) cr.value = rf.attribution || '';
+                                    // lessons: rf.lessons expected array of {lesson_learned, opportunity, object_journal_lesson-learned_id}
+                                    var focusEl = wrap.querySelector('.wr-lesson-focus'); var whenEl = wrap.querySelector('.wr-lesson-when');
+                                    var container = wrap.querySelector('#wr_additionalLessonsContainer') || wrap.querySelector('.jr-additional-container');
+                                    if (container) container.innerHTML = '';
+                                    if (Array.isArray(rf.lessons) && rf.lessons.length) {
+                                        var lf = rf.lessons;
+                                        if (lf[0]) { if (focusEl) focusEl.value = lf[0].lesson_learned || ''; if (whenEl) whenEl.value = lf[0].opportunity || ''; }
+                                        for (var lli = 1; lli < lf.length; lli++) {
+                                            try {
+                                                var l = lf[lli];
+                                                var fld = makeAdditionalLessonField(l.lesson_learned || '', l.opportunity || '', l['object_journal_lesson-learned_id']);
+                                                if (container) container.appendChild(fld);
+                                            } catch(e) { console.warn('populate additional lesson failed', e); }
+                                        }
+                                    } else {
+                                        // no lessons: clear main fields
+                                        if (focusEl) focusEl.value = '';
+                                        if (whenEl) whenEl.value = '';
+                                    }
+                                } catch(e) { console.warn('populateWrapWithReflection failed', e); }
                             }
 
                             // wire add button
@@ -512,20 +619,38 @@
                                                         data: { object_journal_id: objectJournalId, debug: 1 },
                                                         success: function (rres) {
                                                             console.log('get_object_journal_reflections response', rres);
-                                                            try {
-                                                                if (rres && rres.success && rres.reflection) {
-                                                                    var rf = rres.reflection;
-                                                                    if (typeof rf.evaluation_good !== 'undefined' && rf.evaluation_good !== null) {
-                                                                        var el = document.getElementById('wr_successPoints'); if (el) el.value = rf.evaluation_good || '';
+                                                            if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (second fetch) - skipping'); return; }
+                                                            if (rres && Array.isArray(rres.reflections)) console.log('get_object_journal_reflections reflections', rres.reflections);
+                                                                try {
+                                                                    // if reflections array present, render cards similarly to above
+                                                                    if (rres && rres.success && Array.isArray(rres.reflections) && rres.reflections.length) {
+                                                                        var refls = rres.reflections;
+                                                                        for (var ri = 0; ri < refls.length; ri++) {
+                                                                            var rf = refls[ri];
+                                                                            if (ri === 0) populateWrapWithReflection(infoWrap, rf);
+                                                                            else {
+                                                                                try {
+                                                                                    var clone = infoWrap.cloneNode(true);
+                                                                                    var cidx = _jrInfoCloneIdx++;
+                                                                                    var elemsWithId = clone.querySelectorAll('[id]');
+                                                                                    elemsWithId.forEach(function(el){ var old = el.id; el.id = old + '_' + cidx; });
+                                                                                    var headerEl = clone.querySelector('.jr-info-header'); if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja') ? ('内省 #' + (cidx+1)) : ('Reflection #' + (cidx+1));
+                                                                                    var addCont = clone.querySelector('#wr_additionalLessonsContainer'); if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + cidx;
+                                                                                    var firstWrap = modalContent.querySelector('.jr-info-wrap');
+                                                                                    if (firstWrap) modalContent.insertBefore(clone, firstWrap);
+                                                                                    else modalContent.appendChild(clone);
+                                                                                    wireInfoWrapInteractions(clone);
+                                                                                    populateWrapWithReflection(clone, rf);
+                                                                                } catch(e) { console.warn('clone populate failed', e); }
+                                                                            }
+                                                                        }
+                                                                        _reflectionsRendered = true;
+                                                                    } else {
+                                                                        var rf = null;
+                                                                        if (rres && rres.success && rres.reflection) rf = rres.reflection;
+                                                                        if (rf) { populateWrapWithReflection(infoWrap, rf); _reflectionsRendered = true; }
                                                                     }
-                                                                    if (typeof rf.evaluation_bad !== 'undefined' && rf.evaluation_bad !== null) {
-                                                                        var el2 = document.getElementById('wr_failurePoints'); if (el2) el2.value = rf.evaluation_bad || '';
-                                                                    }
-                                                                    if (typeof rf.attribution !== 'undefined' && rf.attribution !== null) {
-                                                                        var el3 = document.getElementById('wr_completionReason'); if (el3) el3.value = rf.attribution || '';
-                                                                    }
-                                                                }
-                                                            } catch (e) { console.warn('apply reflection prefill failed', e); }
+                                                                } catch (e) { console.warn('apply reflection prefill failed', e); }
                                                         },
                                                         error: function () { /* ignore reflection fetch errors silently */ }
                                                     });
@@ -1273,14 +1398,25 @@
                                     if (stored && stored.length > idx && stored[idx] && Array.isArray(stored[idx].object_journal_reflection_ids)) {
                                         existingReflectionIds = stored[idx].object_journal_reflection_ids.slice();
                                     }
-                                    if (existingReflectionIds[wrapIdx]) refPayload.object_journal_reflection_id = existingReflectionIds[wrapIdx];
+                                    // Prefer any reflection id attached to this wrapper via data- attribute (clone / prior save)
+                                    try {
+                                        var wrapRefId = wrap.dataset && wrap.dataset.objectJournalReflectionId ? wrap.dataset.objectJournalReflectionId : null;
+                                        // If wrapRefId is a temp id (starts with 'temp-'), treat as no existing id (will INSERT)
+                                        if (wrapRefId && typeof wrapRefId === 'string' && wrapRefId.indexOf('temp-') !== 0) {
+                                            refPayload.object_journal_reflection_id = wrapRefId;
+                                        } else if (existingReflectionIds[wrapIdx]) {
+                                            refPayload.object_journal_reflection_id = existingReflectionIds[wrapIdx];
+                                        }
+                                    } catch (e) {
+                                        if (existingReflectionIds[wrapIdx]) refPayload.object_journal_reflection_id = existingReflectionIds[wrapIdx];
+                                    }
 
                                     promises.push(new Promise(function (resolve, reject) {
                                         $.ajax({
                                             url: './php/insert_object_journal_reflection.php', type: 'POST', data: refPayload, dataType: 'json',
                                             success: function (rres) {
                                                 if (rres && rres.success && rres.object_journal_reflection_id) {
-                                                    // Update stored ID
+                                                    // Update stored ID and attach id to wrapper so future saves target the same row
                                                     try {
                                                         var s2 = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
                                                         if (!(s2 && s2.length > idx && s2[idx])) s2[idx] = s2[idx] || {};
@@ -1290,6 +1426,7 @@
                                                         s2[idx].object_journal_reflection_ids[wrapIdx] = rres.object_journal_reflection_id;
                                                         localStorage.setItem('weeklyGoals', JSON.stringify(s2));
                                                     } catch (e) { console.warn('persist id fail', e); }
+                                                    try { if (wrap && wrap.dataset) wrap.dataset.objectJournalReflectionId = rres.object_journal_reflection_id; } catch (e) {}
                                                     resolve(rres);
                                                 } else {
                                                     reject(rres);
