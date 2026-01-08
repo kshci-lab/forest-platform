@@ -62,7 +62,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             this.jmindex = [];
             this.addEventLister();
             // $(`#jsmind_container`).on('click',this.connect_mindmap.bind(this));
-            // $(`#process_conmenu1`).on('click',this.selectShareOrganization.bind(this));
+            // $(`#process_conmenu1`).on('click',this.openLessonAreaOpen.bind(this));
             // $(`#process_conmenu2`).on('click',this.connect_network.bind(this));
             // $(`#process_conmenu3`).on('click',this.Recruit_Idea.bind(this));
             $(`#process_conmenu4`).on('click',this.ContentmenuCancel.bind(this));
@@ -154,7 +154,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     addEventLister(){
-        this.bindselectShareOrganization = this.selectShareOrganization.bind(this);
+        this.bindopenLessonAreaOpen = this.openLessonAreaOpen.bind(this);
         // this.bindshow_select = this.show_select.bind(this);
         // this.bindconnect_network = this.connect_network.bind(this);
         // this.bindRecruit_Idea = this.Recruit_Idea.bind(this);
@@ -164,7 +164,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // this.bindfeedback = this.feedback.bind(this);
         // this.bindNodeblinking = this.Nodeblinking.bind(this);
         // $(`#jsmind_container`).on('click',this.bindconnect_mindmap);
-        $(`#process_conmenu1`).on('click',this.bindselectShareOrganization);
+        $(`#process_conmenu1`).on('click',this.bindopenLessonAreaOpen);
         // $(`#process_conmenu2`).on('click',this.bindconnect_network);
         // $(`#process_conmenu3`).on('click',this.bindRecruit_Idea);
         $(`#process_conmenu4`).on('click',this.bindContentmenuCancel);
@@ -176,7 +176,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     removeEventLister(){
         // $(`#jsmind_container`).off('click',this.bindconnect_mindmap);
-        $(`#process_conmenu1`).off('click',this.bindselectShareOrganization);
+        $(`#process_conmenu1`).off('click',this.bindopenLessonAreaOpen);
         // $(`#process_conmenu2`).off('click',this.bindconnect_network);
         // $(`#process_conmenu3`).off('click',this.bindRecruit_Idea);
         $(`#process_conmenu4`).off('click',this.bindContentmenuCancel);
@@ -595,6 +595,60 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         labelselect.style.display = "block";
         labelselect.style.left = this.BoxDisplay.x;
         labelselect.style.top = this.BoxDisplay.y;
+    }
+
+    openLessonAreaOpen(){
+        // 1. trigger_displayを非表示
+        const trigger = document.getElementById('trigger_display');
+        if (trigger) trigger.style.display = 'none';
+    
+        // 2. lesson_displayを表示
+        const lesson = document.getElementById('lesson_display');
+        if (lesson) lesson.style.display = 'block';
+    
+        // 3. area_lesson_addにテキスト入力ボックスを3つ作成
+        const area = document.getElementById('area_lesson_add');
+        if (area) {
+            area.innerHTML = '';
+    
+            // 1つ目
+            const label1 = document.createElement('label');
+            label1.textContent = 'Q.なぜこの経験が印象に残りましたか？';
+            const input1 = document.createElement('textarea');
+            input1.name = 'reason';
+            input1.rows = 3;
+    
+            // 2つ目
+            const label2 = document.createElement('label');
+            label2.textContent = 'Q.この経験にはどんな前提や背景がありますか？';
+            const input2 = document.createElement('textarea');
+            input2.name = 'background';
+            input2.rows = 3;
+    
+            // 3つ目
+            const label3 = document.createElement('label');
+            label3.textContent = 'Q.この経験には，他の場面でも使える考え方の指針はありますか？';
+            const input3 = document.createElement('textarea');
+            input3.name = 'guideline';
+            input3.rows = 3;
+    
+            // 各ラベルとテキストエリアを追加
+            area.appendChild(label1);
+            area.appendChild(document.createElement('br'));
+            area.appendChild(input1);
+            area.appendChild(document.createElement('br'));
+            area.appendChild(document.createElement('br'));
+    
+            area.appendChild(label2);
+            area.appendChild(document.createElement('br'));
+            area.appendChild(input2);
+            area.appendChild(document.createElement('br'));
+            area.appendChild(document.createElement('br'));
+    
+            area.appendChild(label3);
+            area.appendChild(document.createElement('br'));
+            area.appendChild(input3);
+        }
     }
 
     selectShareOrganization (){// 右クリックメニューを非表示
@@ -1141,7 +1195,7 @@ const displayTriggerData = (mode, process_display_option) => {
     if(mode=="all" || mode == "allRE"){
         const conceptdisplay_area = $(`#conceptdisplay`); // 何の認知活動かを表示するエリア
         const target_area = $(`#${process_display_option}`); // DOMエリア
-        $('#trigger_area_list').html("");
+        $('#trigger_candidate_list').html("");
 
         getProcessMapDataFromDB ((trigger_list_info) => {
             //concept_labelを表示
@@ -1328,7 +1382,7 @@ const addeventdisplayTriggerData = () => {
     for(var i=0; i<feedbackarea.length; i++){
         feedbackarea[i].style.display = "none";
     }
-    $(`#trigger_area`).on('mousedown', (e) => {
+    $(`#lesson_area`).on('mousedown', (e) => {
     // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
     mousedownId = null;
     const overed_node = e.target;
@@ -1336,7 +1390,7 @@ const addeventdisplayTriggerData = () => {
         mousedownId = overed_node.getAttribute('id');
     }
     });
-    $(`#trigger_area`).on('mouseleave', (e) => {
+    $(`#lesson_area`).on('mouseleave', (e) => {
     // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
         // $(`#trigger_click`).empty();
     });
@@ -1353,8 +1407,8 @@ const addeventdisplayTriggerData = () => {
 
 // 学習者がオリジナルのTriggerを入力できる箇所を作成
 function inputTriggerAreaOpen(){
-    $('#trigger_area_display').css('height','auto');
-    $('#trigger_area_add').css('height','auto');
+    $('#trigger_display').css('height','auto');
+    $('#area_trigger_add').css('height','auto');
     $('#trigger_add').css('height','auto');
     document.getElementById('inputTriggerbutton').value = " × 閉じる";
     document.getElementById('inputTriggerbutton').onclick = inputTriggerAreaClose;
@@ -1416,8 +1470,8 @@ function inputTriggerAreaOpen(){
 
 //   Trigger入力箇所を閉じる処理
 function inputTriggerAreaClose(){
-    $('#trigger_area_display').css('height','100px');
-    $('#trigger_area_add').css('height','20px');
+    $('#trigger_display').css('height','100px');
+    $('#area_trigger_add').css('height','20px');
     $('#trigger_add').css('height','0px');
     document.getElementById("trigger_time").remove();
     document.getElementById("trigger_activity").remove();
@@ -1505,12 +1559,12 @@ function ShowRelatedProcess(mode){
         // checlboxがチェックされている時の処理
         if(check.checked == true){
             console.log(check);
-            displayTriggerData("AddBrother", "trigger_area_list");
+            displayTriggerData("AddBrother", "trigger_candidate_list");
         }
         else{
             console.log(check);
             defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
-            displayTriggerData("allRE", "trigger_area_list");
+            displayTriggerData("allRE", "trigger_candidate_list");
         }
     }// 整合性ラベルのついたノードを含めた表示
     if(mode=='consistency'){
@@ -1585,7 +1639,7 @@ function showThinkingProcessMap(others_node){
         });
     
         defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
-        displayTriggerData("all", "trigger_area_list");
+        displayTriggerData("all", "trigger_candidate_list");
     }
     
   

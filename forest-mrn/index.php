@@ -501,7 +501,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </div>
                                     <div id="t_Process_conmenu">
                                         <ul>
-                                            <li><a href="javascript:void(0);" id="process_conmenu1">組織へ共有</a></li>                                            </li>
+                                            <li><a href="javascript:void(0);" id="process_conmenu1">学びを入力</a></li>                                            </li>
                                             <li><a href="javascript:void(0);" id="process_conmenu4">キャンセル</a></li>
                                         </ul>
                                     </div>
@@ -520,17 +520,26 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </div>
                                     <div id="myProcessnetwork"></div>
                                 </div>
-                                <div id="trigger_area">
-                                    <div id="trigger_area_display">
-                                        <div id="conceptdisplay"></div>
+                                <div id="lesson_area">
+                                    <div id="conceptdisplay"></div>
+
+                                    <!-- trigger関連の表示 -->
+                                    <div id="trigger_display">
                                         <div id="trigger_click"></div>
-                                        <div id="trigger_area_add">
+                                        <div id="area_trigger_add">
                                             <input type="button" id="inputTriggerbutton" value=" ＋ 活動を入力" onclick="inputTriggerAreaOpen()"/>
                                             <div id="trigger_add">
                                             </div>
                                         </div>
+                                        <div id="trigger_candidate_list"></div>
                                     </div>
-                                    <div id="trigger_area_list">
+
+                                    <!-- 組織へ共有する学び関連の表示 -->
+                                    <div id="lesson_display">
+                                        <div id="area_lesson_add"></div>
+                                        <div id="lesson_add">
+                                            <input type="button" class="lessonbutton" value="組織へ共有" onclick="selectShareOrganization()"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

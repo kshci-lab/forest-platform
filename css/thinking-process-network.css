@@ -43,7 +43,7 @@
 }
 
 /* triggerを表示するエリア関連の設定 */
-#trigger_area{
+#lesson_area{
 	width: calc((100vw - 350px)*0.3);
 	min-width: 100px;
 	/* height:50%; */
@@ -52,14 +52,6 @@
 	background:#90B1AB;
 	overflow-y: scroll;
 }
-
-#trigger_area_display{
-	position: sticky;
-	top: 0;
-	/* width: calc((100vw - 350px)*0.35); */
-	height:100px;
-	background:#90B1AB;
-}
 #conceptdisplay{
 	height: 25px;
 	color: #03200a;
@@ -67,7 +59,16 @@
 	margin-bottom: 5px;
 	text-align: center;
 }
-#trigger_area_add{
+
+/* trigger関連 */
+#trigger_display{
+	position: sticky;
+	top: 0;
+	/* width: calc((100vw - 350px)*0.35); */
+	height:100px;
+	background:#90B1AB;
+}
+#area_trigger_add{
 	height: 20px;
 	/* width: 90%; */
 	min-width: 100px;
@@ -77,7 +78,7 @@
 	line-height:20px;
 	cursor: pointer;
 }
-#trigger_area_list{
+#trigger_candidate_list{
 	/* width: calc((100vw - 350px)*0.35); */
 	width: 98%;
 	/* margin-bottom:2vh; */
@@ -88,11 +89,31 @@
 	cursor: pointer;
 }
 
+/* 学びの共有関連 */
+#lesson_display{
+	position: sticky;
+	top: 0;
+	/* width: calc((100vw - 350px)*0.35); */
+	height:100%;
+	color: #9d6a18;
+	background:#fff8ed;
+	display: none;
+	padding: 3%;
+}
+#area_lesson_add{
+	/* width: 90%; */
+	min-width: 100px;
+	margin-bottom:1vh;
+	line-height:20px;
+	cursor: pointer;
+}
+
 /* -------------------- ボタン類の設定 ---------------------- */
 
 
 #trigger_click{
 	height:30px;
+	width:100%;
 }
 #trigger_time{
 	width:70%;
@@ -117,6 +138,14 @@
 	margin-left: 10px;
     margin-bottom: 3px;
 	background-color: #dceadf;
+	transition: 0.3s ease;
+}
+#lesson_add{
+	height:0px;
+	width: 97%;
+	margin-left: 10px;
+    margin-bottom: 3px;
+	background-color: #fff8ed;
 	transition: 0.3s ease;
 }
 
@@ -241,7 +270,6 @@ input[type="checkbox"][name="check_process"]{
 .triggerbutton {
 	background-color: #f1f7f2;
 	color: #04210a;
-	width: 120px;
     height: 35px;
     font-size: 12px;
     margin-left: 5px;
@@ -282,6 +310,26 @@ input[type="checkbox"][name="check_process"]{
   background: #93a3a1;
 }
 
+.lessonbutton {
+	background-color: #fece82;
+	color: #04210a;
+    height: 35px;
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 3px;
+	padding: 0.4em;
+	display: inline-block;
+	text-decoration: none;
+	text-align: center;
+	user-select: none;
+	border: 1px #fca924 solid;
+	border-radius: 5px;
+	transition: 0.4s ease;
+}
+.lessonbutton:hover {
+  color: #f1f7f2;
+  background: #fbd393;
+}
 
 .process_close{
 	color: #a0a1a1;
