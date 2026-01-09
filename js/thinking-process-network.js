@@ -615,6 +615,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const label1 = document.createElement('label');
             label1.textContent = 'Q.なぜこの経験が印象に残りましたか？';
             const input1 = document.createElement('textarea');
+            input1.className = 'lessonTextArea';
             input1.name = 'reason';
             input1.rows = 3;
     
@@ -622,6 +623,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const label2 = document.createElement('label');
             label2.textContent = 'Q.この経験にはどんな前提や背景がありますか？';
             const input2 = document.createElement('textarea');
+            input2.className = 'lessonTextArea';
             input2.name = 'background';
             input2.rows = 3;
     
@@ -629,6 +631,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const label3 = document.createElement('label');
             label3.textContent = 'Q.この経験には，他の場面でも使える考え方の指針はありますか？';
             const input3 = document.createElement('textarea');
+            input3.className = 'lessonTextArea';
             input3.name = 'guideline';
             input3.rows = 3;
     
