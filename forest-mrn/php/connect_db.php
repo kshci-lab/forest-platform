@@ -2,7 +2,6 @@
 
 
 	//ローカルPCから接続するとき．
-<<<<<<< Updated upstream
 	$db_host = "localhost";  // DBサーバのurl
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
@@ -17,27 +16,14 @@
 	// $db_dbname = "forest_platform";
 
 	//アプリケーションサーバーにアップロードするとき．
-=======
->>>>>>> Stashed changes
 	// $db_host = "localhost";  // DBサーバのurl
-	// $db_port = 8889;  // ポート番号
+	// $db_port = 3306;
 	// $db_user = "root";
-	// $db_password = "root";
+	// $db_password = "kslabkslab";
 	// $db_dbname = "forest_platform";
 
-<<<<<<< Updated upstream
 
 	// // mysqlへの接続
-=======
-	アプリケーションサーバーにアップロードするとき．
-	$db_host = "localhost";  // DBサーバのurl
-	$db_port = 3306;
-	$db_user = "root";
-	$db_password = "kslabkslab";
-	$db_dbname = "forest_platform";
-
-	// mysqlへの接続
->>>>>>> Stashed changes
 	$mysqli = new mysqli($db_host, $db_user, $db_password, $db_dbname, $db_port);
 	// $mysqli = new mysqli($db_host, $db_user, $db_password, $db_dbname);
 	if ($mysqli->connect_error) {
