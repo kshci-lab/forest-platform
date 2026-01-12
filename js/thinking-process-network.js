@@ -693,7 +693,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 const selectedOrg = organizationMap[selectedNumber];
                 console.log("選択された組織: " + selectedOrg.text + " (ID: " + selectedOrg.value + ")");
 
-                this.shareProcessNodeToOrganization(selectedOrg.value, selected_node_id);
+                this.shareKnowledgeFragmentToOrganization(selectedOrg.value, selected_node_id);
 
                 alert("組織 " + selectedOrg.text + " へ共有しました。");
             } else {
@@ -707,28 +707,63 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
     }
 
-    shareProcessNodeToOrganization(organizationId, nodeId) {
+    shareKnowledgeFragmentToOrganization(organizationId, nodeId) {
         // バリデーション
         if (!organizationId || !nodeId) {
             alert('共有する組織またはノードが選択されていません。');
             return;
         }
 
-        $.ajax({
-            url: "../php/organizational_edit_map_maneger.php",
-            type: "POST",
-            data: {
-                purpose: "share",
-                group_id: organizationId,
-                process_node_id: nodeId
-            },
-            success: function(response) {
-                console.log('共有処理が成功しました:', response);
-            },
-            error: function(xhr, status, err) {
-                console.error('shareProcessNodeToOrganization error:', status, err, xhr.responseText);
+        console.log('Sharing process node ID:', nodeId, 'to organization ID:', organizationId);
+
+        // $.ajax({
+        //     url: "../php/organizational_edit_map_maneger.php",
+        //     type: "POST",
+        //     data: {
+        //         purpose: "share",
+        //         group_id: organizationId,
+        //         process_node_id: nodeId
+        //     },
+        //     success: function(response) {
+        //         console.log('共有処理が成功しました:', response);
+        //     },
+        //     error: function(xhr, status, err) {
+        //         console.error('shareKnowledgeFragmentToOrganization error:', status, err, xhr.responseText);
+        //     }
+        // });
+
+        // 学び(lesson)のテキストエリアを収集してサーバへ保存
+        try {
+            const lessonAreas = document.getElementsByClassName('lessonTextArea');
+            const contents = [];
+            for (let i = 0; i < lessonAreas.length; i++) {
+                const name = lessonAreas[i].name || ('text' + i);
+                const value = lessonAreas[i].value || '';
+                contents.push({ type: name, content: value });
             }
-        });
+
+            console.log(JSON.stringify(contents));
+            console.log('Sending lesson contents to server for node ID:', nodeId);
+
+            // 送信
+            // $.ajax({
+            //     url: "../php/thinking_edit_processmap_maneger.php",
+            //     type: "POST",
+            //     data: {
+            //         purpose: "share_fragment",
+            //         process_node_id: nodeId,
+            //         contents: JSON.stringify(contents)
+            //     },
+            //     success: function(resp) {
+            //         console.log('knowledge fragment 保存成功:', resp);
+            //     },
+            //     error: function(xhr, status, err) {
+            //         console.error('save fragment error:', status, err, xhr.responseText);
+            //     }
+            // });
+        } catch (e) {
+            console.error('lesson 保存処理で例外が発生しました:', e);
+        }
     }
 
     ContentmenuCancel(){
@@ -1706,6 +1741,17 @@ window.addEventListener('load', () => {
     $(`#process_ZoomOut`).on("click", e => {
         defaultThinkingProcess.zoomOut();
     });
+
+    // グローバルなインライン呼び出しに対応するラッパーを登録
+    // index.php の onclick="selectShareOrganization()" が存在するため、グローバル関数を用意する
+    window.selectShareOrganization = function() {
+        if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess.selectShareOrganization) {
+            defaultThinkingProcess.selectShareOrganization();
+        } else {
+            console.error('selectShareOrganization: defaultThinkingProcess が利用できません');
+            alert('共有機能が利用できません。ページをリロードしてください。');
+        }
+    };
 
     const accordionHeaders = document.querySelectorAll('#accordion_discussion .accordion-header');
     accordionHeaders.forEach(header => {
