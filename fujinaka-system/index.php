@@ -502,17 +502,17 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                         </div>
                         <div id="myProcessnetwork"></div>
                     </div>
-                    <div id="trigger_area">
-                        <div id="trigger_area_display">
+                    <div id="lesson_area">
+                        <div id="trigger_display">
                             <div id="conceptdisplay"></div>
                             <div id="trigger_click"></div>
-                            <div id="trigger_area_add">
+                            <div id="area_trigger_add">
                                 <input type="button" id="inputTriggerbutton" value=" ＋ 活動を入力" onclick="inputTriggerAreaOpen()"/>
                                 <div id="trigger_add">
                                 </div>
                             </div>
                         </div>
-                        <div id="trigger_area_list">
+                        <div id="trigger_candidate_list">
                         </div>
                     </div>
                 </div>
