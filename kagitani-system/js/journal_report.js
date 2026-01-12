@@ -64,8 +64,34 @@
                         }
                         var nodeIds = res.node_ids;
                         // Debug: log node ids returned from server for tracing
-                        try { console.log('journal_report: node_ids', nodeIds); if (Array.isArray(nodeIds)) nodeIds.forEach(function (n) { console.log('journal_report: node_id', n); }); } catch (e) { console.warn('journal_report: failed to log node_ids', e); }
+                        try { console.log('IEEEえええええjournal_report: node_ids', nodeIds); if (Array.isArray(nodeIds)) nodeIds.forEach(function (n) { console.log('journal_report: node_id', n); }); } catch (e) { console.warn('journal_report: failed to log node_ids', e); }
+
+                        // 追加処理: 取得した node_id を基に object_nodes テーブルから
+                        // startDate 〜 endDate の期間に情報を持つ object_node_id を取得してログ出力する
+                        try {
+                            if (Array.isArray(nodeIds)) {
+                                nodeIds.forEach(function(nid){
+                                    try {
+                                        $.ajax({
+                                            url: 'php/get_object_node_info.php',
+                                            type: 'GET',
+                                            dataType: 'json',
+                                            data: { node_id: nid, start_date: startDate, end_date: endDate, debug: 1 },
+                                            success: function(objRes) {
+                                                try {
+                                                    console.log('journal_report: object_node_info for node_id', nid, '=> object_node_ids:', objRes.object_node_ids || []);
+                                                    if (objRes.debug_rows) console.log('journal_report: debug_rows for node_id ' + nid, objRes.debug_rows);
+                                                } catch (e) { console.warn('journal_report: logging object_node_info failed', e); }
+                                            },
+                                            error: function(xhr, st, err) { console.warn('journal_report: get_object_node_info error for node_id ' + nid, st, err, xhr && xhr.responseText); }
+                                        });
+                                    } catch(e){ console.warn('journal_report: ajax for object_node_info failed', e); }
+                                });
+                            }
+                        } catch(e) { console.warn('journal_report: object_nodes debug fetch failed', e); }
                         var promises = nodeIds.map(function (nodeId, i) {
+                            console.log('うおおおおおおおおjournal_report: fetching node info for', nodeId);
+
                             return new Promise(function (resolve) {
                                 $.ajax({
                                     //ジャーナルの手段履歴を取得している
@@ -74,6 +100,7 @@
                                     dataType: 'json',
                                     data: { node_id: nodeId, start_date: startDate, end_date: endDate },
                                     success: function (objRes) {
+                                        console.log('journal_report: get_object_node_info', { nodeId: nodeId, response: objRes });
                                         var contentArr = [];
                                         try {
                                             // Prefer histories (from object_nodes_histories) because they carry `activity`.
@@ -109,6 +136,7 @@
 
                                 border: '#e8f3f1',
                                                             Promise.all(promises).then(function(results){
+                                                                try { console.log('journal_report: node fetch results', results); } catch(e){}
                             var modal = document.createElement('div');
                             modal.className = 'jr-modal-overlay';
                             modal.style.position = 'fixed';

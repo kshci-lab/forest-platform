@@ -105,10 +105,31 @@
           date.textContent = item.updated_at ? item.updated_at : '';
 
           const cl = document.createElement('div');
-          cl.style.marginTop = '6px';
-          cl.style.fontSize = '13px';
-          cl.style.color = '#111827';
-          cl.innerHTML = escapeHtml(item.application || '');
+          cl.style.marginTop = '8px';
+          cl.style.fontSize = '15px';
+          cl.style.lineHeight = '1.5';
+          cl.style.color = '#0f172a';
+          cl.style.fontWeight = '700';
+          cl.style.whiteSpace = 'pre-wrap';
+          // server may return `application` or `lesson_learned` (or lesson_learned with hyphenated keys)
+          const applicationText = item.application || item.lesson_learned || item['lesson_learned'] || item['lesson'] || '';
+          cl.innerHTML = escapeHtml(applicationText);
+
+          // opportunity: render as badge if present (more目立つ表示)
+          let opportunityBadge = null;
+          if (item.opportunity && String(item.opportunity).trim() !== '') {
+            opportunityBadge = document.createElement('div');
+            opportunityBadge.style.display = 'inline-block';
+            opportunityBadge.style.marginTop = '8px';
+            opportunityBadge.style.padding = '6px 8px';
+            opportunityBadge.style.fontSize = '12px';
+            opportunityBadge.style.fontWeight = '600';
+            opportunityBadge.style.color = '#6b3f00';
+            opportunityBadge.style.background = 'linear-gradient(180deg, #fff7ed, #fffbf7)';
+            opportunityBadge.style.border = '1px solid rgba(212,172,72,0.18)';
+            opportunityBadge.style.borderRadius = '999px';
+            opportunityBadge.textContent = item.opportunity;
+          }
 
           const period = document.createElement('div');
           period.style.marginTop = '6px';
@@ -124,6 +145,7 @@
 
           card.appendChild(date);
           card.appendChild(cl);
+          if (opportunityBadge) card.appendChild(opportunityBadge);
           card.appendChild(period);
           body.appendChild(card);
         });
@@ -140,8 +162,16 @@
     var body = tip.querySelector('#lessonsTooltipBodySRL');
     if(!body) return;
     body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">読み込み中...</div>';
-    fetch('php/get_lessons_srl.php')
-      .then(r => r.json())
+    fetch('php/get_lessons_srl.php?debug=1')
+      .then(r => {
+        if (!r.ok) {
+          return r.text().then(txt => {
+            console.error('get_lessons_srl non-OK', r.status, txt);
+            throw new Error('Server returned ' + r.status);
+          });
+        }
+        return r.json();
+      })
       .then(data => {
         if (!data.items || data.items.length === 0) {
           body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">該当する教訓は見つかりませんでした。</div>';
@@ -162,10 +192,33 @@
           date.textContent = item.updated_at ? item.updated_at : '';
 
           const cl = document.createElement('div');
-          cl.style.marginTop = '6px';
-          cl.style.fontSize = '13px';
-          cl.style.color = '#111827';
-          cl.innerHTML = escapeHtml(item.application || '');
+          cl.style.marginTop = '8px';
+          cl.style.fontSize = '15px';
+          cl.style.lineHeight = '1.5';
+          cl.style.color = '#0f172a';
+          cl.style.fontWeight = '700';
+          cl.style.whiteSpace = 'pre-wrap';
+          // show lesson text from lesson_learned column
+          const lesson = item.lesson_learned || item['lesson_learned'] || item['lesson'] || '';
+          cl.innerHTML = escapeHtml(lesson);
+
+          // opportunity: render as prominent pill/badge (SRL)
+          let opportunityBadgeSRL = null;
+          const opportunitySRL = item.opportunity || '';
+          if (opportunitySRL && String(opportunitySRL).trim() !== ''){
+            opportunityBadgeSRL = document.createElement('div');
+            opportunityBadgeSRL.style.display = 'inline-block';
+            opportunityBadgeSRL.style.marginTop = '8px';
+            opportunityBadgeSRL.style.padding = '8px 10px';
+            opportunityBadgeSRL.style.fontSize = '13px';
+            opportunityBadgeSRL.style.fontWeight = '700';
+            opportunityBadgeSRL.style.color = '#5c2e00';
+            opportunityBadgeSRL.style.background = 'linear-gradient(180deg, #fff4e6, #fffaf0)';
+            opportunityBadgeSRL.style.border = '1px solid rgba(212,172,72,0.22)';
+            opportunityBadgeSRL.style.borderRadius = '10px';
+            opportunityBadgeSRL.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.6)';
+            opportunityBadgeSRL.textContent = opportunitySRL;
+          }
 
           const period = document.createElement('div');
           period.style.marginTop = '6px';
@@ -181,6 +234,7 @@
 
           card.appendChild(date);
           card.appendChild(cl);
+          if (opportunityBadgeSRL) card.appendChild(opportunityBadgeSRL);
           card.appendChild(period);
           body.appendChild(card);
         });

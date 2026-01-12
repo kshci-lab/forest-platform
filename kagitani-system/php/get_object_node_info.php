@@ -65,16 +65,21 @@ if ($rows) {
 
         // Order histories so that records with the same object_node_id are consecutive.
         // Sort groups by the group's earliest appeared_at (oldest first), then by object_node_id, then by appeared_at (oldest first).
-        // Return new column names (evaluation_good/attribution/application) and alias them to old names for compatibility
-        $sql_hist = "SELECT `object_node_history_id`, `object_node_id`, `object_node_type`, `status`, `appeared_at`, `disappeared_at`, `content`, `x`, `y`, `purpose`, `estimated_time`, evaluation_good AS evaluation_good, evaluation_good AS evaluation_good, attribution AS attribution, attribution AS attribution, application AS application, application AS application, `drag`, `activity` FROM `object_nodes_histories` WHERE object_node_id IN (" . $inClause . ") AND drag = 0 " . $histDateClause . " ORDER BY (SELECT MIN(h2.appeared_at) FROM `object_nodes_histories` h2 WHERE h2.object_node_id = object_nodes_histories.object_node_id) ASC, object_node_id ASC, appeared_at ASC";
-        $result_hist = $mysqli->query($sql_hist);
+        // Use a safe select (`*`) to avoid Unknown column errors on older schemas; catch exceptions from mysqli.
+        $sql_hist = "SELECT * FROM `object_nodes_histories` WHERE object_node_id IN (" . $inClause . ") AND drag = 0 " . $histDateClause . " ORDER BY (SELECT MIN(h2.appeared_at) FROM `object_nodes_histories` h2 WHERE h2.object_node_id = object_nodes_histories.object_node_id) ASC, object_node_id ASC, appeared_at ASC";
+        try {
+            $result_hist = $mysqli->query($sql_hist);
+        } catch (mysqli_sql_exception $e) {
+            error_log('履歴取得例外: ' . $e->getMessage() . ' SQL=' . $sql_hist);
+            $result_hist = false;
+        }
         if ($result_hist) {
             while ($h = $result_hist->fetch_assoc()) {
                 $histories[] = $h;
                 if (isset($h['object_node_history_id'])) $objectNodeHistoryIds[] = $h['object_node_history_id'];
             }
         } else {
-            error_log('履歴取得失敗: ' . $mysqli->error);
+            if ($mysqli->error) error_log('履歴取得失敗: ' . $mysqli->error . ' SQL=' . $sql_hist);
         }
     }
 

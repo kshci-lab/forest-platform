@@ -31,33 +31,83 @@ try {
         PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '+09:00'"
     ]);
 
-    // If an object_node_id is provided, return lessons from object_lesson-learneds for that object_node_id
+    // If an object_node_id is provided, return lessons for that object_node_id
     if (!empty($_GET['object_node_id'])) {
         $object_node_id = $_GET['object_node_id'];
-        $sql = "SELECT object_le_id, object_node_id, lesson_learned, created_at, updated_at FROM `object_lesson-learneds` WHERE object_node_id = :object_node_id AND deleted = 0 ORDER BY created_at ASC";
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
-        $stmt->execute();
-        $rows = $stmt->fetchAll();
+        // Try multiple possible table names for compatibility
+        $candidates = [
+            '`object_lesson-learneds`', '`object_lesson-learned`', '`object_lesson_learneds`', '`object_lesson_learned`'
+        ];
+        $rows = [];
+        foreach ($candidates as $tbl) {
+            try {
+                $sql = "SELECT object_le_id, object_node_id, lesson_learned, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND deleted = 0 ORDER BY created_at ASC";
+                $stmt = $pdo->prepare($sql);
+                $stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
+                $stmt->execute();
+                $rows = $stmt->fetchAll();
+                break;
+            } catch (Exception $e) {
+                // table not found or other error; try next
+                continue;
+            }
+        }
         // Also fetch evaluation_bad from object_nodes for this object_node_id so client can prefill failure points
         $eval_bad = '';
-        $sql2 = "SELECT evaluation_bad FROM object_nodes WHERE object_node_id = :object_node_id LIMIT 1";
-        $stmt2 = $pdo->prepare($sql2);
-        $stmt2->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
         try {
+            $sql2 = "SELECT evaluation_bad FROM object_nodes WHERE object_node_id = :object_node_id LIMIT 1";
+            $stmt2 = $pdo->prepare($sql2);
+            $stmt2->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
             $stmt2->execute();
             $row2 = $stmt2->fetch();
             if ($row2 && isset($row2['evaluation_bad'])) $eval_bad = $row2['evaluation_bad'];
         } catch (Exception $e) {
-            // ignore DB errors here but keep items
+            // ignore
         }
-        echo json_encode([ 'success' => true, 'items' => $rows, 'evaluation_bad' => $eval_bad ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // Normalize output for client: use 'application' field for lesson text for backward compatibility
+        // Ensure 'opportunity' exists in every item
+        $norm = array_map(function($r){
+            $r['application'] = isset($r['lesson_learned']) ? $r['lesson_learned'] : (isset($r['application']) ? $r['application'] : '');
+            $r['opportunity'] = isset($r['opportunity']) ? $r['opportunity'] : '';
+            return $r;
+        }, $rows);
+        echo json_encode([ 'success' => true, 'items' => $norm, 'evaluation_bad' => $eval_bad ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 
-    // application が NULL でなく、空文字でないもの
-    // Return both new column name `application` and alias it as `application` for backwards compatibility
-    $sql = "SELECT updated_at, application AS application, application AS application, content FROM object_nodes 
+    // Default: return lessons attached to nodes in this map via object_lesson-learneds (preferred)
+    $rows = [];
+    $candidates = [
+        '`object_lesson-learneds`', '`object_lesson-learned`', '`object_lesson_learneds`', '`object_lesson_learned`'
+    ];
+    foreach ($candidates as $tbl) {
+        try {
+            $sql = "SELECT ol.object_le_id, ol.object_node_id, ol.lesson_learned, ol.opportunity, ol.created_at, ol.updated_at
+                    FROM {$tbl} ol
+                    JOIN object_nodes o ON ol.object_node_id = o.object_node_id
+                    WHERE ol.deleted = 0
+                      AND (ol.lesson_learned IS NOT NULL AND TRIM(ol.lesson_learned) <> '')
+                      AND o.node_id IN (SELECT node_id FROM map_node_links WHERE map_id = :map_id)
+                    ORDER BY ol.updated_at DESC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':map_id', $map_id, PDO::PARAM_STR);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            // normalize and ensure opportunity exists
+            $norm = array_map(function($r){
+                $r['application'] = isset($r['lesson_learned']) ? $r['lesson_learned'] : '';
+                $r['opportunity'] = isset($r['opportunity']) ? $r['opportunity'] : '';
+                return $r;
+            }, $rows);
+            echo json_encode([ 'success' => true, 'items' => $norm ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Exception $e) {
+            continue;
+        }
+    }
+
+    // Fallback: older schema where application stored on object_nodes
+        $sql = "SELECT object_node_id, updated_at, application AS application, content, '' AS opportunity FROM object_nodes 
             WHERE deleted = 0 AND application IS NOT NULL AND TRIM(application) <> '' 
             AND node_id IN (SELECT node_id FROM map_node_links WHERE map_id = :map_id)
             ORDER BY updated_at DESC";

@@ -2327,7 +2327,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
 
-    // 手段終了ボタン
+    // 手段完了ボタン
     step_end() {
         const menu = document.getElementById('t_Process_conmenu');
         if (menu) menu.style.display = "none";
@@ -2345,29 +2345,6 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 return;
             }
         }
-    
-        console.log(`ノード ${this.selectId} の作業完了だよ！！`);
-        // ステータスを completed に更新
-        defaultRecordThinkingProcess.update_Node("status", this.selectId, "completed", 7);
-    
-        // ノードの見た目を更新
-        this.nodes.update({
-            id: this.selectId,
-            status: 'completed',
-            color: 'gray',
-            title: "作業完了",
-            size: 50,
-            physics: { enabled: false },
-            borderWidth: 3,
-            borderWidthSelected: 5,
-            shapeProperties: {
-                borderDashes: false
-            }
-        });
-    
-        const updatedNode = this.nodes.get(this.selectId);
-        console.log('更新後のノード（完了）:', updatedNode);
-    
         // フィードバックの吹き出しを表示
         this.showFeedbackTooltip();
     }
@@ -2689,18 +2666,23 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 success: (response) => {
                     console.log("サーバーの応答:", response);
 
-                    // ノードの title を更新（入力内容を簡略化して表示）
-                    const title = `
-                        うまくいった点: ${successPoints || "未記入"}\n
-                        うまくいかなかった点: ${failurePoints || "未記入"}\n
-                        完了基準: ${completionReason || "未記入"}\n
-                        学び: ${challengesAndLearnings || "未記入"}
-                    `;
+                    // ノードの見た目を更新（完了状態にする）
                     this.nodes.update({
                         id: this.selectId,
+                        status: 'completed',
                         color: 'gray',
-                        title: title
+                        title: '作業完了',
+                        size: 50,
+                        physics: { enabled: false },
+                        borderWidth: 3,
+                        borderWidthSelected: 5,
+                        shapeProperties: {
+                            borderDashes: false
+                        }
                     });
+
+                    const updatedNode = this.nodes.get(this.selectId);
+                    console.log('更新後のノード（完了）:', updatedNode);
 
                     // 内省情報がある場合、青色の内省タグを右上に追加
                     if (successPoints || failurePoints || completionReason || challengesAndLearnings) {
@@ -2758,7 +2740,33 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     alert("記録の保存に失敗しました。");
                 }
             });
-        });
+
+            // ノードの見た目を更新
+            this.nodes.update({
+                id: this.selectId,
+                status: 'completed',
+                color: 'gray',
+                title: "作業完了",
+                size: 50,
+                physics: { enabled: false },
+                borderWidth: 3,
+                borderWidthSelected: 5,
+                shapeProperties: {
+                    borderDashes: false
+                }
+            });
+        
+            const updatedNode = this.nodes.get(this.selectId);
+            console.log('更新後のノード（完了）:', updatedNode);
+
+                
+            console.log(`ノード ${this.selectId} の作業完了だよ！！`);
+            // ステータスを completed に更新
+            defaultRecordThinkingProcess.update_Node("status", this.selectId, "completed", 7);
+        
+
+            });
+
     }
     
     setupTooltipDrag(tooltip) {

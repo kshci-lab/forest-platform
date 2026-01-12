@@ -966,15 +966,41 @@ window.addWeeklyGoal = function() {
     } catch (e) {
         console.warn('[goal_list] _jm check failed', e);
     }
-    // 選択中ノードIDを取得
+    // 選択中ノードIDを取得（堅牢化: id, nodeid 属性, data-nodeid, nodeId プロパティを順に試す）
     var selected_node_id = null;
+    var sel = null;
     try {
-        var sel = (typeof _jm !== 'undefined' && _jm && typeof _jm.get_selected_node === 'function') ? _jm.get_selected_node() : null;
-        selected_node_id = sel && sel.id ? sel.id : null;
+        sel = (typeof _jm !== 'undefined' && _jm && typeof _jm.get_selected_node === 'function') ? _jm.get_selected_node() : null;
+        if (sel) {
+            // common case: sel.id
+            if (sel.id) selected_node_id = sel.id;
+            // fallback: DOM-like node may expose getAttribute
+            try {
+                if (!selected_node_id && typeof sel.getAttribute === 'function') {
+                    selected_node_id = sel.getAttribute('nodeid') || sel.getAttribute('data-nodeid') || sel.getAttribute('data-node-id') || selected_node_id;
+                }
+            } catch(e) {}
+            // fallback: property named nodeId
+            if (!selected_node_id && (sel.nodeId || sel.nodeID || sel.node_id)) selected_node_id = sel.nodeId || sel.nodeID || sel.node_id;
+        }
     } catch (err) {
         console.error('[goal_list] get_selected_node error', err);
     }
-    console.log('[goal_list] selected_node_id:', selected_node_id);
+    // Normalize to string and provide verbose debug info
+    try {
+        if (selected_node_id && typeof selected_node_id !== 'string') selected_node_id = String(selected_node_id);
+    } catch(e){}
+    console.log('[goal_list] selected_node candidate:', selected_node_id, ' (type:', typeof selected_node_id + ') sel:', sel);
+    // Additional fallbacks: if sel itself is a primitive string, accept it
+    try {
+        if (!selected_node_id && sel && (typeof sel === 'string' || typeof sel === 'number')) selected_node_id = String(sel);
+        // if sel has nested properties where id might live
+        if (!selected_node_id && sel && typeof sel === 'object') {
+            if (sel.data && (sel.data.id || sel.data.nodeid || sel.data.nodeId)) selected_node_id = sel.data.id || sel.data.nodeid || sel.data.nodeId;
+            else if (sel.attributes && sel.attributes['nodeid']) selected_node_id = sel.attributes['nodeid'];
+        }
+    } catch(e) { console.warn('[goal_list] additional sel->id fallback failed', e); }
+    console.log('[goal_list] final selected_node_id to send:', selected_node_id);
     if (!selected_node_id) {
         alert('ノードが選択されていません');
         return;

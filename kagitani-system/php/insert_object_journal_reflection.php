@@ -200,13 +200,15 @@ try {
 
                 if (!empty($rows)) {
                     // Inspect lesson table columns to see if `opportunity` exists
-                    $lessonCols = array();
+                        $lessonCols = array();
                     try {
                         $lc = $pdo->query("DESCRIBE `object_journal_lesson-learneds`");
                         $lcols = $lc->fetchAll(PDO::FETCH_ASSOC);
                         foreach ($lcols as $c) $lessonCols[] = $c['Field'];
                     } catch (Exception $e) { $lessonCols = array(); }
-                    $hasOpportunity = in_array('opportunity', $lessonCols);
+                        $hasOpportunity = in_array('opportunity', $lessonCols);
+                        $hasLessonMapId = in_array('map_id', $lessonCols);
+                    $hasLessonMapId = in_array('map_id', $lessonCols);
 
                     // fetch existing lesson rows for this reflection (include opportunity if possible)
                     $selectCols = '`object_journal_lesson-learned_id`, `lesson_learned`' . ($hasOpportunity ? ', `opportunity`' : '');
@@ -231,11 +233,21 @@ try {
                         } else {
                             $newId = uniqid('ojl_', true);
                             if ($hasOpportunity) {
-                                $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :opp, :c, :u, :d)');
-                                $ins->execute([':id' => $newId, ':rid' => $existing_reflection_id, ':txt' => $lessonText, ':opp' => $opportunityText, ':c' => $now, ':u' => $now, ':d' => 0]);
+                                if ($hasLessonMapId) {
+                                    $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `created_at`, `updated_at`, `deleted`, `map_id`) VALUES (:id, :rid, :txt, :opp, :c, :u, :d, :map)');
+                                    $ins->execute([':id' => $newId, ':rid' => $existing_reflection_id, ':txt' => $lessonText, ':opp' => $opportunityText, ':c' => $now, ':u' => $now, ':d' => 0, ':map' => $map_id]);
+                                } else {
+                                    $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :opp, :c, :u, :d)');
+                                    $ins->execute([':id' => $newId, ':rid' => $existing_reflection_id, ':txt' => $lessonText, ':opp' => $opportunityText, ':c' => $now, ':u' => $now, ':d' => 0]);
+                                }
                             } else {
-                                $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :c, :u, :d)');
-                                $ins->execute([':id' => $newId, ':rid' => $existing_reflection_id, ':txt' => $lessonText, ':c' => $now, ':u' => $now, ':d' => 0]);
+                                if ($hasLessonMapId) {
+                                    $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `created_at`, `updated_at`, `deleted`, `map_id`) VALUES (:id, :rid, :txt, :c, :u, :d, :map)');
+                                    $ins->execute([':id' => $newId, ':rid' => $existing_reflection_id, ':txt' => $lessonText, ':c' => $now, ':u' => $now, ':d' => 0, ':map' => $map_id]);
+                                } else {
+                                    $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :c, :u, :d)');
+                                    $ins->execute([':id' => $newId, ':rid' => $existing_reflection_id, ':txt' => $lessonText, ':c' => $now, ':u' => $now, ':d' => 0]);
+                                }
                             }
                         }
                     }
@@ -327,16 +339,26 @@ try {
                 $hasOpportunity = in_array('opportunity', $lessonCols);
 
                 $now = date('Y-m-d H:i:s');
-                foreach ($rows as $rrow) {
-                    $newId = uniqid('ojl_', true);
-                    if ($hasOpportunity) {
-                        $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :opp, :c, :u, :d)');
-                        $ins->execute([':id' => $newId, ':rid' => $object_journal_reflection_id, ':txt' => $rrow['lesson'], ':opp' => $rrow['opportunity'], ':c' => $now, ':u' => $now, ':d' => 0]);
-                    } else {
-                        $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :c, :u, :d)');
-                        $ins->execute([':id' => $newId, ':rid' => $object_journal_reflection_id, ':txt' => $rrow['lesson'], ':c' => $now, ':u' => $now, ':d' => 0]);
+                    foreach ($rows as $rrow) {
+                        $newId = uniqid('ojl_', true);
+                        if ($hasOpportunity) {
+                            if ($hasLessonMapId) {
+                                $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `created_at`, `updated_at`, `deleted`, `map_id`) VALUES (:id, :rid, :txt, :opp, :c, :u, :d, :map)');
+                                $ins->execute([':id' => $newId, ':rid' => $object_journal_reflection_id, ':txt' => $rrow['lesson'], ':opp' => $rrow['opportunity'], ':c' => $now, ':u' => $now, ':d' => 0, ':map' => $map_id]);
+                            } else {
+                                $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :opp, :c, :u, :d)');
+                                $ins->execute([':id' => $newId, ':rid' => $object_journal_reflection_id, ':txt' => $rrow['lesson'], ':opp' => $rrow['opportunity'], ':c' => $now, ':u' => $now, ':d' => 0]);
+                            }
+                        } else {
+                            if ($hasLessonMapId) {
+                                $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `created_at`, `updated_at`, `deleted`, `map_id`) VALUES (:id, :rid, :txt, :c, :u, :d, :map)');
+                                $ins->execute([':id' => $newId, ':rid' => $object_journal_reflection_id, ':txt' => $rrow['lesson'], ':c' => $now, ':u' => $now, ':d' => 0, ':map' => $map_id]);
+                            } else {
+                                $ins = $pdo->prepare('INSERT INTO `object_journal_lesson-learneds` (`object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `created_at`, `updated_at`, `deleted`) VALUES (:id, :rid, :txt, :c, :u, :d)');
+                                $ins->execute([':id' => $newId, ':rid' => $object_journal_reflection_id, ':txt' => $rrow['lesson'], ':c' => $now, ':u' => $now, ':d' => 0]);
+                            }
+                        }
                     }
-                }
             }
         }
     } catch (Exception $e) {
