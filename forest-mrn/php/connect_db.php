@@ -1,7 +1,8 @@
 <?php
 
-	// ローカル
-	$db_host = "localhost";  // ホスト名のみ
+
+	//ローカルPCから接続するとき．
+	$db_host = "localhost";  // DBサーバのurl
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
 	$db_password = "root";

@@ -96,6 +96,36 @@
 
 	
 
+	}else if($purpose === 'share_fragment'){
+		$process_node_id = isset($_POST['process_node_id']) ? $_POST['process_node_id'] : '';
+		$contents_json = isset($_POST['contents']) ? $_POST['contents'] : '[]';
+		$knowledge_fragment_title = isset($_POST['knowledge_fragment_title']) ? $_POST['knowledge_fragment_title'] : NULL;
+
+		$kf_id = uniqid('kf_');
+		$title_sql = $knowledge_fragment_title === NULL ? "NULL" : "'".$mysqli->real_escape_string($knowledge_fragment_title)."'";
+		$mysqli->query("INSERT INTO knowledge_fragment (knowledge_fragment_id, knowledge_fragment_title, process_node_id, discussed, deleted, created_at) VALUES ('$kf_id', $title_sql, '$process_node_id', NULL, 0, '$timestamp')");
+		if($mysqli->error){
+			echo "Error knowledge_fragment insert: " . $mysqli->error;
+			exit;
+		}
+
+		$contents = json_decode($contents_json, true);
+		if(is_array($contents)){
+			foreach($contents as $c){
+				$type = isset($c['type']) ? $mysqli->real_escape_string($c['type']) : '';
+				$content = isset($c['content']) ? $mysqli->real_escape_string($c['content']) : '';
+				if(trim($content) === '') continue;
+				$kfc_id = uniqid('kfc_');
+				$mysqli->query("INSERT INTO knowledge_fragment_contents (knowledge_fragment_content_id, knowledge_fragment_id, knowledge_fragment_content, knowledge_fragment_type) VALUES ('$kfc_id', '$kf_id', '$content', '$type')");
+				if($mysqli->error){
+					echo "Error knowledge_fragment_contents insert: " . $mysqli->error;
+				}
+			}
+		}
+		echo json_encode(['status'=>'ok', 'knowledge_fragment_id'=>$kf_id]);
+		exit;
+	}
+
 	//時間設定はいる
 	
 	// //クエリ($sql)のエラー処理

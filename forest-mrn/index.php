@@ -124,7 +124,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                  <li class="active"><a href="#tab03" >リフレクション</a></li>
                  <li class="active"><a href="#record_tab" >履歴</a></li> -->
             <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  <!--hatakeyama-->
-            <li class="active"><a href="#tab05">組織知マップ</a></li> 
+            <!-- <li class="active"><a href="#tab05">組織知マップ</a></li>  -->
 
             <div class="checkbox_mode">
                 <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
@@ -189,7 +189,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         縮小
                                     </button>
                                     <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
-                                        マップver更新 <!--hatakeyama-->
+                                        マップver更新
                                     </button>
                                     
                                     【Screenshot】
@@ -322,7 +322,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         </li>
                                         <li>
                                             <button class="button4" onclick="NodeVersionUpdate(null);">
-                                                ノードを更新
+                                                ノードverを更新
                                             </button>
                                         </li>
                                         <li>
