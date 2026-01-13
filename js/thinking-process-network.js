@@ -610,6 +610,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         const area = document.getElementById('area_lesson_add');
         if (area) {
             area.innerHTML = '';
+
+            // タイトル追加
+            const title = document.createElement('h2');
+            title.textContent = 'エリアタイトル';
+            const textarea = document.createElement('textarea');
+            textarea.className = 'lessonTextArea';
+            textarea.placeholder = 'ここに入力してください';
     
             // 1つ目
             const label1 = document.createElement('label');
@@ -636,6 +643,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             input3.rows = 3;
     
             // 各ラベルとテキストエリアを追加
+            area.insertBefore(title, area.firstChild);
+            area.appendChild(textarea);
+
             area.appendChild(label1);
             area.appendChild(document.createElement('br'));
             area.appendChild(input1);
