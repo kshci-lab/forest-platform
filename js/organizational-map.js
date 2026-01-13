@@ -1112,10 +1112,24 @@ const displayOrganizationalData = (mode, selected_group_id) => {
             const groupSelect = document.getElementById('group_select');
             if (groupSelect && organizational_list_info.groups) {
                 groupSelect.innerHTML = '';
+                // プレースホルダ（デフォルトは何も選択されていない表示）
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'ー組織を選択ー';
+                placeholder.disabled = true;
+                // selected_group_id が渡されていなければプレースホルダを選択状態にする
+                if (!selected_group_id) {
+                    placeholder.selected = true;
+                }
+                groupSelect.appendChild(placeholder);
                 organizational_list_info.groups.forEach((group) => {
                     const option = document.createElement('option');
                     option.value = group.group_id;
                     option.textContent = group.name ? group.name : group.group_id;
+                    // selected_group_id が指定されていればその値を選択状態にする
+                    if (selected_group_id && String(group.group_id) === String(selected_group_id)) {
+                        option.selected = true;
+                    }
                     groupSelect.appendChild(option);
                 });
             }

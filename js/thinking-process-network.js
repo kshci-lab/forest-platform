@@ -612,35 +612,39 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             area.innerHTML = '';
 
             // タイトル追加
-            const title = document.createElement('h2');
-            title.textContent = 'エリアタイトル';
+            const title = document.createElement('h3');
+            title.textContent = '経験知の要約';
             const textarea = document.createElement('textarea');
             textarea.className = 'lessonTextArea';
-            textarea.placeholder = 'ここに入力してください';
+            textarea.name = 'knowledge_fragment_title';
+            textarea.placeholder = 'どんなことを学んだかの要約を入力してください';
     
             // 1つ目
             const label1 = document.createElement('label');
             label1.textContent = 'Q.なぜこの経験が印象に残りましたか？';
             const input1 = document.createElement('textarea');
             input1.className = 'lessonTextArea';
-            input1.name = 'reason';
+            input1.name = 'stage1';
             input1.rows = 3;
+            input1.placeholder = 'ここに入力してください';
     
             // 2つ目
             const label2 = document.createElement('label');
             label2.textContent = 'Q.この経験にはどんな前提や背景がありますか？';
             const input2 = document.createElement('textarea');
             input2.className = 'lessonTextArea';
-            input2.name = 'background';
+            input2.name = 'stage2';
             input2.rows = 3;
+            input2.placeholder = 'ここに入力してください';
     
             // 3つ目
             const label3 = document.createElement('label');
             label3.textContent = 'Q.この経験には，他の場面でも使える考え方の指針はありますか？';
             const input3 = document.createElement('textarea');
             input3.className = 'lessonTextArea';
-            input3.name = 'guideline';
+            input3.name = 'stage3';
             input3.rows = 3;
+            input3.placeholder = 'ここに入力してください';
     
             // 各ラベルとテキストエリアを追加
             area.insertBefore(title, area.firstChild);
@@ -650,12 +654,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             area.appendChild(document.createElement('br'));
             area.appendChild(input1);
             area.appendChild(document.createElement('br'));
-            area.appendChild(document.createElement('br'));
     
             area.appendChild(label2);
             area.appendChild(document.createElement('br'));
             area.appendChild(input2);
-            area.appendChild(document.createElement('br'));
             area.appendChild(document.createElement('br'));
     
             area.appendChild(label3);
@@ -669,11 +671,6 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         const selected_node_id = defaultThinkingProcess.ownNetwork.getSelection().nodes[0];
         const selected_node_group = defaultThinkingProcess.nodes.get(selected_node_id).group;
 
-        if(selected_node_group != "process"){
-            alert("プロセスノードのみ共有可能です。");
-            return;
-        }
-        
         // group_selectから動的に組織リストを取得
         const groupSelect = document.getElementById('group_select');
         const options = groupSelect.options;
@@ -752,25 +749,44 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 contents.push({ type: name, content: value });
             }
 
-            console.log(JSON.stringify(contents));
-            console.log('Sending lesson contents to server for node ID:', nodeId);
+            // タイトルは別に取り出す（最初のタイトル要素をnameで判別）
+            const titleEl = document.querySelector('textarea.lessonTextArea[name="knowledge_fragment_title"]');
+            const knowledge_fragment_title = titleEl ? titleEl.value : '';
+
+            // contents からタイトル要素は除外して送信する
+            const filteredContents = [];
+            for (let i = 0; i < lessonAreas.length; i++) {
+                const name = lessonAreas[i].name || ('text' + i);
+                if (name === 'knowledge_fragment_title') continue;
+                const value = lessonAreas[i].value || '';
+                filteredContents.push({ type: name, content: value });
+            }
+
+            // ノード種類に関係なく共有：thought_experience_node_id に常に nodeId を送る。
+            const node = defaultThinkingProcess.nodes.get(nodeId) || {};
+            const nodeGroup = node.group || '';
+            const postData = {
+                purpose: "share_fragment",
+                thought_experience_node_id: nodeId,
+                contents: JSON.stringify(filteredContents),
+                knowledge_fragment_title: knowledge_fragment_title
+            };
+            if(nodeGroup === 'process'){
+                postData.process_node_id = nodeId; // 互換性のため process_node_id も送る
+            }
 
             // 送信
-            // $.ajax({
-            //     url: "../php/thinking_edit_processmap_maneger.php",
-            //     type: "POST",
-            //     data: {
-            //         purpose: "share_fragment",
-            //         process_node_id: nodeId,
-            //         contents: JSON.stringify(contents)
-            //     },
-            //     success: function(resp) {
-            //         console.log('knowledge fragment 保存成功:', resp);
-            //     },
-            //     error: function(xhr, status, err) {
-            //         console.error('save fragment error:', status, err, xhr.responseText);
-            //     }
-            // });
+            $.ajax({
+                url: "../php/thinking_edit_processmap_maneger.php",
+                type: "POST",
+                data: postData,
+                success: function(resp) {
+                    console.log('externalised_contents 保存成功:', resp);
+                },
+                error: function(xhr, status, err) {
+                    console.error('save fragment error:', status, err, xhr.responseText);
+                }
+            });
         } catch (e) {
             console.error('lesson 保存処理で例外が発生しました:', e);
         }
