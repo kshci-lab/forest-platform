@@ -474,8 +474,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             <div id="process_network_container" oncontextmenu="return false;" >
                                 <div id="myProcessnetwork2">
                                     <div id="buttoncluster">
-                                        <input type="button" class="process_close" onclick="closeThinkingProcessMap()"
-                                                id="process_close" value="×" />
+                                        <input type="button" class="area_close" onclick="closeThinkingProcessMap()"
+                                                id="area_close" value="×" />
                                         <input type="button" class="thinkingProcess_network_button"
                                                 id="process_addNode" value="思考ノード追加" />
                                         <input type="button" class="thinkingProcess_network_button"
@@ -536,6 +536,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                                     <!-- 組織へ共有する学び関連の表示 -->
                                     <div id="lesson_display">
+                                        <input type="button" class="area_close" value="×" onclick="showTriggerDisplay()" />
                                         <div id="area_lesson_add"></div>
                                         <div id="lesson_add">
                                             <input type="button" class="lessonbutton" value="組織へ共有" onclick="selectShareOrganization()"/>
@@ -891,8 +892,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     
                         <div id="othersProcessnetwork_area">
                             <div id="buttoncluster">
-                                <input type="button" class="process_close" onclick="closeOthersThinkingProcessMap()"
-                                        id="process_close" value="×" />
+                                <input type="button" class="area_close" onclick="closeOthersThinkingProcessMap()"
+                                        id="area_close" value="×" />
                                 <input type="button" class="thinkingProcess_network_button"
                                         id="process_ZoomIn" value="拡大" />
                                 <input type="button" class="thinkingProcess_network_button"

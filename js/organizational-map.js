@@ -24,7 +24,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             },
             interaction: {
                 multiselect: false,
-                zoomView: false // グラフの拡大縮小を無効にする
+                zoomView: false, // グラフの拡大縮小を無効にする
+                hover: true
             },
         };
         this.nodeConnectEnabled = false; // マインドマップとの対応づけを可能にする（マインドマップのノードクリックが，議論内省マップノードとの対応を付与するのかそうでないのかを判定するよう）
@@ -56,7 +57,9 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             x: 0,
             y: 0
         }//右クリックされやメニューの表示場所
+        this.tooltipEl = null;
         this.ownNetwork = this.generateOrganizationalNetworkCanvas(container, this.nodes, this.edges); // デフォルトのマップを表示
+        this.ensureTooltipElement();
         this.choose_input_xmlLoad();
         if(load == "load"){
             this.jmindex = [];
@@ -74,6 +77,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
             this.ownNetwork.on("oncontext", this.onContext.bind(this));
             this.ownNetwork.on('select', this.selectdelete.bind(this));
+            this.ownNetwork.on('hoverNode', this.onHoverNode.bind(this));
+            this.ownNetwork.on('blurNode', this.onBlurNode.bind(this));
         }
         this.choose_input_xmlLoad();
     }
@@ -172,6 +177,63 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         // $(`#p_recruit_select`).on('click',this.bindSelected_Recruit_Idea);
         // $(`#feedbackrecord`).on('click',this.bindfeedback);
         // this.interval = setInterval(this.bindNodeblinking, 1000);
+    }
+
+    ensureTooltipElement(){
+        if (this.tooltipEl) return;
+        const containerEl = document.getElementById('myOrganizationalnetwork');
+        if (!containerEl) return;
+        let tooltipEl = document.getElementById('organizational_tooltip');
+        if (!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.id = 'organizational_tooltip';
+            tooltipEl.className = 'organizational-tooltip';
+            containerEl.appendChild(tooltipEl);
+        }
+        this.tooltipEl = tooltipEl;
+    }
+
+    showTooltipForNode(nodeId){
+        this.ensureTooltipElement();
+        if (!this.tooltipEl) return;
+        const node = this.nodes.get(nodeId);
+        if (!node || !node.tooltip_data) {
+            this.hideTooltip();
+            return;
+        }
+        const tooltipData = node.tooltip_data;
+        this.tooltipEl.innerHTML = '';
+        const lines = [
+            "【経験】" + (tooltipData.selected_contents || ''),
+            "【課題点】" + (tooltipData.stage1 || ''),
+            "【分岐点】" + (tooltipData.stage2 || ''),
+            "【指針】" + (tooltipData.stage3 || '')
+        ];
+        lines.forEach((line) => {
+            const row = document.createElement('div');
+            row.textContent = line;
+            this.tooltipEl.appendChild(row);
+        });
+        const box = this.ownNetwork.getBoundingBox(nodeId);
+        const domPoint = this.ownNetwork.canvasToDOM({ x: box.right, y: box.top });
+        const offset = 12;
+        this.tooltipEl.style.left = (domPoint.x + offset) + 'px';
+        this.tooltipEl.style.top = (domPoint.y + offset) + 'px';
+        this.tooltipEl.style.display = 'block';
+    }
+
+    hideTooltip(){
+        if (this.tooltipEl) {
+            this.tooltipEl.style.display = 'none';
+        }
+    }
+
+    onHoverNode(params){
+        this.showTooltipForNode(params.node);
+    }
+
+    onBlurNode(){
+        this.hideTooltip();
     }
 
     removeEventLister(){
@@ -303,12 +365,6 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         let text_color = 'black';   // ノード内文字列の色
         
         const contentLabel = node_label || '';
-        const tooltip = [
-            "「経験」：" + (selected_contents || ''),
-            "「印象に残った理由」：" + (stage1 || ''),
-            "「前提や背景」：" + (stage2 || ''),
-            "「考え方の指針」：" + (stage3 || '')
-        ].join('<br>');
         const newNode = {
             id: `${node_id}`, label: contentLabel,
             group: node_type,
@@ -317,7 +373,12 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             user_id: user_id,
             color: node_color, shape: node_shape,
             font: { color: text_color },
-            title: tooltip,
+            tooltip_data: {
+                selected_contents: selected_contents,
+                stage1: stage1,
+                stage2: stage2,
+                stage3: stage3
+            },
             fixed: false,
         };
         defaultOrganizational.nodes.add(newNode);

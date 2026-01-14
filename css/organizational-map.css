@@ -95,6 +95,23 @@
     color: #553700;
 }
 
+.organizational-tooltip{
+	position: absolute;
+	display: none;
+	max-width: 320px;
+	padding: 8px 10px;
+	background: #fff7e6;
+	color: #2e1d00;
+	border: 1px solid #e6b86f;
+	border-radius: 6px;
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+	font-size: 12px;
+	line-height: 1.4;
+	pointer-events: none;
+	white-space: pre-wrap;
+	z-index: 10;
+}
+
 /* ボタン関連 */
 .group_select_form{
 	margin-bottom: 10px;

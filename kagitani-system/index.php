@@ -1034,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <!-- ボタンとシークバーを横並びに配置 -->
                                     <div class="control-panel">
                                         <div id="buttoncluster">
-                                            <!-- `process_close` button removed as it's not needed -->
+                                            <!-- `area_close` button removed as it's not needed -->
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_addNode" title="手段追加">
                                                 <span class="button-icon">＋</span>

@@ -626,7 +626,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             // 1つ目
             const label1 = document.createElement('h6');
             label1.className = 'lesson-heading-stage';
-            label1.textContent = 'Q.なぜこの経験が印象に残りましたか？';
+            label1.textContent = 'Q.このとき，どのようなことが「うまくいっていなかった」のですか？';
             const input1 = document.createElement('textarea');
             input1.className = 'lessonTextArea';
             input1.name = 'stage1';
@@ -636,7 +636,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             // 2つ目
             const label2 = document.createElement('h6');
             label2.className = 'lesson-heading-stage';
-            label2.textContent = 'Q.この経験にはどんな前提や背景がありますか？';
+            label2.textContent = 'Q.今回の経験知を得られなかった場合，どんな誤った判断をしていた可能性がありますか？';
             const input2 = document.createElement('textarea');
             input2.className = 'lessonTextArea';
             input2.name = 'stage2';
@@ -672,6 +672,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             area.appendChild(document.createElement('br'));
             area.appendChild(input3);
         }
+    }
+
+    closeLessonArea(){
+        showTriggerDisplay();
     }
 
     selectShareOrganization (){// 右クリックメニューを非表示
@@ -1740,6 +1744,13 @@ function showThinkingProcessMap(others_node){
   
 }
 
+function showTriggerDisplay(){
+    const lesson = document.getElementById('lesson_display');
+    if (lesson) lesson.style.display = 'none';
+    const trigger = document.getElementById('trigger_display');
+    if (trigger) trigger.style.display = 'block';
+}
+
 function closeThinkingProcessMap(){
   
     document.getElementById('feedback_area').style.display = "block";
@@ -1748,6 +1759,7 @@ function closeThinkingProcessMap(){
     // $('#jsmind_container').css('width','calc(100vw - 350px)');
     $('#jsmind_container').css('height','100%');
     $('#mind').css('height','90%');
+    showTriggerDisplay();
 }
 
 // nodeIDをidにもつノードのtypeがラベルの時，思考過程表出化マップを開く

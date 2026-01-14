@@ -407,7 +407,7 @@ input[type="checkbox"][name="check_process"]{
   background: #fbd393;
 }
 
-.process_close{
+.area_close{
 	color: #a0a1a1;
 	background: #ffffff;
 	width: 30px;
@@ -424,7 +424,7 @@ input[type="checkbox"][name="check_process"]{
 	border: 1px #a0a1a1 solid;
 	transition: 0.4s ease;
 }
-.process_close:hover {
+.area_close:hover {
 	background-color: #a0a1a1;
 	color: #ffffff;
 }
