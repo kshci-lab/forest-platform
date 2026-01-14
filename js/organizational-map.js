@@ -292,7 +292,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         return this.nodes;
     }
 
-    addReloadProcessNode(user_id, node_id, node_label, node_type, concept_id) {
+    addReloadProcessNode(user_id, node_id, node_label, node_type, concept_id, thought_experience_node_id, selected_contents, stage1, stage2, stage3) {
         const existingNode = this.nodes.get(node_id);
         if (existingNode) {
             console.log(`Node with ID ${node_id} already exists. Skipping addition.`);
@@ -302,13 +302,22 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         let node_shape = 'box';     // ノードの形状
         let text_color = 'black';   // ノード内文字列の色
         
+        const contentLabel = node_label || '';
+        const tooltip = [
+            "「経験」：" + (selected_contents || ''),
+            "「印象に残った理由」：" + (stage1 || ''),
+            "「前提や背景」：" + (stage2 || ''),
+            "「考え方の指針」：" + (stage3 || '')
+        ].join('<br>');
         const newNode = {
-            id: `${node_id}`, label: node_label,
+            id: `${node_id}`, label: contentLabel,
             group: node_type,
             concept_id: concept_id,
+            thought_experience_node_id: thought_experience_node_id,
             user_id: user_id,
             color: node_color, shape: node_shape,
             font: { color: text_color },
+            title: tooltip,
             fixed: false,
         };
         defaultOrganizational.nodes.add(newNode);
@@ -1140,7 +1149,18 @@ const displayOrganizationalData = (mode, selected_group_id) => {
             });
             // ユーザーごとの思考過程ノードを表示
             organizational_list_info.enode.map((n) => {
-                defaultOrganizational.addReloadProcessNode(n.user_id, n.externalized_contents_id, n.selected_contents, n.externalized_type, n.concept_id);
+                defaultOrganizational.addReloadProcessNode(
+                    n.user_id,
+                    n.externalized_contents_id,
+                    n.knowledge_fragment_content,
+                    n.externalized_type,
+                    n.concept_id,
+                    n.thought_experience_node_id,
+                    n.selected_contents,
+                    n.stage1,
+                    n.stage2,
+                    n.stage3
+                );
             });
             // ユーザーごとのTriggerノードを表示
             // organizational_list_info.tnode.map((t) => {

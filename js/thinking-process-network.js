@@ -1198,17 +1198,20 @@ let process_mode; // 思考過程表出化マップの表示モードを保持�
 let trigger_list;   // データベースから取得した思考過程表出化マップの情報を保持する変数
 let selected_concept_id;  // 選択されている概念IDを保持する変数
 let selected_other_process_id; // 他者の思考過程表出化マップを表示する際に使用する変数
+let selected_other_process_group; // 他者ノードのgroupを保持する変数
 // ガード用タイムスタンプ（同一操作による二重実行を抑止）
 let _lastShowThinkingProcessCall = 0;
 
 const getProcessMapDataFromDB = (callback) => {
     //選択されているノードIDとconcept_id
     let selected_node_id;
+    let selected_node_group = '';
     if(process_mode == "all"){
         selected_node_id = _jm.get_selected_node().id;
         selected_concept_id = Get_NodeInfo(selected_node_id, "concept_id");
     }else if(process_mode == "who"){
         selected_node_id = selected_other_process_id;    //選択した他者のprocessノードIDを格納
+        selected_node_group = selected_other_process_group;
     }else{
         const conceptDiplay = document.getElementById("conceptdisplay");
         selected_node_id = conceptDiplay.getAttribute('nodeid');
@@ -1223,6 +1226,7 @@ const getProcessMapDataFromDB = (callback) => {
                     data: data =  {
                         process_mode: process_mode,
                         selected_node_id: selected_node_id,
+                        selected_node_group: selected_node_group,
                         selected_concept_id: selected_concept_id,
                         concept_ids: conceptIds
                     },
@@ -1385,9 +1389,27 @@ const displayTriggerData = (mode, process_display_option) => {
     }else if(mode=="who"){
         const conceptdisplay_area = $(`#others_conceptdisplay`); // 何の認知活動かを表示するエリア
         const others_node = process_display_option; // 選択されているノード
-        selected_other_process_id = others_node.id;
+        if(others_node.group === "versions" || others_node.group === "versionsBro"){
+            selected_other_process_group = "version";
+        }else if(others_node.group === "triggers"){
+            selected_other_process_group = "trigger";
+        }else{
+            selected_other_process_group = others_node.group || "process";
+        }
+        if(selected_other_process_group === "process" && others_node.process_node_id){
+            selected_other_process_id = others_node.process_node_id;
+        }else if(selected_other_process_group === "version" && others_node.node_version_id){
+            selected_other_process_id = others_node.node_version_id;
+        }else if(selected_other_process_group === "trigger" && others_node.trigger_id){
+            selected_other_process_id = others_node.trigger_id;
+        }else if(others_node.thought_experience_node_id){
+            selected_other_process_id = others_node.thought_experience_node_id;
+        }else{
+            selected_other_process_id = others_node.id;
+        }
         selected_concept_id = others_node.concept_id;
         organizational_selected_user_id = others_node.user_id;
+        console.log(selected_other_process_group);
 
         getProcessMapDataFromDB ((trigger_list_info) => {
             //concept_labelを表示
