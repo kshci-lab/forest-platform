@@ -306,27 +306,27 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             ノードの変更
                                         </li> 
                                         <li>
-                                            <button class="button4" onclick="add_Qnode();">
+                                            <button class="button_conmenu" onclick="add_Qnode();">
                                                 問いノードを追加
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="add_Anode();">
+                                            <button class="button_conmenu" onclick="add_Anode();">
                                                 答えノードを追加
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="remove_node();">
+                                            <button class="button_conmenu" onclick="remove_node();">
                                                 ノードを削除
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="NodeVersionUpdate(null);">
+                                            <button class="button_conmenu" onclick="NodeVersionUpdate(null);">
                                                 ノードverを更新
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="showThinkingProcessMap();">
+                                            <button class="button_conmenu" onclick="showThinkingProcessMap();">
                                                 思考過程表出化マップ
                                             </button>
                                         </li>
@@ -334,17 +334,17 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             ノードを資料へ追加
                                         </li> 
                                         <li>
-                                            <button class="button4" onclick="ItemAddDocument()">
+                                            <button class="button_conmenu" onclick="ItemAddDocument()">
                                                 項目として追加する
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="NodeAppendLogic()">
+                                            <button class="button_conmenu" onclick="NodeAppendLogic()">
                                                 内容として追加する 
                                             </button>
                                         </li>
                                         <!-- <li>
-                                            <button class="button4" onclick="VersionSpread();RecordRelation()">
+                                            <button class="button_conmenu" onclick="VersionSpread();RecordRelation()">
                                                 ノードの更新をマップ全体に波及させる
                                             </button>
                                         </li>hatakeyama -->

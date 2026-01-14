@@ -1139,8 +1139,8 @@ const displayOrganizationalData = (mode, selected_group_id) => {
                 defaultOrganizational.addUserNode(v.user_id, v.name, "users");
             });
             // ユーザーごとの思考過程ノードを表示
-            organizational_list_info.pnode.map((n) => {
-                defaultOrganizational.addReloadProcessNode(n.user_id, n.process_node_id, n.content, n.process_node_type, n.concept_id);
+            organizational_list_info.enode.map((n) => {
+                defaultOrganizational.addReloadProcessNode(n.user_id, n.externalized_contents_id, n.selected_contents, n.externalized_type, n.concept_id);
             });
             // ユーザーごとのTriggerノードを表示
             // organizational_list_info.tnode.map((t) => {

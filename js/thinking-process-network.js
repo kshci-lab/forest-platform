@@ -598,7 +598,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     openLessonAreaOpen(){
-        // 1. trigger_displayを非表示
+        // 1. コンテキストメニュー（t_Process_conmenu）と trigger_display を非表示
+        const conmenu = document.getElementById('t_Process_conmenu');
+        if (conmenu) conmenu.style.display = 'none';
+
         const trigger = document.getElementById('trigger_display');
         if (trigger) trigger.style.display = 'none';
     
@@ -612,7 +615,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             area.innerHTML = '';
 
             // タイトル追加
-            const title = document.createElement('h3');
+            const title = document.createElement('h5');
+            title.className = 'lesson-heading-title';
             title.textContent = '経験知の要約';
             const textarea = document.createElement('textarea');
             textarea.className = 'lessonTextArea';
@@ -620,7 +624,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             textarea.placeholder = 'どんなことを学んだかの要約を入力してください';
     
             // 1つ目
-            const label1 = document.createElement('label');
+            const label1 = document.createElement('h6');
+            label1.className = 'lesson-heading-stage';
             label1.textContent = 'Q.なぜこの経験が印象に残りましたか？';
             const input1 = document.createElement('textarea');
             input1.className = 'lessonTextArea';
@@ -629,7 +634,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             input1.placeholder = 'ここに入力してください';
     
             // 2つ目
-            const label2 = document.createElement('label');
+            const label2 = document.createElement('h6');
+            label2.className = 'lesson-heading-stage';
             label2.textContent = 'Q.この経験にはどんな前提や背景がありますか？';
             const input2 = document.createElement('textarea');
             input2.className = 'lessonTextArea';
@@ -638,7 +644,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             input2.placeholder = 'ここに入力してください';
     
             // 3つ目
-            const label3 = document.createElement('label');
+            const label3 = document.createElement('h6');
+            label3.className = 'lesson-heading-stage';
             label3.textContent = 'Q.この経験には，他の場面でも使える考え方の指針はありますか？';
             const input3 = document.createElement('textarea');
             input3.className = 'lessonTextArea';
@@ -648,6 +655,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
             // 各ラベルとテキストエリアを追加
             area.insertBefore(title, area.firstChild);
+            area.appendChild(document.createElement('br'));
             area.appendChild(textarea);
 
             area.appendChild(label1);
@@ -700,7 +708,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 const selectedOrg = organizationMap[selectedNumber];
                 console.log("選択された組織: " + selectedOrg.text + " (ID: " + selectedOrg.value + ")");
 
-                this.shareKnowledgeFragmentToOrganization(selectedOrg.value, selected_node_id);
+                // 共有するノードの content を取得して渡す
+                const selNode = defaultThinkingProcess.nodes.get(selected_node_id) || {};
+                // ノードのラベルは改行を含むことがあるので空白に置換して送る
+                const selected_contents = (selNode.label || '').toString().replace(/\n+/g, ' ').trim();
+                this.shareKnowledgeFragmentToOrganization(selectedOrg.value, selected_node_id, selected_contents);
 
                 alert("組織 " + selectedOrg.text + " へ共有しました。");
             } else {
@@ -714,7 +726,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
     }
 
-    shareKnowledgeFragmentToOrganization(organizationId, nodeId) {
+    shareKnowledgeFragmentToOrganization(organizationId, nodeId, selected_contents = '') {
         // バリデーション
         if (!organizationId || !nodeId) {
             alert('共有する組織またはノードが選択されていません。');
@@ -722,22 +734,6 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         console.log('Sharing process node ID:', nodeId, 'to organization ID:', organizationId);
-
-        // $.ajax({
-        //     url: "../php/organizational_edit_map_maneger.php",
-        //     type: "POST",
-        //     data: {
-        //         purpose: "share",
-        //         group_id: organizationId,
-        //         process_node_id: nodeId
-        //     },
-        //     success: function(response) {
-        //         console.log('共有処理が成功しました:', response);
-        //     },
-        //     error: function(xhr, status, err) {
-        //         console.error('shareKnowledgeFragmentToOrganization error:', status, err, xhr.responseText);
-        //     }
-        // });
 
         // 学び(lesson)のテキストエリアを収集してサーバへ保存
         try {
@@ -767,7 +763,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const nodeGroup = node.group || '';
             const postData = {
                 purpose: "share_fragment",
+                group_id: organizationId,
                 thought_experience_node_id: nodeId,
+                selected_contents: selected_contents || '',
                 contents: JSON.stringify(filteredContents),
                 knowledge_fragment_title: knowledge_fragment_title
             };
@@ -1180,6 +1178,16 @@ class RecordThinkingProcess{
         });
     }
 }
+
+// myOrganizationalnetwork 内で右クリックしたときにブラウザ既定のコンテキストメニューを抑制
+document.addEventListener('DOMContentLoaded', function(){
+    const orgEl = document.getElementById('myOrganizationalnetwork');
+    if(orgEl){
+        orgEl.addEventListener('contextmenu', function(e){
+            e.preventDefault();
+        });
+    }
+});
 
 
 /*

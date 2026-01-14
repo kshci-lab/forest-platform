@@ -1816,12 +1816,10 @@ select[name="user_list"] {
 	background-color: #B3E0D8;
 }
 /* ノード追加ボタン */
-
-
 .button4 {
 	background-color: #90B1AB;
 	color: #fff;
-	/* width: 100px; */
+	/* width: 80%; */
 	height: 25px;
 	font-size: 12px;
 	margin-left: 10px;
@@ -1830,6 +1828,24 @@ select[name="user_list"] {
 	overflow: auto;
 }
 .button4:hover {
+	background-color: #B3E0D8;
+}
+
+/* context menu */
+.button_conmenu {
+	background-color: #90B1AB;
+	color: #fff;
+	border-color: unset;
+	width: 80%;
+	height: 25px;
+	font-size: 12px;
+	margin-left: 10px;
+	margin-right: 8px;
+	margin-top: 1px;
+    margin-bottom: 1px;
+	overflow: auto;
+}
+.button_conmenu:hover {
 	background-color: #B3E0D8;
 }
 

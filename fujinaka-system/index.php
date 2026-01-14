@@ -237,32 +237,32 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
             <div id="mindmap_conmenu">
               <ul>
                 <li>
-                    <button class="button4" onclick="showThinkingProcessMap()">
+                    <button class="button_conmenu" onclick="showThinkingProcessMap()">
                         思考過程表出化マップ
                     </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="NodeVersionUpdate()">
+                  <button class="button_conmenu" onclick="NodeVersionUpdate()">
                     ノードverを更新
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="SetPurposeonChapter()">
+                  <button class="button_conmenu" onclick="SetPurposeonChapter()">
                     章を作成
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="SetPurposeonSection()">
+                  <button class="button_conmenu" onclick="SetPurposeonSection()">
                     節を作成
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="SetPurpose()">
+                  <button class="button_conmenu" onclick="SetPurpose()">
                     パラグラフを作成
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="NodeAppend()">
+                  <button class="button_conmenu" onclick="NodeAppend()">
                     パラグラフに内容を追加
                   </button>
                 </li>

@@ -237,7 +237,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
             <div id="mindmap_conmenu">
               <ul>
               <li>
-                  <button class="button4" onclick="showThinkingProcessMap()">
+                  <button class="button_conmenu" onclick="showThinkingProcessMap()">
                       思考過程表出化マップ
                   </button>
               </li>
@@ -245,17 +245,17 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   ノード情報変更
               </li>
               <li>
-              <button class="button4" onclick="remove_node();">
+              <button class="button_conmenu" onclick="remove_node();">
                   ノードの削除
                 </button>
               </li>
               <li>
-                <button class="button4" onclick="NodeVersionUpdate()">
+                <button class="button_conmenu" onclick="NodeVersionUpdate()">
                     ノードverを更新
                 </button>
               </li>
               <li>
-                <!-- <button class="button4" onclick="move2anno_from_node(annotations);">
+                <!-- <button class="button_conmenu" onclick="move2anno_from_node(annotations);">
                       紐付いた文参照
                 </button> -->
               </li>
@@ -319,7 +319,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   </button>
                 </li>
               <li>
-              <button class="button4" onclick="remove_node();">
+              <button class="button_conmenu" onclick="remove_node();">
                   ノードの削除
                 </button>
               </li>
@@ -331,7 +331,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                  <li>
                   論文からノード追加
                 </li> 
-                <li>  <button class="button4" onclick="add_Anode2('konkyo');">
+                <li>  <button class="button_conmenu" onclick="add_Anode2('konkyo');">
                     根拠ノード追加
                   </button>
                 </li>
@@ -347,13 +347,13 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                 
                 <!--<li><a href="javascript:void(0);" target="_blank" onClick="SetPurpose('提案')">ノード追加</a></li> 
                <li>
-                  <button class="button4" onclick="add_Anode2('answer');">
+                  <button class="button_conmenu" onclick="add_Anode2('answer');">
                     解釈ノード追加
                   </button>
                 </li>
                 <li>
                   <li>
-                  <button class="button4" onclick="add_Anode2('criticism');">
+                  <button class="button_conmenu" onclick="add_Anode2('criticism');">
                     批評ノード追加
                   </button>
                   </li>
@@ -374,7 +374,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   </li>
 
                       
-                  <select name="change_criticism" id="s_criticism_node" class="button4">
+                  <select name="change_criticism" id="s_criticism_node" class="button_conmenu">
                   <optgroup label="批評の観点（タグ）付与">
                           <option value="criticism">批評の観点追加</option>
                             <option value="evaluation">価値判断</option>
@@ -401,13 +401,13 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                           </optgroup>
                         </select>
                       <li>
-                          <button class="button4" onclick="remove_critical_area();">
+                          <button class="button_conmenu" onclick="remove_critical_area();">
                             エリア非表示
                           </button>
 
                         </li>
                         <!-- <li>
-                        <button class="button4" onclick="remove_node();">
+                        <button class="button_conmenu" onclick="remove_node();">
                         ノードの削除
                       </button>
                         </li> -->
@@ -729,7 +729,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
             <div id="mindmap_conmenu_someone">
                 <ul>
                   <li>
-                      <button class="button4" onclick="move2anno_from_node(annotations_s);">
+                      <button class="button_conmenu" onclick="move2anno_from_node(annotations_s);">
                       紐付いた文参照
                       </button>
                       

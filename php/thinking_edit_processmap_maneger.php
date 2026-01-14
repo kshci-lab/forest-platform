@@ -94,18 +94,11 @@
 		}
 	}else if($purpose === 'share_fragment'){
 		$process_node_id = isset($_POST['process_node_id']) ? $_POST['process_node_id'] : '';
+		$selected_contents = isset($_POST['selected_contents']) ? $_POST['selected_contents'] : '';
 		$thought_experience_node_id = isset($_POST['thought_experience_node_id']) ? $_POST['thought_experience_node_id'] : '';
 		$contents_json = isset($_POST['contents']) ? $_POST['contents'] : '[]';
 		$knowledge_fragment_title = isset($_POST['knowledge_fragment_title']) ? $_POST['knowledge_fragment_title'] : NULL;
-
-		// selected_contents: process node の content を取得
-		$selected_contents = '';
-		if($process_node_id !== ''){
-			$r = $mysqli->query("SELECT content FROM process_nodes WHERE process_node_id = '".$mysqli->real_escape_string($process_node_id)."' LIMIT 1");
-			if($r && $row = $r->fetch_assoc()){
-				$selected_contents = $mysqli->real_escape_string($row['content']);
-			}
-		}
+		$group_id = isset($_POST['group_id']) ? $_POST['group_id'] : '';
 
 		// stage1/2/3 に振り分け
 		$stage1_items = [];
@@ -143,20 +136,19 @@
 		$kf_content = $knowledge_fragment_title === NULL ? NULL : $mysqli->real_escape_string($knowledge_fragment_title);
 
 		// 値準備
-		$selected_sql = $selected_contents === '' ? "NULL" : "'".$mysqli->real_escape_string($selected_contents)."'";
-		$kf_sql = $kf_content === NULL ? "NULL" : "'".$mysqli->real_escape_string($kf_content)."'";
-		$stage1_sql = $stage1 === '' ? "NULL" : "'".$mysqli->real_escape_string($stage1)."'";
-		$stage2_sql = $stage2 === '' ? "NULL" : "'".$mysqli->real_escape_string($stage2)."'";
-		$stage3_sql = $stage3 === '' ? "NULL" : "'".$mysqli->real_escape_string($stage3)."'";
+		$selected_sql = "'" . $mysqli->real_escape_string($selected_contents) . "'";
+		$kf_sql = $kf_content === NULL ? "''" : "'" . $mysqli->real_escape_string($kf_content) . "'";
+		$stage1_sql = "'" . $mysqli->real_escape_string($stage1) . "'";
+		$stage2_sql = $stage2 === '' ? "NULL" : "'" . $mysqli->real_escape_string($stage2) . "'";
+		$stage3_sql = $stage3 === '' ? "NULL" : "'" . $mysqli->real_escape_string($stage3) . "'";
 		$user_id_int = isset($user_id) ? intval($user_id) : null;
 		$user_sql = $user_id_int === null ? 'NULL' : $user_id_int;
-		$process_node_sql = ($process_node_id === '' || $process_node_id === null) ? "NULL" : "'" . $mysqli->real_escape_string($process_node_id) . "'";
 		$thought_node_sql = ($thought_experience_node_id === '' || $thought_experience_node_id === null) ? "NULL" : "'" . $mysqli->real_escape_string($thought_experience_node_id) . "'";
 
 		// PHP側で整数IDを生成して挿入する（競合を避けるためトランザクションで最後のIDをロックして +1）
 		if(!$mysqli->begin_transaction()){
 			// begin_transaction が使えない場合は普通にINSERTしてinsert_idを使う
-			$insert_sql = "INSERT INTO externalized_contents (remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, process_node_id, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) VALUES (NULL, 0, $thought_node_sql, $process_node_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
+			$insert_sql = "INSERT INTO externalized_contents (remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) VALUES (NULL, 0, $thought_node_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
 			$mysqli->query($insert_sql);
 			if($mysqli->error){
 				echo "Error externalized_contents insert: " . $mysqli->error;
@@ -172,7 +164,7 @@
 				$new_id = 1;
 			}
 
-			$insert_sql = "INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, process_node_id, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) VALUES (" . $new_id . ", NULL, 0, $thought_node_sql, $process_node_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
+			$insert_sql = "INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) VALUES (" . $new_id . ", NULL, 0, $thought_node_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
 			$mysqli->query($insert_sql);
 			if($mysqli->error){
 				$mysqli->rollback();
@@ -181,6 +173,17 @@
 			}
 			$mysqli->commit();
 			$ec_id = $new_id;
+		}
+
+		if($group_id !== ''){
+			$shared_id = rand();
+			$group_id_sql = $mysqli->real_escape_string($group_id);
+			$mysqli->query("INSERT INTO shared_nodes (id, externalized_contents_id, knowledge_group_id, created_at, updated_at, deleted) 
+				VALUES ('$shared_id', '$ec_id', '$group_id_sql', '$timestamp', '$timestamp', 0)");
+			if($mysqli->error){
+				echo "Error shared_nodes insert: " . $mysqli->error;
+				exit;
+			}
 		}
 
 		echo json_encode(['status'=>'ok', 'externalized_contents_id'=>$ec_id]);
