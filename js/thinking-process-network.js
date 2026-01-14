@@ -764,6 +764,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const postData = {
                 purpose: "share_fragment",
                 group_id: organizationId,
+                externalized_type: nodeGroup,
                 thought_experience_node_id: nodeId,
                 selected_contents: selected_contents || '',
                 contents: JSON.stringify(filteredContents),

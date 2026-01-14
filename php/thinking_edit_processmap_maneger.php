@@ -96,6 +96,7 @@
 		$process_node_id = isset($_POST['process_node_id']) ? $_POST['process_node_id'] : '';
 		$selected_contents = isset($_POST['selected_contents']) ? $_POST['selected_contents'] : '';
 		$thought_experience_node_id = isset($_POST['thought_experience_node_id']) ? $_POST['thought_experience_node_id'] : '';
+		$externalized_type = isset($_POST['externalized_type']) ? $_POST['externalized_type'] : '';
 		$contents_json = isset($_POST['contents']) ? $_POST['contents'] : '[]';
 		$knowledge_fragment_title = isset($_POST['knowledge_fragment_title']) ? $_POST['knowledge_fragment_title'] : NULL;
 		$group_id = isset($_POST['group_id']) ? $_POST['group_id'] : '';
@@ -144,11 +145,13 @@
 		$user_id_int = isset($user_id) ? intval($user_id) : null;
 		$user_sql = $user_id_int === null ? 'NULL' : $user_id_int;
 		$thought_node_sql = ($thought_experience_node_id === '' || $thought_experience_node_id === null) ? "NULL" : "'" . $mysqli->real_escape_string($thought_experience_node_id) . "'";
+		$externalized_type_sql = $externalized_type === '' ? "NULL" : "'" . $mysqli->real_escape_string($externalized_type) . "'";
 
 		// PHP側で整数IDを生成して挿入する（競合を避けるためトランザクションで最後のIDをロックして +1）
 		if(!$mysqli->begin_transaction()){
 			// begin_transaction が使えない場合は普通にINSERTしてinsert_idを使う
-			$insert_sql = "INSERT INTO externalized_contents (remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) VALUES (NULL, 0, $thought_node_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
+			$insert_sql = "INSERT INTO externalized_contents (remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, externalized_type, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) 
+							VALUES (NULL, 0, $thought_node_sql, $externalized_type_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
 			$mysqli->query($insert_sql);
 			if($mysqli->error){
 				echo "Error externalized_contents insert: " . $mysqli->error;
@@ -164,7 +167,8 @@
 				$new_id = 1;
 			}
 
-			$insert_sql = "INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) VALUES (" . $new_id . ", NULL, 0, $thought_node_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
+			$insert_sql = "INSERT INTO externalized_contents (externalized_contents_id, remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, externalized_type, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) 
+							VALUES (" . $new_id . ", NULL, 0, $thought_node_sql, $externalized_type_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
 			$mysqli->query($insert_sql);
 			if($mysqli->error){
 				$mysqli->rollback();

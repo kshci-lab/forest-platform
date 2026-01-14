@@ -99,7 +99,7 @@ if (!empty($user_ids_in_latest_group)) {
         return $mysqli->real_escape_string($id);
     }, $user_ids_in_latest_group);
     $user_ids_in_sql = implode(",", $user_ids_escaped);
-    $sql_nodes = "SELECT sn.*, ec.content, ec.externalized_contents_id, ec.externalized_type, ec.user_id, ec.selected_contents, ec.knowledge_fragment_content, ec.stage1, ec.stage2, ec.stage3
+    $sql_nodes = "SELECT sn.*, ec.externalized_contents_id, ec.externalized_type, ec.user_id, ec.selected_contents, ec.knowledge_fragment_content, ec.stage1, ec.stage2, ec.stage3
         FROM shared_nodes sn
         INNER JOIN externalized_contents ec ON sn.externalized_contents_id = ec.externalized_contents_id
         WHERE ec.user_id IN ($user_ids_in_sql)
