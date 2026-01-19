@@ -2172,10 +2172,15 @@ function renderTreeNode(node, byParent){
     wrapper.className = 'kt-node';
     wrapper.setAttribute('data-node-id', node.node_id);
     try{
-        var ext = null;
-        if(node && typeof node.externalized_contents_id !== 'undefined' && node.externalized_contents_id !== null){ ext = parseInt(node.externalized_contents_id,10); }
-        else if(node && typeof node.knowledge_fragment_id !== 'undefined' && node.knowledge_fragment_id !== null){ ext = parseInt(node.knowledge_fragment_id,10); }
+        var ext = null, kfrag = null;
+        if(node && typeof node.externalized_contents_id !== 'undefined' && node.externalized_contents_id !== null){
+            ext = parseInt(node.externalized_contents_id,10);
+        }
+        if(node && typeof node.knowledge_fragment_id !== 'undefined' && node.knowledge_fragment_id !== null){
+            kfrag = parseInt(node.knowledge_fragment_id,10);
+        }
         if(ext && !isNaN(ext) && ext>0){ wrapper.setAttribute('data-ext-id', String(ext)); }
+        if(kfrag && !isNaN(kfrag) && kfrag>0){ wrapper.setAttribute('data-kfrag-id', String(kfrag)); }
     }catch(_){ }
     if(hasChildren){
         var toggle = document.createElement('span');
@@ -2442,28 +2447,120 @@ $(document).on('click', '.kt-content-title', function(e){
         var extId = extAttr ? parseInt(extAttr,10) : null;
         var nodeIdAttr = $node.attr('data-node-id');
         var nodeId = nodeIdAttr ? parseInt(nodeIdAttr,10) : null;
-        var ajaxData = {};
-        if(extId && !isNaN(extId) && extId>0){ ajaxData.externalized_contents_id = extId; }
-        else if(nodeId && !isNaN(nodeId) && nodeId>0){ ajaxData.node_id = nodeId; }
-        else { return; }
-        $.ajax({ url: 'php/get_knowledge_fragment_detail.php', type: 'GET', dataType: 'html', data: ajaxData })
-            .done(function(html){
-                var modal = document.getElementById('kfrag-detail-modal');
-                if(!modal){
-                    modal = document.createElement('div'); modal.id='kfrag-detail-modal'; modal.style.position='fixed'; modal.style.left='0'; modal.style.top='0'; modal.style.width='100%'; modal.style.height='100%'; modal.style.background='rgba(0,0,0,0.35)'; modal.style.zIndex='100000'; modal.style.display='none';
-                    var inner = document.createElement('div'); inner.id='kfrag-detail-inner'; inner.style.position='absolute'; inner.style.left='50%'; inner.style.top='50%'; inner.style.transform='translate(-50%, -50%)'; inner.style.background='#fff'; inner.style.maxWidth='800px'; inner.style.width='90%'; inner.style.maxHeight='80%'; inner.style.overflow='auto'; inner.style.borderRadius='8px'; inner.style.boxShadow='0 8px 24px rgba(0,0,0,0.2)'; inner.style.padding='16px';
-                    var close = document.createElement('div'); close.textContent='×'; close.style.position='absolute'; close.style.right='12px'; close.style.top='8px'; close.style.cursor='pointer'; close.style.fontSize='20px'; close.setAttribute('aria-label','閉じる'); close.addEventListener('click', function(){ modal.style.display='none'; }, false);
-                    inner.appendChild(close); modal.appendChild(inner); document.body.appendChild(modal);
-                    modal.addEventListener('mousedown', function(ev){ if(ev.target === modal){ modal.style.display='none'; } }, true);
+        // 選択済みフラグメントIDの収集（グローバル状態優先、DOMはフォールバック）
+        var selectedKeys = [];
+        try{
+            if(window.kfrag_display_list && Array.isArray(window.kfrag_display_list) && window.kfrag_display_list.length){
+                selectedKeys = window.kfrag_display_list.slice();
+            } else {
+                if(typeof window.activeExternalizedId !== 'undefined' && window.activeExternalizedId !== null){
+                    selectedKeys.push(String(window.activeExternalizedId));
+                } else if(typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null){
+                    selectedKeys.push(String(window.activeKnowledgeFragmentId));
                 }
-                var inner = document.getElementById('kfrag-detail-inner');
-                inner.innerHTML = '';
-                var close = document.createElement('div'); close.textContent='×'; close.style.position='absolute'; close.style.right='12px'; close.style.top='8px'; close.style.cursor='pointer'; close.style.fontSize='20px'; close.setAttribute('aria-label','閉じる'); close.addEventListener('click', function(){ modal.style.display='none'; }, false);
-                inner.appendChild(close);
-                var contentWrap = document.createElement('div'); contentWrap.innerHTML = html; inner.appendChild(contentWrap);
-                modal.style.display='block';
-            })
-            .fail(function(xhr,st,err){ try{ console && console.error && console.error('get_knowledge_fragment_detail fail', st, err, xhr && xhr.responseText); }catch(_){ } alert('詳細を取得できませんでした'); });
+                if(window.kfrag_add_selected){
+                    if(Array.isArray(window.kfrag_add_selected.ext)){
+                        window.kfrag_add_selected.ext.forEach(function(x){ var s=String(x); if(s && selectedKeys.indexOf(s)===-1) selectedKeys.push(s); });
+                    }
+                    if(Array.isArray(window.kfrag_add_selected.kfid)){
+                        window.kfrag_add_selected.kfid.forEach(function(x){ var s=String(x); if(s && selectedKeys.indexOf(s)===-1) selectedKeys.push(s); });
+                    }
+                }
+            }
+        }catch(_){ }
+        if(!selectedKeys.length){
+            try{
+                $('#fragment-selected-list').find('.fragment-selected-item').each(function(){
+                    var k = String($(this).data('kfid')); if(k && selectedKeys.indexOf(k)===-1) selectedKeys.push(k);
+                });
+            }catch(_){ }
+        }
+        // externalized-id へ可能な限りマッピング（まずグローバルmap、次にDOM、最後にキーそのもの）
+        var selectedExtIds = [];
+        try{
+            var map = (typeof window.kfrag_id_map !== 'undefined') ? window.kfrag_id_map : null;
+            selectedKeys.forEach(function(k){
+                var useId = null;
+                try{
+                    if(map && map[String(k)]){ useId = String(map[String(k)]); }
+                }catch(_){ }
+                if(!useId){
+                    try{
+                        var $w = $('.fragment-node-wrapper').filter(function(){
+                            try{ return String($(this).data('knowledge-fragment-id')) === String(k) || String($(this).data('externalized-id')) === String(k); }catch(_){ return false; }
+                        }).first();
+                        if($w && $w.length){
+                            var extCandidate = $w.data('externalized-id');
+                            if(typeof extCandidate !== 'undefined' && extCandidate !== null && String(extCandidate).length){ useId = String(extCandidate); }
+                        }
+                    }catch(_){ }
+                }
+                if(!useId){ useId = String(k); }
+                if(selectedExtIds.indexOf(useId) === -1){ selectedExtIds.push(useId); }
+            });
+        }catch(_){ }
+
+        // 選択一覧が空なら単一IDでフォールバック
+        var ajaxData = {};
+        if(!selectedExtIds.length){
+            if(extId && !isNaN(extId) && extId>0){ ajaxData.externalized_contents_id = extId; }
+            else if(nodeId && !isNaN(nodeId) && nodeId>0){ ajaxData.node_id = nodeId; }
+            else { return; }
+        }
+
+        // モーダルの用意（1回のみ作成）
+        var modal = document.getElementById('kfrag-detail-modal');
+        if(!modal){
+            modal = document.createElement('div'); modal.id='kfrag-detail-modal'; modal.style.position='fixed'; modal.style.left='0'; modal.style.top='0'; modal.style.width='100%'; modal.style.height='100%'; modal.style.background='rgba(0,0,0,0.35)'; modal.style.zIndex='100000'; modal.style.display='none';
+            var innerInit = document.createElement('div'); innerInit.id='kfrag-detail-inner'; innerInit.style.position='absolute'; innerInit.style.left='50%'; innerInit.style.top='50%'; innerInit.style.transform='translate(-50%, -50%)'; innerInit.style.background='#fff'; innerInit.style.maxWidth='800px'; innerInit.style.width='90%'; innerInit.style.maxHeight='80%'; innerInit.style.overflow='auto'; innerInit.style.borderRadius='8px'; innerInit.style.boxShadow='0 8px 24px rgba(0,0,0,0.2)'; innerInit.style.padding='16px';
+            var closeInit = document.createElement('div'); closeInit.textContent='×'; closeInit.style.position='absolute'; closeInit.style.right='12px'; closeInit.style.top='8px'; closeInit.style.cursor='pointer'; closeInit.style.fontSize='20px'; closeInit.setAttribute('aria-label','閉じる'); closeInit.addEventListener('click', function(){ modal.style.display='none'; }, false);
+            innerInit.appendChild(closeInit); modal.appendChild(innerInit); document.body.appendChild(modal);
+            modal.addEventListener('mousedown', function(ev){ if(ev.target === modal){ modal.style.display='none'; } }, true);
+        }
+        var inner = document.getElementById('kfrag-detail-inner');
+        inner.innerHTML = '';
+        var close = document.createElement('div'); close.textContent='×'; close.style.position='absolute'; close.style.right='12px'; close.style.top='8px'; close.style.cursor='pointer'; close.style.fontSize='20px'; close.setAttribute('aria-label','閉じる'); close.addEventListener('click', function(){ modal.style.display='none'; }, false);
+        inner.appendChild(close);
+
+        // ヘッダ（選択件数を表示）
+        try{
+            var header = document.createElement('div');
+            header.style.margin = '0 0 12px 0'; header.style.fontWeight = '600'; header.style.fontSize = '15px';
+            header.textContent = selectedExtIds.length ? ('選択フラグメント数: ' + selectedExtIds.length) : 'フラグメント詳細';
+            inner.appendChild(header);
+        }catch(_){ }
+
+        // 複数取得 or 単一取得
+        if(selectedExtIds.length){
+            // 逐次フェッチして順次追加（Promise.allでも可）
+            var ids = selectedExtIds.slice();
+            var fetchNext = function(i){
+                if(i >= ids.length){ modal.style.display='block'; return; }
+                var id = ids[i];
+                $.ajax({ url: 'php/get_knowledge_fragment_detail.php', type: 'GET', dataType: 'html', data: { externalized_contents_id: id } })
+                    .done(function(html){
+                        var meta = document.createElement('div'); meta.className='kfrag-detail-meta'; meta.style.margin='4px 0 8px 0'; meta.style.fontSize='13px'; meta.style.color='#555'; meta.textContent='Externalized Contents ID: ' + String(id);
+                        inner.appendChild(meta);
+                        var wrap = document.createElement('div'); wrap.style.marginBottom='16px'; wrap.innerHTML = html; inner.appendChild(wrap);
+                    })
+                    .fail(function(xhr,st,err){
+                        var errBox = document.createElement('div'); errBox.style.color='#b00020'; errBox.style.margin='4px 0 12px'; errBox.textContent = '詳細取得失敗 (ID: ' + String(id) + ')'; inner.appendChild(errBox);
+                        try{ console && console.error && console.error('get_knowledge_fragment_detail fail', st, err, xhr && xhr.responseText); }catch(_){ }
+                    })
+                    .always(function(){ fetchNext(i+1); });
+            };
+            fetchNext(0);
+        } else {
+            $.ajax({ url: 'php/get_knowledge_fragment_detail.php', type: 'GET', dataType: 'html', data: ajaxData })
+                .done(function(html){
+                    if(extId && !isNaN(extId)){
+                        var meta2 = document.createElement('div'); meta2.className='kfrag-detail-meta'; meta2.style.margin='4px 0 12px 0'; meta2.style.fontSize='14px'; meta2.style.color='#555'; meta2.textContent='Externalized Contents ID: ' + String(extId); inner.appendChild(meta2);
+                    }
+                    var contentWrap = document.createElement('div'); contentWrap.innerHTML = html; inner.appendChild(contentWrap);
+                    modal.style.display='block';
+                })
+                .fail(function(xhr,st,err){ try{ console && console.error && console.error('get_knowledge_fragment_detail fail', st, err, xhr && xhr.responseText); }catch(_){ } alert('詳細を取得できませんでした'); });
+        }
     }catch(ex){ try{ console && console.error && console.error('kt-content-title click error', ex); }catch(_){ } }
 });
 
@@ -3179,6 +3276,12 @@ function initializeFragmentsWorkspace(){
 
         // persist fragment id & display string & discussed status & externalized id
         try{ $wrap.data('knowledge-fragment-id', num); $wrap.data('knowledge-fragment-display', displayNum); $wrap.data('discussed-status', discussedStatus); if(extId!==null){ $wrap.data('externalized-id', extId); } }catch(e){}
+        // build global mapping from display fragment id -> externalized id for later lookups (e.g., popup)
+        try{
+            window.kfrag_id_map = window.kfrag_id_map || {};
+            if(typeof num !== 'undefined' && num !== null){ window.kfrag_id_map[String(num)] = (extId!==null ? String(extId) : (window.kfrag_id_map[String(num)]||'')); }
+            if(extId!==null){ window.kfrag_id_map[String(extId)] = String(extId); }
+        }catch(_){ }
         if(discussedStatus === 'UNDERWAY'){
             var $ind = $('<div class="fragment-discussed-indicator" aria-hidden="true">議論中</div>');
             $wrap.append($ind);
