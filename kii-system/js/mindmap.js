@@ -118,7 +118,7 @@ function get_selected_nodeid(){
 // この関数が動くのはadd_node.js
 // 引数の情報はadd_node.js内でノードを全検索している
 // 引数strはcontentのこと＝ノードに記述してある内容のこと
-function show_node(id,pid,str,cid,type,cname, sid, eid){
+function show_node(id,pid,str,cid,type,cname, sid, eid, is_edited){
 
     var i;
     //add_nodeでデータを格納
@@ -136,6 +136,9 @@ function show_node(id,pid,str,cid,type,cname, sid, eid){
             jmnode[i].setAttribute("parent_id",pid);
             jmnode[i].setAttribute("start_char_id",sid);
             jmnode[i].setAttribute("end_char_id",eid);
+            if(is_edited){
+                jmnode[i].setAttribute("edited-node", "true");
+            }
 
         }
 

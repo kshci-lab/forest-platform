@@ -5,18 +5,27 @@
 async function loadNodesData() {
 	const callData = (dataType) => {
 		return new Promise((resolve, reject) => {
-			$.ajax({
-				url: "php/open_data.php",
-				type: "POST",
-				data: { val: dataType },
-				success: (result) => {
-					return result;
-				}
-			}).then(result => {
-				resolve(JSON.parse(result));
-			}, () => {
-				reject();
-			});
+				$.ajax({
+					url: "php/open_data.php",
+					type: "POST",
+					data: { val: dataType },
+					success: (result) => {
+						return result;
+					}
+				}).then(result => {
+					if (!result) {
+						resolve([]);
+						return;
+					}
+					try {
+						resolve(JSON.parse(result));
+					} catch (e) {
+						console.error('open_data.php JSON parse error:', e, result);
+						resolve([]);
+					}
+				}, () => {
+					reject();
+				});
 		})
 	}
 
@@ -26,6 +35,8 @@ async function loadNodesData() {
 	const type_array = await callData("type");
 	const parent_id_array = await callData("parent_id");
 	const class_array = await callData("class");
+	const edited_node_ids = await callData("edited_nodes");
+	const editedNodeSet = new Set(edited_node_ids);
 
 	const getIndexedNodeData = (index) => {
 		return { 
@@ -53,7 +64,8 @@ async function loadNodesData() {
 	const visualizeNode = (node_id) => {
 		// 親に当たるノードから再帰的に順番に表示していく
 		const node_info = getIndexedNodeData(findNodeIndex(node_id));
-		show_node(node_info.id, node_info.parent_id, node_info.content, node_info.concept_id, node_info.type, node_info.class);
+		const isEdited = editedNodeSet.has(node_info.id);
+		show_node(node_info.id, node_info.parent_id, node_info.content, node_info.concept_id, node_info.type, node_info.class, isEdited);
 
 		const children = findChildrenIndex(node_id);
 		if(children.length === 0) return;

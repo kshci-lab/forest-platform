@@ -99,7 +99,11 @@ function NodeVersionUpdate(nodes){
               console.log(res);
             }
             GetPairNodeId_ContentRelationTable(nodeID);
-    
+            var jmnode = document.querySelectorAll("jmnode[nodeid='" + nodeID + "']");
+            for(var i=0; i<jmnode.length; i++){
+              jmnode[i].removeAttribute("edited-node");
+            }
+
             // 親ノードIDがnodeIDと一致する子ノードのインデックスを取得
             node.children.forEach(childNode => {
                 // ノードのDOM要素を取得

@@ -23,7 +23,7 @@ canvas{position:absolute;z-index:1;}
 
 /* z-index:2 */
 jmnodes{position:absolute;z-index:2;background-color:rgba(0,0,0,0);}/*background color is necessary*/
-jmnode{position:absolute;cursor:default;max-width:1000px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+jmnode{position:absolute;cursor:default;max-width:1000px;white-space:nowrap;overflow:visible;text-overflow:ellipsis;}
 jmexpander{position:absolute;width:11px;height:11px;display:block;overflow:hidden;line-height:12px;font-size:12px;text-align:center;border-radius:12px;border-width:1px;border-style:solid;cursor:pointer;}
 
 /* default theme */
@@ -33,6 +33,7 @@ jmnode.selected{box-shadow:2px 2px 8px #000;}
 jmnode.root{font-size:12px;}
 jmexpander{border-color:gray;}
 jmexpander:hover{border-color:#000;}
+jmnode[edited-node="true"]::after{content:'';position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:url('../image/pen-solid-full.svg') no-repeat center center;background-size:contain;}
 
 @media screen and (max-device-width: 1024px) {
     jmnode{padding:5px;border-radius:3px;font-size:14px;}
@@ -368,4 +369,3 @@ jmnode[type="deleted_toi"].selected{background-color:#e6e6fa;color:#000;}
 jmnode[type="deleted_answer"]{background-color:#fffacd;color:#000;border:dashed; border:dashed solid #000;}
 jmnode[type="deleted_answer"]:hover{background-color:#fffacd;}
 jmnode[type="deleted_answer"].selected{background-color:#fffacd;color:#000;}
-

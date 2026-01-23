@@ -124,6 +124,25 @@ function getData(){
 
 	});
 
+	$.ajax({
+
+	    url: "php/open_data.php",
+	    type: "POST",
+	    data: { val : "edited_nodes" },
+	    success: function(arr){
+
+	    	var parse = JSON.parse(arr);
+	    	edited_node_ids = parse;
+	    	showNode(edited_node_ids,"edited_nodes");
+
+			},
+			error: function(){
+			console.log("ajaxエラー");
+
+	    }
+
+	});
+
 }
 
 var count = 0;
@@ -133,6 +152,7 @@ var id_array = new Array();
 	content_array = new Array();
 	type_array = new Array();
 	class_array = new Array();
+	edited_node_ids = new Array();
 
 function showNode(arr,mode){
 
@@ -166,9 +186,14 @@ function showNode(arr,mode){
 		class_array = arr;
 		count += 1;
 
+	}else if(mode == "edited_nodes"){
+
+		edited_node_ids = arr;
+		count += 1;
+
 	}
 
-	if(count >= 6){
+	if(count >= 7){
 
 		var n = 1;
 
@@ -178,7 +203,8 @@ function showNode(arr,mode){
 
 				// rootを親に持つノードを表示
 				// mindmap.jsへ受け渡す
-				show_node(id_array[i],parent_id_array[i],content_array[i],concept_id_array[i],type_array[i],class_array[i]);
+				var isEdited = edited_node_ids.indexOf(id_array[i]) !== -1;
+				show_node(id_array[i],parent_id_array[i],content_array[i],concept_id_array[i],type_array[i],class_array[i], isEdited);
 				n++;
 
 				// console.log(content_array[i]);
@@ -199,7 +225,8 @@ function showNode(arr,mode){
 					// rootを親に持たないノードを表示
 					if(parent_id_array[j] != "root"){
 						//mindmap.jsへ受け渡す
-						show_node(id_array[j],parent_id_array[j],content_array[j],concept_id_array[j],type_array[j],class_array[j]);
+						var isEdited = edited_node_ids.indexOf(id_array[j]) !== -1;
+						show_node(id_array[j],parent_id_array[j],content_array[j],concept_id_array[j],type_array[j],class_array[j], isEdited);
 						jmnode = document.getElementsByTagName("jmnode");
 						n++;
 

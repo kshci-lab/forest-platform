@@ -63,10 +63,13 @@ function MapSnapShot(){
 }
 
 // ノード更新ボタンが押された時の処理
-function NodeVersionUpdate(){
+function NodeVersionUpdate(nodeIdOverride){
 
     var nodeVERSION = jsMind.util.uuid.newid();
-    var node = _jm.get_selected_node();
+    var node = nodeIdOverride ? _jm.get_node(nodeIdOverride) : _jm.get_selected_node();
+    if(!node){
+      return;
+    }
     var nodeID = node.id;
     var class_name = Get_NodeInfo(nodeID, 'class').split(' ')[0]; // 'XXX selected'になっているのでselectedを取り除く
     var type_name = Get_NodeInfo(nodeID, 'type');
@@ -103,6 +106,10 @@ function NodeVersionUpdate(){
           success: function (res) {
              if(res){
               console.log(res);
+             }
+             var jmnode = document.querySelectorAll("jmnode[nodeid='" + nodeID + "']");
+             for(var i=0; i<jmnode.length; i++){
+               jmnode[i].removeAttribute("edited-node");
              }
           },
           error: function () {
@@ -966,4 +973,3 @@ function elab_display_preview(mixtext) {
 	  }
 	  add_span();
 }
-
