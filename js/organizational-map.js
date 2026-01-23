@@ -205,9 +205,9 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         this.tooltipEl.innerHTML = '';
         const lines = [
             "【経験】" + (tooltipData.selected_contents || ''),
-            "【課題点】" + (tooltipData.stage1 || ''),
-            "【分岐点】" + (tooltipData.stage2 || ''),
-            "【指針】" + (tooltipData.stage3 || '')
+            "【経験の振り返り】" + (tooltipData.stage1 || ''),
+            "【活動文脈固有の振り返り】" + (tooltipData.stage2 || ''),
+            "【研究固有の振り返り】" + (tooltipData.stage3 || '')
         ];
         lines.forEach((line) => {
             const row = document.createElement('div');

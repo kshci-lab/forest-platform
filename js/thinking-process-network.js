@@ -622,55 +622,74 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             textarea.className = 'lessonTextArea';
             textarea.name = 'knowledge_fragment_title';
             textarea.placeholder = 'どんなことを学んだかの要約を入力してください';
-    
-            // 1つ目
-            const label1 = document.createElement('h6');
-            label1.className = 'lesson-heading-stage';
-            label1.textContent = 'Q.このとき，どのようなことが「うまくいっていなかった」のですか？';
-            const input1 = document.createElement('textarea');
-            input1.className = 'lessonTextArea';
-            input1.name = 'stage1';
-            input1.rows = 3;
-            input1.placeholder = 'ここに入力してください';
-    
-            // 2つ目
-            const label2 = document.createElement('h6');
-            label2.className = 'lesson-heading-stage';
-            label2.textContent = 'Q.今回の経験知を得られなかった場合，どんな誤った判断をしていた可能性がありますか？';
-            const input2 = document.createElement('textarea');
-            input2.className = 'lessonTextArea';
-            input2.name = 'stage2';
-            input2.rows = 3;
-            input2.placeholder = 'ここに入力してください';
-    
-            // 3つ目
-            const label3 = document.createElement('h6');
-            label3.className = 'lesson-heading-stage';
-            label3.textContent = 'Q.この経験には，他の場面でも使える考え方の指針はありますか？';
-            const input3 = document.createElement('textarea');
-            input3.className = 'lessonTextArea';
-            input3.name = 'stage3';
-            input3.rows = 3;
-            input3.placeholder = 'ここに入力してください';
+
+            const createStagePrompt = (stageName, titleText, parts) => {
+                const titleEl = document.createElement('h5');
+                titleEl.className = 'lesson-heading-stage';
+                titleEl.textContent = titleText;
+                const prompt = document.createElement('div');
+                prompt.setAttribute('data-stage-block', 'true');
+                prompt.setAttribute('data-stage', stageName);
+                parts.forEach((part) => {
+                    if (typeof part === 'string') {
+                        prompt.appendChild(document.createTextNode(part));
+                    } else {
+                        const input = document.createElement('textarea');
+                        input.className = 'lessonTextArea';
+                        input.rows = 1;
+                        input.placeholder = part.placeholder || '';
+                        prompt.appendChild(input);
+                    }
+                });
+                return { titleEl, prompt };
+            };
+
+            const stage1 = createStagePrompt(
+                'stage1',
+                '【経験の振り返り】',
+                [
+                    { placeholder: 'どのように' },
+                    '考えたことで，',
+                    { placeholder: '何' },
+                    'が達成された．'
+                ]
+            );
+            const stage2 = createStagePrompt(
+                'stage2',
+                '【活動文脈固有の振り返り】',
+                [
+                    '現在の思考の文脈で',
+                    { placeholder: 'どのように考えること/取り組むこと（手段）' },
+                    'が，研究活動の',
+                    { placeholder: '何に資する（目的）' },
+                    '．'
+                ]
+            );
+            const stage3 = createStagePrompt(
+                'stage3',
+                '【研究固有の振り返り】',
+                [
+                    '研究に取り組むとき，',
+                    { placeholder: '何を考える/取り組むこと（目的）' },
+                    'が大切で，そのために，',
+                    { placeholder: '何をどのようにどのような観点から考える/取り組むこと（手段）' },
+                    'が効果的である．'
+                ]
+            );
     
             // 各ラベルとテキストエリアを追加
             area.insertBefore(title, area.firstChild);
             area.appendChild(document.createElement('br'));
             area.appendChild(textarea);
 
-            area.appendChild(label1);
-            area.appendChild(document.createElement('br'));
-            area.appendChild(input1);
-            area.appendChild(document.createElement('br'));
+            area.appendChild(stage1.titleEl);
+            area.appendChild(stage1.prompt);
     
-            area.appendChild(label2);
-            area.appendChild(document.createElement('br'));
-            area.appendChild(input2);
-            area.appendChild(document.createElement('br'));
+            area.appendChild(stage2.titleEl);
+            area.appendChild(stage2.prompt);
     
-            area.appendChild(label3);
-            area.appendChild(document.createElement('br'));
-            area.appendChild(input3);
+            area.appendChild(stage3.titleEl);
+            area.appendChild(stage3.prompt);
         }
     }
 
@@ -741,25 +760,34 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // 学び(lesson)のテキストエリアを収集してサーバへ保存
         try {
-            const lessonAreas = document.getElementsByClassName('lessonTextArea');
-            const contents = [];
-            for (let i = 0; i < lessonAreas.length; i++) {
-                const name = lessonAreas[i].name || ('text' + i);
-                const value = lessonAreas[i].value || '';
-                contents.push({ type: name, content: value });
-            }
-
             // タイトルは別に取り出す（最初のタイトル要素をnameで判別）
             const titleEl = document.querySelector('textarea.lessonTextArea[name="knowledge_fragment_title"]');
             const knowledge_fragment_title = titleEl ? titleEl.value : '';
 
-            // contents からタイトル要素は除外して送信する
+            // stageごとの入力を「平文＋入力内容」で結合して送信する
             const filteredContents = [];
-            for (let i = 0; i < lessonAreas.length; i++) {
-                const name = lessonAreas[i].name || ('text' + i);
-                if (name === 'knowledge_fragment_title') continue;
-                const value = lessonAreas[i].value || '';
-                filteredContents.push({ type: name, content: value });
+            const stageBlocks = document.querySelectorAll('[data-stage-block="true"]');
+            if (stageBlocks.length > 0) {
+                stageBlocks.forEach((block) => {
+                    const stageName = block.getAttribute('data-stage') || 'stage';
+                    let value = '';
+                    block.childNodes.forEach((node) => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            value += node.textContent;
+                        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'TEXTAREA') {
+                            value += node.value || '';
+                        }
+                    });
+                    filteredContents.push({ type: stageName, content: value });
+                });
+            } else {
+                const lessonAreas = document.getElementsByClassName('lessonTextArea');
+                for (let i = 0; i < lessonAreas.length; i++) {
+                    const name = lessonAreas[i].name || ('text' + i);
+                    if (name === 'knowledge_fragment_title') continue;
+                    const value = lessonAreas[i].value || '';
+                    filteredContents.push({ type: name, content: value });
+                }
             }
 
             // ノード種類に関係なく共有：thought_experience_node_id に常に nodeId を送る。
@@ -777,6 +805,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             if(nodeGroup === 'process'){
                 postData.process_node_id = nodeId; // 互換性のため process_node_id も送る
             }
+
+            console.log('Prepared post data for sharing:', postData);
 
             // 送信
             $.ajax({
@@ -1208,11 +1238,16 @@ let _lastShowThinkingProcessCall = 0;
 
 const getProcessMapDataFromDB = (callback) => {
     //選択されているノードIDとconcept_id
-    let selected_node_id;
+    let selected_node_id = null;
     let selected_node_group = '';
     if(process_mode == "all"){
         selected_node_id = _jm.get_selected_node().id;
         selected_concept_id = Get_NodeInfo(selected_node_id, "concept_id");
+
+        // 保存用にconceptdisplayの属性を更新
+        const conceptDisplay = document.getElementById("conceptdisplay");
+        conceptDisplay.setAttribute('conceptid', selected_concept_id);
+        conceptDisplay.setAttribute('nodeid', selected_node_id);
     }else if(process_mode == "who"){
         selected_node_id = selected_other_process_id;    //選択した他者のprocessノードIDを格納
         selected_node_group = selected_other_process_group;
@@ -1221,6 +1256,7 @@ const getProcessMapDataFromDB = (callback) => {
         selected_node_id = conceptDiplay.getAttribute('nodeid');
         selected_concept_id = conceptDiplay.getAttribute('conceptid');;
     }
+    
     choose_trigger_xmlLoad().then(conceptIds => {
         return new Promise((resolve, reject) => {
             try{
@@ -1493,6 +1529,21 @@ const addeventdisplayTriggerData = () => {
     // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
         // $(`#trigger_click`).empty();
     });
+    $(`.trigger_in_list`).on('click', (e) => {
+        // リスト内の発話ノードにマウスイベント(左クリック)を追加
+        const clicked_trigger = e.currentTarget;
+        document.getElementById("trigger_click").innerHTML="<input type='button' class='triggerbutton' id='triggerFromList' value='ノードとして追加'>";
+        $(`#triggerFromList`).on("click", () => {
+            const triggerData = {
+                activity_id: clicked_trigger.getAttribute('id'),
+                activity_type: clicked_trigger.getAttribute('activity_type'),
+                timestamp: clicked_trigger.getAttribute('timestamp'),
+                content: clicked_trigger.getAttribute('trigger_content')
+            };
+            inputTrigger(triggerData);
+            document.getElementById("trigger_click").innerHTML="";
+        });
+    });
     $(`.trigger_in_list`).on('contextmenu', (e) => {
         // リスト内の発話ノードにマウスイベント(右クリック)を追加
         const clicked_trigger = e.target;
@@ -1581,11 +1632,13 @@ function inputTriggerAreaClose(){
 }
 
 // 入力されたTriggerをマップに表示
-function inputTrigger(){
+function inputTrigger(triggerData){
     let trigger_id = defaultThinkingProcess.generateUniqueNumberText();
-    const t_type = document.getElementById("trigger_activity").value;
-    const t_time = document.getElementById("trigger_time").value.replace('T', ' ');
-    let content = document.getElementById("trigger_content").value;
+    const hasCustomData = triggerData && typeof triggerData === 'object' && Object.prototype.hasOwnProperty.call(triggerData, 'activity_type');
+    const t_type = hasCustomData ? triggerData.activity_type : document.getElementById("trigger_activity").value;
+    const t_time = hasCustomData ? triggerData.timestamp : document.getElementById("trigger_time").value.replace('T', ' ');
+    let content = hasCustomData ? triggerData.content : document.getElementById("trigger_content").value;
+    const activity_id = hasCustomData ? triggerData.activity_id : null;
     const t_label = "【"+t_time+"："+t_type+"】<br>"+content+"";
     
     if(!t_type){
@@ -1623,7 +1676,7 @@ function inputTrigger(){
             let n = defaultThinkingProcess.ownNetwork.getConnectedNodes(e[1])
             to_node = n[1];
         }
-         defaultThinkingProcess.addTriggerNode("New", trigger_id, edge_id, from_node, to_node, null, t_label, t_type, t_time, null, null)
+         defaultThinkingProcess.addTriggerNode("New", trigger_id, edge_id, from_node, to_node, activity_id, t_label, t_type, t_time, null, null)
         // document.getElementById("trigger_time").reset();
         // document.getElementById("trigger_activity").reset();
         // document.getElementById("trigger_content").reset();   
@@ -1638,7 +1691,7 @@ function inputTrigger(){
             let n = defaultThinkingProcess.ownNetwork.getConnectedNodes(e[1])
             to_node = n[1];
         }
-         defaultThinkingProcess.addTriggerNode("New", trigger_id, selected_edge_id[0], from_node, to_node, null, t_label, t_type, t_time, null, null)
+         defaultThinkingProcess.addTriggerNode("New", trigger_id, selected_edge_id[0], from_node, to_node, activity_id, t_label, t_type, t_time, null, null)
         // document.getElementById("trigger_time").reset();
         // document.getElementById("trigger_activity").reset();
         // document.getElementById("trigger_content").reset();   
