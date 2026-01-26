@@ -130,7 +130,7 @@ function NodeVersionUpdate(nodes){
 
   }else if(nodes){
 
-    console.log(nodes);
+    // console.log(nodes);
     var nodeVERSION = jsMind.util.uuid.newid();
     typeID = nodes['node_type_id'];
 
@@ -182,7 +182,7 @@ function MapSnapShot(){
         success: function(e){
           if(e == 'null'){
             alert("マップverが更新されました");
-            show_edit_reason();
+            // show_edit_reason();
           }else{
             console.log(e);
             var nodes = JSON.parse(e);
@@ -190,7 +190,7 @@ function MapSnapShot(){
               NodeVersionUpdate(nodes[i]);
             }
             alert("マップverと変更があったノードのverが更新されました");
-            show_edit_reason();
+            // show_edit_reason();
           }
         }
     });
@@ -217,7 +217,7 @@ function VersionSpread(){
             }
     });
     alert("ノードの更新をマップ全体に波及しました！")
-    show_edit_reason();
+    // show_edit_reason();
     $('#comment_balloon').hide();
     $('#comment_balloon').fadeIn(1000);
 
@@ -1180,11 +1180,11 @@ async function GetPairNodeId_ContentRelationTable(node_id)
           }else{
             //console.log(arr);
             var parse = JSON.parse(arr);
-            console.log(parse);
+            // console.log(parse);
 
-            console.log("これを根拠とした関係性がある");
+            // console.log("これを根拠とした関係性がある");
             //1.関係性があるノードの色を変更する
-            console.log(parse.length);
+            // console.log(parse.length);
 
             var jmnode = document.getElementsByTagName("jmnode");
             
@@ -1196,7 +1196,7 @@ async function GetPairNodeId_ContentRelationTable(node_id)
                     if(jmnode[node_count].getAttribute("nodeid") == LogicPairNodeID){
                       for(var i = 0; i<jmnode.length;i++){
                         if(jmnode[i].getAttribute("nodeid") == node_id){
-                          console.log(node_count);
+                          // console.log(node_count);
                           jmnode[node_count].style.backgroundColor = "#ff69b4";
                           jmnode[node_count].style.border = "5px solid #9fd94f";
                           alert("資料上で["+parse[logic_pair_count].item_content1_label+"]と位置付けている「"+jmnode[i].innerHTML+"」に変更がありました．これに基づいて考えられた["+parse[logic_pair_count].item_content2_label+"]の["+jmnode[node_count].innerHTML+"]も考え直す必要はないか検討してみましょう！");
