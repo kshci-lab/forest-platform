@@ -10,7 +10,7 @@ function MapSnapShot(){
         success: function(e){
           if(e == 'null'){
             alert("マップverが更新されました");
-            show_edit_reason();
+            // show_edit_reason();();
           }else{
             console.log(e);
             var nodes = JSON.parse(e);
@@ -18,7 +18,7 @@ function MapSnapShot(){
               NodeVersionUpdate(nodes[i]);
             }
             alert("マップverと変更があったノードのverが更新されました");
-            show_edit_reason();
+            // show_edit_reason();();
           }
         }
     });
