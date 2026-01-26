@@ -124,7 +124,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                  <li class="active"><a href="#tab03" >リフレクション</a></li>
                  <li class="active"><a href="#record_tab" >履歴</a></li> -->
             <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  <!--hatakeyama-->
-            <!-- <li class="active"><a href="#tab05">組織知マップ</a></li>  -->
+            <li class="active"><a href="#tab05">組織知マップ</a></li> 
 
             <div class="checkbox_mode">
                 <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
@@ -306,27 +306,27 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             ノードの変更
                                         </li> 
                                         <li>
-                                            <button class="button4" onclick="add_Qnode();">
+                                            <button class="button_conmenu" onclick="add_Qnode();">
                                                 問いノードを追加
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="add_Anode();">
+                                            <button class="button_conmenu" onclick="add_Anode();">
                                                 答えノードを追加
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="remove_node();">
+                                            <button class="button_conmenu" onclick="remove_node();">
                                                 ノードを削除
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="NodeVersionUpdate(null);">
+                                            <button class="button_conmenu" onclick="NodeVersionUpdate(null);">
                                                 ノードverを更新
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="showThinkingProcessMap();">
+                                            <button class="button_conmenu" onclick="showThinkingProcessMap();">
                                                 思考過程表出化マップ
                                             </button>
                                         </li>
@@ -334,17 +334,17 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             ノードを資料へ追加
                                         </li> 
                                         <li>
-                                            <button class="button4" onclick="ItemAddDocument()">
+                                            <button class="button_conmenu" onclick="ItemAddDocument()">
                                                 項目として追加する
                                             </button>
                                         </li>
                                         <li>
-                                            <button class="button4" onclick="NodeAppendLogic()">
+                                            <button class="button_conmenu" onclick="NodeAppendLogic()">
                                                 内容として追加する 
                                             </button>
                                         </li>
                                         <!-- <li>
-                                            <button class="button4" onclick="VersionSpread();RecordRelation()">
+                                            <button class="button_conmenu" onclick="VersionSpread();RecordRelation()">
                                                 ノードの更新をマップ全体に波及させる
                                             </button>
                                         </li>hatakeyama -->
@@ -474,8 +474,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             <div id="process_network_container" oncontextmenu="return false;" >
                                 <div id="myProcessnetwork2">
                                     <div id="buttoncluster">
-                                        <input type="button" class="process_close" onclick="closeThinkingProcessMap()"
-                                                id="process_close" value="×" />
+                                        <input type="button" class="area_close" onclick="closeThinkingProcessMap()"
+                                                id="area_close" value="×" />
                                         <input type="button" class="thinkingProcess_network_button"
                                                 id="process_addNode" value="思考ノード追加" />
                                         <input type="button" class="thinkingProcess_network_button"
@@ -491,7 +491,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         <div class="checkbox_process">
                                             <input type="checkbox" id="checkbox_process" class="checkbox_process" name="check_process" onclick="ShowRelatedProcess('brother')">
                                             <label for="checkbox_process" data-on-label="On" data-off-label="Off"></label>
-                                            <span class="checkbox_process_text">【兄弟ノード表示】<br></span>
+                                            <!-- <span class="checkbox_process_text">【兄弟ノード表示】<br></span> -->
                                         </div>
                                         <!-- <div class="checkbox_process">
                                             <input type="checkbox" id="checkbox_process" class="checkbox_process" name="check_process" onclick="ShowRelatedProcess('consistency')">
@@ -501,7 +501,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </div>
                                     <div id="t_Process_conmenu">
                                         <ul>
-                                            <li><a href="javascript:void(0);" id="process_conmenu1">組織へ共有</a></li>                                            </li>
+                                            <li><a href="javascript:void(0);" id="process_conmenu1">学びを入力</a></li>                                            </li>
                                             <li><a href="javascript:void(0);" id="process_conmenu4">キャンセル</a></li>
                                         </ul>
                                     </div>
@@ -520,17 +520,25 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </div>
                                     <div id="myProcessnetwork"></div>
                                 </div>
-                                <div id="trigger_area">
-                                    <div id="trigger_area_display">
-                                        <div id="conceptdisplay"></div>
+                                <div id="lesson_area">
+                                    <div id="conceptdisplay"></div>
+
+                                    <!-- trigger関連の表示 -->
+                                    <div id="trigger_display">
                                         <div id="trigger_click"></div>
-                                        <div id="trigger_area_add">
+                                        <div id="area_trigger_add">
                                             <input type="button" id="inputTriggerbutton" value=" ＋ 活動を入力" onclick="inputTriggerAreaOpen()"/>
                                             <div id="trigger_add">
                                             </div>
                                         </div>
+                                        <div id="trigger_candidate_list"></div>
                                     </div>
-                                    <div id="trigger_area_list">
+
+                                    <!-- 組織へ共有する学び関連の表示 -->
+                                    <div id="lesson_display">
+                                        <input type="button" class="area_close" value="×" onclick="showTriggerDisplay()" />
+                                        <input type="button" class="lessonbutton" value="組織へ共有" onclick="selectShareOrganization()"/>
+                                        <div id="area_lesson_add"></div>
                                     </div>
                                 </div>
                             </div>
@@ -882,8 +890,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     
                         <div id="othersProcessnetwork_area">
                             <div id="buttoncluster">
-                                <input type="button" class="process_close" onclick="closeOthersThinkingProcessMap()"
-                                        id="process_close" value="×" />
+                                <input type="button" class="area_close" onclick="closeOthersThinkingProcessMap()"
+                                        id="area_close" value="×" />
                                 <input type="button" class="thinkingProcess_network_button"
                                         id="process_ZoomIn" value="拡大" />
                                 <input type="button" class="thinkingProcess_network_button"

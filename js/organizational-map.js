@@ -24,7 +24,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             },
             interaction: {
                 multiselect: false,
-                zoomView: false // グラフの拡大縮小を無効にする
+                zoomView: false, // グラフの拡大縮小を無効にする
+                hover: true
             },
         };
         this.nodeConnectEnabled = false; // マインドマップとの対応づけを可能にする（マインドマップのノードクリックが，議論内省マップノードとの対応を付与するのかそうでないのかを判定するよう）
@@ -56,7 +57,9 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             x: 0,
             y: 0
         }//右クリックされやメニューの表示場所
+        this.tooltipEl = null;
         this.ownNetwork = this.generateOrganizationalNetworkCanvas(container, this.nodes, this.edges); // デフォルトのマップを表示
+        this.ensureTooltipElement();
         this.choose_input_xmlLoad();
         if(load == "load"){
             this.jmindex = [];
@@ -74,6 +77,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
             this.ownNetwork.on("oncontext", this.onContext.bind(this));
             this.ownNetwork.on('select', this.selectdelete.bind(this));
+            this.ownNetwork.on('hoverNode', this.onHoverNode.bind(this));
+            this.ownNetwork.on('blurNode', this.onBlurNode.bind(this));
         }
         this.choose_input_xmlLoad();
     }
@@ -172,6 +177,68 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         // $(`#p_recruit_select`).on('click',this.bindSelected_Recruit_Idea);
         // $(`#feedbackrecord`).on('click',this.bindfeedback);
         // this.interval = setInterval(this.bindNodeblinking, 1000);
+    }
+
+    ensureTooltipElement(){
+        if (this.tooltipEl) return;
+        const containerEl = document.getElementById('myOrganizationalnetwork');
+        if (!containerEl) return;
+        let tooltipEl = document.getElementById('organizational_tooltip');
+        if (!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.id = 'organizational_tooltip';
+            tooltipEl.className = 'organizational-tooltip';
+            tooltipEl.style.display = 'none';
+            containerEl.appendChild(tooltipEl);
+        }
+        this.tooltipEl = tooltipEl;
+    }
+
+    showTooltipForNode(nodeId){
+        this.ensureTooltipElement();
+        if (!this.tooltipEl) return;
+        const node = this.nodes.get(nodeId);
+        if (!node || !node.tooltip_data) {
+            this.hideTooltip();
+            return;
+        }
+        const tooltipData = node.tooltip_data;
+        this.tooltipEl.textContent = '';
+        const sections = [
+            { heading: '経験', body: tooltipData.selected_contents || '' },
+            { heading: '経験の振り返り', body: tooltipData.stage1 || '' },
+            { heading: '活動文脈固有の振り返り', body: tooltipData.stage2 || '' },
+            { heading: '研究固有の振り返り', body: tooltipData.stage3 || '' }
+        ];
+        sections.forEach((section) => {
+            const heading = document.createElement('div');
+            heading.className = 'organizational-tooltip-heading';
+            heading.textContent = section.heading;
+            const body = document.createElement('div');
+            body.textContent = section.body;
+            this.tooltipEl.appendChild(heading);
+            this.tooltipEl.appendChild(body);
+        });
+        const box = this.ownNetwork.getBoundingBox(nodeId);
+        const domPoint = this.ownNetwork.canvasToDOM({ x: box.right, y: box.top });
+        const offset = 12;
+        this.tooltipEl.style.left = (domPoint.x + offset) + 'px';
+        this.tooltipEl.style.top = (domPoint.y + offset) + 'px';
+        this.tooltipEl.style.display = 'flex';
+    }
+
+    hideTooltip(){
+        if (this.tooltipEl) {
+            this.tooltipEl.style.display = 'none';
+        }
+    }
+
+    onHoverNode(params){
+        this.showTooltipForNode(params.node);
+    }
+
+    onBlurNode(){
+        this.hideTooltip();
     }
 
     removeEventLister(){
@@ -292,7 +359,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         return this.nodes;
     }
 
-    addReloadProcessNode(user_id, node_id, node_label, node_type, concept_id) {
+    addReloadProcessNode(user_id, node_id, node_label, node_type, concept_id, thought_experience_node_id, selected_contents, stage1, stage2, stage3) {
         const existingNode = this.nodes.get(node_id);
         if (existingNode) {
             console.log(`Node with ID ${node_id} already exists. Skipping addition.`);
@@ -302,13 +369,21 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         let node_shape = 'box';     // ノードの形状
         let text_color = 'black';   // ノード内文字列の色
         
+        const contentLabel = node_label || '';
         const newNode = {
-            id: `${node_id}`, label: node_label,
+            id: `${node_id}`, label: contentLabel,
             group: node_type,
             concept_id: concept_id,
+            thought_experience_node_id: thought_experience_node_id,
             user_id: user_id,
             color: node_color, shape: node_shape,
             font: { color: text_color },
+            tooltip_data: {
+                selected_contents: selected_contents,
+                stage1: stage1,
+                stage2: stage2,
+                stage3: stage3
+            },
             fixed: false,
         };
         defaultOrganizational.nodes.add(newNode);
@@ -1112,10 +1187,24 @@ const displayOrganizationalData = (mode, selected_group_id) => {
             const groupSelect = document.getElementById('group_select');
             if (groupSelect && organizational_list_info.groups) {
                 groupSelect.innerHTML = '';
+                // プレースホルダ（デフォルトは何も選択されていない表示）
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'ー組織を選択ー';
+                placeholder.disabled = true;
+                // selected_group_id が渡されていなければプレースホルダを選択状態にする
+                if (!selected_group_id) {
+                    placeholder.selected = true;
+                }
+                groupSelect.appendChild(placeholder);
                 organizational_list_info.groups.forEach((group) => {
                     const option = document.createElement('option');
                     option.value = group.group_id;
                     option.textContent = group.name ? group.name : group.group_id;
+                    // selected_group_id が指定されていればその値を選択状態にする
+                    if (selected_group_id && String(group.group_id) === String(selected_group_id)) {
+                        option.selected = true;
+                    }
                     groupSelect.appendChild(option);
                 });
             }
@@ -1125,8 +1214,19 @@ const displayOrganizationalData = (mode, selected_group_id) => {
                 defaultOrganizational.addUserNode(v.user_id, v.name, "users");
             });
             // ユーザーごとの思考過程ノードを表示
-            organizational_list_info.pnode.map((n) => {
-                defaultOrganizational.addReloadProcessNode(n.user_id, n.process_node_id, n.content, n.process_node_type, n.concept_id);
+            organizational_list_info.enode.map((n) => {
+                defaultOrganizational.addReloadProcessNode(
+                    n.user_id,
+                    n.externalized_contents_id,
+                    n.knowledge_fragment_content,
+                    n.externalized_type,
+                    n.concept_id,
+                    n.thought_experience_node_id,
+                    n.selected_contents,
+                    n.stage1,
+                    n.stage2,
+                    n.stage3
+                );
             });
             // ユーザーごとのTriggerノードを表示
             // organizational_list_info.tnode.map((t) => {

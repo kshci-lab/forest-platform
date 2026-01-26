@@ -8,6 +8,22 @@
 
 	$id = $_SESSION["MAPID"];
 
+	if (isset($_POST["val"]) && $_POST["val"] === "edited_nodes") {
+		$i = 0;
+		$array = array();
+		$sql_edited = "SELECT DISTINCT v.node_id
+			FROM view_changed_content_vs_latest v
+			WHERE v.node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$id')";
+		if($result_edited = $mysqli->query($sql_edited)){
+			while($row = mysqli_fetch_assoc($result_edited)){
+				$array = $array + array($i=>$row["node_id"]);
+				$i += 1;
+			}
+		}
+		echo json_encode($array);
+		return;
+	}
+
 	$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$id')";
 
 	$i = 0;

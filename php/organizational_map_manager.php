@@ -94,17 +94,15 @@ if (!empty($user_ids_in_latest_group)) {
     }
     $return_data['users'] = $users;
 
-    // ユーザーごとに共有したprocessノードの取得（user_idも含める）
+    // ユーザーごとに共有したprocessノードや externalized_contents を取得（user_idも含める）
     $user_ids_escaped = array_map(function($id) use ($mysqli) {
         return $mysqli->real_escape_string($id);
     }, $user_ids_in_latest_group);
     $user_ids_in_sql = implode(",", $user_ids_escaped);
-    $sql_nodes = "SELECT sn.*, pn.content, pn.node_id, pn.process_node_type, m.user_id
+    $sql_nodes = "SELECT sn.*, ec.externalized_contents_id, ec.externalized_type, ec.thought_experience_node_id, ec.user_id, ec.selected_contents, ec.knowledge_fragment_content, ec.stage1, ec.stage2, ec.stage3
         FROM shared_nodes sn
-        INNER JOIN process_nodes pn ON sn.process_node_id = pn.process_node_id
-        INNER JOIN map_node_links mn ON pn.node_id = mn.node_id
-        INNER JOIN maps m ON mn.map_id = m.map_id
-        WHERE m.user_id IN ($user_ids_in_sql)
+        INNER JOIN externalized_contents ec ON sn.externalized_contents_id = ec.externalized_contents_id
+        WHERE ec.user_id IN ($user_ids_in_sql)
             AND sn.knowledge_group_id IN ($group_id_latest) 
             AND sn.deleted = 0  ORDER BY sn.created_at DESC;";
     
@@ -115,7 +113,7 @@ if (!empty($user_ids_in_latest_group)) {
             $organi_map_node[] = $row;
         }
     }
-    $return_data = array_merge($return_data, ['pnode' => $organi_map_node]);
+    $return_data = array_merge($return_data, ['enode' => $organi_map_node]);
 }
 
 if (empty($return_data)) {

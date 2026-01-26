@@ -1591,6 +1591,10 @@
 
                     node.topic = topic;
                     this.view.update_node(node);
+                    var jmnode = document.querySelectorAll("jmnode[nodeid='" + nodeid + "']");
+                    for(var i=0; i<jmnode.length; i++){
+                        jmnode[i].setAttribute("edited-node", "true");
+                    }
                     this.layout.layout();
                     this.view.show(false);
                     this.invoke_event_handle(jm.event_type.edit,{evt:'update_node',data:[nodeid,topic],node:nodeid});

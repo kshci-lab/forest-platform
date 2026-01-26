@@ -237,32 +237,32 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
             <div id="mindmap_conmenu">
               <ul>
                 <li>
-                    <button class="button4" onclick="showThinkingProcessMap()">
+                    <button class="button_conmenu" onclick="showThinkingProcessMap()">
                         思考過程表出化マップ
                     </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="NodeVersionUpdate()">
+                  <button class="button_conmenu" onclick="NodeVersionUpdate()">
                     ノードverを更新
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="SetPurposeonChapter()">
+                  <button class="button_conmenu" onclick="SetPurposeonChapter()">
                     章を作成
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="SetPurposeonSection()">
+                  <button class="button_conmenu" onclick="SetPurposeonSection()">
                     節を作成
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="SetPurpose()">
+                  <button class="button_conmenu" onclick="SetPurpose()">
                     パラグラフを作成
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="NodeAppend()">
+                  <button class="button_conmenu" onclick="NodeAppend()">
                     パラグラフに内容を追加
                   </button>
                 </li>
@@ -502,17 +502,17 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                         </div>
                         <div id="myProcessnetwork"></div>
                     </div>
-                    <div id="trigger_area">
-                        <div id="trigger_area_display">
+                    <div id="lesson_area">
+                        <div id="trigger_display">
                             <div id="conceptdisplay"></div>
                             <div id="trigger_click"></div>
-                            <div id="trigger_area_add">
+                            <div id="area_trigger_add">
                                 <input type="button" id="inputTriggerbutton" value=" ＋ 活動を入力" onclick="inputTriggerAreaOpen()"/>
                                 <div id="trigger_add">
                                 </div>
                             </div>
                         </div>
-                        <div id="trigger_area_list">
+                        <div id="trigger_candidate_list">
                         </div>
                     </div>
                 </div>

@@ -195,12 +195,41 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     
 
     $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+    $selected_node_group = isset($_POST['selected_node_group']) ? $_POST['selected_node_group'] : 'process';
+    if($selected_node_group === 'versions' || $selected_node_group === 'versionsBro'){
+        $selected_node_group = 'version';
+    }else if($selected_node_group === 'triggers'){
+        $selected_node_group = 'trigger';
+    }
+
+    $node_id_for_query = null;
+    if($selected_node_group === 'process'){
+        $result_node_id = $mysqli->query("SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."' AND deleted = 0 LIMIT 1");
+        if($result_node_id && $row_node_id = $result_node_id->fetch_assoc()){
+            $node_id_for_query = $row_node_id['node_id'];
+        }
+    }else if($selected_node_group === 'version'){
+        $result_node_id = $mysqli->query("SELECT node_id FROM node_versions WHERE node_version_id = '".$selected_node_id."' LIMIT 1");
+        if($result_node_id && $row_node_id = $result_node_id->fetch_assoc()){
+            $node_id_for_query = $row_node_id['node_id'];
+        }
+    }else if($selected_node_group === 'trigger'){
+        $result_node_id = $mysqli->query("SELECT nv.node_id FROM triggers t INNER JOIN node_versions nv ON t.node_version_from = nv.node_version_id WHERE t.trigger_id = '".$selected_node_id."' AND t.deleted = 0 LIMIT 1");
+        if($result_node_id && $row_node_id = $result_node_id->fetch_assoc()){
+            $node_id_for_query = $row_node_id['node_id'];
+        }
+    }
 
     /*
         * 思考過程表出化マップのノードデータの取得    	
     */
-    $result_processmap_node = $mysqli->query("SELECT process_node_id, content, process_node_type, node_x, node_y FROM process_nodes
-            WHERE process_node_id = '".$selected_node_id."' AND deleted = 0");
+    if($node_id_for_query !== null){
+        $result_processmap_node = $mysqli->query("SELECT process_node_id, content, process_node_type, node_x, node_y FROM process_nodes
+                WHERE node_id = '".$node_id_for_query."' AND deleted = 0");
+    }else{
+        $result_processmap_node = $mysqli->query("SELECT process_node_id, content, process_node_type, node_x, node_y FROM process_nodes
+                WHERE process_node_id = '".$selected_node_id."' AND deleted = 0");
+    }
     $processmap_node = [];
     while ($row = $result_processmap_node->fetch_assoc()) {
         array_push($processmap_node, $row);
@@ -210,8 +239,13 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     /*
         * 思考過程表出化マップのエッジデータの取得
         */
-    $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
-                WHERE ((edge_start = '".$selected_node_id."' AND deleted = 0) OR (edge_end = '".$selected_node_id."' AND deleted = 0)) AND deleted = 0");
+    if($node_id_for_query !== null){
+        $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
+                    WHERE (edge_start IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0) OR edge_end IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)) AND deleted = 0");
+    }else{
+        $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
+                    WHERE ((edge_start = '".$selected_node_id."' AND deleted = 0) OR (edge_end = '".$selected_node_id."' AND deleted = 0)) AND deleted = 0");
+    }
     $processmap_edge = [];
     while ($row = $result_processmap_edge->fetch_assoc()) {
         array_push($processmap_edge, $row);
@@ -219,7 +253,11 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $return_data = array_merge($return_data, ['pedge' => $processmap_edge]);
 
     // ノードのバージョン情報を取得
-    $result_node_versions = $mysqli->query("SELECT node_version_id, parent_id, appeared_at, disappeared_at, content FROM node_versions WHERE node_id IN( SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') ORDER BY appeared_at ASC");
+    if($node_id_for_query !== null){
+        $result_node_versions = $mysqli->query("SELECT node_version_id, parent_id, appeared_at, disappeared_at, content FROM node_versions WHERE node_id = '".$node_id_for_query."' ORDER BY appeared_at ASC");
+    }else{
+        $result_node_versions = $mysqli->query("SELECT node_version_id, parent_id, appeared_at, disappeared_at, content FROM node_versions WHERE node_id IN( SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') ORDER BY appeared_at ASC");
+    }
     $node_versions = [];
     while ($row = $result_node_versions->fetch_assoc()) {
         array_push($node_versions, $row);
@@ -227,8 +265,13 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $return_data = array_merge($return_data, ['node_versions' => $node_versions]);
 
     // triggerを取得
-    $result_trigger = $mysqli->query("SELECT * FROM triggers
-                            WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0) AND deleted = 0");
+    if($node_id_for_query !== null){
+        $result_trigger = $mysqli->query("SELECT * FROM triggers
+                                WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$node_id_for_query."' AND deleted = 0) AND deleted = 0");
+    }else{
+        $result_trigger = $mysqli->query("SELECT * FROM triggers
+                                WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0) AND deleted = 0");
+    }
     $trigger = [];
     while ($row = $result_trigger->fetch_assoc()) {
         array_push($trigger, $row);
@@ -238,10 +281,15 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $xml_data = simplexml_load_file('../js/hozo.xml'); //法造データ取り出し
 
     // $selected_node_idのconcept_labelを取得する処理
-    $result_concept = $mysqli->query("SELECT concept_id FROM node_versions 
-                                        WHERE node_id = (
-                                            SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."' AND deleted = 0 LIMIT 1
-                                        ) AND disappeared_at IS NULL LIMIT 1");
+    if($node_id_for_query !== null){
+        $result_concept = $mysqli->query("SELECT concept_id FROM node_versions 
+                                            WHERE node_id = '".$node_id_for_query."' AND disappeared_at IS NULL LIMIT 1");
+    }else{
+        $result_concept = $mysqli->query("SELECT concept_id FROM node_versions 
+                                            WHERE node_id = (
+                                                SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."' AND deleted = 0 LIMIT 1
+                                            ) AND disappeared_at IS NULL LIMIT 1");
+    }
     if ($result_concept && $row_concept = $result_concept->fetch_assoc()) {
         $selected_conID = $row_concept['concept_id'];
     }
