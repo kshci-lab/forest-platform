@@ -188,6 +188,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             tooltipEl = document.createElement('div');
             tooltipEl.id = 'organizational_tooltip';
             tooltipEl.className = 'organizational-tooltip';
+            tooltipEl.style.display = 'none';
             containerEl.appendChild(tooltipEl);
         }
         this.tooltipEl = tooltipEl;
@@ -202,24 +203,28 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             return;
         }
         const tooltipData = node.tooltip_data;
-        this.tooltipEl.innerHTML = '';
-        const lines = [
-            "【経験】" + (tooltipData.selected_contents || ''),
-            "【経験の振り返り】" + (tooltipData.stage1 || ''),
-            "【活動文脈固有の振り返り】" + (tooltipData.stage2 || ''),
-            "【研究固有の振り返り】" + (tooltipData.stage3 || '')
+        this.tooltipEl.textContent = '';
+        const sections = [
+            { heading: '経験', body: tooltipData.selected_contents || '' },
+            { heading: '経験の振り返り', body: tooltipData.stage1 || '' },
+            { heading: '活動文脈固有の振り返り', body: tooltipData.stage2 || '' },
+            { heading: '研究固有の振り返り', body: tooltipData.stage3 || '' }
         ];
-        lines.forEach((line) => {
-            const row = document.createElement('div');
-            row.textContent = line;
-            this.tooltipEl.appendChild(row);
+        sections.forEach((section) => {
+            const heading = document.createElement('div');
+            heading.className = 'organizational-tooltip-heading';
+            heading.textContent = section.heading;
+            const body = document.createElement('div');
+            body.textContent = section.body;
+            this.tooltipEl.appendChild(heading);
+            this.tooltipEl.appendChild(body);
         });
         const box = this.ownNetwork.getBoundingBox(nodeId);
         const domPoint = this.ownNetwork.canvasToDOM({ x: box.right, y: box.top });
         const offset = 12;
         this.tooltipEl.style.left = (domPoint.x + offset) + 'px';
         this.tooltipEl.style.top = (domPoint.y + offset) + 'px';
-        this.tooltipEl.style.display = 'block';
+        this.tooltipEl.style.display = 'flex';
     }
 
     hideTooltip(){
