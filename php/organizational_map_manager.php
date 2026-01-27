@@ -94,14 +94,14 @@ if (!empty($user_ids_in_latest_group)) {
     }
     $return_data['users'] = $users;
 
-    // ユーザーごとに共有したprocessノードや externalized_contents を取得（user_idも含める）
+    // ユーザーごとに共有したprocessノードや experience_knowledges を取得（user_idも含める）
     $user_ids_escaped = array_map(function($id) use ($mysqli) {
         return $mysqli->real_escape_string($id);
     }, $user_ids_in_latest_group);
     $user_ids_in_sql = implode(",", $user_ids_escaped);
-    $sql_nodes = "SELECT sn.*, ec.externalized_contents_id, ec.externalized_type, ec.thought_experience_node_id, ec.user_id, ec.selected_contents, ec.knowledge_fragment_content, ec.stage1, ec.stage2, ec.stage3
+    $sql_nodes = "SELECT sn.*, ec.experience_knowledge_id, ec.experience_type, ec.thought_experience_node_id, ec.user_id, ec.selected_contents, ec.knowledge_fragment_content, ec.stage1, ec.stage2, ec.stage3
         FROM shared_nodes sn
-        INNER JOIN externalized_contents ec ON sn.externalized_contents_id = ec.externalized_contents_id
+        INNER JOIN experience_knowledges ec ON sn.experience_knowledge_id = ec.experience_knowledge_id
         WHERE ec.user_id IN ($user_ids_in_sql)
             AND sn.knowledge_group_id IN ($group_id_latest) 
             AND sn.deleted = 0  ORDER BY sn.created_at DESC;";

@@ -1217,9 +1217,9 @@ const displayOrganizationalData = (mode, selected_group_id) => {
             organizational_list_info.enode.map((n) => {
                 defaultOrganizational.addReloadProcessNode(
                     n.user_id,
-                    n.externalized_contents_id,
+                    n.experience_knowledge_id,
                     n.knowledge_fragment_content,
-                    n.externalized_type,
+                    n.experience_type,
                     n.concept_id,
                     n.thought_experience_node_id,
                     n.selected_contents,
