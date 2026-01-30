@@ -2884,7 +2884,13 @@ const recordMeetingUtteranceNodes = function(utterances) {
 window.addEventListener('load', function() {
     try{ console.log('[label] init start'); }catch(e){}
     const networkContainerEl = document.getElementById("network_container");
-    if (networkContainerEl) networkContainerEl.style.display = "none";
+    // 共有知モード（SharedModeActive=true）では非表示にしない
+    try{
+        var isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
+        if (networkContainerEl && !isShared) {
+            networkContainerEl.style.display = "none";
+        }
+    }catch(_){ if (networkContainerEl) networkContainerEl.style.display = "none"; }
     const el = document.getElementById("mynetwork");
     if (el) {
         defaultForestMRN = new ForestMRN("mynetwork", "load");

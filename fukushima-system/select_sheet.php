@@ -45,8 +45,9 @@ if(isset($_POST['map'])){
 
 	if(isset($_POST["edit"])){
 
-    // 共有知モード指定があれば index で自動起動する
-    header("Location: index.php");
+  // 共有知モードを自動起動するフラグをセットして index へ遷移
+  try { $_SESSION['SharedMode'] = 1; } catch(Exception $e) { /* no-op */ }
+  header("Location: index.php");
 
 	}else{
 

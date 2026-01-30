@@ -1666,6 +1666,20 @@ function activateSharedTab(tabId){
       // ビューポート内へスクロール
       try { extForm.scrollIntoView({block:'nearest'}); } catch (e) { /* no-op */ }
       try { if (window.console && console.debug) console.debug('activateSharedTab: show externalization form (block)'); } catch (e) {}
+      // 起動直後に utterance_area と externalization-card の内容を用意
+      try { window.SharedModeActive = true; } catch(e){}
+      try {
+        if (typeof displayDiscussionMapData === 'function') {
+          // 最新の議論内省マップの発話リストを表示
+          displayDiscussionMapData('utterance_area2', null);
+        }
+      } catch(e) { /* no-op */ }
+      try {
+        if (typeof rebuildExternalizationTextFromSelection === 'function') {
+          // 現在の選択状態から外部化テキストを再構築（未選択なら空のまま）
+          rebuildExternalizationTextFromSelection();
+        }
+      } catch(e) { /* no-op */ }
     } else {
       try { extForm.style.display = 'none'; } catch (e) { /* no-op */ }
     }
@@ -1854,10 +1868,17 @@ document.addEventListener('DOMContentLoaded', function(){
         try { window.SharedModeActive = true; } catch (e) {}
       }
       // 次にタブを有効化（デフォルトは連結化）
-      var tab = (intent && intent.tab) ? intent.tab : 'tab-combination';
+      var tab = (intent && intent.tab) ? intent.tab : 'tab-externalization';
       window.RestoringTab = true;
       activateSharedTab(tab);
       window.RestoringTab = false;
+      // リロード直後に外部化タブであれば発話リストと外部化テキストを即時用意
+      try{
+        if (tab === 'tab-externalization'){
+          if (typeof displayDiscussionMapData === 'function') displayDiscussionMapData('utterance_area2', null);
+          if (typeof rebuildExternalizationTextFromSelection === 'function') rebuildExternalizationTextFromSelection();
+        }
+      }catch(_){ }
     } catch (e) {
       // フォールバック: 表出化
       activateSharedTab('tab-externalization');
@@ -1878,6 +1899,27 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 
+// ページ離脱時に共有知モードなら復元用意図を保存（リロード/戻る対策）
+try{
+  window.addEventListener('beforeunload', function(){
+    try{
+      var isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
+      if(!isShared){ sessionStorage.removeItem('reloadIntent'); return; }
+      // 現在アクティブなタブを推定
+      var tab = 'tab-externalization';
+      try{
+        var ids = ['tab-externalization','tab-combination','tab-internalization'];
+        for(var i=0;i<ids.length;i++){
+          var el = document.getElementById(ids[i]);
+          if(el && el.classList && el.classList.contains('active')){ tab = ids[i]; break; }
+        }
+      }catch(__){}
+      var intent = { mode: 'shared', tab: tab };
+      sessionStorage.setItem('reloadIntent', JSON.stringify(intent));
+    }catch(e){ /* no-op */ }
+  });
+}catch(e){ /* no-op */ }
+
 // ページ内の画像やフォント読み込み完了後にも最終調整（サイズ誤差の保険）
 window.addEventListener('load', function(){
   try { updateCombinationOverlayBounds(); } catch (e) {}
@@ -1888,6 +1930,23 @@ window.addEventListener('load', function(){
       updateCombinationOverlayBounds();
     }
   } catch(e){}
+  // 共有知モードのリロード直後フォールバック: 発話リストと外部化カードを用意
+  try{
+    var isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
+    if(isShared){
+      // 外部化フォームを強制表示（見えていなくてもデータは準備）
+      var extForm = document.getElementById('externalization_form_section');
+      if(extForm){ extForm.style.display = 'block'; }
+      // 発話リスト（最新）を呼び出し
+      if(typeof displayDiscussionMapData === 'function'){
+        displayDiscussionMapData('utterance_area2', null);
+      }
+      // 外部化テキストを現在選択から再構築
+      if(typeof rebuildExternalizationTextFromSelection === 'function'){
+        rebuildExternalizationTextFromSelection();
+      }
+    }
+  }catch(_){ }
 });
 
 
