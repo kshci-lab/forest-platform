@@ -3,7 +3,9 @@
 // knowledge_explorer テーブルから階層表示用ノード一覧を取得（トップレベル3種を保証）
 header('Content-Type: application/json; charset=UTF-8');
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+// 環境側で MYSQLI_REPORT_STRICT が有効だと mysqli_* が例外を投げて 500 になりやすいので、このAPI内では例外化を無効化
+mysqli_report(MYSQLI_REPORT_OFF);
 require_once __DIR__ . '/connect_db.php';
 
 if(!isset($mysqli) || !($mysqli instanceof mysqli)){
@@ -55,7 +57,8 @@ $idIsAutoInc = false;
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
     while($c = $resCols->fetch_assoc()){
         $f = isset($c['Field']) ? $c['Field'] : '';
-        $lf = mb_strtolower($f, 'UTF-8');
+        // カラム名はASCII前提のため mbstring 依存を避ける
+        $lf = strtolower($f);
         if($colId===null && in_array($lf, ['knowledge_node_id','node_id','id','knowledge_explorer_id'])){ $colId = $f; }
         if($colParent===null && in_array($lf, ['parent_id','parent','pid','parent_node_id'])){ $colParent = $f; }
         if($colTitle===null && in_array($lf, ['node_title','title','name','label'])){ $colTitle = $f; }
@@ -119,18 +122,19 @@ if($colParent !== null && $colTitle !== null){
                 }
             }
             if(!$idIsAutoInc && $colId){
-                $sqlIns = "INSERT INTO $table ($colId,$colTitle".($colParent?",$colParent":"").($hasDeleted?",deleted":"").") VALUES (?,?".($colParent?",NULL":"").($hasDeleted?",0":"").")";
+                // 既に同一ID/同一ユニークキーが存在しても API が落ちないようにする
+                $sqlIns = "INSERT IGNORE INTO $table ($colId,$colTitle".($colParent?",$colParent":"").($hasDeleted?",deleted":"").") VALUES (?,?".($colParent?",NULL":"").($hasDeleted?",0":"").")";
                 if($stmt = $mysqli->prepare($sqlIns)){
                     $stmt->bind_param('is',$nextId,$t);
-                    @$stmt->execute();
-                    @$stmt->close();
+                    $stmt->execute();
+                    $stmt->close();
                 }
             } else {
-                $sqlIns = "INSERT INTO $table ($colTitle".($colParent?",$colParent":"").($hasDeleted?",deleted":"").") VALUES (?".($colParent?",NULL":"").($hasDeleted?",0":"").")";
+                $sqlIns = "INSERT IGNORE INTO $table ($colTitle".($colParent?",$colParent":"").($hasDeleted?",deleted":"").") VALUES (?".($colParent?",NULL":"").($hasDeleted?",0":"").")";
                 if($stmt = $mysqli->prepare($sqlIns)){
                     $stmt->bind_param('s',$t);
-                    @$stmt->execute();
-                    @$stmt->close();
+                    $stmt->execute();
+                    $stmt->close();
                 }
             }
         }

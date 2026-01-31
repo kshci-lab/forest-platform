@@ -2129,7 +2129,6 @@ $(document).on('submit', '#knowledge_register_form', function(e){
 function fetchKnowledgeTree(){
     var container = document.getElementById('overlay_knowledge_tree');
     if(!container){ return; }
-    container.innerHTML = '';
     $.ajax({
         url: 'php/get_knowledge_tree.php',
         dataType: 'json'
@@ -2138,6 +2137,8 @@ function fetchKnowledgeTree(){
             console.warn('get_knowledge_tree レスポンス不正', res);
             return;
         }
+        // 成功時のみ表示を差し替える（失敗時に真っ白にならないように）
+        container.innerHTML = '';
         var nodes = res.nodes;
         var byParent = {};
         nodes.forEach(function(n){
@@ -2163,6 +2164,11 @@ function fetchKnowledgeTree(){
         container.appendChild(rootFrag);
     }).fail(function(xhr,st,err){
         console.error('fetchKnowledgeTree ajax fail', st, err, xhr && xhr.responseText);
+        try {
+            if(container && container.childNodes && container.childNodes.length === 0){
+                container.textContent = '知識ツリーの取得に失敗しました。';
+            }
+        } catch(_){ }
     });
 }
 
