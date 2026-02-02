@@ -1,0 +1,37 @@
+/* Forest Platform - button primitives */
+.fp-btn{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	gap:8px;
+	padding:8px 12px;
+	font-size:13px;
+	line-height:1;
+	border-radius:8px;
+	border:1px solid #cfd6dd;
+	background:#ffffff;
+	color:#333;
+	cursor:pointer;
+	transition:transform .12s ease, box-shadow .14s ease, background-color .12s ease;
+	box-shadow:0 2px 0 rgba(0,0,0,0.06);
+}
+.fp-btn:focus{outline:3px solid rgba(47,155,230,0.14); outline-offset:2px}
+
+.fp-btn-primary{
+	background:linear-gradient(180deg,#ff8a33 0%, #ff6a00 100%);
+	color:#fff;
+	border:0;
+	box-shadow:0 6px 14px rgba(255,106,0,0.16);
+}
+.fp-btn-primary:hover{transform:translateY(-1px); box-shadow:0 10px 22px rgba(255,106,0,0.2)}
+
+.fp-btn-secondary{
+	background:#fff;
+	color:#333;
+	border:1px solid #d6dbe2;
+}
+.fp-btn-secondary:hover{background:#f6f7f9}
+
+/* small icon variant (if needed) */
+.fp-btn--small{padding:6px 10px; font-size:12px; border-radius:6px}
+

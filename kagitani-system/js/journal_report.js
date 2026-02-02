@@ -157,68 +157,434 @@
                             var title = document.createElement('h3');
                             title.className = 'jr-title';
                             // title.textContent = (getCurrentLang() === 'ja') ? 'Wordプレビュー' : 'Word Preview';
-                            modalContent.appendChild(title);
+                            
+                            // Header wrapper with title and download link
+                            var headerWrapper = document.createElement('div');
+                            headerWrapper.className = 'jr-header-wrapper';
+                            headerWrapper.style.display = 'flex';
+                            headerWrapper.style.justifyContent = 'space-between';
+                            headerWrapper.style.alignItems = 'center';
+                            headerWrapper.style.marginBottom = '12px';
+                            
+                            // Download link (styled as a link button)
+                            var dlLink = document.createElement('a');
+                            dlLink.href = '#';
+                            dlLink.className = 'jr-download-link';
+                            dlLink.innerHTML = (getCurrentLang() === 'ja') ? '⬇ Wordダウンロード' : '⬇ Download Word';
+                            dlLink.style.color = theme.accent;
+                            dlLink.style.fontSize = '14px';
+                            dlLink.style.fontWeight = '600';
+                            dlLink.style.textDecoration = 'none';
+                            dlLink.style.display = 'flex';
+                            dlLink.style.alignItems = 'center';
+                            dlLink.style.gap = '4px';
+                            dlLink.style.cursor = 'pointer';
+                            dlLink.style.transition = 'opacity 0.2s';
+                            dlLink.onmouseover = function() { dlLink.style.opacity = '0.7'; };
+                            dlLink.onmouseout = function() { dlLink.style.opacity = '1'; };
+                            
+                            headerWrapper.appendChild(title);
+                            headerWrapper.appendChild(dlLink);
+                            modalContent.appendChild(headerWrapper);
 
                             var periodHeading = document.createElement('h3');
                             periodHeading.className = 'jr-period-heading';
                             periodHeading.textContent = (startDate || '') + '~' + (endDate || '') + ((getCurrentLang() === 'ja') ? 'に行ったこと' : ' activities');
                             modalContent.appendChild(periodHeading);
 
+                            // Tab container for multiple reflections
+                            var tabContainer = document.createElement('div');
+                            tabContainer.className = 'jr-tab-container';
+                            modalContent.appendChild(tabContainer);
+
+                            // Tab content container
+                            var tabContentContainer = document.createElement('div');
+                            tabContentContainer.className = 'jr-tab-content-container';
+                            modalContent.appendChild(tabContentContainer);
+
+                            // Tab management functions
+                            var _tabIndex = 0;
+                            var _tabs = [];
+                            var _tabContents = [];
+
+                            function createTab(label, isNew, isFirstTab) {
+                                var tab = document.createElement('div');
+                                tab.className = 'jr-tab';
+                                tab.dataset.tabIndex = _tabIndex;
+                                
+                                var tabLabel = document.createElement('span');
+                                tabLabel.className = 'jr-tab-label';
+                                tabLabel.textContent = label;
+                                tab.appendChild(tabLabel);
+                                
+                                // Add delete button (not for first tab - Activity Process)
+                                if (!isFirstTab) {
+                                    var deleteBtn = document.createElement('button');
+                                    deleteBtn.type = 'button';
+                                    deleteBtn.className = 'jr-tab-delete';
+                                    deleteBtn.textContent = '×';
+                                    deleteBtn.title = (getCurrentLang() === 'ja') ? '削除' : 'Delete';
+                                    deleteBtn.addEventListener('click', function(e) {
+                                        e.stopPropagation(); // Prevent tab activation
+                                        deleteTabByElement(tab);
+                                    });
+                                    tab.appendChild(deleteBtn);
+                                }
+                                
+                                tab.addEventListener('click', function() {
+                                    activateTab(parseInt(tab.dataset.tabIndex));
+                                });
+                                
+                                // Insert before the "+" button
+                                var addTabBtn = tabContainer.querySelector('.jr-tab-add');
+                                if (addTabBtn) {
+                                    tabContainer.insertBefore(tab, addTabBtn);
+                                } else {
+                                    tabContainer.appendChild(tab);
+                                }
+                                
+                                _tabs.push(tab);
+                                return tab;
+                            }
+                            
+                            function deleteTabByElement(tabEl) {
+                                try {
+                                    // Don't allow deleting the last reflection tab
+                                    if (_tabs.length <= 1) {
+                                        alert((getCurrentLang() === 'ja') ? '最後のタブは削除できません' : 'Cannot delete the last tab');
+                                        return;
+                                    }
+                                    if (!confirm((getCurrentLang() === 'ja') ? 'この内省を削除しますか？' : 'Delete this reflection?')) return;
+                                    
+                                    var arrIndex = _tabs.indexOf(tabEl);
+                                    if (arrIndex <= 0) return; // Don't delete first tab (Activity Process)
+                                    
+                                    var tabContent = _tabContents[arrIndex];
+                                    var wrap = tabContent ? tabContent.querySelector('.jr-info-wrap') : null;
+                                    var reflectionId = wrap ? wrap.dataset.objectJournalReflectionId : null;
+                                    
+                                    function removeTabAndContent() {
+                                        var removedTab = _tabs.splice(arrIndex, 1)[0];
+                                        var removedContent = _tabContents.splice(arrIndex, 1)[0];
+                                        
+                                        if (removedTab) removedTab.remove();
+                                        if (removedContent) {
+                                            removedContent.style.transition = 'opacity 0.3s';
+                                            removedContent.style.opacity = '0';
+                                            setTimeout(function() { removedContent.remove(); }, 300);
+                                        }
+                                        
+                                        _tabs.forEach(function(t, i) { t.dataset.tabIndex = i; });
+                                        _tabContents.forEach(function(c, i) { c.dataset.tabIndex = i; });
+                                        
+                                        updateTabLabels();
+                                        if (_tabs.length > 0) {
+                                            var newActiveIdx = Math.min(arrIndex, _tabs.length - 1);
+                                            activateTab(newActiveIdx);
+                                        }
+                                    }
+                                    
+                                    if (reflectionId) {
+                                        $.ajax({
+                                            url: 'php/delete_object_journal_reflection.php',
+                                            type: 'POST',
+                                            dataType: 'json',
+                                            data: { object_journal_reflection_id: reflectionId },
+                                            success: function(res) {
+                                                if (res && res.success) {
+                                                    removeTabAndContent();
+                                                } else {
+                                                    alert((getCurrentLang() === 'ja') ? '削除に失敗しました' : 'Failed to delete');
+                                                }
+                                            },
+                                            error: function() {
+                                                alert((getCurrentLang() === 'ja') ? '削除に失敗しました' : 'Failed to delete');
+                                            }
+                                        });
+                                    } else {
+                                        removeTabAndContent();
+                                    }
+                                } catch(e) { console.warn('deleteTabByElement error', e); }
+                            }
+
+                            function activateTab(index) {
+                                _tabs.forEach(function(t, i) {
+                                    if (i === index) {
+                                        t.classList.add('jr-tab-active');
+                                    } else {
+                                        t.classList.remove('jr-tab-active');
+                                    }
+                                });
+                                _tabContents.forEach(function(c, i) {
+                                    if (i === index) {
+                                        c.classList.add('jr-tab-content-active');
+                                    } else {
+                                        c.classList.remove('jr-tab-content-active');
+                                    }
+                                });
+                                // Update tab labels to show (Active) on current tab
+                                updateTabLabels();
+                            }
+
+                            function updateTabLabels() {
+                                _tabs.forEach(function(tab, i) {
+                                    var isActive = tab.classList.contains('jr-tab-active');
+                                    var label;
+                                    if (i === 0) {
+                                        // First tab is "活動プロセス" / "Activity Process"
+                                        label = (getCurrentLang() === 'ja') ? '活動プロセス' : 'Activity Process';
+                                    } else {
+                                        // 内省 tabs start from #1 (i=1 -> #1, i=2 -> #2, etc.)
+                                        label = (getCurrentLang() === 'ja') ? ('内省 #' + i) : ('Reflection #' + i);
+                                    }
+                                    if (isActive) label += ' (Active)';
+                                    // Update the label span, not the whole tab (to preserve delete button)
+                                    var labelSpan = tab.querySelector('.jr-tab-label');
+                                    if (labelSpan) {
+                                        labelSpan.textContent = label;
+                                    } else {
+                                        tab.textContent = label;
+                                    }
+                                });
+                            }
+
+                            function createTabContent() {
+                                var content = document.createElement('div');
+                                content.className = 'jr-tab-content';
+                                content.dataset.tabIndex = _tabIndex;
+                                tabContentContainer.appendChild(content);
+                                _tabContents.push(content);
+                                return content;
+                            }
+
+                            // Add "+" button for new reflections
+                            var addTabBtn = document.createElement('button');
+                            addTabBtn.type = 'button';
+                            addTabBtn.className = 'jr-tab-add';
+                            addTabBtn.textContent = '+';
+                            addTabBtn.title = (getCurrentLang() === 'ja') ? '内省を追加' : 'Add Reflection';
+                            tabContainer.appendChild(addTabBtn);
+
                             // Add editable areas: split evaluation into success/failure, completion reason, and allow multiple lessons
                             var infoWrap = document.createElement('div');
                             infoWrap.className = 'jr-info-wrap';
 
-                            // Add a button above the infoWrap to allow adding reflections
-                            var addReflectionBtn = document.createElement('button');
-                            addReflectionBtn.type = 'button';
-                            addReflectionBtn.id = 'wr_btnAddReflection';
-                            addReflectionBtn.className = 'jr-add-reflection-btn';
-                            addReflectionBtn.textContent = (getCurrentLang() === 'ja') ? '内省追加' : 'Add Reflection';
-                            addReflectionBtn.style.display = 'inline-block';
-                            addReflectionBtn.style.margin = '8px 0';
                             // counter for clones (start at 1 because original is baseline)
                             var _jrInfoCloneIdx = 1;
                             function wireInfoWrapInteractions(wrap) {
                                 try {
-                                    // wire its add button to create additional lesson pairs scoped to this wrap
-                                    var localAddBtn = wrap.querySelector('.jr-add-btn');
-                                    var localContainer = wrap.querySelector('#wr_additionalLessonsContainer') || wrap.querySelector('.jr-additional-container');
-                                    if (localAddBtn) {
-                                        localAddBtn.addEventListener('click', function () {
-                                            try {
-                                                var fld = makeAdditionalLessonField('', '');
-                                                if (localContainer) localContainer.appendChild(fld);
-                                                var ta = fld.querySelector('textarea'); if (ta) ta.focus();
-                                            } catch (e) { console.warn('local add lesson error', e); }
+                                    // Wire lesson tabs within this wrap
+                                    wireLessonTabs(wrap);
+                                } catch (e) { console.warn('wireInfoWrapInteractions failed', e); }
+                            }
+                            
+                            // Function to wire lesson tab functionality for a wrap
+                            function wireLessonTabs(wrap) {
+                                var lessonTabContainer = wrap.querySelector('.jr-lesson-tab-container');
+                                var lessonTabContentContainer = wrap.querySelector('.jr-lesson-tab-content-container');
+                                if (!lessonTabContainer || !lessonTabContentContainer) return;
+                                
+                                var addLessonBtn = lessonTabContainer.querySelector('.jr-lesson-tab-add');
+                                
+                                // Functions that query DOM each time (to handle dynamic tab additions)
+                                function getLessonTabs() {
+                                    return Array.from(lessonTabContainer.querySelectorAll('.jr-lesson-tab'));
+                                }
+                                function getLessonTabContents() {
+                                    return Array.from(lessonTabContentContainer.querySelectorAll('.jr-lesson-tab-content'));
+                                }
+                                
+                                function activateLessonTabLocal(index) {
+                                    var tabs = getLessonTabs();
+                                    var contents = getLessonTabContents();
+                                    tabs.forEach(function(t, i) {
+                                        if (i === index) {
+                                            t.classList.add('jr-lesson-tab-active');
+                                        } else {
+                                            t.classList.remove('jr-lesson-tab-active');
+                                        }
+                                    });
+                                    contents.forEach(function(c, i) {
+                                        if (i === index) {
+                                            c.classList.add('jr-lesson-tab-content-active');
+                                        } else {
+                                            c.classList.remove('jr-lesson-tab-content-active');
+                                        }
+                                    });
+                                    updateLessonLabelsLocal();
+                                }
+                                
+                                function updateLessonLabelsLocal() {
+                                    var tabs = getLessonTabs();
+                                    tabs.forEach(function(tab, i) {
+                                        var isActive = tab.classList.contains('jr-lesson-tab-active');
+                                        var label = (getCurrentLang() === 'ja') ? ('教訓 #' + (i + 1)) : ('Lesson #' + (i + 1));
+                                        if (isActive) label += ' (Active)';
+                                        var labelSpan = tab.querySelector('.jr-lesson-tab-label');
+                                        if (labelSpan) labelSpan.textContent = label;
+                                    });
+                                }
+                                
+                                function createLessonTabLocal(isFirst) {
+                                    var currentTabs = getLessonTabs();
+                                    var tab = document.createElement('div');
+                                    tab.className = 'jr-lesson-tab';
+                                    tab.dataset.lessonTabIndex = currentTabs.length;
+                                    
+                                    var tabLabel = document.createElement('span');
+                                    tabLabel.className = 'jr-lesson-tab-label';
+                                    tabLabel.textContent = (getCurrentLang() === 'ja') ? ('教訓 #' + (currentTabs.length + 1)) : ('Lesson #' + (currentTabs.length + 1));
+                                    tab.appendChild(tabLabel);
+                                    
+                                    if (!isFirst) {
+                                        var deleteBtn = document.createElement('button');
+                                        deleteBtn.type = 'button';
+                                        deleteBtn.className = 'jr-lesson-tab-delete';
+                                        deleteBtn.textContent = '×';
+                                        deleteBtn.addEventListener('click', function(e) {
+                                            e.stopPropagation();
+                                            deleteLessonTabLocal(tab);
+                                        });
+                                        tab.appendChild(deleteBtn);
+                                    }
+                                    
+                                    tab.addEventListener('click', function() {
+                                        var tabs = getLessonTabs();
+                                        var idx = tabs.indexOf(tab);
+                                        if (idx >= 0) activateLessonTabLocal(idx);
+                                    });
+                                    
+                                    lessonTabContainer.insertBefore(tab, addLessonBtn);
+                                    return tab;
+                                }
+                                
+                                function createLessonContentLocal(focusVal, whenVal, dbId) {
+                                    var currentContents = getLessonTabContents();
+                                    var content = document.createElement('div');
+                                    content.className = 'jr-lesson-tab-content';
+                                    content.dataset.lessonTabIndex = currentContents.length;
+                                    if (dbId) content.dataset.objectLeId = dbId;
+                                    
+                                    var labelTop = document.createElement('label');
+                                    labelTop.textContent = (getCurrentLang() === 'ja') ? '今後の活動ではどのようなことを意識すればよいと思いますか？' : 'What should you pay attention to in future activities?';
+                                    labelTop.className = 'jr-label';
+                                    var taTop = document.createElement('textarea');
+                                    taTop.rows = 2;
+                                    taTop.placeholder = (getCurrentLang() === 'ja') ? '具体的な行動計画、改善点、新しいアプローチなどを記入してください。' : 'Describe specific action plans, improvements, or new approaches.';
+                                    taTop.className = 'jr-textarea wr-lesson-focus';
+                                    if (focusVal) taTop.value = focusVal;
+                                    content.appendChild(labelTop);
+                                    content.appendChild(taTop);
+                                    
+                                    var labelBottom = document.createElement('label');
+                                    labelBottom.textContent = (getCurrentLang() === 'ja') ? 'その教訓は次にどのような時に活かせそうですか？' : 'When could this lesson be applied next?';
+                                    labelBottom.className = 'jr-label';
+                                    var taBottom = document.createElement('textarea');
+                                    taBottom.rows = 1;
+                                    taBottom.placeholder = (getCurrentLang() === 'ja') ? '類似の状況、将来のプロジェクト、日常生活での応用などを考えましょう。' : 'Think of similar situations, future projects, or daily life applications.';
+                                    taBottom.className = 'jr-textarea jr-textarea-small wr-lesson-when';
+                                    if (whenVal) taBottom.value = whenVal;
+                                    content.appendChild(labelBottom);
+                                    content.appendChild(taBottom);
+                                    
+                                    lessonTabContentContainer.appendChild(content);
+                                    return content;
+                                }
+                                
+                                function deleteLessonTabLocal(tabEl) {
+                                    var lessonTabs = getLessonTabs();
+                                    var lessonTabContents = getLessonTabContents();
+                                    if (lessonTabs.length <= 1) {
+                                        alert((getCurrentLang() === 'ja') ? '最後の教訓は削除できません' : 'Cannot delete the last lesson');
+                                        return;
+                                    }
+                                    if (!confirm((getCurrentLang() === 'ja') ? 'この教訓を削除しますか？' : 'Delete this lesson?')) return;
+                                    
+                                    var arrIndex = lessonTabs.indexOf(tabEl);
+                                    if (arrIndex < 0) return;
+                                    
+                                    var tabContent = lessonTabContents[arrIndex];
+                                    var leId = tabContent ? tabContent.dataset.objectLeId : null;
+                                    
+                                    function removeLocal() {
+                                        tabEl.remove();
+                                        if (tabContent) tabContent.remove();
+                                        
+                                        // Re-index remaining tabs and contents
+                                        var remainingTabs = getLessonTabs();
+                                        var remainingContents = getLessonTabContents();
+                                        remainingTabs.forEach(function(t, i) { t.dataset.lessonTabIndex = i; });
+                                        remainingContents.forEach(function(c, i) { c.dataset.lessonTabIndex = i; });
+                                        
+                                        updateLessonLabelsLocal();
+                                        if (remainingTabs.length > 0) {
+                                            activateLessonTabLocal(Math.min(arrIndex, remainingTabs.length - 1));
+                                        }
+                                    }
+                                    
+                                    if (leId) {
+                                        $.ajax({
+                                            url: 'php/delete_lesson.php', type: 'POST', dataType: 'json',
+                                            data: { object_le_id: leId },
+                                            success: function(res) { if (res && res.success) removeLocal(); else alert((getCurrentLang() === 'ja') ? '削除に失敗しました' : 'Failed to delete'); },
+                                            error: function() { alert((getCurrentLang() === 'ja') ? '削除に失敗しました' : 'Failed to delete'); }
+                                        });
+                                    } else {
+                                        removeLocal();
+                                    }
+                                }
+                                
+                                // Wire existing tabs - use dynamic index lookup
+                                var existingTabs = getLessonTabs();
+                                existingTabs.forEach(function(tab) {
+                                    if (tab.__bound) return;
+                                    tab.__bound = true;
+                                    
+                                    tab.addEventListener('click', function(e) {
+                                        // Dynamically find the index at click time
+                                        var tabs = getLessonTabs();
+                                        var currentIndex = tabs.indexOf(tab);
+                                        if (currentIndex >= 0) {
+                                            activateLessonTabLocal(currentIndex);
+                                        }
+                                    });
+                                    
+                                    var deleteBtn = tab.querySelector('.jr-lesson-tab-delete');
+                                    if (deleteBtn && !deleteBtn.__bound) {
+                                        deleteBtn.__bound = true;
+                                        deleteBtn.addEventListener('click', function(e) {
+                                            e.stopPropagation();
+                                            deleteLessonTabLocal(tab);
                                         });
                                     }
-                                    // wire remove buttons for any existing additional items inside this wrap
-                                    var removeBtns = wrap.querySelectorAll('.jr-remove-btn');
-                                    removeBtns.forEach(function (btn) {
-                                        // avoid binding twice
-                                        if (btn.__bound) return; btn.__bound = true;
-                                        btn.addEventListener('click', function () {
-                                            try {
-                                                if (!confirm((getCurrentLang() === 'ja') ? '本当に削除しますか？' : 'Remove this lesson?')) return;
-                                                var wrapEl = btn.closest('.wr-additional-lesson-wrap');
-                                                if (!wrapEl) return;
-                                                var leId = wrapEl.dataset.objectLeId;
-                                                if (leId) {
-                                                    $.ajax({ url: 'php/delete_lesson.php', type: 'POST', dataType: 'json', data: { object_le_id: leId }, success: function (res) { if (res && res.success) wrapEl.remove(); else { alert((getCurrentLang() === 'ja') ? '教訓の削除に失敗しました' : 'Failed to delete lesson'); } }, error: function () { alert((getCurrentLang() === 'ja') ? '教訓の削除に失敗しました' : 'Failed to delete lesson'); } });
-                                                } else {
-                                                    wrapEl.remove();
-                                                }
-                                            } catch (e) { console.warn('remove additional lesson error', e); }
-                                        });
+                                });
+                                
+                                // Wire add button
+                                if (addLessonBtn && !addLessonBtn.__bound) {
+                                    addLessonBtn.__bound = true;
+                                    addLessonBtn.addEventListener('click', function() {
+                                        createLessonTabLocal(false);
+                                        createLessonContentLocal('', '');
+                                        updateLessonLabelsLocal();
+                                        var tabs = getLessonTabs();
+                                        activateLessonTabLocal(tabs.length - 1);
                                     });
-                                } catch (e) { console.warn('wireInfoWrapInteractions failed', e); }
+                                }
+                                
+                                // Activate first tab if none active
+                                var currentTabs = getLessonTabs();
+                                if (currentTabs.length > 0 && !lessonTabContainer.querySelector('.jr-lesson-tab-active')) {
+                                    activateLessonTabLocal(0);
+                                }
                             }
 
                             // capture the weeklyGoals index for use when persisting new reflections
                             var _weeklyGoalIdx_for_clones = idx;
-                            addReflectionBtn.addEventListener('click', function () {
+                            
+                            // Function to add a new reflection tab
+                            function addNewReflectionTab(existingData) {
                                 try {
-                                    // clone the infoWrap visually and insert before the download button
+                                    // clone the infoWrap visually
                                     if (!infoWrap) return;
                                     var clone = infoWrap.cloneNode(true);
                                     // rename any ids inside clone to avoid duplicate ids (append index)
@@ -228,184 +594,395 @@
                                         var old = el.id;
                                         el.id = old + '_' + cloneIdx;
                                     });
-                                    // set header text for clone to show ordinal
-                                    var headerEl = clone.querySelector('.jr-info-header');
-                                    if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja') ? ('内省 #' + (cloneIdx + 1)) : ('Reflection #' + (cloneIdx + 1));
                                     // clear any persisted ids on the clone so it becomes a fresh entry
-                                    try {
-                                        // remove any data attributes that would tie clone to existing DB rows
-                                        var dataKeys = ['objectLeId','objectJournalReflectionId','objectJournalReflectionId'];
-                                        dataKeys.forEach(function(k){
-                                            var els = clone.querySelectorAll('[data-'+k.replace(/([A-Z])/g,'-$1').toLowerCase()+']');
-                                            els.forEach(function(el){ el.removeAttribute('data-'+k.replace(/([A-Z])/g,'-$1').toLowerCase()); });
-                                        });
-                                    } catch(e){}
-                                    // clear values inside clone so cloned fields aren't identical
-                                    try {
-                                        var inputs = clone.querySelectorAll('textarea, input');
-                                        inputs.forEach(function(inp){ if (inp.tagName.toLowerCase() === 'textarea' || inp.type === 'text' || inp.type === 'search') inp.value = ''; if (inp.type === 'checkbox' || inp.type === 'radio') inp.checked = false; });
-                                    } catch(e){}
+                                    if (!existingData) {
+                                        try {
+                                            var dataKeys = ['objectLeId','objectJournalReflectionId','objectJournalReflectionId'];
+                                            dataKeys.forEach(function(k){
+                                                var els = clone.querySelectorAll('[data-'+k.replace(/([A-Z])/g,'-$1').toLowerCase()+']');
+                                                els.forEach(function(el){ el.removeAttribute('data-'+k.replace(/([A-Z])/g,'-$1').toLowerCase()); });
+                                            });
+                                        } catch(e){}
+                                        // clear values inside clone so cloned fields aren't identical
+                                        try {
+                                            var inputs = clone.querySelectorAll('textarea, input');
+                                            inputs.forEach(function(inp){ if (inp.tagName.toLowerCase() === 'textarea' || inp.type === 'text' || inp.type === 'search') inp.value = ''; if (inp.type === 'checkbox' || inp.type === 'radio') inp.checked = false; });
+                                        } catch(e){}
+                                    }
                                     // ensure additional container id for cloned wrap exists uniquely
                                     var addCont = clone.querySelector('#wr_additionalLessonsContainer');
-                                    if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + idx;
-                                    // insert clone at the top of existing info cards (before the first .jr-info-wrap)
-                                    var firstWrap = modalContent.querySelector('.jr-info-wrap');
-                                    if (firstWrap) {
-                                        modalContent.insertBefore(clone, firstWrap);
-                                    } else if (typeof dlBtn !== 'undefined' && dlBtn.parentNode) {
-                                        // fallback: insert before download button
-                                        dlBtn.parentNode.insertBefore(clone, dlBtn);
-                                    } else {
-                                        modalContent.appendChild(clone);
-                                    }
+                                    if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + cloneIdx;
+
+                                    // Create new tab
+                                    var tabNum = _tabs.length + 1;
+                                    var tabLabel = (getCurrentLang() === 'ja') ? ('内省 #' + tabNum) : ('Reflection #' + tabNum);
+                                    var tab = createTab(tabLabel, true, false);
+
+                                    // Create tab content and add clone to it
+                                    var content = createTabContent();
+                                    clone.classList.add('jr-animate-in');
+                                    content.appendChild(clone);
+                                    
+                                    // Remove animation class after animation completes
+                                    setTimeout(function() {
+                                        try { clone.classList.remove('jr-animate-in'); } catch(e){}
+                                    }, 500);
+                                    
                                     // wire interactions in the clone
                                     wireInfoWrapInteractions(clone);
-                                    // ensure cloned wrapper does not carry an object_journal_reflection id
-                                    try { clone.dataset.objectJournalReflectionId = ''; } catch(e){}
+                                    
+                                    // Update all tab labels and activate new tab
+                                    updateTabLabels();
+                                    activateTab(_tabs.length - 1);
+                                    
+                                    _tabIndex++;
 
-                                    // Create a new reflection row on the server immediately and attach returned id to clone.
-                                    try {
-                                        // show temporary unsaved label while awaiting server
-                                        try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成中...'; } catch(e){}
-                                        var createPayload = {
-                                            object_journal_id: objectJournalId,
-                                            force_insert: 1,
-                                            reflection_text: '',
-                                            lessons: JSON.stringify([]),
-                                            debug: 1
-                                        };
-                                        $.ajax({
-                                            url: './php/insert_object_journal_reflection.php',
-                                            type: 'POST',
-                                            dataType: 'json',
-                                            data: createPayload,
-                                            success: function(resp) {
-                                                try {
-                                                    if (resp && resp.success && resp.object_journal_reflection_id) {
-                                                        var newId = resp.object_journal_reflection_id;
-                                                        try { clone.dataset.objectJournalReflectionId = newId; } catch(e){}
-                                                        // persist into localStorage.weeklyGoals at position 0 for this weekly index
-                                                        try {
-                                                            var stored = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
-                                                            if (!(stored && stored.length > _weeklyGoalIdx_for_clones && stored[_weeklyGoalIdx_for_clones])) stored[_weeklyGoalIdx_for_clones] = stored[_weeklyGoalIdx_for_clones] || {};
-                                                            if (!Array.isArray(stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids)) stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids = [];
-                                                            // insert at front
-                                                            stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids.unshift(newId);
-                                                            localStorage.setItem('weeklyGoals', JSON.stringify(stored));
-                                                        } catch(e) { console.warn('failed to persist new reflection id on clone', e); }
-                                                        // update header to show saved id
-                                                        try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 保存済み (' + newId + ')'; } catch(e){}
-                                                    } else {
-                                                        console.warn('create reflection on add failed', resp);
-                                                        try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成失敗'; } catch(e){}
-                                                    }
-                                                } catch(e) { console.warn('handle create resp failed', e); }
-                                            },
-                                            error: function(xhr, st, err) { console.warn('create reflection ajax failed', st, err); try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成失敗'; } catch(e){} }
-                                        });
-                                    } catch(e) { console.warn('create reflection on clone failed', e); }
-                                } catch (e) { console.warn('wr add reflection button failed', e); }
+                                    // ensure cloned wrapper does not carry an object_journal_reflection id
+                                    if (!existingData) {
+                                        try { clone.dataset.objectJournalReflectionId = ''; } catch(e){}
+                                        
+                                        // Create a new reflection row on the server immediately
+                                        var headerEl = clone.querySelector('.jr-info-header');
+                                        try {
+                                            try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成中...'; } catch(e){}
+                                            var createPayload = {
+                                                object_journal_id: objectJournalId,
+                                                force_insert: 1,
+                                                reflection_text: '',
+                                                lessons: JSON.stringify([]),
+                                                debug: 1
+                                            };
+                                            $.ajax({
+                                                url: './php/insert_object_journal_reflection.php',
+                                                type: 'POST',
+                                                dataType: 'json',
+                                                data: createPayload,
+                                                success: function(resp) {
+                                                    try {
+                                                        if (resp && resp.success && resp.object_journal_reflection_id) {
+                                                            var newId = resp.object_journal_reflection_id;
+                                                            try { clone.dataset.objectJournalReflectionId = newId; } catch(e){}
+                                                            try {
+                                                                var stored = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                                                                if (!(stored && stored.length > _weeklyGoalIdx_for_clones && stored[_weeklyGoalIdx_for_clones])) stored[_weeklyGoalIdx_for_clones] = stored[_weeklyGoalIdx_for_clones] || {};
+                                                                if (!Array.isArray(stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids)) stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids = [];
+                                                                stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids.unshift(newId);
+                                                                localStorage.setItem('weeklyGoals', JSON.stringify(stored));
+                                                            } catch(e) { console.warn('failed to persist new reflection id on clone', e); }
+                                                            try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection'); } catch(e){}
+                                                        } else {
+                                                            console.warn('create reflection on add failed', resp);
+                                                            try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成失敗'; } catch(e){}
+                                                        }
+                                                    } catch(e) { console.warn('handle create resp failed', e); }
+                                                },
+                                                error: function(xhr, st, err) { console.warn('create reflection ajax failed', st, err); try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection') + ' — 作成失敗'; } catch(e){} }
+                                            });
+                                        } catch(e) { console.warn('create reflection on clone failed', e); }
+                                    }
+                                    
+                                    return clone;
+                                } catch (e) { console.warn('addNewReflectionTab failed', e); return null; }
+                            }
+                            
+                            // Wire the "+" tab button
+                            addTabBtn.addEventListener('click', function () {
+                                addNewReflectionTab(null);
                             });
 
                             // Info card header
+                            var infoHeaderWrap = document.createElement('div');
+                     
                             var infoHeader = document.createElement('div');
                             infoHeader.className = 'jr-info-header';
-                            infoHeader.textContent = (getCurrentLang() === 'ja') ? '内省' : 'Reflection';
                             infoHeader.style.fontWeight = '700';
-                            infoHeader.style.marginBottom = '8px';
+                            infoHeaderWrap.appendChild(infoHeader);
 
-                            // Success / Failure side-by-side
+                            // Success / Failure side-by-side with attribution inside each card
                             var evalWrap = document.createElement('div');
                             evalWrap.className = 'jr-eval-wrap';
 
+                            // SUCCESS card (includes good attribution inside)
                             var successDiv = document.createElement('div');
                             successDiv.className = 'jr-success-div';
+                            // Card header with emoji
+                            var successHeader = document.createElement('div');
+                            successHeader.className = 'jr-card-header';
+                            successHeader.textContent = (getCurrentLang() === 'ja') ? 'うまくいった点' : 'What went well';
+                            successDiv.appendChild(successHeader);
                             var successLabel = document.createElement('label');
                             successLabel.textContent = (getCurrentLang() === 'ja') ? 'うまくいった点はありますか？' : 'What went well?';
                             successLabel.className = 'jr-label';
                             var successTa = document.createElement('textarea');
                             successTa.id = 'wr_successPoints';
-                            successTa.rows = 4;
+                            successTa.rows = 2;
+                            successTa.placeholder = (getCurrentLang() === 'ja') ? '成功した行動、良い結果、達成できたことなどを具体的に記入してください。' : 'Describe specific actions, good results, or achievements.';
                             successTa.className = 'jr-textarea wr-successPoints';
                             successDiv.appendChild(successLabel);
                             successDiv.appendChild(successTa);
+                            // Good attribution nested inside success card
+                            var agLabel = document.createElement('label');
+                            agLabel.textContent = (getCurrentLang() === 'ja') ? 'なぜそうなったと思いますか？' : 'Why do you think so?';
+                            agLabel.className = 'jr-label jr-label-attr-good';
+                            var agTa = document.createElement('textarea');
+                            agTa.id = 'wr_attribution_good';
+                            agTa.rows = 1;
+                            agTa.placeholder = (getCurrentLang() === 'ja') ? '要因、努力、環境、協力者など、成功の理由を深く掘り下げてみましょう。' : 'Dig deeper into factors like effort, environment, and collaborators.';
+                            agTa.className = 'jr-textarea wr-attribution-good';
+                            successDiv.appendChild(agLabel);
+                            successDiv.appendChild(agTa);
 
+                            // FAILURE card (includes bad attribution inside)
                             var failureDiv = document.createElement('div');
                             failureDiv.className = 'jr-failure-div';
+                            // Card header with emoji
+                            var failureHeader = document.createElement('div');
+                            failureHeader.className = 'jr-card-header';
+                            failureHeader.textContent = (getCurrentLang() === 'ja') ? 'うまくいかなかった点' : 'What did not go well';
+                            failureDiv.appendChild(failureHeader);
                             var failureLabel = document.createElement('label');
                             failureLabel.textContent = (getCurrentLang() === 'ja') ? 'うまくいかなかった点はありますか？' : 'What did not go well?';
                             failureLabel.className = 'jr-label';
                             var failureTa = document.createElement('textarea');
                             failureTa.id = 'wr_failurePoints';
-                            failureTa.rows = 4;
+                            failureTa.rows = 2;
+                            failureTa.placeholder = (getCurrentLang() === 'ja') ? '課題、失敗、期待通りにいかなかったことなどを具体的に記入してください。' : 'Describe challenges, failures, or things that did not go as expected.';
                             failureTa.className = 'jr-textarea wr-failurePoints';
                             failureDiv.appendChild(failureLabel);
                             failureDiv.appendChild(failureTa);
+                            // Bad attribution nested inside failure card
+                            var abLabel = document.createElement('label');
+                            abLabel.textContent = (getCurrentLang() === 'ja') ? 'なぜそうなったと思いますか？' : 'Why do you think so?';
+                            abLabel.className = 'jr-label jr-label-attr-bad';
+                            var abTa = document.createElement('textarea');
+                            abTa.id = 'wr_attribution_bad';
+                            abTa.rows = 1;
+                            abTa.placeholder = (getCurrentLang() === 'ja') ? '原因、不足していたもの、予期せぬ障害など、失敗の理由を分析しましょう。' : 'Analyze causes, what was lacking, or unexpected obstacles.';
+                            abTa.className = 'jr-textarea wr-attribution-bad';
+                            failureDiv.appendChild(abLabel);
+                            failureDiv.appendChild(abTa);
 
                             evalWrap.appendChild(successDiv);
                             evalWrap.appendChild(failureDiv);
-                            // insert header then evaluation block
-                            infoWrap.appendChild(infoHeader);
+                            // insert header wrapper then evaluation block
+                            infoWrap.appendChild(infoHeaderWrap);
                             infoWrap.appendChild(evalWrap);
 
-                            // Completion reason
-                            var completionDiv = document.createElement('div');
-                            completionDiv.className = 'jr-completion-div';
-                            var completionLabel = document.createElement('label');
-                            completionLabel.textContent = (getCurrentLang() === 'ja') ? '原因帰属：そのような結果になった理由は何だと思いますか？' : 'Completion reason';
-                            completionLabel.className = 'jr-label';
-                            var completionTa = document.createElement('textarea');
-                            completionTa.id = 'wr_completionReason';
-                            completionTa.rows = 3;
-                            completionTa.className = 'jr-textarea wr-completionReason';
-                            completionDiv.appendChild(completionLabel);
-                            completionDiv.appendChild(completionTa);
-                            infoWrap.appendChild(completionDiv);
-
-                            // Main lesson split into two areas (focus / when to apply) + additional lessons container
+                            // Lesson section with tabs
                             var lessonDiv = document.createElement('div');
                             lessonDiv.className = 'jr-lesson-div';
-                            // Upper question: 今後の活動ではどのようなことを意識すればよいと思いますか？
-                            var lessonLabelTop = document.createElement('label');
-                            lessonLabelTop.textContent = (getCurrentLang() === 'ja') ? '今後の活動ではどのようなことを意識すればよいと思いますか？' : 'What should you pay attention to in future activities?';
-                            lessonLabelTop.className = 'jr-label';
-                            var lessonTaTop = document.createElement('textarea');
-                            lessonTaTop.id = 'wr_lesson_focus';
-                            lessonTaTop.rows = 3;
-                            lessonTaTop.className = 'jr-textarea wr-lesson-focus';
-                            lessonDiv.appendChild(lessonLabelTop);
-                            lessonDiv.appendChild(lessonTaTop);
-
-                            // Lower question: その教訓は次にどのような時に活かせそうですか？
-                            var lessonLabelBottom = document.createElement('label');
-                            lessonLabelBottom.textContent = (getCurrentLang() === 'ja') ? 'その教訓は次にどのような時に活かせそうですか？' : 'When could this lesson be applied next?';
-                            lessonLabelBottom.className = 'jr-label';
-                            var lessonTaBottom = document.createElement('textarea');
-                            lessonTaBottom.id = 'wr_lesson_when';
-                            lessonTaBottom.rows = 2;
-                            lessonTaBottom.className = 'jr-textarea jr-textarea-small wr-lesson-when';
-                            lessonDiv.appendChild(lessonLabelBottom);
-                            lessonDiv.appendChild(lessonTaBottom);
-
-                            var additionalContainer = document.createElement('div');
-                            additionalContainer.id = 'wr_additionalLessonsContainer';
-                            additionalContainer.className = 'jr-additional-container';
-                            lessonDiv.appendChild(additionalContainer);
-
-                            var addBtnWrap = document.createElement('div');
-                            addBtnWrap.className = 'jr-add-btn-wrap';
-                            var addBtn = document.createElement('button');
-                            addBtn.type = 'button';
-                            addBtn.id = 'wr_btnAddLessonInfo';
-                            addBtn.textContent = (getCurrentLang() === 'ja') ? '複数の教訓を追加できます（＋ボタンで追加）。' : 'Add additional lessons (+)';
-                            addBtn.className = 'jr-add-btn';
-                            addBtnWrap.appendChild(addBtn);
-                            lessonDiv.appendChild(addBtnWrap);
+                            
+                            // Lesson tab container
+                            var lessonTabContainer = document.createElement('div');
+                            lessonTabContainer.className = 'jr-lesson-tab-container';
+                            lessonDiv.appendChild(lessonTabContainer);
+                            
+                            // Lesson tab content container
+                            var lessonTabContentContainer = document.createElement('div');
+                            lessonTabContentContainer.className = 'jr-lesson-tab-content-container';
+                            lessonDiv.appendChild(lessonTabContentContainer);
+                            
+                            // Add "+" button for new lessons
+                            var addLessonTabBtn = document.createElement('button');
+                            addLessonTabBtn.type = 'button';
+                            addLessonTabBtn.className = 'jr-lesson-tab-add';
+                            addLessonTabBtn.textContent = '+';
+                            addLessonTabBtn.title = (getCurrentLang() === 'ja') ? '教訓を追加' : 'Add Lesson';
+                            lessonTabContainer.appendChild(addLessonTabBtn);
+                            
+                            // Lesson tab management (scoped to this infoWrap)
+                            var _lessonTabs = [];
+                            var _lessonTabContents = [];
+                            var _lessonTabIndex = 0;
+                            
+                            function createLessonTab(label, isFirst) {
+                                var tab = document.createElement('div');
+                                tab.className = 'jr-lesson-tab';
+                                tab.dataset.lessonTabIndex = _lessonTabs.length;
+                                
+                                var tabLabel = document.createElement('span');
+                                tabLabel.className = 'jr-lesson-tab-label';
+                                tabLabel.textContent = label;
+                                tab.appendChild(tabLabel);
+                                
+                                // Add delete button (not for first lesson)
+                                if (!isFirst) {
+                                    var deleteBtn = document.createElement('button');
+                                    deleteBtn.type = 'button';
+                                    deleteBtn.className = 'jr-lesson-tab-delete';
+                                    deleteBtn.textContent = '×';
+                                    deleteBtn.title = (getCurrentLang() === 'ja') ? '削除' : 'Delete';
+                                    deleteBtn.addEventListener('click', function(e) {
+                                        e.stopPropagation();
+                                        deleteLessonTab(tab);
+                                    });
+                                    tab.appendChild(deleteBtn);
+                                }
+                                
+                                tab.addEventListener('click', function() {
+                                    activateLessonTab(parseInt(tab.dataset.lessonTabIndex));
+                                });
+                                
+                                // Insert before the "+" button
+                                lessonTabContainer.insertBefore(tab, addLessonTabBtn);
+                                _lessonTabs.push(tab);
+                                return tab;
+                            }
+                            
+                            function activateLessonTab(index) {
+                                _lessonTabs.forEach(function(t, i) {
+                                    if (i === index) {
+                                        t.classList.add('jr-lesson-tab-active');
+                                    } else {
+                                        t.classList.remove('jr-lesson-tab-active');
+                                    }
+                                });
+                                _lessonTabContents.forEach(function(c, i) {
+                                    if (i === index) {
+                                        c.classList.add('jr-lesson-tab-content-active');
+                                    } else {
+                                        c.classList.remove('jr-lesson-tab-content-active');
+                                    }
+                                });
+                                updateLessonTabLabels();
+                            }
+                            
+                            function updateLessonTabLabels() {
+                                _lessonTabs.forEach(function(tab, i) {
+                                    var isActive = tab.classList.contains('jr-lesson-tab-active');
+                                    var label = (getCurrentLang() === 'ja') ? ('教訓 #' + (i + 1)) : ('Lesson #' + (i + 1));
+                                    if (isActive) label += ' (Active)';
+                                    var labelSpan = tab.querySelector('.jr-lesson-tab-label');
+                                    if (labelSpan) {
+                                        labelSpan.textContent = label;
+                                    }
+                                });
+                            }
+                            
+                            function createLessonTabContent(focusVal, whenVal, dbId) {
+                                var content = document.createElement('div');
+                                content.className = 'jr-lesson-tab-content';
+                                content.dataset.lessonTabIndex = _lessonTabContents.length;
+                                if (dbId) content.dataset.objectLeId = dbId;
+                                
+                                // Focus question
+                                var labelTop = document.createElement('label');
+                                labelTop.textContent = (getCurrentLang() === 'ja') ? '今後の活動ではどのようなことを意識すればよいと思いますか？' : 'What should you pay attention to in future activities?';
+                                labelTop.className = 'jr-label';
+                                var taTop = document.createElement('textarea');
+                                taTop.rows = 2;
+                                taTop.placeholder = (getCurrentLang() === 'ja') ? '具体的な行動計画、改善点、新しいアプローチなどを記入してください。' : 'Describe specific action plans, improvements, or new approaches.';
+                                taTop.className = 'jr-textarea wr-lesson-focus';
+                                if (focusVal) taTop.value = focusVal;
+                                content.appendChild(labelTop);
+                                content.appendChild(taTop);
+                                
+                                // When question
+                                var labelBottom = document.createElement('label');
+                                labelBottom.textContent = (getCurrentLang() === 'ja') ? 'その教訓は次にどのような時に活かせそうですか？' : 'When could this lesson be applied next?';
+                                labelBottom.className = 'jr-label';
+                                var taBottom = document.createElement('textarea');
+                                taBottom.rows = 1;
+                                taBottom.placeholder = (getCurrentLang() === 'ja') ? '類似の状況、将来のプロジェクト、日常生活での応用などを考えましょう。' : 'Think of similar situations, future projects, or daily life applications.';
+                                taBottom.className = 'jr-textarea jr-textarea-small wr-lesson-when';
+                                if (whenVal) taBottom.value = whenVal;
+                                content.appendChild(labelBottom);
+                                content.appendChild(taBottom);
+                                
+                                lessonTabContentContainer.appendChild(content);
+                                _lessonTabContents.push(content);
+                                return content;
+                            }
+                            
+                            function addNewLessonTab(focusVal, whenVal, dbId) {
+                                var tabNum = _lessonTabs.length + 1;
+                                var label = (getCurrentLang() === 'ja') ? ('教訓 #' + tabNum) : ('Lesson #' + tabNum);
+                                createLessonTab(label, false);
+                                createLessonTabContent(focusVal || '', whenVal || '', dbId);
+                                _lessonTabIndex++;
+                                updateLessonTabLabels();
+                                activateLessonTab(_lessonTabs.length - 1);
+                            }
+                            
+                            function deleteLessonTab(tabEl) {
+                                try {
+                                    if (_lessonTabs.length <= 1) {
+                                        alert((getCurrentLang() === 'ja') ? '最後の教訓は削除できません' : 'Cannot delete the last lesson');
+                                        return;
+                                    }
+                                    if (!confirm((getCurrentLang() === 'ja') ? 'この教訓を削除しますか？' : 'Delete this lesson?')) return;
+                                    
+                                    var arrIndex = _lessonTabs.indexOf(tabEl);
+                                    if (arrIndex < 0) return;
+                                    
+                                    var tabContent = _lessonTabContents[arrIndex];
+                                    var leId = tabContent ? tabContent.dataset.objectLeId : null;
+                                    
+                                    function removeTabAndContent() {
+                                        var removedTab = _lessonTabs.splice(arrIndex, 1)[0];
+                                        var removedContent = _lessonTabContents.splice(arrIndex, 1)[0];
+                                        
+                                        if (removedTab) removedTab.remove();
+                                        if (removedContent) {
+                                            removedContent.style.transition = 'opacity 0.2s';
+                                            removedContent.style.opacity = '0';
+                                            setTimeout(function() { removedContent.remove(); }, 200);
+                                        }
+                                        
+                                        _lessonTabs.forEach(function(t, i) { t.dataset.lessonTabIndex = i; });
+                                        _lessonTabContents.forEach(function(c, i) { c.dataset.lessonTabIndex = i; });
+                                        
+                                        updateLessonTabLabels();
+                                        if (_lessonTabs.length > 0) {
+                                            var newActiveIdx = Math.min(arrIndex, _lessonTabs.length - 1);
+                                            activateLessonTab(newActiveIdx);
+                                        }
+                                    }
+                                    
+                                    if (leId) {
+                                        $.ajax({
+                                            url: 'php/delete_lesson.php',
+                                            type: 'POST',
+                                            dataType: 'json',
+                                            data: { object_le_id: leId },
+                                            success: function(res) {
+                                                if (res && res.success) {
+                                                    removeTabAndContent();
+                                                } else {
+                                                    alert((getCurrentLang() === 'ja') ? '削除に失敗しました' : 'Failed to delete');
+                                                }
+                                            },
+                                            error: function() {
+                                                alert((getCurrentLang() === 'ja') ? '削除に失敗しました' : 'Failed to delete');
+                                            }
+                                        });
+                                    } else {
+                                        removeTabAndContent();
+                                    }
+                                } catch(e) { console.warn('deleteLessonTab error', e); }
+                            }
+                            
+                            // Wire the "+" lesson tab button
+                            addLessonTabBtn.addEventListener('click', function() {
+                                addNewLessonTab('', '');
+                            });
+                            
+                            // Create the first lesson tab
+                            createLessonTab((getCurrentLang() === 'ja') ? '教訓 #1' : 'Lesson #1', true);
+                            createLessonTabContent('', '');
+                            _lessonTabIndex++;
+                            activateLessonTab(0);
 
                             infoWrap.appendChild(lessonDiv);
-                            // insert addReflectionBtn immediately before infoWrap so it appears above
-                            modalContent.appendChild(addReflectionBtn);
-                            modalContent.appendChild(infoWrap);
+                            
+                            // Create the first tab (Activity Process) - NO reflection card here
+                            var firstTab = createTab((getCurrentLang() === 'ja') ? '活動プロセス' : 'Activity Process', false, true);
+                            var firstContent = createTabContent();
+                            // Activity log (itemWrap) will be added later in the results.forEach loop
+                            // Do NOT add infoWrap to first tab - it's only for reflection tabs
+                            _tabIndex++;
+                            activateTab(0);
+                            updateTabLabels();
 
                             // Always fetch canonical reflection row independently so debug output appears
                             try {
@@ -420,40 +997,54 @@
                                         if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (first fetch) - skipping'); return; }
                                         if (rres && Array.isArray(rres.reflections)) console.log('journal_report: reflections array', rres.reflections);
                                         try {
-                                            // if reflections array present, render one card per reflection
+                                            // if reflections array present, create one tab per reflection (NOT in first Activity Process tab)
                                             if (rres && rres.success && Array.isArray(rres.reflections) && rres.reflections.length) {
                                                 var refls = rres.reflections;
-                                                // populate first (existing) infoWrap then create clones for the rest
+                                                // Create a new tab for each reflection
                                                 for (var ri = 0; ri < refls.length; ri++) {
                                                     var rf = refls[ri];
-                                                    if (ri === 0) {
-                                                        populateWrapWithReflection(infoWrap, rf);
-                                                    } else {
-                                                        try {
-                                                            var clone = infoWrap.cloneNode(true);
-                                                            var cidx = _jrInfoCloneIdx++;
-                                                            var elemsWithId = clone.querySelectorAll('[id]');
-                                                            elemsWithId.forEach(function(el){ var old = el.id; el.id = old + '_' + cidx; });
-                                                            var headerEl = clone.querySelector('.jr-info-header'); if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja') ? ('内省 #' + (cidx+1)) : ('Reflection #' + (cidx+1));
-                                                            var addCont = clone.querySelector('#wr_additionalLessonsContainer'); if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + cidx;
-                                                            // insert before existing first infoWrap to keep newest at top
-                                                            var firstWrap = modalContent.querySelector('.jr-info-wrap');
-                                                            if (firstWrap) modalContent.insertBefore(clone, firstWrap);
-                                                            else modalContent.appendChild(clone);
-                                                            wireInfoWrapInteractions(clone);
-                                                            populateWrapWithReflection(clone, rf);
-                                                        } catch(e) { console.warn('clone populate failed', e); }
-                                                    }
+                                                    try {
+                                                        var clone = infoWrap.cloneNode(true);
+                                                        var cidx = _jrInfoCloneIdx++;
+                                                        var elemsWithId = clone.querySelectorAll('[id]');
+                                                        elemsWithId.forEach(function(el){ var old = el.id; el.id = old + '_' + cidx; });
+                                                        var addCont = clone.querySelector('#wr_additionalLessonsContainer'); if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + cidx;
+                                                        
+                                                        // Create new tab for this reflection
+                                                        var tabNum = _tabs.length; // First reflection will be tab #1 (since Activity Process is tab 0)
+                                                        var tabLabel = (getCurrentLang() === 'ja') ? ('内省 #' + tabNum) : ('Reflection #' + tabNum);
+                                                        createTab(tabLabel, false, false);
+                                                        var content = createTabContent();
+                                                        content.appendChild(clone);
+                                                        _tabIndex++;
+                                                        
+                                                        wireInfoWrapInteractions(clone);
+                                                        populateWrapWithReflection(clone, rf);
+                                                    } catch(e) { console.warn('clone populate failed', e); }
                                                 }
+                                                // Update tab labels and activate the last (newest) tab
+                                                updateTabLabels();
+                                                activateTab(_tabs.length - 1);
                                                 _reflectionsRendered = true;
                                             } else {
-                                                var rf = null;
-                                                if (rres && rres.success && rres.reflection) rf = rres.reflection;
-                                                else if (rres && rres.debug) console.log('journal_report: reflection debug', rres.debug);
-                                                if (rf) {
-                                                    populateWrapWithReflection(infoWrap, rf);
-                                                    _reflectionsRendered = true;
-                                                }
+                                                // No reflections found - create first reflection tab
+                                                try {
+                                                    var clone = infoWrap.cloneNode(true);
+                                                    var cidx = _jrInfoCloneIdx++;
+                                                    var elemsWithId = clone.querySelectorAll('[id]');
+                                                    elemsWithId.forEach(function(el){ var old = el.id; el.id = old + '_' + cidx; });
+                                                    
+                                                    var tabLabel = (getCurrentLang() === 'ja') ? '内省 #1' : 'Reflection #1';
+                                                    createTab(tabLabel, false, false);
+                                                    var content = createTabContent();
+                                                    content.appendChild(clone);
+                                                    _tabIndex++;
+                                                    
+                                                    wireInfoWrapInteractions(clone);
+                                                    updateTabLabels();
+                                                    activateTab(1); // Activate first reflection tab
+                                                } catch(e) { console.warn('create first reflection tab failed', e); }
+                                                _reflectionsRendered = true;
                                             }
                                         } catch (e) { console.warn('apply canonical reflection failed', e); }
                                     },
@@ -521,41 +1112,100 @@
                                     // set evaluation and attribution
                                     var sp = wrap.querySelector('.wr-successPoints'); if (sp) sp.value = rf.evaluation_good || '';
                                     var fb = wrap.querySelector('.wr-failurePoints'); if (fb) fb.value = rf.evaluation_bad || '';
+                                    var ag = wrap.querySelector('.wr-attribution-good'); if (ag) ag.value = (typeof rf.attribution !== 'undefined' && rf.attribution !== null && String(rf.attribution).trim() !== '') ? rf.attribution : (rf.attribution_good || '');
+                                    var ab = wrap.querySelector('.wr-attribution-bad'); if (ab) ab.value = rf.attribution_bad || '';
                                     var cr = wrap.querySelector('.wr-completionReason'); if (cr) cr.value = rf.attribution || '';
+                                    
                                     // lessons: rf.lessons expected array of {lesson_learned, opportunity, object_journal_lesson-learned_id}
-                                    var focusEl = wrap.querySelector('.wr-lesson-focus'); var whenEl = wrap.querySelector('.wr-lesson-when');
-                                    var container = wrap.querySelector('#wr_additionalLessonsContainer') || wrap.querySelector('.jr-additional-container');
-                                    if (container) container.innerHTML = '';
-                                    if (Array.isArray(rf.lessons) && rf.lessons.length) {
+                                    // Populate lesson tabs instead of the old container system
+                                    var lessonTabContentContainer = wrap.querySelector('.jr-lesson-tab-content-container');
+                                    var lessonTabContainer = wrap.querySelector('.jr-lesson-tab-container');
+                                    
+                                    if (lessonTabContentContainer && lessonTabContainer && Array.isArray(rf.lessons) && rf.lessons.length) {
                                         var lf = rf.lessons;
-                                        if (lf[0]) { if (focusEl) focusEl.value = lf[0].lesson_learned || ''; if (whenEl) whenEl.value = lf[0].opportunity || ''; }
+                                        // First lesson goes into the first tab content
+                                        var firstTabContent = lessonTabContentContainer.querySelector('.jr-lesson-tab-content');
+                                        if (firstTabContent && lf[0]) {
+                                            var focusEl = firstTabContent.querySelector('.wr-lesson-focus');
+                                            var whenEl = firstTabContent.querySelector('.wr-lesson-when');
+                                            if (focusEl) focusEl.value = lf[0].lesson_learned || '';
+                                            if (whenEl) whenEl.value = lf[0].opportunity || '';
+                                            if (lf[0]['object_journal_lesson-learned_id']) firstTabContent.dataset.objectLeId = lf[0]['object_journal_lesson-learned_id'];
+                                        }
+                                        
+                                        // Additional lessons: need to create new tabs
+                                        // Note: We need access to the addNewLessonTab function, which is scoped.
+                                        // For cloned wraps, we'll create tabs directly here.
                                         for (var lli = 1; lli < lf.length; lli++) {
                                             try {
                                                 var l = lf[lli];
-                                                var fld = makeAdditionalLessonField(l.lesson_learned || '', l.opportunity || '', l['object_journal_lesson-learned_id']);
-                                                if (container) container.appendChild(fld);
-                                            } catch(e) { console.warn('populate additional lesson failed', e); }
+                                                // Create tab
+                                                var addBtn = lessonTabContainer.querySelector('.jr-lesson-tab-add');
+                                                var tab = document.createElement('div');
+                                                tab.className = 'jr-lesson-tab';
+                                                tab.dataset.lessonTabIndex = lessonTabContainer.querySelectorAll('.jr-lesson-tab').length;
+                                                
+                                                var tabLabel = document.createElement('span');
+                                                tabLabel.className = 'jr-lesson-tab-label';
+                                                tabLabel.textContent = (getCurrentLang() === 'ja') ? ('教訓 #' + (lli + 1)) : ('Lesson #' + (lli + 1));
+                                                tab.appendChild(tabLabel);
+                                                
+                                                var deleteBtn = document.createElement('button');
+                                                deleteBtn.type = 'button';
+                                                deleteBtn.className = 'jr-lesson-tab-delete';
+                                                deleteBtn.textContent = '×';
+                                                tab.appendChild(deleteBtn);
+                                                
+                                                lessonTabContainer.insertBefore(tab, addBtn);
+                                                
+                                                // Create tab content
+                                                var content = document.createElement('div');
+                                                content.className = 'jr-lesson-tab-content';
+                                                content.dataset.lessonTabIndex = lli;
+                                                if (l['object_journal_lesson-learned_id']) content.dataset.objectLeId = l['object_journal_lesson-learned_id'];
+                                                
+                                                var labelTop = document.createElement('label');
+                                                labelTop.textContent = (getCurrentLang() === 'ja') ? '今後の活動ではどのようなことを意識すればよいと思いますか？' : 'What should you pay attention to in future activities?';
+                                                labelTop.className = 'jr-label';
+                                                var taTop = document.createElement('textarea');
+                                                taTop.rows = 2;
+                                                taTop.className = 'jr-textarea wr-lesson-focus';
+                                                taTop.value = l.lesson_learned || '';
+                                                content.appendChild(labelTop);
+                                                content.appendChild(taTop);
+                                                
+                                                var labelBottom = document.createElement('label');
+                                                labelBottom.textContent = (getCurrentLang() === 'ja') ? 'その教訓は次にどのような時に活かせそうですか？' : 'When could this lesson be applied next?';
+                                                labelBottom.className = 'jr-label';
+                                                var taBottom = document.createElement('textarea');
+                                                taBottom.rows = 1;
+                                                taBottom.className = 'jr-textarea jr-textarea-small wr-lesson-when';
+                                                taBottom.value = l.opportunity || '';
+                                                content.appendChild(labelBottom);
+                                                content.appendChild(taBottom);
+                                                
+                                                lessonTabContentContainer.appendChild(content);
+                                            } catch(e) { console.warn('populate additional lesson tab failed', e); }
                                         }
-                                    } else {
-                                        // no lessons: clear main fields
-                                        if (focusEl) focusEl.value = '';
-                                        if (whenEl) whenEl.value = '';
+                                    } else if (lessonTabContentContainer) {
+                                        // no lessons: clear first tab fields
+                                        var firstTabContent = lessonTabContentContainer.querySelector('.jr-lesson-tab-content');
+                                        if (firstTabContent) {
+                                            var focusEl = firstTabContent.querySelector('.wr-lesson-focus');
+                                            var whenEl = firstTabContent.querySelector('.wr-lesson-when');
+                                            if (focusEl) focusEl.value = '';
+                                            if (whenEl) whenEl.value = '';
+                                        }
                                     }
+                                    
+                                    // Re-wire lesson tabs after populating (to bind events to newly created tabs)
+                                    wireLessonTabs(wrap);
+                                    
+                                    // Activate the first lesson tab
+                                    var firstLessonTab = wrap.querySelector('.jr-lesson-tab');
+                                    if (firstLessonTab) firstLessonTab.click();
                                 } catch(e) { console.warn('populateWrapWithReflection failed', e); }
                             }
-
-                            // wire add button
-                            try {
-                                addBtn.addEventListener('click', function () {
-                                    try {
-                                        // add a pair: focus + when
-                                        var fld = makeAdditionalLessonField('', '');
-                                        additionalContainer.appendChild(fld);
-                                        // focus first textarea
-                                        var ta = fld.querySelector('textarea'); if (ta) ta.focus();
-                                    } catch (e) { console.warn('wr add lesson error', e); }
-                                });
-                            } catch (e) { /* ignore */ }
 
                             // Fetch saved fields from DB and overwrite textareas if present
                             (function () {
@@ -582,7 +1232,8 @@
 
                                                     if (document.getElementById('wr_successPoints')) document.getElementById('wr_successPoints').value = val_good || '';
                                                     if (document.getElementById('wr_failurePoints')) document.getElementById('wr_failurePoints').value = val_bad || '';
-                                                    if (document.getElementById('wr_completionReason')) document.getElementById('wr_completionReason').value = val_attr || '';
+                                                    // legacy 'completionReason' now maps to attribution_good
+                                                    if (document.getElementById('wr_attribution_good')) document.getElementById('wr_attribution_good').value = val_attr || '';
 
                                                     // keep lesson fields reset here; they'll be populated below from fres.additional_lessons / items / lessons
                                                     if (document.getElementById('wr_lesson_focus')) document.getElementById('wr_lesson_focus').value = '';
@@ -1037,25 +1688,19 @@
 
                                 tbl.appendChild(tbody);
                                 itemWrap.appendChild(tbl);
-                                modalContent.appendChild(itemWrap);
+                                // Add to first tab (Activity Process) only
+                                if (_tabContents.length > 0 && _tabContents[0]) {
+                                    _tabContents[0].appendChild(itemWrap);
+                                }
                             });
 
-                            var dlBtn = document.createElement('button');
-                            dlBtn.textContent = (getCurrentLang() === 'ja') ? 'Wordダウンロード' : 'Download Word';
-                            dlBtn.style.marginTop = '18px';
-                            dlBtn.style.padding = '8px 24px';
-                            dlBtn.style.background = theme.accent;
-                            dlBtn.style.color = '#fff';
-                            dlBtn.style.border = 'none';
-                            dlBtn.style.borderRadius = '8px';
-                            dlBtn.style.fontSize = '15px';
-                            dlBtn.style.cursor = 'pointer';
-                            dlBtn.style.boxShadow = '0 6px 14px rgba(2,48,89,0.12)';
-                            dlBtn.onclick = function () {
+                            // Wire download link click event
+                            dlLink.onclick = function (e) {
+                                e.preventDefault();
                                 // read editable fields (split evaluation + lessons)
                                 var successPoints = (document.getElementById('wr_successPoints') ? document.getElementById('wr_successPoints').value : '').trim();
                                 var failurePoints = (document.getElementById('wr_failurePoints') ? document.getElementById('wr_failurePoints').value : '').trim();
-                                var cr = (document.getElementById('wr_completionReason') ? document.getElementById('wr_completionReason').value : '').trim();
+                                var cr = (document.getElementById('wr_attribution_good') ? document.getElementById('wr_attribution_good').value : '').trim();
                                 var focus = (document.getElementById('wr_lesson_focus') ? document.getElementById('wr_lesson_focus').value : '').trim();
                                 var when = (document.getElementById('wr_lesson_when') ? document.getElementById('wr_lesson_when').value : '').trim();
                                 var mainLesson = focus;
@@ -1272,32 +1917,9 @@
                                 URL.revokeObjectURL(url);
                                 document.body.removeChild(modal);
                             };
-                            modalContent.appendChild(dlBtn);
 
-                            // hover effects for dlBtn
-                            dlBtn.addEventListener('mouseenter', function () {
-                                dlBtn.style.filter = 'brightness(0.94)';
-                                dlBtn.style.boxShadow = '0 10px 24px rgba(2,48,89,0.14)';
-                            });
-                            dlBtn.addEventListener('mouseleave', function () {
-                                dlBtn.style.filter = '';
-                                dlBtn.style.boxShadow = '0 6px 14px rgba(2,48,89,0.12)';
-                            });
-
-                            // Ensure the textarea block (`infoWrap`) is placed directly above the buttons.
-                            try {
-                                if (infoWrap && infoWrap.parentNode) {
-                                    // remove from current position and re-insert before dlBtn
-                                    infoWrap.parentNode.removeChild(infoWrap);
-                                }
-                                // ensure addReflectionBtn is next to infoWrap: remove if present, then insert both
-                                try {
-                                    if (addReflectionBtn && addReflectionBtn.parentNode) addReflectionBtn.parentNode.removeChild(addReflectionBtn);
-                                } catch (e) { }
-                                // insert addReflectionBtn then infoWrap before dlBtn so button stays above infoWrap
-                                if (addReflectionBtn) modalContent.insertBefore(addReflectionBtn, dlBtn);
-                                modalContent.insertBefore(infoWrap, dlBtn);
-                            } catch (e) { console.error('move infoWrap failed', e); }
+                            // Ensure the textarea block (`infoWrap`) is placed correctly.
+                            // Note: infoWrap is now inside tabContentContainer, no need to move it.
 
                             // Helper to save a specific wrapper
                             function saveWrapper(wrap) {
@@ -1317,36 +1939,37 @@
                                     var spEl = wrap.querySelector('.wr-successPoints');
                                     var fbEl = wrap.querySelector('.wr-failurePoints');
                                     var crEl = wrap.querySelector('.wr-completionReason');
-                                    var focusEl = wrap.querySelector('.wr-lesson-focus');
-                                    var whenEl = wrap.querySelector('.wr-lesson-when');
+                                    var agEl = wrap.querySelector('.wr-attribution-good');
+                                    var abEl = wrap.querySelector('.wr-attribution-bad');
 
                                     var successPoints = spEl ? (spEl.value || '').trim() : '';
                                     var failurePoints = fbEl ? (fbEl.value || '').trim() : '';
                                     var completionReasonVal = crEl ? (crEl.value || '').trim() : '';
-                                    var focus = focusEl ? (focusEl.value || '').trim() : '';
-                                    var when = whenEl ? (whenEl.value || '').trim() : '';
+                                    var attributionGoodVal = agEl ? (agEl.value || '').trim() : '';
+                                    var attributionBadVal = abEl ? (abEl.value || '').trim() : '';
 
-                                    // Collect extras
-                                    var extrasArr = [];
+                                    // Collect lessons from lesson tabs
+                                    var lessonsArr = [];
                                     try {
-                                        var addWrappers2 = wrap.querySelectorAll('.wr-additional-lesson-wrap');
-                                        if (addWrappers2 && addWrappers2.length) {
-                                            addWrappers2.forEach(function (w) {
+                                        var lessonTabContents = wrap.querySelectorAll('.jr-lesson-tab-content');
+                                        if (lessonTabContents && lessonTabContents.length) {
+                                            lessonTabContents.forEach(function (tc) {
                                                 try {
-                                                    var f = w.querySelector('.wr-additional-lesson-focus');
-                                                    var whenf = w.querySelector('.wr-additional-lesson-when');
-                                                    var fv = (f && f.value) ? f.value.trim() : '';
-                                                    var wv = (whenf && whenf.value) ? whenf.value.trim() : '';
-                                                    var combined = fv;
-                                                    if (wv) combined = combined ? (combined + '\n\n' + wv) : wv;
-                                                    // For reflection structure, we keep object {lesson, opportunity}
-                                                    // but for legacy update (below) that needs text, we use 'combined'.
-                                                    // Actually let's just push object for reflection and string for legacy if needed.
-                                                    if (fv || wv) extrasArr.push({ lesson: fv, opportunity: wv });
+                                                    var focusEl = tc.querySelector('.wr-lesson-focus');
+                                                    var whenEl = tc.querySelector('.wr-lesson-when');
+                                                    var fv = (focusEl && focusEl.value) ? focusEl.value.trim() : '';
+                                                    var wv = (whenEl && whenEl.value) ? whenEl.value.trim() : '';
+                                                    var dbId = tc.dataset.objectLeId || '';
+                                                    if (fv || wv) lessonsArr.push({ lesson: fv, opportunity: wv, dbId: dbId });
                                                 } catch (e) { }
                                             });
                                         }
                                     } catch (e) { /* ignore */ }
+                                    
+                                    // Extract first lesson for legacy fields
+                                    var focus = lessonsArr.length > 0 ? (lessonsArr[0].lesson || '') : '';
+                                    var when = lessonsArr.length > 0 ? (lessonsArr[0].opportunity || '') : '';
+                                    var extrasArr = lessonsArr.slice(1);
 
                                     var promises = [];
 
@@ -1370,7 +1993,11 @@
                                             // keep legacy keys
                                             success_points: successPoints,
                                             failure_points: failurePoints,
-                                            attribution: completionReasonVal,
+                                            // legacy attribution column now carries good-attribution value
+                                            attribution: attributionGoodVal,
+                                            // include explicit good/bad attribution so server can persist/append them
+                                            attribution_good: attributionGoodVal,
+                                            attribution_bad: attributionBadVal,
                                             start_date: startDate,
                                             finish_date: endDate,
                                             node_id: goal.node_id || '',
@@ -1410,7 +2037,10 @@
                                         object_journal_id: object_journal_id,
                                         evaluation_good: successPoints,
                                         evaluation_bad: failurePoints,
-                                        attribution: completionReasonVal,
+                                        // ensure legacy `attribution` column contains the 'good' attribution
+                                        attribution: attributionGoodVal,
+                                        attribution_good: attributionGoodVal,
+                                        attribution_bad: attributionBadVal,
                                         reflection_text: reflectionText,
                                         created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
                                         debug: 1

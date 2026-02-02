@@ -8,6 +8,9 @@ $evaluation_bad = isset($_POST['evaluation_bad']) ? $_POST['evaluation_bad'] : n
 $attribution = isset($_POST['attribution']) ? $_POST['attribution'] : null;
 $application = isset($_POST['application']) ? $_POST['application'] : null;
 $update_at = isset($_POST['update_at']) ? $_POST['update_at'] : null;
+// new: separate attribution fields for success/failure
+$attribution_good = isset($_POST['attribution_good']) ? $_POST['attribution_good'] : null;
+$attribution_bad = isset($_POST['attribution_bad']) ? $_POST['attribution_bad'] : null;
 
 if (!$object_journal_id) {
     echo json_encode(['success' => false, 'error' => 'Missing object_journal_id']);
@@ -99,6 +102,33 @@ try {
             }
         }
 
+        // If an existing reflection was found and the caller provided attribution_bad,
+        // fetch the current value so we can append instead of blindly overwriting.
+        if ($existing_reflection_id !== null && isset($_POST['attribution_bad']) && trim($_POST['attribution_bad']) !== '') {
+            // only attempt fetch if column exists
+            if (in_array('attribution_bad', $refCols)) {
+                $g = $mysqli->prepare('SELECT attribution_bad FROM object_journal_reflections WHERE object_journal_reflection_id = ? LIMIT 1');
+                if ($g) {
+                    $g->bind_param('s', $existing_reflection_id);
+                    $g->execute();
+                    $g->bind_result($currBad);
+                    if ($g->fetch()) {
+                        // combine existing + incoming, separated by double newline when both present
+                        $incoming = trim($_POST['attribution_bad']);
+                        $currBad = ($currBad === null) ? '' : $currBad;
+                        if ($currBad !== '' && $incoming !== '') {
+                            // avoid duplicating exact same text
+                            if (strpos($currBad, $incoming) === false) $attribution_bad = $currBad . "\n\n" . $incoming;
+                            else $attribution_bad = $currBad;
+                        } else {
+                            $attribution_bad = ($incoming !== '') ? $incoming : $currBad;
+                        }
+                    }
+                    $g->close();
+                }
+            }
+        }
+
         if ($existing_reflection_id === null) {
             // find by object_journal_id (and map_id if present)
             $whereSql = 'object_journal_id = ?';
@@ -135,7 +165,22 @@ try {
         if (in_array('object_journal_id', $refCols)) { $fieldsToSet['object_journal_id'] = $object_journal_id_str; }
         if (in_array('evaluation_good', $refCols)) { $fieldsToSet['evaluation_good'] = $evaluation_good; }
         if (in_array('evaluation_bad', $refCols))  { $fieldsToSet['evaluation_bad'] = $evaluation_bad; }
-        if (in_array('attribution', $refCols))     { $fieldsToSet['attribution'] = $attribution; }
+        if (in_array('attribution', $refCols)) {
+            // Prefer explicit `attribution` if provided; otherwise, fall back to `attribution_good` when available
+            if (isset($_POST['attribution'])) $fieldsToSet['attribution'] = $attribution;
+            else if (isset($_POST['attribution_good'])) $fieldsToSet['attribution'] = $attribution_good;
+        }
+        // support separate attribution columns when they exist
+        if (in_array('attribution_good', $refCols)) {
+            // prefer explicit attribution_good if provided; otherwise fall back to legacy `attribution`
+            if ($attribution_good === null) $fieldsToSet['attribution_good'] = $attribution;
+            else $fieldsToSet['attribution_good'] = $attribution_good;
+        }
+        // Only include attribution_bad in the update/insert when the client explicitly provided it.
+        // Previously we would set it to empty string when not provided, which could clear existing data.
+        if (in_array('attribution_bad', $refCols) && isset($_POST['attribution_bad'])) {
+            $fieldsToSet['attribution_bad'] = ($attribution_bad === null) ? '' : $attribution_bad;
+        }
         if (in_array('reflection_text', $refCols) && isset($_POST['reflection_text'])) { $fieldsToSet['reflection_text'] = $_POST['reflection_text']; }
         if (in_array('created_at', $refCols)) { $fieldsToSet['created_at'] = (isset($_POST['created_at']) ? $_POST['created_at'] : date('Y-m-d H:i:s')); }
         if (in_array('update_at', $refCols))  { $fieldsToSet['update_at']  = (isset($_POST['update_at']) ? $_POST['update_at'] : date('Y-m-d H:i:s')); }

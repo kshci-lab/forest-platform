@@ -1,0 +1,103 @@
+/* Unified feedback / weekly goals / lesson card styles */
+#feedback_area{padding:14px; background:#f8fafc; border-radius:10px; border:1px solid rgba(16,24,40,0.04)}
+#weekly_goal_controls{max-width:420px}
+#addWeeklyGoalBtn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;border:0;background:#2fb44f;color:#fff;font-weight:700}
+#weeklyGoalsList .weekly-goal-card{background:#ffffff;border-radius:8px;padding:12px;margin-bottom:12px;border:1px solid rgba(0,0,0,0.04);box-shadow:0 4px 12px rgba(16,24,40,0.04);}
+.weekly-goal-card .week-range{font-weight:700;color:#1f6f2e;margin-bottom:8px}
+.weekly-goal-card .goal-actions{display:flex;gap:8px;margin-bottom:8px}
+.weekly-goal-card .btn-edit{background:#f6b342;color:#fff;padding:6px 8px;border-radius:6px;border:0}
+.weekly-goal-card .btn-reflect{background:#3b82f6;color:#fff;padding:6px 8px;border-radius:6px;border:0}
+.weekly-goal-card .btn-delete{background:#ef4444;color:#fff;padding:6px 8px;border-radius:6px;border:0;margin-left:auto}
+.weekly-goal-card .entry{background:#e6f3fb;border-radius:12px;padding:10px;margin:8px 0;color:#0f172a}
+/* Hover / focus states for buttons to indicate interactivity */
+.fp-btn, #addWeeklyGoalBtn, .weekly-goal-card button, #weeklyGoalsList button, .btn-edit, .btn-reflect, .btn-delete, #btnAddLessonInfo, .lesson-card button {
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.fp-btn:hover, #addWeeklyGoalBtn:hover, .weekly-goal-card button:hover, #weeklyGoalsList button:hover, .btn-edit:hover, .btn-reflect:hover, .btn-delete:hover, #btnAddLessonInfo:hover, .lesson-card button:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(16,24,40,0.06);
+}
+.fp-btn:focus, #addWeeklyGoalBtn:focus, .weekly-goal-card button:focus, .btn-edit:focus, .btn-reflect:focus, .btn-delete:focus, #btnAddLessonInfo:focus{outline:3px solid rgba(59,130,246,0.08); outline-offset:2px}
+
+/* Feedback card colors harmonized (overrides inline subtle differences) */
+#feedback_area .inquiry_area, #feedback_area .main-lesson-card{border-radius:10px}
+#feedback_area textarea{font-size:14px;padding:10px;border-radius:8px}
+
+/* Buttons general */
+.fp-btn{font-weight:700}
+
+@media (max-width:720px){
+  #weekly_goal_controls{max-width:100%}
+}
+
+/* jmnode (goal chips) and inline delete button styling */
+.jmnode{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  padding:6px 10px !important;
+  border-radius:10px !important;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04) !important;
+  border:1px solid rgba(126,195,230,0.35) !important;
+  background:#dfeff8 !important;
+  color:#333 !important;
+  font:12px/1.125 Verdana,Arial,Helvetica,sans-serif !important;
+  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  cursor:pointer;
+}
+.jmnode:hover{transform:translateY(-1px); box-shadow:0 6px 12px rgba(16,24,40,0.06);}
+.jmnode:focus{outline:3px solid rgba(59,130,246,0.08); outline-offset:3px}
+
+.goal-delete-btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;padding:4px;margin-left:6px;border-radius:6px;cursor:pointer;transition:transform .12s ease,opacity .12s}
+.goal-delete-btn svg{width:16px;height:16px;display:block}
+.goal-delete-btn:hover{transform:translateY(-2px); opacity:0.95}
+.goal-delete-btn:focus{outline:3px solid rgba(239,68,68,0.18); outline-offset:2px}
+
+/* active goal chip when its process-map is open */
+.goal-chip-active{
+  border:2px solid rgba(217,119,6,0.85) !important;
+  box-shadow:0 6px 14px rgba(16,24,40,0.06) !important;
+  transform:translateY(-1px) !important;
+}
+
+/* Common card components for feedback and lessons */
+.fl-card{
+  border: 1px solid rgba(34,34,34,0.06);
+  border-radius: 8px;
+  background: #fbfcfd;
+  box-shadow: 0 4px 10px rgba(16,24,40,0.06);
+}
+.fl-card--wide{ width:700px; min-width:500px }
+.fl-header{
+  cursor: move;
+  background: #f2f4f6;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(34,34,34,0.04);
+  color: #333;
+  font-weight:700;
+  border-top-left-radius:8px;
+  border-top-right-radius:8px;
+}
+.fl-body{ padding: 10px; }
+.fl-column-wrap{ display:flex; gap:12px }
+.fl-column{ flex:1; position:relative }
+.fl-card-panel{ background:#fff; border-radius:12px; padding:16px; min-height:110px; box-shadow:0 4px 10px rgba(16,24,40,0.03); border:1px solid rgba(34,34,34,0.04); }
+.fl-card-panel--muted{ background:#fbf6f4 }
+.fl-lesson-card{ background:white; border-radius:8px; padding:10px; box-shadow:0 6px 12px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:8px; }
+.fl-lesson-input{ width:100%; box-sizing:border-box; border:0; padding:8px; resize:vertical; border-radius:6px; background:transparent }
+.fl-when-input{ width:100%; margin-top:0; padding:6px; border-radius:6px; border:0; background:#f6f9fc }
+.fl-info-icon{ font-size:14px; margin-left:6px; cursor:help }
+
+.fl-pill{
+  display:flex; align-items:center; justify-content:space-between; margin-top:6px; padding:10px 12px; background:linear-gradient(180deg,#fff7ed,#fffaf0); border:1px solid rgba(249,168,37,0.14); border-radius:8px;
+}
+
+/* make interactive elements consistent */
+.fl-btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; border:0; font-weight:700 }
+.fl-btn-ghost{ background:transparent; border:1px dashed rgba(34,34,34,0.06); color:#4b6b7a }
+
+@media (max-width:720px){
+  .fl-card--wide{ width: 100%; min-width: auto }
+  .fl-column-wrap{ flex-direction:column }
+}

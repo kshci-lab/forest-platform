@@ -41,7 +41,7 @@
     min-height: 450px;
     /* margin-bottom:2vh; */
     /* border-bottom:solid 5px #B3E0D8; */
-    border-top:solid 5px var(--primary-color);
+    /* border-top removed per request */
     background: var(--background-white);
     overflow: hidden;
     float:left;

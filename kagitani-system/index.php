@@ -68,6 +68,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="css/style.css">
         <link rel="stylesheet" type="text/css" href="css/smart-goals.css">
         <link rel="stylesheet" type="text/css" href="css/goal.css">
+        <link rel="stylesheet" type="text/css" href="../css/button.css">
+        <link rel="stylesheet" type="text/css" href="css/feedback-style.css">
         <!-- <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" /> -->
         
         <style>
@@ -212,6 +214,27 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+</script>
+
+<?php
+// 出力: ページ読み込み時にブラウザのコンソールへ、object_nodes の最新 updated_at を持つ object_map_id を表示する
+$latest_map_id = null;
+try {
+        $q = "SELECT node_id FROM object_nodes ORDER BY updated_at DESC LIMIT 1";
+        $r = $mysqli->query($q);
+        if ($r && ($row = $r->fetch_assoc())) {
+                $latest_map_id = isset($row['node_id']) ? $row['node_id'] : null;
+        }
+} catch (Exception $e) {
+        // ignore
+}
+?>
+<script type="text/javascript">
+    (function(){
+        try{
+            console.log('最新 node_id:', <?php echo json_encode($latest_map_id, JSON_UNESCAPED_UNICODE); ?>);
+        }catch(e){/* ignore */}
+    })();
 </script>
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
@@ -477,12 +500,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // 言語テキスト辞書（主要ボタン）
         const langDict = {
             ja: {
-                'processMenuTitle': 'ノード操作',
+                'processMenuTitle': '進捗記録',
                 'processMenuStart': '開始',
                 'processMenuComplete': '完了',
                 'processMenuPause': '中断',
                 'processMenuReason': '理由を記述',
-                'processMenuDeadline': '完了予定を設定',
+                'processMenuDeadline': '優先順位を設定',
                 'processMenuCancel': 'キャンセル',
                 'reasonPurposeTitle': '【理由・目的】',
                 'rationalityTitle': '【合理性】',
@@ -517,7 +540,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 'notStartedLabel': '未着手',
                 'navigatorGreetingHeader': 'こんにちは！',
                 'navigatorGreetingSub': '目標手段階層マップへようこそ',
-                'weeklyGoalTitle': '時間軸で目標を整理',
                 'weeklyGoalTooltip': '次のMTの１週間の目標',
                 'weeklyGoalStartLabel': '開始日',
                 'weeklyGoalEndLabel': '終了日',
@@ -532,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'processMenuComplete': 'Complete',
                 'processMenuPause': 'Pause',
                 'processMenuReason': 'Add Reason',
-                'processMenuDeadline': 'Set Deadline',
+                'processMenuDeadline': 'Set Priority',
                 'processMenuCancel': 'Cancel',
                 'reasonPurposeTitle': '[Reason/Purpose]',
                 'rationalityTitle': '[Rationality]',
@@ -708,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>
-                <span class="title_name">Forest</span>
+                <span class="title_name">Forest-自己調整学習活性化システム</span>
             </div>
             <!-- Hamburger menu icon -->
             <!-- <span id="hamburger_menu" style="display: inline-block; cursor: pointer; margin-right: 10px;">
@@ -1084,9 +1106,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <span class="button-text" id="processStartEditEdgeText">エッジ追加</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_removeNode" title="手段削除">
+                                                    id="process_removeNode" title="ノード削除">
                                                 <span class="button-icon">−</span>
-                                                <span class="button-text" id="processRemoveNodeText">手段削除</span>
+                                                <span class="button-text" id="processRemoveNodeText">ノード削除</span>
                                             </button>
                                             <button type="button" class="thinkingProcess_network_button"
                                                     id="process_ZoomIn" title="拡大">
@@ -1107,9 +1129,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
 
                                         <div id="myProcessnetwork"></div>
-                                    <div id="t_Process_conmenu" class="context-menu" role="menu" aria-label="ノード操作メニュー">
+                                    <div id="t_Process_conmenu" class="context-menu" role="menu" aria-label="進捗記録メニュー">
                                         <div class="context-menu-header">
-                                            <span class="context-menu-title" id="processMenuTitle">ノード操作</span>
+                                            <span class="context-menu-title" id="processMenuTitle">進捗記録</span>
                                         </div>
                                         <ul class="context-menu-list" role="none">
                                             <li class="context-menu-item status-action" role="none">
@@ -1135,13 +1157,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                             </li>
                                             <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
                                             <!-- SMART目標設定メニューを追加 -->
-                                            <li class="context-menu-item annotation-action" role="none">
+                                            <!-- <li class="context-menu-item annotation-action" role="none">
                                                 <a href="javascript:void(0);" id="process_conmenu5" class="context-menu-link" role="menuitem"
                                                    title="このノードの理由を記述します" aria-label="理由を記述">
                                                     <span class="context-menu-icon" aria-hidden="true">📝</span>
                                                     <span class="context-menu-text" id="processMenuReason">理由を記述</span>
                                                 </a>
-                                            </li>
+                                            </li> -->
                                             <!-- <li class="context-menu-item smart-goal-action" role="none">
                                                 <a href="javascript:void(0);" id="process_conmenu_smartgoal" class="context-menu-link" role="menuitem"
                                                    title="SMART目標を設定します" aria-label="SMART目標設定">
@@ -1150,11 +1172,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 </a>
                                             </li> -->
                                             <li class="context-menu-item annotation-action" role="none">
-                                                <a href="javascript:void(0);" id="process_conmenu6" class="context-menu-link" role="menuitem"
+                                                <!-- <a href="javascript:void(0);" id="process_conmenu6" class="context-menu-link" role="menuitem"
                                                    title="このノードの完了予定日時を設定します" aria-label="完了予定設定">
                                                     <span class="context-menu-icon" aria-hidden="true">⏰</span>
                                                     <span class="context-menu-text" id="processMenuDeadline">完了予定を設定</span>
-                                                </a>
+                                                </a> -->
                                             </li>
                                             <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
                                             <li class="context-menu-item cancel-action" role="none">
@@ -1193,11 +1215,22 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </select>
                                         <input type="button" value="選択完了" id="t_p_recruit_select">
                                     </div>
-                                    <div id="t_Process_reasonselect" style="display:none; position:absolute; z-index:1000; background:white; border:3px solid #FFA500; padding:10px; width:360px; box-sizing:border-box; border-radius:6px;">
-                                        <label for="t_Process_reasontext">なぜそれを取り組もうとしたか:</label><br>
-                                        <textarea id="t_Process_reasontext" rows="4" style="width:100%; box-sizing:border-box; font-family:inherit;" placeholder="理由を入力してください..."></textarea><br><br>
-                                        <input type="button" value="決定" id="t_p_reason_select">
-                                        <input type="button" value="キャンセル" id="t_p_reason_cancel">
+                                    <div id="t_Process_reasonselect" style="display:none; position:fixed; z-index:9999; background:#fff; padding:0; width:400px; box-sizing:border-box; border-radius:16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); border: none; overflow: hidden;">
+                                        <!-- ヘッダー部分 -->
+                                        <div style="background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); padding: 16px 20px; display: flex; align-items: center; gap: 10px;">
+                                            <span style="font-size: 20px;">💡</span>
+                                            <span style="color: #fff; font-weight: 700; font-size: 15px;">理由を記述</span>
+                                        </div>
+                                        <!-- コンテンツ部分 -->
+                                        <div style="padding: 20px;">
+                                            <label for="t_Process_reasontext" style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 8px; font-weight: 500;">なぜそれを取り組もうとしたか？</label>
+                                            <textarea id="t_Process_reasontext" rows="4" style="width:100%; box-sizing:border-box; font-family:inherit; font-size: 14px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; resize: vertical; transition: border-color 0.2s ease; outline: none;" placeholder="理由を入力してください..." onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+                                            <!-- ボタン部分 -->
+                                            <div style="display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end;">
+                                                <button type="button" id="t_p_reason_cancel" style="padding: 10px 20px; font-size: 14px; font-weight: 600; border: 2px solid #e5e7eb; border-radius: 8px; background: #fff; color: #6b7280; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#fff'">キャンセル</button>
+                                                <button type="button" id="t_p_reason_select" style="padding: 10px 24px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); color: #fff; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(249,115,22,0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(249,115,22,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(249,115,22,0.3)'">決定</button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div id="t_Process_timeselect" style="display:none; position:absolute; z-index:1000; background:white; border:3px solid #2e8b57; padding:10px; width:300px; box-sizing:border-box; border-radius:6px;">
                                         <label for="t_Process_timetext">完了予定:</label><br>
@@ -1490,11 +1523,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none; width: 100%; overflow: auto; box-sizing: border-box;">
-                            
+                            <!-- 週次目標のボタンとリストを feedback_area の直下に配置 -->
+                            <div id="weekly_goal_controls" style="margin-bottom:12px; display:flex; flex-direction:column; gap:8px;">
+                                <form id="weeklyGoalForm" style="display:flex; gap:8px; align-items:center;">
+                                    <button type="button" id="addWeeklyGoalBtn" style="background:#28a745;color:white;border:none;border-radius:6px;padding:10px 14px;font-size:14px;font-weight:bold;cursor:pointer;"><span id="addWeeklyGoalBtnText">追加</span></button>
+                                </form>
+                                <div id="weeklyGoalsList" style="margin-top:0;"></div>
+                            </div>
+
                             <!-- メモ機能エリア削除済み -->
-                            
-                            
-                            
                             <!-- <div id = "ontology_feedback"></div> -->
                             <!-- <div id = "accordion_discussion"></div>
                             <input id = "feedbackrecord" type="button" value="記録"> -->
@@ -1503,11 +1540,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 <!-- 小目標（大きく・使いやすく） -->
                                 <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
-                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;">📅 <span id="weeklyGoalTitle">SRL Journal</span>
-                                    <form id="weeklyGoalForm" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
-                                        <button type="button" id="addWeeklyGoalBtn" style="background:#28a745;color:white;border:none;border-radius:6px;padding:12px 0;font-size:16px;font-weight:bold;cursor:pointer;"><span id="addWeeklyGoalBtnText">追加</span></button>
-                                    </form>
-                                    <div id="weeklyGoalsList" style="margin-top:8px;"></div>
+                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;"></span>
+                                    <!-- weekly goal controls moved to feedback_area root -->
                                 </div>
                                 <!-- 中・大目標（横並び・控えめ） -->
                                 <!-- <div id="midlong_goal_area" style="display: flex; gap: 18px; justify-content: flex-start;">
@@ -1678,7 +1712,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <!--履歴 yoshioka -->
 
         </div>    
-        
+
 
         <!-- メインメニュー　Finish -->
 

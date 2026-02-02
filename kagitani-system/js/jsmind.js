@@ -117,9 +117,53 @@ function createNodeIcon(nodeElement, status = 'todo') {
         setTimeout(() => {
             iconWrapper.style.transform = 'scale(1.15) translateY(-2px)';
         }, 100);
-        
+
         console.log('手段階層マップあり がクリックされました');
-        
+
+        // ハイライト処理: クリックされたノードに濃い枠線を付ける
+        try {
+            var targetNode = nodeElement;
+            if (!targetNode && iconWrapper.closest) {
+                targetNode = iconWrapper.closest('jmnode');
+            }
+            if (targetNode) {
+                // remove previous highlight (restore only border)
+                if (window.__jm_last_highlighted && window.__jm_last_highlighted !== targetNode) {
+                    try {
+                        window.__jm_last_highlighted.style.border = window.__jm_last_highlighted.__old_border || '';
+                        // restore previous container border if any
+                        if (window.__jm_last_highlighted_container) {
+                            window.__jm_last_highlighted_container.style.border = window.__jm_last_highlighted_container.__old_border || '';
+                            window.__jm_last_highlighted_container = null;
+                        }
+                    } catch (e) {
+                        console.warn('前のハイライト復元でエラー:', e);
+                    }
+                }
+                // store old border for node
+                targetNode.__old_border = targetNode.style.border || '';
+
+                // apply highlight: only an orange border on node
+                targetNode.style.border = '3px solid #d97706'; // 濃いオレンジの枠線
+                window.__jm_last_highlighted = targetNode;
+
+                // also apply same orange border to the process network container
+                try {
+                    var proc = document.getElementById('myProcessnetwork') || document.getElementById('myProcessnetwork2');
+                    if (proc) {
+                        // save old container border if not already saved
+                        if (!proc.__old_border) proc.__old_border = proc.style.border || '';
+                        proc.style.border = '3px solid #d97706';
+                        window.__jm_last_highlighted_container = proc;
+                    }
+                } catch (e) {
+                    console.warn('コンテナのハイライト設定でエラー:', e);
+                }
+            }
+        } catch (hlErr) {
+            console.warn('ハイライト処理でエラー:', hlErr);
+        }
+
         // 目標手段階層マップを開く
         if (typeof showThinkingProcessMap === 'function') {
             showThinkingProcessMap();
@@ -1557,6 +1601,11 @@ function testSpecificNodeInProgress(nodeId) {
 
                     rationality_mode = false;
 
+                    // 現在オレンジでハイライトされているノードはクリアしない
+                    if(window.__jm_last_highlighted && jmnode[i] === window.__jm_last_highlighted){
+                        continue;
+                    }
+
                     jmnode[i].style.border = "0px solid #000";
 
                 }
@@ -1603,12 +1652,15 @@ function testSpecificNodeInProgress(nodeId) {
 
                             if(jmnode[i].getAttribute("nodeid") == thisId){
 
-                                jmnode[i].style.backgroundColor = "#ff69b4";
-                                jmnode[i].style.border = "5px solid #9fd94f";
+                                        // ハイライト中のノードは枠色を上書きしない
+                                        if(!(window.__jm_last_highlighted && jmnode[i] === window.__jm_last_highlighted)){
+                                            jmnode[i].style.backgroundColor = "#ff69b4";
+                                            jmnode[i].style.border = "5px solid #9fd94f";
+                                        }
 
-                                parent_concept_id = jmnode[i].getAttribute("concept_id");
+                                        parent_concept_id = jmnode[i].getAttribute("concept_id");
 
-                            }
+                                    }
 
                         }
 
@@ -3896,8 +3948,11 @@ async function GetNodeId_ContentRelationTable(node1_id)
                     var LogicPairNodeID2  = parse[logic_pair_count].node2_id;
                     //選択したノードにペアとなるノードがあればそのノードの色を変更
                     if(jmnode[node_count].getAttribute("nodeid") == LogicPairNodeID1 || jmnode[node_count].getAttribute("nodeid") == LogicPairNodeID2){
-                        jmnode[node_count].style.backgroundColor = "#ff69b4";
-                        jmnode[node_count].style.border = "5px solid #9fd94f";
+                        // ハイライト中のノードは枠色を上書きしない
+                        if(!(window.__jm_last_highlighted && jmnode[node_count] === window.__jm_last_highlighted)){
+                            jmnode[node_count].style.backgroundColor = "#ff69b4";
+                            jmnode[node_count].style.border = "5px solid #9fd94f";
+                        }
                     }
                 }
 

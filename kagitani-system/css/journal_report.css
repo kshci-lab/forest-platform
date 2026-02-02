@@ -26,28 +26,186 @@
 }
 .jr-title{ margin-bottom: 12px; color: #2b7a78; font-size: 20px; font-weight:700 }
 .jr-period-heading{ margin:0 0 12px 0; font-size:15px; font-weight:600; color:#233043 }
-.jr-info-wrap{ display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px;
-  /* Card-like styling */
-  background: linear-gradient(180deg, #ffffff 0%, #fbffff 100%);
-  border: 1px solid #e6f0ef;
-  border-radius: 12px;
-  padding: 16px 18px;
-  box-shadow: 0 6px 18px rgba(35,48,67,0.06);
+/* Info wrap: card container */
+.jr-info-wrap{
+  display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:12px;
+  background: #ffffff;
+  border: 1px solid rgba(34,34,34,0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 12px rgba(35,48,67,0.05);
 }
-.jr-info-header{ font-size:15px; color:#233043; margin-bottom:8px; font-weight:700 }
-.jr-eval-wrap{ display:flex; gap:12px }
-.jr-success-div, .jr-failure-div{ flex:1 }
-.jr-label{ display:block; font-weight:600; margin-bottom:6px }
-.jr-textarea{ width:100%; box-sizing:border-box; padding:8px; border-radius:8px; border:1px solid #e8f3f1; background:#fbffff; color:#233043 }
-.jr-textarea-small{ rows:2 }
-.jr-additional-container{ margin-top:8px }
-.jr-add-btn{ background:#fff; border:1px dashed #999; padding:6px 10px; border-radius:6px; cursor:pointer }
-.jr-add-reflection-btn{ background:#2b7a78; color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; box-shadow:0 6px 12px rgba(43,122,120,0.08); }
-.jr-add-reflection-btn:hover{ filter:brightness(0.97); }
-.jr-add-btn-wrap{ margin-top:6px }
+.jr-info-header{ font-size:16px; color:#233043; margin-bottom:8px; font-weight:700 }
+
+/* Evaluation wrapper: side-by-side cards */
+.jr-eval-wrap{ display:flex; gap:16px; flex-wrap:wrap }
+
+/* Success (green) card - left border accent */
+.jr-success-div{
+  flex:1; min-width:240px; position:relative;
+  background:#ffffff; border-radius:10px; padding:12px 14px;
+  border:1px solid #c8e6c9; border-left:4px solid #4caf50;
+  box-shadow:0 2px 6px rgba(76,175,80,0.08);
+}
+.jr-success-div .jr-card-header{
+  display:flex; align-items:center; gap:6px;
+  font-size:0.95em; margin-bottom:8px; color:#2e7d32; font-weight:700;
+  padding-bottom:6px; border-bottom:1px solid #e8f5e9;
+}
+.jr-success-div .jr-card-header::before{
+  content:'😊'; font-size:1.1em;
+}
+.jr-success-div .jr-label{
+  font-size:0.95em; margin-bottom:8px; color:#333; font-weight:600;
+}
+
+/* Failure (red/orange) card - left border accent */
+.jr-failure-div{
+  flex:1; min-width:240px; position:relative;
+  background:#ffffff; border-radius:10px; padding:12px 14px;
+  border:1px solid #ffcdd2; border-left:4px solid #ef5350;
+  box-shadow:0 2px 6px rgba(239,83,80,0.08);
+}
+.jr-failure-div .jr-card-header{
+  display:flex; align-items:center; gap:6px;
+  font-size:0.95em; margin-bottom:8px; color:#c62828; font-weight:700;
+  padding-bottom:6px; border-bottom:1px solid #ffebee;
+}
+.jr-failure-div .jr-card-header::before{
+  content:'😔'; font-size:1.1em;
+}
+.jr-failure-div .jr-label{
+  font-size:0.95em; margin-bottom:8px; color:#333; font-weight:600;
+}
+
+/* Attribution (completion-reason) section */
+.jr-completion-div{
+  display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;
+}
+.jr-completion-div > label,
+.jr-completion-div > textarea{ flex:1; min-width:260px; }
+
+/* Attribution good field styling (inside success card color scheme) */
+.jr-completion-div .jr-label:first-of-type,
+.jr-completion-div label[for*="good"]{
+  display:block; font-size:0.85em; color:#166535; margin-bottom:6px; font-weight:700;
+}
+/* Attribution bad field styling */
+.jr-completion-div .jr-label:nth-of-type(2),
+.jr-completion-div label[for*="bad"]{
+  display:block; font-size:0.85em; color:#8a3f2a; margin-bottom:6px; font-weight:700;
+}
+
+.jr-label{ display:block; font-weight:600; margin-bottom:4px; color:#333; font-size:0.9em; }
+
+/* Textarea base */
+.jr-textarea{
+  width:100%; box-sizing:border-box; padding:8px 10px;
+  border-radius:6px; border:1px solid #e0e0e0; background:#fafafa;
+  color:#333; resize:vertical; font-size:0.9em;
+  transition: border-color 0.2s, background 0.2s;
+}
+.jr-textarea::placeholder{ color:#999; font-size:0.85em; }
+.jr-textarea:focus{ outline:none; border-color:#4caf50; background:#fff; }
+.jr-textarea-small{ min-height:40px }
+
+/* Lesson (application) section */
+.jr-lesson-div{
+  background: transparent; padding: 0; border-radius: 0;
+  color:#333; border: none; margin-top: 12px;
+}
+.jr-lesson-div .jr-label{
+  font-weight:600; font-size:0.9em; margin-bottom:6px; color:#333;
+}
+.jr-lesson-div .jr-textarea{
+  background:#fafafa; border-radius:6px; padding:8px 10px; border:1px solid #e0e0e0;
+}
+.jr-lesson-div .wr-lesson-when,
+.jr-lesson-div .jr-textarea-small{
+  background:#fafafa; margin-top:6px; border:1px solid #e0e0e0;
+}
+
+.jr-additional-container{ margin-top:8px; background:#fff; border-radius:6px; padding:8px; border:1px solid #e0e0e0; }
+.jr-add-btn{
+  background:#fff; border:1px dashed #bbb;
+  padding:6px 12px; border-radius:6px; color:#555;
+  cursor:pointer; font-size:0.85em; width:100%;
+  display:flex; align-items:center; justify-content:center; gap:4px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.jr-add-btn:hover{ background:#f5f5f5; border-color:#999; }
+
+/* Attribution label colors (inside each card) */
+.jr-label-attr-good{
+  display:block; font-size:0.85em; color:#2e7d32; margin-top:10px; margin-bottom:4px; font-weight:600;
+}
+.jr-label-attr-bad{
+  display:block; font-size:0.85em; color:#c62828; margin-top:10px; margin-bottom:4px; font-weight:600;
+}
+.jr-add-reflection-btn{ background:#4caf50; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600; box-shadow:0 2px 8px rgba(76,175,80,0.2); }
+.jr-add-reflection-btn:hover{ background:#43a047; }
+.jr-add-btn-wrap{ margin-top:12px; display:flex; justify-content:center; }
+/* Slide-in animation for new cards */
+@keyframes jr-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    max-height: 0;
+  }
+  50% {
+    opacity: 0.7;
+    max-height: 500px;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    max-height: 1000px;
+  }
+}
+@keyframes jr-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.jr-info-wrap.jr-animate-in {
+  animation: jr-slide-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  overflow: hidden;
+}
+.jr-info-wrap.jr-animate-in .jr-success-div,
+.jr-info-wrap.jr-animate-in .jr-failure-div {
+  animation: jr-fade-in 0.3s ease 0.15s both;
+}
+.jr-info-wrap.jr-animate-in .jr-lesson-div {
+  animation: jr-fade-in 0.3s ease 0.25s both;
+}
+
+/* Animation for additional lesson items */
+@keyframes jr-lesson-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+  }
+}
+.jr-lesson-animate-in {
+  animation: jr-lesson-slide-in 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  overflow: hidden;
+}
+
 .jr-additional-item{ margin-top:8px }
-.jr-remove-btn{ margin-top:6px; margin-left:6px }
-.jr-item-wrap{ border:1px solid #e8f3f1; border-radius:8px; padding:12px 14px; margin:12px 0; background:#fff; max-height:360px; overflow-y:auto }
+.jr-remove-btn{ margin-top:6px; margin-left:6px; background:#fff; border:1px solid #ddd; padding:4px 10px; border-radius:6px; cursor:pointer; color:#666; }
+.jr-remove-btn:hover{ background:#fafafa; border-color:#bbb; }
+.jr-item-wrap{ border:1px solid #e0e0e0; border-radius:8px; padding:12px 14px; margin:12px 0; background:#fff; max-height:360px; overflow-y:auto }
 .jr-heading{ margin:0 0 8px 0; font-weight:700; font-size:16px }
 .jr-table{ width:100%; border-collapse:collapse; font-size:14px }
 .jr-ch{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin:6px 0; transition:background 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease; border-radius:6px }
@@ -56,5 +214,198 @@
 .jr-inner-table{ width:100%; border-collapse:collapse }
 .jr-details{ display:none; margin-top:8px; overflow:hidden; max-height:0px; opacity:0; transition:max-height 0.28s ease, opacity 0.18s ease }
 .jr-dl-btn{ margin-top:18px; padding:8px 24px; background:#0056b3; color:#fff; border:none; border-radius:8px; font-size:15px; cursor:pointer; box-shadow:0 6px 14px rgba(2,48,89,0.12) }
-.jr-save-btn{ margin-left:12px; padding:8px 20px; background:#2b7a78; color:#fff; border:none; border-radius:8px; font-size:15px; cursor:pointer; box-shadow:0 6px 14px rgba(43,122,120,0.12) }
+.jr-save-btn{
+  display:block; width:100%; margin-top:10px; padding:8px 16px;
+  background:#4caf50; color:#fff; border:none; border-radius:6px;
+  font-size:0.9em; font-weight:600; cursor:pointer;
+  box-shadow:0 2px 6px rgba(76,175,80,0.2);
+  transition: background 0.2s;
+}
+.jr-save-btn:hover{ background:#43a047; }
 .jr-close-btn{ margin-left:8px; padding:8px 24px; background:#d0d6da; color:#233043; border:none; border-radius:8px; font-size:15px; cursor:pointer }
+
+/* Card header wrapper with delete button */
+.jr-info-header-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.jr-delete-card-btn {
+  background: transparent;
+  border: 1px solid #e57373;
+  color: #e57373;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.jr-delete-card-btn:hover {
+  background: #e57373;
+  color: #fff;
+}
+
+/* Tab navigation for multiple reflections */
+.jr-tab-container {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 16px;
+  padding: 0;
+  overflow-x: auto;
+}
+.jr-tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.jr-tab:hover {
+  color: #333;
+}
+.jr-tab.jr-tab-active {
+  color: #2b7a78;
+  border-bottom-color: #2b7a78;
+}
+.jr-tab-add {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  color: #999;
+  background: transparent;
+  border: none;
+  transition: color 0.2s;
+}
+.jr-tab-add:hover {
+  color: #2b7a78;
+}
+.jr-tab-content {
+  display: none;
+}
+.jr-tab-content.jr-tab-content-active {
+  display: block;
+  animation: jr-fade-in 0.25s ease;
+}
+
+/* Tab with delete button */
+.jr-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.jr-tab-label {
+  flex: 1;
+}
+.jr-tab-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 400;
+  color: #999;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  line-height: 1;
+}
+.jr-tab-delete:hover {
+  background: #fee;
+  border-color: #e57373;
+  color: #c62828;
+}
+
+/* Lesson tabs (nested inside reflection card) */
+.jr-lesson-tab-container {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 12px;
+  padding: 0;
+  overflow-x: auto;
+}
+.jr-lesson-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.jr-lesson-tab:hover {
+  color: #333;
+}
+.jr-lesson-tab.jr-lesson-tab-active {
+  color: #2b7a78;
+  border-bottom-color: #2b7a78;
+}
+.jr-lesson-tab-label {
+  flex: 1;
+}
+.jr-lesson-tab-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 400;
+  color: #999;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  line-height: 1;
+}
+.jr-lesson-tab-delete:hover {
+  background: #fee;
+  border-color: #e57373;
+  color: #c62828;
+}
+.jr-lesson-tab-add {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  color: #999;
+  background: transparent;
+  border: none;
+  transition: color 0.2s;
+}
+.jr-lesson-tab-add:hover {
+  color: #2b7a78;
+}
+.jr-lesson-tab-content {
+  display: none;
+}
+.jr-lesson-tab-content.jr-lesson-tab-content-active {
+  display: block;
+  animation: jr-fade-in 0.2s ease;
+}

@@ -151,44 +151,136 @@
 				]);
 			}
 			exit;
+		}else if($record_thing === 'reason'){
+			// 理由（purpose）の記録: 主ノード(object_nodes.object_node_id)に対して purpose を保存し、履歴にも残す
+			$node_id = $_POST['node_id'];
+			$reason_node_id = isset($_POST['reason_node_id']) ? $_POST['reason_node_id'] : '';
+			$reason_text = isset($_POST['reason_text']) ? $_POST['reason_text'] : '';
+
+			// safety: trim
+			$reason_text = trim($reason_text);
+			if ($reason_text === '') {
+				echo json_encode(["success"=>false, "error"=>"empty reason_text"]);
+				exit;
+			}
+
+			// object_nodes テーブルに purpose カラムがある場合は更新
+			$col_check_purpose = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes' AND COLUMN_NAME = 'purpose'");
+			if ($col_check_purpose && $col_check_purpose->fetch_assoc()) {
+				$update_sql = "UPDATE object_nodes SET purpose = '" . $mysqli->real_escape_string($reason_text) . "', updated_at = '$timestamp' WHERE object_node_id = '" . $mysqli->real_escape_string($node_id) . "'";
+				$mysqli->query($update_sql);
+				if ($mysqli->error) {
+					echo json_encode(["success"=>false, "error"=>"failed update purpose: " . $mysqli->error]);
+					exit;
+				}
+			}
+
+			// 履歴テーブルに挿入する。object_nodes_histories に purpose カラムがあるかを確認して動的に組み立てる
+			$existingCols = [];
+			$cols_res = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes_histories'");
+			if ($cols_res) {
+				while ($crow = $cols_res->fetch_assoc()) {
+					$existingCols[] = $crow['COLUMN_NAME'];
+				}
+			}
+
+			$insertCols = [ 'object_node_history_id', 'object_node_id', 'object_node_type', 'status', 'appeared_at', 'disappeared_at', 'content', 'x', 'y' ];
+			$selectParts = [ "'$object_h_id'", 'object_node_id', 'object_nodes_type', 'status', "'$timestamp'", 'NULL', 'content', 'node_x', 'node_y' ];
+
+			if (in_array('purpose', $existingCols)) {
+				$insertCols[] = 'purpose';
+				$selectParts[] = 'purpose';
+			}
+
+			// activity: 3 = 理由を記述
+			if (!in_array('activity', $insertCols)) $insertCols[] = 'activity';
+			$selectParts[] = '3';
+
+			$h_sql = "INSERT INTO object_nodes_histories (" . implode(', ', $insertCols) . ") SELECT " . implode(', ', $selectParts) . " FROM object_nodes WHERE object_node_id = '" . $mysqli->real_escape_string($node_id) . "'";
+
+			$result = $mysqli->query($h_sql);
+			if ($mysqli->error) {
+				echo json_encode(["success"=>false, "error"=>"history insert error: " . $mysqli->error, "sql"=>$h_sql]);
+			} else {
+				echo json_encode(["success"=>true]);
+			}
+			exit;
 		}else if($record_thing === 'reflection'){
 			//内省の記録
 			$object_reflection_id = uniqid('reflection_', true); // edge_で始まる一意のIDを生成
 			$object_node_id = $_POST["object_node_id"]; 
 			// successPoints -> evaluation_good, failurePoints -> evaluation_bad
-			$evaluation_good = isset($_POST["success_points"]) ? $_POST["success_points"] : (isset($_POST["evaluation_good"]) ? $_POST["evaluation_good"] : '');
-			$evaluation_bad = isset($_POST["failure_points"]) ? $_POST["failure_points"] : (isset($_POST["evaluation_bad"]) ? $_POST["evaluation_bad"] : '');
-			$attribution = $_POST["attribution"];     
-			$application = isset($_POST["application"]) ? $_POST["application"] : '';                //エッジ終了
+			// Use NULL when a field is not supplied so DB NULLs are preserved
+			$evaluation_good = isset($_POST["success_points"]) ? $_POST["success_points"] : (isset($_POST["evaluation_good"]) ? $_POST["evaluation_good"] : NULL);
+			$evaluation_bad = isset($_POST["failure_points"]) ? $_POST["failure_points"] : (isset($_POST["evaluation_bad"]) ? $_POST["evaluation_bad"] : NULL);
+			$attribution_good = isset($_POST['attribution_good']) ? $_POST['attribution_good'] : NULL;
+			$attribution = $attribution_good; // only store 'good' in attribution column
+			$attribution_bad = isset($_POST['attribution_bad']) ? $_POST['attribution_bad'] : NULL;
+			$application = isset($_POST["application"]) ? $_POST["application"] : NULL;                //エッジ終了
+			// クライアントから送られてくる「いつ活かせそうか」フィールドを受け取る（`application_timing` を優先し、互換で `opportunity` も許容）
+			$application_timing = isset($_POST["application_timing"]) ? $_POST["application_timing"] : (isset($_POST['opportunity']) ? $_POST['opportunity'] : '');
+			$opportunity_esc = $mysqli->real_escape_string($application_timing);
 			$timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 			// application は object_nodes に保存しない（教訓は別テーブルへ保存するため）
-			$mysqli->query("UPDATE object_nodes SET evaluation_good = '$evaluation_good', evaluation_bad = '$evaluation_bad', attribution = '$attribution', updated_at = '$timestamp' 
-				WHERE  object_node_id = '$object_node_id' ");
+			// Update object_nodes; include attribution_bad if the column exists in this schema
+			$update_parts = [];
+			if ($evaluation_good !== NULL) $update_parts[] = "evaluation_good = '" . $mysqli->real_escape_string($evaluation_good) . "'";
+			if ($evaluation_bad !== NULL) $update_parts[] = "evaluation_bad = '" . $mysqli->real_escape_string($evaluation_bad) . "'";
+			if ($attribution !== NULL) $update_parts[] = "attribution = '" . $mysqli->real_escape_string($attribution) . "'";
+			// check for attribution_bad column
+			$col_check = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes' AND COLUMN_NAME = 'attribution_bad'");
+			if ($col_check && $col_check->fetch_assoc()) {
+				if ($attribution_bad !== NULL) $update_parts[] = "attribution_bad = '" . $mysqli->real_escape_string($attribution_bad) . "'";
+			}
+			if (count($update_parts) > 0) {
+				$update_sql = "UPDATE object_nodes SET " . implode(', ', $update_parts) . ", updated_at = '$timestamp' WHERE object_node_id = '$object_node_id'";
+				$mysqli->query($update_sql);
+			}
 			// reflection は内省（activity=8）を履歴に残す（ただし application は履歴に含めない）
-			$h_sql = "INSERT INTO object_nodes_histories
-					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y,
-					evaluation_good, evaluation_bad, attribution, activity)
-					SELECT
-					'$object_h_id',
-					object_node_id,
-					object_nodes_type,
-					status,
-					'$timestamp',
-					NULL,
-					content,
-					node_x,
-					node_y,
-					'$evaluation_good',
-					'$evaluation_bad',
-					'$attribution',
-					8
-					FROM object_nodes
-					WHERE object_node_id = '$object_node_id'";
+			// object_nodes_histories のテーブル定義が環境によって異なるため、存在するカラムのみを動的に組み立てて挿入する
+				$eval_good_esc = ($evaluation_good !== NULL) ? $mysqli->real_escape_string($evaluation_good) : NULL;
+				$eval_bad_esc = ($evaluation_bad !== NULL) ? $mysqli->real_escape_string($evaluation_bad) : NULL;
+				$attrib_esc = ($attribution !== NULL) ? $mysqli->real_escape_string($attribution) : NULL;
+				$attrib_bad_esc = ($attribution_bad !== NULL) ? $mysqli->real_escape_string($attribution_bad) : NULL;
+
+			$existingCols = [];
+			$cols_res = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes_histories'");
+			if ($cols_res) {
+				while ($crow = $cols_res->fetch_assoc()) {
+					$existingCols[] = $crow['COLUMN_NAME'];
+				}
+			}
+
+			$insertCols = [ 'object_node_history_id', 'object_node_id', 'object_node_type', 'status', 'appeared_at', 'disappeared_at', 'content', 'x', 'y' ];
+			$selectParts = [ "'$object_h_id'", 'object_node_id', 'object_nodes_type', 'status', "'$timestamp'", 'NULL', 'content', 'node_x', 'node_y' ];
+
+			if (in_array('evaluation_good', $existingCols)) {
+				$insertCols[] = 'evaluation_good';
+				$selectParts[] = ($eval_good_esc !== NULL) ? "'" . $eval_good_esc . "'" : 'NULL';
+			}
+			if (in_array('evaluation_bad', $existingCols)) {
+				$insertCols[] = 'evaluation_bad';
+				$selectParts[] = ($eval_bad_esc !== NULL) ? "'" . $eval_bad_esc . "'" : 'NULL';
+			}
+			if (in_array('attribution', $existingCols)) {
+				$insertCols[] = 'attribution';
+				$selectParts[] = ($attrib_esc !== NULL) ? "'" . $attrib_esc . "'" : 'NULL';
+			}
+			if (in_array('attribution_bad', $existingCols)) {
+				$insertCols[] = 'attribution_bad';
+				$selectParts[] = ($attrib_bad_esc !== NULL) ? "'" . $attrib_bad_esc . "'" : 'NULL';
+			}
+
+			// activity カラムは通常存在すると想定
+			if (!in_array('activity', $insertCols)) $insertCols[] = 'activity';
+			$selectParts[] = '8';
+
+			$h_sql = "INSERT INTO object_nodes_histories (" . implode(', ', $insertCols) . ") SELECT " . implode(', ', $selectParts) . " FROM object_nodes WHERE object_node_id = '" . $mysqli->real_escape_string($object_node_id) . "'";
 
 			// 教訓 (application) がある場合は lessons テーブルに保存する
 			// 仕様: application を空行で分割し、最初の段落は既存レコードを更新（なければ挿入）、
 			//       それ以降の段落はすべて新規レコードとして保存する
-			$app_trim = trim($application);
+			$app_trim = ($application !== NULL) ? trim($application) : '';
 			if ($app_trim !== '') {
 				// split on one or more blank lines (allow spaces)
 				$parts = preg_split('/\r?\n\s*\r?\n/', $application);
@@ -203,14 +295,14 @@
 					$res_check = $mysqli->query($check_sql);
 					if ($res_check && $row_check = $res_check->fetch_assoc()) {
 						$existing_le_id = $row_check['object_le_id'];
-						$update_lesson_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($existing_le_id) . "'";
+						$update_lesson_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text . "', opportunity = '" . $opportunity_esc . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($existing_le_id) . "'";
 						$mysqli->query($update_lesson_sql);
 						if ($mysqli->error) {
 							error_log('Update lesson error: ' . $mysqli->error . ' SQL: ' . $update_lesson_sql);
 						}
 					} else {
 						$lesson_id = uniqid('lesson_', true);
-						$insert_lesson_sql = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id . "','" . $object_node_id . "','" . $lesson_text . "','" . $timestamp . "','" . $timestamp . "',0)";
+						$insert_lesson_sql = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id . "','" . $object_node_id . "','" . $lesson_text . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
 						$mysqli->query($insert_lesson_sql);
 						if ($mysqli->error) {
 							error_log('Insert lesson error: ' . $mysqli->error . ' SQL: ' . $insert_lesson_sql);
@@ -223,7 +315,7 @@
 						if (trim($part) === '') continue;
 						$lesson_text_part = $mysqli->real_escape_string($part);
 						$lesson_id_part = uniqid('lesson_', true);
-						$insert_sql_part = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id_part . "','" . $object_node_id . "','" . $lesson_text_part . "','" . $timestamp . "','" . $timestamp . "',0)";
+						$insert_sql_part = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id_part . "','" . $object_node_id . "','" . $lesson_text_part . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
 						$mysqli->query($insert_sql_part);
 						if ($mysqli->error) {
 							error_log('Insert lesson error (additional part): ' . $mysqli->error . ' SQL: ' . $insert_sql_part);
@@ -331,8 +423,13 @@
 			// successPoints -> evaluation_good, failurePoints -> evaluation_bad
 			$evaluation_good = isset($_POST["success_points"]) ? $_POST["success_points"] : (isset($_POST["evaluation_good"]) ? $_POST["evaluation_good"] : '');
 			$evaluation_bad = isset($_POST["failure_points"]) ? $_POST["failure_points"] : (isset($_POST["evaluation_bad"]) ? $_POST["evaluation_bad"] : '');
-			$attribution = $_POST["attribution"];
+			$attribution_good = isset($_POST['attribution_good']) ? $_POST['attribution_good'] : '';
+			$attribution = $attribution_good; // only store 'good' in attribution column
+			$attribution_bad = isset($_POST['attribution_bad']) ? $_POST['attribution_bad'] : '';
 			$application = isset($_POST["application"]) ? $_POST["application"] : '';
+			// クライアントから送られてくる「いつ活かせそうか」フィールドを受け取る（互換で `opportunity` も許容）
+			$application_timing = isset($_POST["application_timing"]) ? $_POST["application_timing"] : (isset($_POST['opportunity']) ? $_POST['opportunity'] : '');
+			$opportunity_esc = $mysqli->real_escape_string($application_timing);
 			
 			// まず既存の履歴レコードのdisappeared_atを更新
 			$update_history_sql = "UPDATE object_nodes_histories 
@@ -341,37 +438,61 @@
 			$mysqli->query($update_history_sql);
 			
 			// メインテーブルを更新（application は保存しない）
-			$sql = "UPDATE object_nodes SET 
-				evaluation_good = '$evaluation_good', 
-				evaluation_bad = '$evaluation_bad', 
-				attribution = '$attribution', 
-				updated_at = '$timestamp' 
-				WHERE object_node_id = '$object_node_id'";
-			
+			// Update object_nodes and include attribution_bad if column exists
+			$upd_parts = [];
+			$upd_parts[] = "evaluation_good = '" . $mysqli->real_escape_string($evaluation_good) . "'";
+			$upd_parts[] = "evaluation_bad = '" . $mysqli->real_escape_string($evaluation_bad) . "'";
+			$upd_parts[] = "attribution = '" . $mysqli->real_escape_string($attribution) . "'";
+			$col_check2 = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes' AND COLUMN_NAME = 'attribution_bad'");
+			if ($col_check2 && $col_check2->fetch_assoc()) {
+				$upd_parts[] = "attribution_bad = '" . $mysqli->real_escape_string($attribution_bad) . "'";
+			}
+			$sql = "UPDATE object_nodes SET " . implode(', ', $upd_parts) . ", updated_at = '$timestamp' WHERE object_node_id = '$object_node_id'";
 			if ($mysqli->query($sql)) {
 				// 新しい履歴レコードを追加
 				// activity: 8 = 内省を記録した時
 				// 新しい履歴レコードを追加（application は含めない）
-				$h_sql = "INSERT INTO object_nodes_histories 
-					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, evaluation_good, evaluation_bad, attribution, estimated_time, activity)
-					SELECT 
-						'$object_h_id',
-						object_node_id,
-						object_nodes_type,
-						status,
-						'$timestamp',
-						NULL,
-						content,
-						node_x,
-						node_y,
-						purpose,
-						evaluation_good,
-						evaluation_bad,
-						attribution,
-						estimated_time,
-						8
-					FROM object_nodes
-					WHERE object_node_id = '$object_node_id'";
+				// テーブル定義差異に対応するため、挿入カラムを動的に組み立てる
+				$eval_good_esc = $mysqli->real_escape_string($evaluation_good);
+				$eval_bad_esc = $mysqli->real_escape_string($evaluation_bad);
+				$attrib_esc = $mysqli->real_escape_string($attribution);
+
+				$existingCols = [];
+				$cols_res = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes_histories'");
+				if ($cols_res) {
+					while ($crow = $cols_res->fetch_assoc()) {
+						$existingCols[] = $crow['COLUMN_NAME'];
+					}
+				}
+
+				$insertCols = [ 'object_node_history_id', 'object_node_id', 'object_node_type', 'status', 'appeared_at', 'disappeared_at', 'content', 'x', 'y' ];
+				$selectParts = [ "'$object_h_id'", 'object_node_id', 'object_nodes_type', 'status', "'$timestamp'", 'NULL', 'content', 'node_x', 'node_y' ];
+
+				if (in_array('purpose', $existingCols)) {
+					$insertCols[] = 'purpose';
+					$selectParts[] = 'purpose';
+				}
+				if (in_array('evaluation_good', $existingCols)) {
+					$insertCols[] = 'evaluation_good';
+					$selectParts[] = "'" . $eval_good_esc . "'";
+				}
+				if (in_array('evaluation_bad', $existingCols)) {
+					$insertCols[] = 'evaluation_bad';
+					$selectParts[] = "'" . $eval_bad_esc . "'";
+				}
+				if (in_array('attribution', $existingCols)) {
+					$insertCols[] = 'attribution';
+					$selectParts[] = "'" . $attrib_esc . "'";
+				}
+				if (in_array('estimated_time', $existingCols)) {
+					$insertCols[] = 'estimated_time';
+					$selectParts[] = 'estimated_time';
+				}
+
+				if (!in_array('activity', $insertCols)) $insertCols[] = 'activity';
+				$selectParts[] = '8';
+
+				$h_sql = "INSERT INTO object_nodes_histories (" . implode(', ', $insertCols) . ") SELECT " . implode(', ', $selectParts) . " FROM object_nodes WHERE object_node_id = '" . $mysqli->real_escape_string($object_node_id) . "'";
 
 				// POST の application（教訓）があれば lessons テーブルに保存する（複数パート対応）
 				$app_trim2 = trim($application);
@@ -388,14 +509,14 @@
 						$res_check2 = $mysqli->query($check_sql2);
 						if ($res_check2 && $row_check2 = $res_check2->fetch_assoc()) {
 							$existing_le_id2 = $row_check2['object_le_id'];
-							$update_lesson_sql2 = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text2 . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($existing_le_id2) . "'";
+							$update_lesson_sql2 = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text2 . "', opportunity = '" . $opportunity_esc . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($existing_le_id2) . "'";
 							$mysqli->query($update_lesson_sql2);
 							if ($mysqli->error) {
 								error_log('Update lesson error (reflection bottom): ' . $mysqli->error . ' SQL: ' . $update_lesson_sql2);
 							}
 						} else {
 							$lesson_id2 = uniqid('lesson_', true);
-							$insert_lesson_sql2 = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id2 . "','" . $object_node_id . "','" . $lesson_text2 . "','" . $timestamp . "','" . $timestamp . "',0)";
+							$insert_lesson_sql2 = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id2 . "','" . $object_node_id . "','" . $lesson_text2 . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
 							$mysqli->query($insert_lesson_sql2);
 							if ($mysqli->error) {
 								error_log('Insert lesson error (reflection bottom): ' . $mysqli->error . ' SQL: ' . $insert_lesson_sql2);
@@ -408,7 +529,7 @@
 							if (trim($partj) === '') continue;
 							$lesson_text_partj = $mysqli->real_escape_string($partj);
 							$lesson_id_partj = uniqid('lesson_', true);
-							$insert_sql_partj = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id_partj . "','" . $object_node_id . "','" . $lesson_text_partj . "','" . $timestamp . "','" . $timestamp . "',0)";
+							$insert_sql_partj = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id_partj . "','" . $object_node_id . "','" . $lesson_text_partj . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
 							$mysqli->query($insert_sql_partj);
 							if ($mysqli->error) {
 								error_log('Insert lesson error (additional part, reflection bottom): ' . $mysqli->error . ' SQL: ' . $insert_sql_partj);

@@ -81,9 +81,26 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     /*
         * 目標手段階層マップのノードデータの取得    	
     */
-        // Select new column names (evaluation_good/attribution/application) and alias them to the old names for compatibility
-        $result_object_node = $mysqli->query("SELECT object_node_id, content, object_nodes_type, node_x, node_y, status, purpose, evaluation_good AS evaluation_good, attribution AS attribution, '' AS application, estimated_time FROM object_nodes
-            WHERE node_id = '".$selected_node_id."' AND deleted = 0");
+        // Select node columns; include attribution_bad and application when present in schema
+        $availableCols = array();
+        $cr = $mysqli->query("SHOW COLUMNS FROM object_nodes");
+        if ($cr) {
+            while ($r = $cr->fetch_assoc()) { $availableCols[] = $r['Field']; }
+            $cr->free();
+        }
+
+        $selectParts = [
+            'object_node_id', 'content', 'object_nodes_type', 'node_x', 'node_y', 'status', 'purpose',
+            "evaluation_good AS evaluation_good",
+            "attribution AS attribution"
+        ];
+        if (in_array('attribution_bad', $availableCols)) $selectParts[] = 'attribution_bad';
+        if (in_array('application', $availableCols)) $selectParts[] = 'application';
+        else $selectParts[] = "'' AS application";
+        $selectParts[] = 'estimated_time';
+
+        $sqlObjectNode = 'SELECT ' . implode(', ', $selectParts) . " FROM object_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0";
+        $result_object_node = $mysqli->query($sqlObjectNode);
     $object_node = [];
     while ($row = $result_object_node->fetch_assoc()) {
         array_push($object_node, $row);
@@ -386,11 +403,16 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $datetime = $selectedDate . ' 23:59:59';
 
     // 指定された日付とnode_idに存在していたノードの履歴を取得
+    // evaluation_good, attribution, application, estimated_time はテーブルに存在しない可能性があるためNULLを返す
     $sql_histories = "
         SELECT 
             onh.object_node_id, onh.content, onh.object_node_type, onh.x, onh.y, onh.status, 
-            onh.appeared_at, onh.disappeared_at, onh.purpose, onh.evaluation_good AS evaluation_good, 
-            onh.attribution AS attribution, '' AS application, onh.estimated_time
+            onh.appeared_at, onh.disappeared_at, onh.purpose, 
+            NULL AS evaluation_good, 
+            NULL AS attribution, 
+            NULL AS attribution_bad,
+            NULL AS application, 
+            NULL AS estimated_time
         FROM 
             object_nodes_histories onh
         INNER JOIN 
@@ -400,8 +422,9 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             AND (onh.disappeared_at IS NULL OR onh.disappeared_at > '".$mysqli->real_escape_string($datetime)."')";
     
     // selected_node_idが指定されている場合はそのノードに関連するデータのみ取得
+    // ただし、topic-tag（問いノード）は常に取得する
     if ($selected_node_id) {
-        $sql_histories .= " AND o_nodes.node_id = '".$mysqli->real_escape_string($selected_node_id)."'";
+        $sql_histories .= " AND (o_nodes.node_id = '".$mysqli->real_escape_string($selected_node_id)."' OR onh.object_node_type = 'topic-tag')";
     }
     
     $sql_histories .= " AND o_nodes.deleted = 0
@@ -425,57 +448,44 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     // 各ノードの最新履歴だけ取得
     $object_node_h = [];
     $seen_ids = [];
+    $node_object_ids = []; // 取得したノードのobject_node_idを保存
 
     while ($row = $result_histories->fetch_assoc()) {
         $oid = $row['object_node_id'];
         if (!in_array($oid, $seen_ids)) {
             $object_node_h[] = $row;
             $seen_ids[] = $oid;
+            $node_object_ids[] = $oid;
         }
     }
 
-    // 指定された日時に存在していたエッジの履歴を取得
-    $sql_edges = "
-        SELECT 
-            oeh.object_edge_id, oeh.edge_start, oeh.edge_end, oeh.label, oeh.appeared_at, oeh.disappeared_at
-        FROM 
-            object_edges_histories oeh
-        WHERE 
-            oeh.appeared_at <= '".$mysqli->real_escape_string($datetime)."'
-            AND (oeh.disappeared_at IS NULL OR oeh.disappeared_at > '".$mysqli->real_escape_string($datetime)."')";
-    
-    // selected_node_idが指定されている場合は、そのノードに関連するエッジのみ取得
-    if ($selected_node_id) {
-        $sql_edges .= " AND (
-            oeh.edge_start IN (
-                SELECT object_node_id FROM object_nodes 
-                WHERE node_id = '".$mysqli->real_escape_string($selected_node_id)."' AND deleted = 0
-            ) 
-            OR oeh.edge_end IN (
-                SELECT object_node_id FROM object_nodes 
-                WHERE node_id = '".$mysqli->real_escape_string($selected_node_id)."' AND deleted = 0
-            )
-        )";
-    }
-    
-    $sql_edges .= " ORDER BY oeh.object_edge_id, oeh.appeared_at DESC";
-    error_log("SQL edges: $sql_edges");
-
-    $result_edges = $mysqli->query($sql_edges);
-
+    // object_edgesテーブルから、取得したノードに関連するエッジを取得
     $object_edge_h = [];
-    if ($result_edges) {
-        $seen_edge_ids = [];
-        while ($row = $result_edges->fetch_assoc()) {
-            $edge_id = $row['object_edge_id'];
-            // 各エッジの最新履歴のみを取得（重複排除）
-            if (!in_array($edge_id, $seen_edge_ids)) {
+    if (count($node_object_ids) > 0) {
+        $ids_list = "'" . implode("','", array_map(function($id) use ($mysqli) {
+            return $mysqli->real_escape_string($id);
+        }, $node_object_ids)) . "'";
+        
+        $sql_edges = "
+            SELECT 
+                object_edge_id, edge_start, edge_end, label
+            FROM 
+                object_edges
+            WHERE 
+                (edge_start IN ($ids_list) OR edge_end IN ($ids_list))
+                AND deleted = 0
+        ";
+        error_log("SQL edges: $sql_edges");
+
+        $result_edges = $mysqli->query($sql_edges);
+
+        if ($result_edges) {
+            while ($row = $result_edges->fetch_assoc()) {
                 $object_edge_h[] = $row;
-                $seen_edge_ids[] = $edge_id;
             }
+        } else {
+            error_log("エッジ取得エラー: " . $mysqli->error);
         }
-    } else {
-        error_log("エッジ履歴取得エラー: " . $mysqli->error);
     }
 
     echo json_encode([
@@ -487,7 +497,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             'histories_found' => count($object_node_h),
             'edges_found' => count($object_edge_h),
             'sql_histories' => $sql_histories,
-            'sql_edges' => $sql_edges,
+            'sql_edges' => isset($sql_edges) ? $sql_edges : 'no edges query',
             'datetime' => $datetime
         ]
     ]);

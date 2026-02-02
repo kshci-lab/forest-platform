@@ -11,14 +11,8 @@
     tip.style.position = 'fixed';
     tip.style.zIndex = '2147483646';
     tip.style.padding = '10px 14px';
-    // Bright, premium look: white card with soft gold accent
-    tip.style.background = '#ffffff';
+    tip.classList.add('fl-card');
     tip.style.color = '#1f2937';
-    tip.style.border = '1px solid rgba(212, 172, 72, 0.9)';
-    tip.style.borderRadius = '10px';
-    tip.style.boxShadow = '0 10px 30px rgba(16,24,40,0.08), inset 0 1px 0 rgba(255,255,255,0.6)';
-    tip.style.fontSize = '14px';
-    tip.style.fontWeight = '600';
     tip.style.pointerEvents = 'auto';
     tip.style.opacity = '0';
     tip.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
@@ -27,22 +21,29 @@
     tip.style.left = '20px';
     tip.style.top = '60px';
 
-    tip.innerHTML = '<div id="lessonsTooltipHeader" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(0,0,0,0.06);">' +
-      '<div style="width:8px;height:28px;background:#d4ac48;border-radius:4px;margin-right:8px;box-shadow:0 1px 0 rgba(255,255,255,0.3) inset"></div>' +
-      '<div style="font-size:15px;color:#111827;font-weight:700;">目標手段階層マップから生まれた教訓</div>' +
-      '<button id="lessonsTooltipClose" aria-label="閉じる" style="margin-left:auto;padding:4px 8px;font-size:13px;border:1px solid rgba(16,24,40,0.06);border-radius:6px;background:#fff;color:#374151;cursor:pointer;">×</button>' +
-      '</div>' +
+    tip.innerHTML = '<button id="lessonsTooltipClose" aria-label="閉じる" style="position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.15s ease;z-index:10;">×</button>' +
+      '<div id="lessonsTooltipHeader" class="fl-header">SRL整理マップから生まれた教訓</div>' +
       '<div id="lessonsTooltipBody" style="max-height:240px;overflow:auto;line-height:1.45;padding-top:6px"></div>' +
       '<div style="height:1px;margin:10px 0;background:linear-gradient(90deg, rgba(212,172,72,0.12), rgba(0,0,0,0.04));"></div>' +
-      '<div id="lessonsTooltipHeaderSRL" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:4px;">' +
-      '<div style="width:6px;height:22px;background:#b8872f;border-radius:3px;margin-right:8px;"></div>' +
-      '<div style="font-size:14px;color:#111827;font-weight:700;">SRLジャーナルから生まれた教訓</div>' +
-      '</div>' +
+      '<div id="lessonsTooltipHeaderSRL" class="fl-header" style="margin-top:6px; font-weight:700;">SRLジャーナルから生まれた教訓</div>' +
       '<div id="lessonsTooltipBodySRL" style="max-height:320px;overflow:auto;line-height:1.45;padding-top:6px"></div>';
 
     document.body.appendChild(tip);
 
     var closeBtn = tip.querySelector('#lessonsTooltipClose');
+    // ホバー時のスタイル変更
+    closeBtn.addEventListener('mouseenter', function(){ 
+      this.style.background = '#ef4444'; 
+      this.style.color = '#fff'; 
+      this.style.borderColor = '#ef4444';
+      this.style.transform = 'scale(1.1)';
+    });
+    closeBtn.addEventListener('mouseleave', function(){ 
+      this.style.background = '#fff'; 
+      this.style.color = '#6b7280'; 
+      this.style.borderColor = '#e5e7eb';
+      this.style.transform = 'scale(1)';
+    });
     closeBtn.addEventListener('click', function(e){
       e.stopPropagation();
       hideTooltip();
@@ -75,7 +76,14 @@
   function hideTooltip(){
     var tip = document.getElementById('lessonsTooltip');
     if(!tip) return;
+    // fade out and then remove from DOM so it no longer captures pointer/cursor
     tip.style.opacity = '0';
+    tip.style.transform = 'translateY(-6px)';
+    tip.style.pointerEvents = 'none';
+    // remove after transition completes (slightly longer than CSS transition)
+    setTimeout(function(){
+      if(tip && tip.parentNode) tip.parentNode.removeChild(tip);
+    }, 220);
   }
 
   // fetch and render map-derived lessons
@@ -84,69 +92,63 @@
     var body = tip.querySelector('#lessonsTooltipBody');
     body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">読み込み中...</div>';
     fetch('php/get_lessons.php')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) return r.text().then(txt => { throw new Error('Server returned ' + r.status + ' - ' + txt); });
+        return r.json();
+      })
       .then(data => {
-        if (!data.items || data.items.length === 0) {
+        if (!data || !data.items || data.items.length === 0) {
           body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">該当する教訓は見つかりませんでした。</div>';
           return;
         }
         body.innerHTML = '';
         data.items.forEach(item => {
           const card = document.createElement('div');
-          card.style.padding = '8px';
-          card.style.marginBottom = '8px';
-          card.style.borderRadius = '8px';
-          card.style.background = 'linear-gradient(180deg, #ffffff, #fbfbfb)';
-          card.style.boxShadow = '0 1px 0 rgba(16,24,40,0.04)';
+          card.style.cssText = 'background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e5e7eb;transition:transform 0.15s ease, box-shadow 0.15s ease;';
 
+          // ヘッダー部分（ラベル + 日付）
+          const header = document.createElement('div');
+          header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;';
+
+          // ラベル（丸いドット + テキスト）
+          const label = document.createElement('div');
+          label.style.cssText = 'display:flex;align-items:center;gap:6px;';
+          const dot = document.createElement('span');
+          dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:#22c55e;flex-shrink:0;';
+          const labelText = document.createElement('span');
+          labelText.style.cssText = 'font-size:12px;color:#6b7280;font-weight:500;';
+          // 機会（opportunity）をラベルとして表示
+          const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : '次の機会に活用';
+          labelText.textContent = oppLabel;
+          label.appendChild(dot);
+          label.appendChild(labelText);
+
+          // 日付（右上）
           const date = document.createElement('div');
-          date.style.fontSize = '12px';
-          date.style.color = '#6b7280';
+          date.style.cssText = 'font-size:12px;color:#9ca3af;white-space:nowrap;';
           date.textContent = item.updated_at ? item.updated_at : '';
 
-          const cl = document.createElement('div');
-          cl.style.marginTop = '8px';
-          cl.style.fontSize = '15px';
-          cl.style.lineHeight = '1.5';
-          cl.style.color = '#0f172a';
-          cl.style.fontWeight = '700';
-          cl.style.whiteSpace = 'pre-wrap';
-          // server may return `application` or `lesson_learned` (or lesson_learned with hyphenated keys)
+          header.appendChild(label);
+          header.appendChild(date);
+
+          // 本文（教訓テキスト）
+          const content = document.createElement('div');
+          content.style.cssText = 'font-size:16px;line-height:1.6;color:#1f2937;font-weight:600;white-space:pre-wrap;';
           const applicationText = item.application || item.lesson_learned || item['lesson_learned'] || item['lesson'] || '';
-          cl.innerHTML = escapeHtml(applicationText);
+          content.innerHTML = escapeHtml(applicationText);
 
-          // opportunity: render as badge if present (more目立つ表示)
-          let opportunityBadge = null;
-          if (item.opportunity && String(item.opportunity).trim() !== '') {
-            opportunityBadge = document.createElement('div');
-            opportunityBadge.style.display = 'inline-block';
-            opportunityBadge.style.marginTop = '8px';
-            opportunityBadge.style.padding = '6px 8px';
-            opportunityBadge.style.fontSize = '12px';
-            opportunityBadge.style.fontWeight = '600';
-            opportunityBadge.style.color = '#6b3f00';
-            opportunityBadge.style.background = 'linear-gradient(180deg, #fff7ed, #fffbf7)';
-            opportunityBadge.style.border = '1px solid rgba(212,172,72,0.18)';
-            opportunityBadge.style.borderRadius = '999px';
-            opportunityBadge.textContent = item.opportunity;
-          }
+          card.appendChild(header);
+          card.appendChild(content);
 
-          const period = document.createElement('div');
-          period.style.marginTop = '6px';
-          period.style.fontSize = '12px';
-          period.style.color = '#374151';
-          var s = item.start_date ? item.start_date : '';
-          var f = item.finish_date ? item.finish_date : '';
-          if(s || f){
-            period.textContent = (s ? ('開始: ' + s) : '') + (s && f ? ' 〜 ' : '') + (f ? ('終了: ' + f) : '');
-          } else {
-            period.textContent = '';
-          }
+          // make card interactive
+          card.setAttribute('role','button');
+          card.setAttribute('tabindex','0');
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', function(e){ e.stopPropagation(); handleLessonCardActivation(item, 'map'); });
+          card.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLessonCardActivation(item, 'map'); } });
+          card.addEventListener('mouseover', function(){ card.style.transform = 'translateY(-2px)'; card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'; });
+          card.addEventListener('mouseout', function(){ card.style.transform = 'none'; card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; });
 
-          card.appendChild(date);
-          card.appendChild(cl);
-          if (opportunityBadge) card.appendChild(opportunityBadge);
-          card.appendChild(period);
           body.appendChild(card);
         });
       })
@@ -180,62 +182,50 @@
         body.innerHTML = '';
         data.items.forEach(item => {
           const card = document.createElement('div');
-          card.style.padding = '8px';
-          card.style.marginBottom = '8px';
-          card.style.borderRadius = '8px';
-          card.style.background = 'linear-gradient(180deg, #ffffff, #fbfbfb)';
-          card.style.boxShadow = '0 1px 0 rgba(16,24,40,0.04)';
+          card.style.cssText = 'background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e5e7eb;transition:transform 0.15s ease, box-shadow 0.15s ease;';
 
+          // ヘッダー部分（ラベル + 日付）
+          const header = document.createElement('div');
+          header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;';
+
+          // ラベル（丸いドット + テキスト）- SRLはオレンジ色のドット
+          const label = document.createElement('div');
+          label.style.cssText = 'display:flex;align-items:center;gap:6px;';
+          const dot = document.createElement('span');
+          dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:#f97316;flex-shrink:0;';
+          const labelText = document.createElement('span');
+          labelText.style.cssText = 'font-size:12px;color:#6b7280;font-weight:500;';
+          const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : '次の機会に活用';
+          labelText.textContent = oppLabel;
+          label.appendChild(dot);
+          label.appendChild(labelText);
+
+          // 日付（右上）
           const date = document.createElement('div');
-          date.style.fontSize = '12px';
-          date.style.color = '#6b7280';
+          date.style.cssText = 'font-size:12px;color:#9ca3af;white-space:nowrap;';
           date.textContent = item.updated_at ? item.updated_at : '';
 
-          const cl = document.createElement('div');
-          cl.style.marginTop = '8px';
-          cl.style.fontSize = '15px';
-          cl.style.lineHeight = '1.5';
-          cl.style.color = '#0f172a';
-          cl.style.fontWeight = '700';
-          cl.style.whiteSpace = 'pre-wrap';
-          // show lesson text from lesson_learned column
+          header.appendChild(label);
+          header.appendChild(date);
+
+          // 本文（教訓テキスト）
+          const content = document.createElement('div');
+          content.style.cssText = 'font-size:16px;line-height:1.6;color:#1f2937;font-weight:600;white-space:pre-wrap;';
           const lesson = item.lesson_learned || item['lesson_learned'] || item['lesson'] || '';
-          cl.innerHTML = escapeHtml(lesson);
+          content.innerHTML = escapeHtml(lesson);
 
-          // opportunity: render as prominent pill/badge (SRL)
-          let opportunityBadgeSRL = null;
-          const opportunitySRL = item.opportunity || '';
-          if (opportunitySRL && String(opportunitySRL).trim() !== ''){
-            opportunityBadgeSRL = document.createElement('div');
-            opportunityBadgeSRL.style.display = 'inline-block';
-            opportunityBadgeSRL.style.marginTop = '8px';
-            opportunityBadgeSRL.style.padding = '8px 10px';
-            opportunityBadgeSRL.style.fontSize = '13px';
-            opportunityBadgeSRL.style.fontWeight = '700';
-            opportunityBadgeSRL.style.color = '#5c2e00';
-            opportunityBadgeSRL.style.background = 'linear-gradient(180deg, #fff4e6, #fffaf0)';
-            opportunityBadgeSRL.style.border = '1px solid rgba(212,172,72,0.22)';
-            opportunityBadgeSRL.style.borderRadius = '10px';
-            opportunityBadgeSRL.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.6)';
-            opportunityBadgeSRL.textContent = opportunitySRL;
-          }
+          card.appendChild(header);
+          card.appendChild(content);
 
-          const period = document.createElement('div');
-          period.style.marginTop = '6px';
-          period.style.fontSize = '12px';
-          period.style.color = '#374151';
-          var s = item.start_date ? item.start_date : '';
-          var f = item.finish_date ? item.finish_date : '';
-          if(s || f){
-            period.textContent = (s ? ('開始: ' + s) : '') + (s && f ? ' 〜 ' : '') + (f ? ('終了: ' + f) : '');
-          } else {
-            period.textContent = '';
-          }
+          // make SRL card interactive
+          card.setAttribute('role','button');
+          card.setAttribute('tabindex','0');
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', function(e){ e.stopPropagation(); handleLessonCardActivation(item, 'srl'); });
+          card.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLessonCardActivation(item, 'srl'); } });
+          card.addEventListener('mouseover', function(){ card.style.transform = 'translateY(-2px)'; card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'; });
+          card.addEventListener('mouseout', function(){ card.style.transform = 'none'; card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; });
 
-          card.appendChild(date);
-          card.appendChild(cl);
-          if (opportunityBadgeSRL) card.appendChild(opportunityBadgeSRL);
-          card.appendChild(period);
           body.appendChild(card);
         });
       })
@@ -253,6 +243,18 @@
       .replace(/>/g,'&gt;')
       .replace(/"/g,'&quot;')
       .replace(/'/g,'&#39;');
+  }
+
+  // Handle card activation: dispatch a CustomEvent with the item and its source ('map' or 'srl')
+  function handleLessonCardActivation(item, source){
+    try {
+      var ev = new CustomEvent('lessonCardClick', { detail: { item: item, source: source } });
+      window.dispatchEvent(ev);
+    } catch(e) {
+      // fallback: open a simple alert if CustomEvent is not available or listener absent
+      if (console && console.warn) console.warn('lessonCardClick event dispatch failed', e);
+      alert((item.lesson_learned || item.application || item['lesson'] || '').substring(0, 100));
+    }
   }
 
   function makeDraggable(el){

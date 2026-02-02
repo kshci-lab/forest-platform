@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'noWeeklyGoals': 'まだ小目標がありません',
         'unlinked': '未リンク',
         'edit': '編集',
-        'exportReport': '詳細表示',
+        'exportReport': '振り返る',
         'delete': '削除',
         'dash': 'ー',
         'dateEditTitle': '日付編集',
@@ -370,8 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var endStr = (endDate.getMonth()+1) + '月' + endDate.getDate() + '日';
             html += '<div style="background:#eafbe7;border:1.5px solid #28a745;border-radius:7px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:16px;">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-                + '<span class="weekly-goal-date-range" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
-                + '<button title="' + editBtnTitle + '" class="edit-weekly-date-btn" data-idx="' + idx + '" id="editWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#ffc107;color:#333;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="editWeeklyGoalBtnText' + idx + '">' + t('edit') + '</span></button>'
+                + '<span class="weekly-goal-date-range" data-idx="' + idx + '" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
                 + '<button class="export-weekly-btn" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="exportWeeklyGoalBtnText' + idx + '">' + t('exportReport') + '</span></button>'
                 + '</div>'
                 + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
@@ -519,6 +518,109 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             console.error('jmnode click bind error', e);
         }
+        // --- マインドマップ上で開かれているノードに対応するゴールチップをオレンジ枠で強調 ---
+        // テキストから jmnode DOM を探して nodeid を返すユーティリティ
+        function mapTextToMindmapNodeId(targetText) {
+            if (!targetText) return null;
+            try {
+                var jmnodes = document.getElementsByTagName('jmnode');
+                var normTarget = targetText.replace(/\s+/g, ' ').trim().toLowerCase();
+                for (var i = 0; i < jmnodes.length; i++) {
+                    var node = jmnodes[i];
+                    var nodeText = (node.textContent || node.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                    if (!nodeText) continue;
+                    if (nodeText === normTarget || nodeText.indexOf(normTarget) !== -1 || normTarget.indexOf(nodeText) !== -1) {
+                        var nid = node.getAttribute('nodeid') || node.getAttribute('id') || null;
+                        if (nid) return nid;
+                    }
+                }
+            } catch (err) { console.warn('mapTextToMindmapNodeId failed', err); }
+            return null;
+        }
+
+        function updateGoalChipHighlights() {
+            try {
+                // まず DOM 上で選択状態になっている jmnode があればそれを優先して採用する
+                var active = null;
+                try {
+                    var selectedNode = document.querySelector('jmnode.selected') || document.querySelector('[nodeid].selected') || null;
+                    if (selectedNode) {
+                        active = selectedNode.getAttribute('nodeid') || selectedNode.getAttribute('id') || null;
+                    }
+                } catch (domSelErr) { /* ignore */ }
+                // DOMから見つからなければ sessionStorage / window 側の値を参照する
+                if (!active) {
+                    try { active = sessionStorage.getItem('processMap_activeNodeId') || sessionStorage.getItem('processMap_targetNodeId') || null; } catch(e){}
+                    if (!active && typeof window.processMap_targetNodeId !== 'undefined') active = window.processMap_targetNodeId || active;
+                }
+
+                // 全チップをリセット
+                var chips = weeklyListDiv.querySelectorAll('.jmnode');
+                chips.forEach(function(chip){ chip.classList.remove('goal-chip-active'); });
+
+                if (!active) return; // 強調する対象が無ければ終了
+
+                // 各チップのテキストからノードIDを推定して比較 (負荷が高い場合はキャッシュ検討)
+                chips.forEach(function(chip){
+                    try {
+                        var span = chip.querySelector('span');
+                        var txt = span ? span.textContent.trim() : '';
+                        var nid = mapTextToMindmapNodeId(txt);
+                        if (nid && nid === active) {
+                            chip.classList.add('goal-chip-active');
+                        }
+                    } catch(e){ /* ignore per-chip */ }
+                });
+            } catch (e) { console.warn('updateGoalChipHighlights failed', e); }
+        }
+        // 公開して外部からも呼べるようにする
+        try { window.updateGoalChipHighlights = updateGoalChipHighlights; } catch(e){}
+
+        // 同一タブ内でプロセスマップを開いた/選択した際に確実に反映するためのラッパー／クリック監視を追加
+        try {
+            // showThinkingProcessMap があればラップして呼び出し後に更新
+            if (typeof window.showThinkingProcessMap === 'function') {
+                var _orig_showThinkingProcessMap = window.showThinkingProcessMap;
+                window.showThinkingProcessMap = function() {
+                    try { return _orig_showThinkingProcessMap.apply(this, arguments); }
+                    finally { try { updateGoalChipHighlights(); } catch(e){} }
+                };
+            }
+        } catch(e){ console.warn('wrap showThinkingProcessMap failed', e); }
+
+        // node-icon-container のクリックでマップを開く場合に備え、クリック後に更新を試みる
+        try {
+            document.addEventListener('click', function(ev){
+                var ic = ev.target.closest && ev.target.closest('.node-icon-container');
+                if (!ic) return;
+                // 少しだけ待って sessionStorage/window 変数が設定されるのを待つ
+                setTimeout(function(){ try { updateGoalChipHighlights(); } catch(e){} }, 120);
+            }, true);
+        } catch(e){ /* ignore */ }
+
+        // レンダリング直後に一度実行
+        try { updateGoalChipHighlights(); } catch(e){}
+        // 他のウィンドウやプロセスマップ側から storage を使って開閉情報を流す場合に反応
+        window.addEventListener('storage', function(e){
+            if (!e) return; updateGoalChipHighlights();
+        });
+        // ポーリング: 同一タブ内で processMap 側が sessionStorage/window 変数を更新したときに確実に反映させる
+        try {
+            var _lastProcessMapTarget = null;
+            function _pollProcessMapActive() {
+                var v = null;
+                try { v = sessionStorage.getItem('processMap_activeNodeId') || sessionStorage.getItem('processMap_targetNodeId') || null; } catch(e){}
+                if (!v && typeof window.processMap_targetNodeId !== 'undefined') v = window.processMap_targetNodeId || v;
+                if (v !== _lastProcessMapTarget) {
+                    _lastProcessMapTarget = v;
+                    try { updateGoalChipHighlights(); } catch(e){}
+                }
+            }
+            // 400ms 間隔で軽量に監視（必要に応じて調整）
+            var _processMapPollInterval = setInterval(_pollProcessMapActive, 400);
+            // unload 時にクリア
+            window.addEventListener('beforeunload', function(){ try { clearInterval(_processMapPollInterval); } catch(e){} });
+        } catch(e) { console.warn('processMap poll setup failed', e); }
         // 表示済みのボタンラベルを現在の言語に合わせて更新（setLanguageが先に実行されている/されていない場合に備える）
         try {
             var currentLang = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked) ? 'en' : 'ja';
@@ -560,165 +662,168 @@ document.addEventListener('DOMContentLoaded', function() {
             // ignore.localization errors
             console.error('update weekly button texts error', e);
         }
-        // 編集ボタンのイベントリスナー追加（innerHTML後に）
-        var editBtns = weeklyListDiv.querySelectorAll('.edit-weekly-date-btn');
-        editBtns.forEach(function(btn) {
-            // ensure aria and title are present
-            try { if (!btn.getAttribute('title')) btn.setAttribute('title', (getCurrentLang() === 'ja') ? '日付を編集できます' : 'You can edit dates'); } catch(e){}
-            try { if (!btn.getAttribute('aria-label')) btn.setAttribute('aria-label', (getCurrentLang() === 'ja') ? '日付を編集できます' : 'You can edit dates'); } catch(e){}
-
-            // custom tooltip to ensure visibility on all platforms
-            var showCustomTooltip = function(text, target) {
-                var existing = document.getElementById('gl_custom_tooltip');
-                if (existing) existing.parentNode.removeChild(existing);
-                var tip = document.createElement('div');
-                tip.id = 'gl_custom_tooltip';
-                tip.textContent = text;
-                tip.style.position = 'absolute';
-                tip.style.background = 'rgba(0,0,0,0.8)';
-                tip.style.color = '#fff';
-                tip.style.padding = '6px 8px';
-                tip.style.borderRadius = '6px';
-                tip.style.fontSize = '13px';
-                tip.style.zIndex = 20000;
-                tip.style.pointerEvents = 'none';
-                document.body.appendChild(tip);
-                var rect = target.getBoundingClientRect();
-                var top = rect.top - tip.offsetHeight - 8 + window.scrollY;
-                if (top < 6) top = rect.bottom + 8 + window.scrollY;
-                var left = rect.left + (rect.width - tip.offsetWidth) / 2 + window.scrollX;
-                if (left < 6) left = 6 + window.scrollX;
-                tip.style.top = top + 'px';
-                tip.style.left = left + 'px';
-            };
-            var hideCustomTooltip = function() {
-                var existing = document.getElementById('gl_custom_tooltip');
-                if (existing) existing.parentNode.removeChild(existing);
-            };
-
-            btn.addEventListener('mouseenter', function(e){
-                var text = (getCurrentLang() === 'ja') ? '日付を編集できます' : 'You can edit dates';
-                showCustomTooltip(text, btn);
-            });
-            btn.addEventListener('mouseleave', function(e){ hideCustomTooltip(); });
-            btn.addEventListener('focus', function(e){ var text = (getCurrentLang() === 'ja') ? '日付を編集できます' : 'You can edit dates'; showCustomTooltip(text, btn); });
-            btn.addEventListener('blur', function(e){ hideCustomTooltip(); });
-
-            btn.addEventListener('click', function(e) {
-                var idx = parseInt(btn.getAttribute('data-idx'), 10);
-                var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
-                var goal = goals[idx];
-                if (!goal) return;
-                // モーダル生成
-                var modal = document.createElement('div');
-                modal.style.position = 'fixed';
-                modal.style.top = '0';
-                modal.style.left = '0';
-                modal.style.width = '100vw';
-                modal.style.height = '100vh';
-                modal.style.background = 'rgba(0,0,0,0.4)';
-                modal.style.display = 'flex';
-                modal.style.alignItems = 'center';
-                modal.style.justifyContent = 'center';
-                modal.style.zIndex = '9999';
-                var modalContent = document.createElement('div');
-                modalContent.style.background = '#fff';
-                modalContent.style.padding = '32px 24px';
-                modalContent.style.borderRadius = '12px';
-                modalContent.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)';
-                modalContent.style.minWidth = '320px';
-                modalContent.style.maxWidth = '90vw';
-                modalContent.style.maxHeight = '80vh';
-                modalContent.style.overflowY = 'auto';
-                var title = document.createElement('h3');
-                title.textContent = t('dateEditTitle');
-                title.style.marginBottom = '16px';
-                modalContent.appendChild(title);
-                var startLabel = document.createElement('label');
-                startLabel.textContent = t('startLabel');
-                startLabel.className = 'weekly-modal-label';
-                startLabel.style.marginRight = '8px';
-                var startInput = document.createElement('input');
-                startInput.type = 'date';
-                startInput.value = (goal.start || goal.start_date) ? (goal.start || goal.start_date) : '';
-                startInput.style.marginBottom = '12px';
-                var endLabel = document.createElement('label');
-                endLabel.textContent = t('endLabel');
-                endLabel.className = 'weekly-modal-label';
-                endLabel.style.marginRight = '8px';
-                var endInput = document.createElement('input');
-                endInput.type = 'date';
-                endInput.value = (goal.end || goal.finish_date) ? (goal.end || goal.finish_date) : '';
-                endInput.style.marginBottom = '12px';
-                modalContent.appendChild(startLabel);
-                modalContent.appendChild(startInput);
-                modalContent.appendChild(document.createElement('br'));
-                modalContent.appendChild(endLabel);
-                modalContent.appendChild(endInput);
-                modalContent.appendChild(document.createElement('br'));
-                var saveBtn = document.createElement('button');
-                saveBtn.textContent = t('save');
-                saveBtn.style.marginTop = '18px';
-                saveBtn.style.padding = '8px 24px';
-                saveBtn.style.background = '#28a745';
-                saveBtn.style.color = '#fff';
-                saveBtn.style.border = 'none';
-                saveBtn.style.borderRadius = '6px';
-                saveBtn.style.fontSize = '15px';
-                saveBtn.style.cursor = 'pointer';
-                saveBtn.onclick = function() {
-                    var newStart = startInput.value;
-                    var newEnd = endInput.value;
-                    if (!newStart || !newEnd) {
-                        alert('開始日と終了日を入力してください');
-                        return;
-                    }
-                    var object_journal_id = goals[idx].object_journal_id;
-                    // DB更新
-                    $.ajax({
-                        url: 'php/update_object_goal.php',
-                        type: 'POST',
-                        data: {
-                            object_journal_id: object_journal_id,
-                            start_date: newStart,
-                            finish_date: newEnd
-                        },
-                        dataType: 'json',
-                        success: function(res) {
-                            if (res.success) {
-                                goals[idx].start = newStart;
-                                goals[idx].end = newEnd;
-                                localStorage.setItem('weeklyGoals', JSON.stringify(goals));
-                                document.body.removeChild(modal);
-                                renderWeeklyGoals();
-                            } else {
-                                alert('DB更新失敗: ' + (res.error || '不明なエラー'));
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            alert('通信エラー: ' + error);
+        // 日付編集モーダルを開くヘルパ（編集ボタンを廃止し、ダブルクリック/キーボードで利用）
+        function openWeeklyDateEditor(idx) {
+            var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+            var goal = goals[idx];
+            if (!goal) return;
+            var modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100vw';
+            modal.style.height = '100vh';
+            modal.style.background = 'rgba(0,0,0,0.4)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '9999';
+            var modalContent = document.createElement('div');
+            modalContent.style.background = '#fff';
+            modalContent.style.padding = '32px 24px';
+            modalContent.style.borderRadius = '12px';
+            modalContent.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)';
+            modalContent.style.minWidth = '320px';
+            modalContent.style.maxWidth = '90vw';
+            modalContent.style.maxHeight = '80vh';
+            modalContent.style.overflowY = 'auto';
+            var title = document.createElement('h3');
+            title.textContent = t('dateEditTitle');
+            title.style.marginBottom = '16px';
+            modalContent.appendChild(title);
+            var startLabel = document.createElement('label');
+            startLabel.textContent = t('startLabel');
+            startLabel.className = 'weekly-modal-label';
+            startLabel.style.marginRight = '8px';
+            var startInput = document.createElement('input');
+            startInput.type = 'date';
+            startInput.value = (goal.start || goal.start_date) ? (goal.start || goal.start_date) : '';
+            startInput.style.marginBottom = '12px';
+            var endLabel = document.createElement('label');
+            endLabel.textContent = t('endLabel');
+            endLabel.className = 'weekly-modal-label';
+            endLabel.style.marginRight = '8px';
+            var endInput = document.createElement('input');
+            endInput.type = 'date';
+            endInput.value = (goal.end || goal.finish_date) ? (goal.end || goal.finish_date) : '';
+            endInput.style.marginBottom = '12px';
+            modalContent.appendChild(startLabel);
+            modalContent.appendChild(startInput);
+            modalContent.appendChild(document.createElement('br'));
+            modalContent.appendChild(endLabel);
+            modalContent.appendChild(endInput);
+            modalContent.appendChild(document.createElement('br'));
+            var saveBtn = document.createElement('button');
+            saveBtn.textContent = t('save');
+            saveBtn.style.marginTop = '18px';
+            saveBtn.style.padding = '8px 24px';
+            saveBtn.style.background = '#28a745';
+            saveBtn.style.color = '#fff';
+            saveBtn.style.border = 'none';
+            saveBtn.style.borderRadius = '6px';
+            saveBtn.style.fontSize = '15px';
+            saveBtn.style.cursor = 'pointer';
+            saveBtn.onclick = function() {
+                var newStart = startInput.value;
+                var newEnd = endInput.value;
+                if (!newStart || !newEnd) {
+                    alert('開始日と終了日を入力してください');
+                    return;
+                }
+                var object_journal_id = goals[idx].object_journal_id;
+                // DB更新
+                $.ajax({
+                    url: 'php/update_object_goal.php',
+                    type: 'POST',
+                    data: {
+                        object_journal_id: object_journal_id,
+                        start_date: newStart,
+                        finish_date: newEnd
+                    },
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.success) {
+                            goals[idx].start = newStart;
+                            goals[idx].end = newEnd;
+                            localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+                            document.body.removeChild(modal);
+                            renderWeeklyGoals();
+                        } else {
+                            alert('DB更新失敗: ' + (res.error || '不明なエラー'));
                         }
-                    });
-                };
-                modalContent.appendChild(saveBtn);
-                var closeBtn = document.createElement('button');
-                closeBtn.textContent = '閉じる';
-                closeBtn.style.marginLeft = '16px';
-                closeBtn.style.padding = '8px 24px';
-                closeBtn.style.background = '#aaa';
-                closeBtn.style.color = '#fff';
-                closeBtn.style.border = 'none';
-                closeBtn.style.borderRadius = '6px';
-                closeBtn.style.fontSize = '15px';
-                closeBtn.style.cursor = 'pointer';
-                closeBtn.onclick = function() {
-                    document.body.removeChild(modal);
-                };
-                modalContent.appendChild(closeBtn);
-                modal.appendChild(modalContent);
-                document.body.appendChild(modal);
+                    },
+                    error: function(xhr, status, error) {
+                        alert('通信エラー: ' + error);
+                    }
+                });
+            };
+            modalContent.appendChild(saveBtn);
+            var closeBtn = document.createElement('button');
+            closeBtn.textContent = '閉じる';
+            closeBtn.style.marginLeft = '16px';
+            closeBtn.style.padding = '8px 24px';
+            closeBtn.style.background = '#aaa';
+            closeBtn.style.color = '#fff';
+            closeBtn.style.border = 'none';
+            closeBtn.style.borderRadius = '6px';
+            closeBtn.style.fontSize = '15px';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.onclick = function() {
+                document.body.removeChild(modal);
+            };
+            modalContent.appendChild(closeBtn);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+        // 追加: 日付レンジをダブルクリック／Enterで編集可能にする
+        try {
+            var dateRanges = weeklyListDiv.querySelectorAll('.weekly-goal-date-range');
+            dateRanges.forEach(function(span) {
+                try {
+                    // キーボード操作を可能にする
+                    span.setAttribute('tabindex', '0');
+                    span.style.cursor = 'pointer';
+                    span.setAttribute('title', (getCurrentLang() === 'ja') ? '日付を編集できます（ダブルクリック/Enter）' : 'Edit dates (double-click / Enter)');
+
+                    var openEditForSpan = function() {
+                        var idx = parseInt(span.getAttribute('data-idx'), 10);
+                        if (!isNaN(idx)) openWeeklyDateEditor(idx);
+                    };
+
+                    span.addEventListener('dblclick', function(e){ openEditForSpan(); });
+                    span.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditForSpan(); } });
+                } catch (innerErr) { console.warn('bind dblclick to date-range failed', innerErr); }
             });
-        });
+        } catch (e) { console.warn('setup date-range dblclick handlers failed', e); }
+        // 追加: 日付レンジをダブルクリック／Enterで編集可能にする（editボタンの役割を補う）
+        try {
+            var dateRanges = weeklyListDiv.querySelectorAll('.weekly-goal-date-range');
+            dateRanges.forEach(function(span) {
+                try {
+                    // キーボード操作を可能にする
+                    span.setAttribute('tabindex', '0');
+                    span.style.cursor = 'pointer';
+                    span.setAttribute('title', (getCurrentLang() === 'ja') ? '日付を編集できます（ダブルクリック/Enter）' : 'Edit dates (double-click / Enter)');
+
+                    var openEditForSpan = function() {
+                        // 最近接の編集ボタンを探してクリックイベントを発火
+                        var container = span.closest && span.closest('div');
+                        var btn = null;
+                        if (container) btn = container.querySelector && container.querySelector('.edit-weekly-date-btn');
+                        if (!btn) {
+                            // フォールバック: 同じ親階層をたどって探す
+                            btn = span.parentNode && span.parentNode.querySelector && span.parentNode.querySelector('.edit-weekly-date-btn');
+                        }
+                        if (btn) {
+                            try { btn.click(); } catch(e){ btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
+                        }
+                    };
+
+                    span.addEventListener('dblclick', function(e){ openEditForSpan(); });
+                    span.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditForSpan(); } });
+                } catch (innerErr) { console.warn('bind dblclick to date-range failed', innerErr); }
+            });
+        } catch (e) { console.warn('setup date-range dblclick handlers failed', e); }
         // レポート出力は外部モジュールに委譲（journal_report.js）
         var exportBtns = weeklyListDiv.querySelectorAll('.export-weekly-btn');
         // ハンドラは `journal_report.js` の `window.initWeeklyReportHandlers` が設定します

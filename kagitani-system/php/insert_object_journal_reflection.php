@@ -66,6 +66,17 @@ if (in_array('map_id', $fields) && $map_id !== null) { $insertCols[] = '`map_id`
 if (in_array('evaluation_good', $fields) && isset($_POST['evaluation_good'])) { $insertCols[] = '`evaluation_good`'; $placeholders[] = ':evaluation_good'; $bindings[':evaluation_good'] = trim($_POST['evaluation_good']); }
 if (in_array('evaluation_bad', $fields) && isset($_POST['evaluation_bad'])) { $insertCols[] = '`evaluation_bad`'; $placeholders[] = ':evaluation_bad'; $bindings[':evaluation_bad'] = trim($_POST['evaluation_bad']); }
 if (in_array('attribution', $fields) && isset($_POST['attribution'])) { $insertCols[] = '`attribution`'; $placeholders[] = ':attribution'; $bindings[':attribution'] = trim($_POST['attribution']); }
+// support separate attribution columns when they exist
+if (in_array('attribution_good', $fields) && isset($_POST['attribution_good'])) { $insertCols[] = '`attribution_good`'; $placeholders[] = ':attribution_good'; $bindings[':attribution_good'] = trim($_POST['attribution_good']); }
+if (in_array('attribution_bad', $fields) && isset($_POST['attribution_bad'])) { $insertCols[] = '`attribution_bad`'; $placeholders[] = ':attribution_bad'; $bindings[':attribution_bad'] = trim($_POST['attribution_bad']); }
+
+// If the legacy `attribution` column exists but the client only provided
+// `attribution_good`, also populate the legacy column so older consumers see the value.
+if (in_array('attribution', $fields) && !isset($bindings[':attribution']) && isset($bindings[':attribution_good'])) {
+    $insertCols[] = '`attribution`';
+    $placeholders[] = ':attribution';
+    $bindings[':attribution'] = $bindings[':attribution_good'];
+}
 
 // reflection_text optional
 if (in_array('reflection_text', $fields)) { $insertCols[] = '`reflection_text`'; $placeholders[] = ':reflection_text'; $bindings[':reflection_text'] = (isset($_POST['reflection_text']) ? trim($_POST['reflection_text']) : ''); }
