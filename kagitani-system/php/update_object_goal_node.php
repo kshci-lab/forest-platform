@@ -9,10 +9,7 @@ if (!$object_journal_id || !$node_id) {
     exit;
 }
 
-$db_host = "localhost";
-$db_user = "root";
-$db_password = "root";
-$db_dbname = "forest_platform";
+
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

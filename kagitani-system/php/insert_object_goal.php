@@ -6,10 +6,7 @@ if (function_exists('date_default_timezone_set')) {
 }
 // require("connect_db.php");
 // PDO接続（connect_db.phpはmysqliのみ）
-$db_host = "localhost";
-$db_user = "root";
-$db_password = "root";
-$db_dbname = "forest_platform";
+
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

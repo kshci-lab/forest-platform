@@ -3,10 +3,6 @@
 header('Content-Type: application/json; charset=UTF-8');
 date_default_timezone_set('Asia/Tokyo');
 
-$db_host = "localhost";
-$db_user = "root";
-$db_password = "root";
-$db_dbname = "forest_platform";
 
 try {
 	if (session_status() !== PHP_SESSION_ACTIVE) session_start();

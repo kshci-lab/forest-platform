@@ -2,10 +2,6 @@
 // 教訓一覧: deleted=0 かつ application があるレコードを返す
 header('Content-Type: application/json; charset=UTF-8');
 
-$db_host = "localhost";
-$db_user = "root";
-$db_password = "root";
-$db_dbname = "forest_platform";
 
 try {
     // セッションから map_id を取得（GET パラメータでも受け取れるように）

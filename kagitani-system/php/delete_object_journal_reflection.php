@@ -3,10 +3,7 @@ header('Content-Type: application/json; charset=UTF-8');
 session_start();
 
 // PDO 接続
-$db_host = "localhost";
-$db_user = "root";
-$db_password = "root";
-$db_dbname = "forest_platform";
+
 
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
