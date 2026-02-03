@@ -466,12 +466,12 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
      * 議論内省マップの表示・操作部分（Extend vis.js）
      */
     generateMeetingReflectionNetworkCanvas (canvas_dom_id, nodes, edges) {
-        // マップを表示（コンテナが存在しない場合や共有知モードでは生成しない）
+        // マップを表示（コンテナが存在しない場合や組織知モードでは生成しない）
         const el = document.getElementById(canvas_dom_id);
-        // 共有知モードでは vis を生成しない
+        // 組織知モードでは vis を生成しない
         const isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
         if (!el || isShared) {
-            // コンテナが無い、または共有知モード中は初期化を抑止
+            // コンテナが無い、または組織知モード中は初期化を抑止
             return null;
         }
         // el が存在しないケースで後続が実行されないよう安全対策
@@ -834,7 +834,7 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
 
     // マインドマップのノードがクリックされたときの処理
     connect_mindmap (e) {
-        // 共有知モードやマインドマップ非表示時は安全に中断
+        // 組織知モードやマインドマップ非表示時は安全に中断
         if (!document.getElementById('jsmind_container')) {
             alert('現在、マインドマップは有効化されていません');
             this.nodeConnectEnabled = false;
@@ -2890,7 +2890,7 @@ const recordMeetingUtteranceNodes = function(utterances) {
 window.addEventListener('load', function() {
     try{ console.log('[label] init start'); }catch(e){}
     const networkContainerEl = document.getElementById("network_container");
-    // 共有知モード（SharedModeActive=true）では非表示にしない
+    // 組織知モード（SharedModeActive=true）では非表示にしない
     try{
         var isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
         if (networkContainerEl && !isShared) {
@@ -2911,7 +2911,7 @@ window.addEventListener('load', function() {
         console.log('[label] found file inputs count=', $inputs.length);
     }catch(e){}
     $("#discussion_log_xml_file_upload_button").on("click", function() {
-        // 共有知モードでは vis の再初期化は行わず、アップロード処理のみ実行
+        // 組織知モードでは vis の再初期化は行わず、アップロード処理のみ実行
         if (!(typeof window !== 'undefined' && window.SharedModeActive === true)) {
             const target = document.getElementById("mynetwork");
             if (target) {
@@ -3090,7 +3090,7 @@ $(document).on('click', '.tabnav a', function () {
   }
 });
 
-// 共有知タブ群の「表出化」「内面化」押下でも常に隠す（フォールバック強化）
+// 組織知タブ群の「表出化」「内面化」押下でも常に隠す（フォールバック強化）
 $(document).on('click', '#tab-externalization, #tab-internalization', function(){
     hideSharedCombinationOverlay();
     // 念のため直接 display をオフ（他コードの介入対策）

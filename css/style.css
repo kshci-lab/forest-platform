@@ -2476,7 +2476,7 @@ select[name="user_list"] {
     background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
 }
 
-/* ====== タブメニュー（共有知タブ用／UL-LI版） ====== */
+/* ====== タブメニュー（組織知タブ用／UL-LI版） ====== */
 .button-container ul {
 	margin: 0;
 	padding: 0;

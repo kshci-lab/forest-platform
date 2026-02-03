@@ -3,7 +3,7 @@
 */
 
 async function loadNodesData() {
-	// jsMind が未初期化なら何もしない（共有知モード等）
+	// jsMind が未初期化なら何もしない（組織知モード等）
 	if(!window._jm || typeof window._jm.add_node !== 'function'){
 		try{
 			var isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);

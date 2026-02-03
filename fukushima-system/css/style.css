@@ -1788,7 +1788,7 @@ body.left-hidden #network_container.threecol{
 	width: 100% !important;
 }
 
-/* 共有知モード時は思考整理マップ領域を非表示にして中エリアを全幅に */
+/* 組織知モード時は思考整理マップ領域を非表示にして中エリアを全幅に */
 body.shared-mode #jsmind_container{
 	display: none !important;
 }

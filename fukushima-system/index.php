@@ -93,7 +93,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
     </head>
     <body id="all">
         <?php
-        // 共有知モードで起動指定（セッション or クエリ）がある場合、初期ロードで共有知モードに切り替えるスクリプトを埋め込む
+        // 組織知モードで起動指定（セッション or クエリ）がある場合、初期ロードで組織知モードに切り替えるスクリプトを埋め込む
         $forceShared = !empty($_SESSION['SharedMode']) || (isset($_GET['mode']) && $_GET['mode'] === 'shared');
         if ($forceShared) {
             // 一度使ったら破棄
@@ -142,12 +142,12 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
         <!--      タブメニュー Start        -->
         <ul div class="tabnav">
-          <li class="active"><a href="#tab01">共有知モード</a></li>
+          <li class="active"><a href="#tab01">組織知モード</a></li>
           <!-- <li><a href="#tab02">過去のマインドマップ</a></li>
               <li class="active"><a href="#tab03" >リフレクション</a></li>
               <li class="active"><a href="#record_tab" >履歴</a></li> -->
           <!-- <li class="active"><a href="#tab04">過去のマインドマップ</a></li>   -->
-         <!-- <li class="active"><a href="#tab05">共有知モード</a></li> -->
+         <!-- <li class="active"><a href="#tab05">組織知モード</a></li> -->
           
     
             <div class="checkbox_mode">
@@ -162,7 +162,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <option>資料構成作成モード</option>
                         <option>資料作成モード</option>
                         <option>議論内省マップモード</option>
-                        <option selected>共有知モード</option>
+                        <option selected>組織知モード</option>
                     </select>
                     <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
                     <!-- shared tabs removed from here and moved to center of the workspace -->
@@ -185,7 +185,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                 <div id="layout">
                     <div id ="system">
                         <div id="area">
-            <!-- 共有知モード -->
+            <!-- 組織知モード -->
             <div id="tab05" style="display:none;">
                 <div id="layout">
                     <div id="reflection_container">
@@ -876,7 +876,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     </div>
                                 </div>
                             </div>
-                            <!-- Placeholder containers for shared/共有知モード (hidden by default) -->
+                            <!-- Placeholder containers for shared/組織知モード (hidden by default) -->
                             <div id="jsmind_container_shared" style="display:none;" oncontextmenu="return false;"></div>
                             <div id="network_container_shared" style="display:none;" oncontextmenu="return false;"></div>
                             <!--  ここから大槻修正　-->

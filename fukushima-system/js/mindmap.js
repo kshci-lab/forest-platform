@@ -1487,7 +1487,7 @@ function ModeChangeButtonClick() {
     MoveAndExpensionImageArea();
   }else if(num == 3){
     // 議論内省マップモード
-    // 共有知モードから戻ってきた場合に vis ネットワークが破棄されている可能性があるため必要なら再初期化
+    // 組織知モードから戻ってきた場合に vis ネットワークが破棄されている可能性があるため必要なら再初期化
     try{
       if((!defaultForestMRN || !defaultForestMRN.ownNetwork) && document.getElementById('mynetwork')){
         defaultForestMRN = new ForestMRN('mynetwork', 'load');
@@ -1520,7 +1520,7 @@ function ModeChangeButtonClick() {
     BeforeSelectModeNumber = 3;
   }
   else if(num == 4){
-    // 共有知（組織知）モード：vis-network は不要なので完全に破棄し DOM を空にする
+    // 組織知（組織知）モード：vis-network は不要なので完全に破棄し DOM を空にする
   SharedModeActive = true;
   // グローバル同期
   window.SharedModeActive = SharedModeActive;
@@ -1552,7 +1552,7 @@ function ModeChangeButtonClick() {
     $('#network_container_shared').show();
     // Mirror num==3 layout
     $('#network_container').show().css('display','flex');
-    // 共有知モードでは思考整理マップを非表示に
+    // 組織知モードでは思考整理マップを非表示に
     try{ $('#jsmind_container').hide(); }catch(e){}
     try{ $('#jsmind_container').css('width',''); }catch(e){}
     try{ $('#network_container').css('width','100%'); }catch(e){}
@@ -1607,7 +1607,7 @@ function jump_node(nodeid) {
   });
 }
 
-// --- 共有知タブ切替処理 (表出化/連結化/内面化) ---
+// --- 組織知タブ切替処理 (表出化/連結化/内面化) ---
 function activateSharedTab(tabId){
   // タブボタン一覧
   var tabs = ['tab-externalization','tab-combination','tab-internalization'];
@@ -1645,7 +1645,7 @@ function activateSharedTab(tabId){
     if (tabId === 'tab-externalization') {
       // 明示的に block 指定（空文字だと初期 inline style に引きずられるケースを回避）
       try { extForm.style.display = 'block'; } catch (e) { /* no-op */ }
-      // 念のため、共有知モード中はフォームを #mynetwork 配下へ退避させて確実に可視領域へ
+      // 念のため、組織知モード中はフォームを #mynetwork 配下へ退避させて確実に可視領域へ
       try {
         if (window.SharedModeActive) {
           var host = document.getElementById('mynetwork');
@@ -1721,7 +1721,7 @@ function activateSharedTab(tabId){
 function updateCombinationOverlayBounds(){
   var overlay = document.getElementById('shared_combination_overlay');
   if(!overlay) return;
-  // 仕様変更: 共有知オーバーレイは #network_container と同じ位置・大きさに重ねる
+  // 仕様変更: 組織知オーバーレイは #network_container と同じ位置・大きさに重ねる
   var base = document.getElementById('network_container');
   if (base) {
     var r = base.getBoundingClientRect();
@@ -1819,7 +1819,7 @@ document.addEventListener('DOMContentLoaded', function(){
       showBtn.addEventListener('click', function(){
         try{
           combTabs.forEach(function(el){ try{ el.style.display = ''; }catch(_){}});
-          // 共有知モードに切り替えつつタブを有効化
+          // 組織知モードに切り替えつつタブを有効化
           try{ window.SharedModeActive = true; document.body.classList.add('shared-mode'); }catch(_){ }
           activateSharedTab('tab-combination');
           // 自身は不要になるので非表示に
@@ -1835,7 +1835,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if(!els || els.length === 0) return;
     els.forEach(function(el){
       el.addEventListener('click', function(e){
-        // 連結化タブは即時に共有知表示（リロード不要）
+        // 連結化タブは即時に組織知表示（リロード不要）
         if (id === 'tab-combination') {
           try { window.SharedModeActive = true; document.body.classList.add('shared-mode'); } catch(_){}
           activateSharedTab(id);
@@ -1847,19 +1847,19 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 
-  // リロード復元: 共有知モード+指定タブの意図があれば優先実行
+  // リロード復元: 組織知モード+指定タブの意図があれば優先実行
   var intentRaw = null;
   try { intentRaw = sessionStorage.getItem('reloadIntent'); } catch (err) {}
   if (intentRaw) {
     try { sessionStorage.removeItem('reloadIntent'); } catch (err) {}
     try {
       var intent = JSON.parse(intentRaw);
-      // まず共有知モードへ切替
+      // まず組織知モードへ切替
       if (intent && intent.mode === 'shared') {
         var selectOk = false;
         try {
           if (document.target_mode && document.target_mode.Select1) {
-            document.target_mode.Select1.selectedIndex = 4; // 共有知モード
+            document.target_mode.Select1.selectedIndex = 4; // 組織知モード
             selectOk = true;
           }
         } catch (e) {}
@@ -1899,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 
-// ページ離脱時に共有知モードなら復元用意図を保存（リロード/戻る対策）
+// ページ離脱時に組織知モードなら復元用意図を保存（リロード/戻る対策）
 try{
   window.addEventListener('beforeunload', function(){
     try{
@@ -1930,7 +1930,7 @@ window.addEventListener('load', function(){
       updateCombinationOverlayBounds();
     }
   } catch(e){}
-  // 共有知モードのリロード直後フォールバック: 発話リストと外部化カードを用意
+  // 組織知モードのリロード直後フォールバック: 発話リストと外部化カードを用意
   try{
     var isShared = (typeof window !== 'undefined' && window.SharedModeActive === true);
     if(isShared){
