@@ -7,10 +7,7 @@ $debugMode = (isset($_REQUEST['debug']) && ($_REQUEST['debug'] == '1' || $_REQUE
 $debug = array();
 
 // PDO 接続（insert_object_goal.php に合わせた実装）
-$db_host = "localhost";
-$db_user = "root";
-$db_password = "root";
-$db_dbname = "forest_platform";
+
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

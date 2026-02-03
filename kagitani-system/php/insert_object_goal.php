@@ -1,12 +1,20 @@
 <?php
 session_start();
+// エラー表示を抑制（JSONレスポンスを壊さないため）
+error_reporting(0);
+ini_set('display_errors', 0);
+
 // 明示的にタイムゾーンを設定（サーバ既定がUTCの場合のズレ防止）
 if (function_exists('date_default_timezone_set')) {
     date_default_timezone_set('Asia/Tokyo');
 }
-// require("connect_db.php");
-// PDO接続（connect_db.phpはmysqliのみ）
 
+header('Content-Type: application/json; charset=UTF-8');
+
+// connect_db.phpから変数を取得するためにインクルード
+require("connect_db.php");
+
+// PDO接続（connect_db.phpで定義された変数を使用）
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -19,6 +27,7 @@ try {
 // POSTで受け取る
 $start_date = $_POST['start_date'] ?? '';
 $finish_date = $_POST['finish_date'] ?? '';
+$label = $_POST['label'] ?? '';  // labelを受け取る（未使用でもエラー防止）
 
 // map_id を取得（優先: POST -> SESSION）
 $map_id = null;
