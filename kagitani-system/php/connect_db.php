@@ -1,5 +1,9 @@
 <?php
-
+//アプリケーションサーバーにアップロードするとき．
+// $db_host = "localhost:3306";  // DBサーバのurl
+// $db_user = "root";
+// $db_password = "kslabkslab";
+// $db_dbname = "forest_platform";
 	
 $db_host = "localhost";  // DBサーバのurl
 $db_user = "root";
