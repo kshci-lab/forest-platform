@@ -242,6 +242,68 @@ let defaultForestMRN;
 let defaultRecordForestMRN;
 let defaultShowForestMRN;
 
+// mynetwork 初期表示の安定化（ログアウト→再起動直後に空になる対策）
+// vis-network は container が display:none / 幅0 で初期化されると描画されないことがあるため、可視化後に redraw/fit を保証する
+try{
+    window.ensureMynetworkReady = function(reason){
+        try{
+            // 組織知モードでは vis-network を使わない設計のため何もしない
+            if (typeof window !== 'undefined' && window.SharedModeActive === true) { return false; }
+            var container = document.getElementById('mynetwork');
+            if(!container){ return false; }
+
+            // DOMが空（sharedモードで innerHTML が消された等）なら、visインスタンスが残っていても再生成が必要
+            var hasCanvas = false;
+            try{ hasCanvas = !!container.querySelector('canvas'); }catch(_){ hasCanvas = false; }
+            if(!hasCanvas){
+                try{ window.__mynetworkNeedsReload = true; }catch(_){ }
+                try{
+                    if(defaultForestMRN && defaultForestMRN.ownNetwork && typeof defaultForestMRN.ownNetwork.destroy === 'function'){
+                        defaultForestMRN.ownNetwork.destroy();
+                    }
+                }catch(_){ }
+                try{ container.innerHTML = ''; }catch(_){ }
+                try{ defaultForestMRN = null; }catch(_){ }
+            }
+
+            // ネットワークが未生成なら生成
+            if((!window.defaultForestMRN && typeof defaultForestMRN === 'undefined') || (!defaultForestMRN)){
+                // no-op
+            }
+            if((!defaultForestMRN || !defaultForestMRN.ownNetwork) && typeof ForestMRN === 'function'){
+                try{ defaultForestMRN = new ForestMRN('mynetwork', 'load'); }catch(_){ }
+            }
+
+            var w = container.offsetWidth || 0;
+            var h = container.offsetHeight || 0;
+            // まだサイズ確定していない場合は少し待って再試行
+            if((w === 0 || h === 0)){
+                var tries = (window.__mynetworkReadyTries || 0);
+                if(tries < 12){
+                    window.__mynetworkReadyTries = tries + 1;
+                    setTimeout(function(){ try{ window.ensureMynetworkReady('retry:'+reason); }catch(_){ } }, 120);
+                }
+                return false;
+            }
+
+            if(defaultForestMRN && defaultForestMRN.ownNetwork){
+                try{ defaultForestMRN.ownNetwork.redraw(); }catch(_){ }
+                try{ defaultForestMRN.ownNetwork.fit({ animation: false }); }catch(_){ }
+
+                // 再生成直後は中身が空なので、表示可能サイズになったタイミングでデータを再ロードする
+                try{
+                    if(window.__mynetworkNeedsReload === true && typeof displayDiscussionMapData === 'function'){
+                        window.__mynetworkNeedsReload = false;
+                        try{ displayDiscussionMapData('utterance_area2', null); }catch(_){ }
+                    }
+                }catch(_){ }
+                return true;
+            }
+        }catch(e){ try{ console && console.warn && console.warn('ensureMynetworkReady failed', reason, e); }catch(_){ } }
+        return false;
+    };
+}catch(_){ }
+
 class ForestMRN { // forestMRN: forest Meeting Reflection Network
     constructor(container, load) {
         // this.ownNetwork = this.generateMeetingReflectionNetworkCanvas(container, {}, {}); // デフォルトのマップを表示
@@ -1649,6 +1711,49 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
     const target_area = $(`#${display_target_area_id}`); // 発話ノードリストのDOMエリア
     const timedisplay_area = $(`#timedisplay`); // 発話ノードの議論内での時間を表示するエリア
     let mousedownId = null;
+
+    // Shared(組織知)モードでは vis-network を破棄しているため、ネットワーク操作は行わない
+    var isSharedMode = false;
+    try { isSharedMode = (typeof window !== 'undefined' && window.SharedModeActive === true); } catch(_){ isSharedMode = false; }
+
+    // 必要ならネットワークを初期化（shared以外）
+    try{
+        if(!isSharedMode){
+            var mn = document.getElementById('mynetwork');
+            if(mn && (!defaultForestMRN || !defaultForestMRN.ownNetwork) && typeof ForestMRN === 'function'){
+                try{ defaultForestMRN = new ForestMRN('mynetwork', 'load'); }catch(_){ }
+            }
+        }
+    }catch(_){ }
+
+    var canUseNetwork = false;
+    try{ canUseNetwork = (!isSharedMode && !!(defaultForestMRN && defaultForestMRN.ownNetwork && defaultForestMRN.nodes && defaultForestMRN.edges)); }catch(_){ canUseNetwork = false; }
+
+    // データ再ロード時の重複を避けるため、ネットワークを使う場合は一旦クリア
+    if(canUseNetwork){
+        try{ defaultForestMRN.nodes.clear(); }catch(_){ }
+        try{ defaultForestMRN.edges.clear(); }catch(_){ }
+        try{ defaultForestMRN.ConnectNetworkNodeId = []; }catch(_){ }
+        try{ defaultForestMRN.ConnectMindMapNodeId = []; }catch(_){ }
+        try{ defaultForestMRN.OntologyNodeId = []; }catch(_){ }
+        try{ defaultForestMRN.OntologyConnectNodeId = []; }catch(_){ }
+        try{ defaultForestMRN.RecruitNodeId = []; }catch(_){ }
+        try{ defaultForestMRN.Recruit = []; }catch(_){ }
+        try{ defaultForestMRN.Feedback = []; }catch(_){ }
+        try{ defaultForestMRN.FeedbackNodeId = null; }catch(_){ }
+    }
+
+    // 複数回呼ばれても重複しないように一旦クリア
+    try{ target_area.empty(); }catch(_){ }
+    try{
+        var selectElement0 = document.getElementById('selectiontime');
+        if(selectElement0){ selectElement0.innerHTML = ''; }
+    }catch(_){ }
+    try{
+        var acc0 = document.getElementById('accordion_discussion');
+        if(acc0){ acc0.innerHTML = ''; }
+    }catch(_){ }
+
     getDiscussionMapDataFromDB(target_reflection_time, null, (utterance_list_info) => {
         // console.log(utterance_list_info);
         // データの取得と挿入
@@ -1656,21 +1761,23 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             const utter_dom = makeUtteranceNodeInList(u.utterance_id, u.content, u.sender, u.utter_time, u.network_on);
             target_area.append(utter_dom); // 挿入            
         });
-        utterance_list_info.dnode.map((n) => {
-            // console.log(n);
-            defaultForestMRN.addReloadNode(n.network_node_id, n.label, n.node_type, n.node_x, n.node_y);
-        });
-        utterance_list_info.dedge.map((n) => {
-            defaultForestMRN.addReloadEdge(n.edge_id, n.edge_start, n.edge_end, n.edge_label);
-        });
-        utterance_list_info.fnode_dnode_rel.map((n) => {
-            defaultForestMRN.ConnectNetworkNodeId.push(n.network_node_id);
-            defaultForestMRN.ConnectMindMapNodeId.push(n.mindmap_node_id);
-        });
-        utterance_list_info.dnode_ontology_rel.map((n) => {
-            defaultForestMRN.OntologyNodeId.push(n.ontology_id);
-            defaultForestMRN.OntologyConnectNodeId.push(n.network_node_id);
-        });
+        if(canUseNetwork){
+            utterance_list_info.dnode.map((n) => {
+                // console.log(n);
+                defaultForestMRN.addReloadNode(n.network_node_id, n.label, n.node_type, n.node_x, n.node_y);
+            });
+            utterance_list_info.dedge.map((n) => {
+                defaultForestMRN.addReloadEdge(n.edge_id, n.edge_start, n.edge_end, n.edge_label);
+            });
+            utterance_list_info.fnode_dnode_rel.map((n) => {
+                defaultForestMRN.ConnectNetworkNodeId.push(n.network_node_id);
+                defaultForestMRN.ConnectMindMapNodeId.push(n.mindmap_node_id);
+            });
+            utterance_list_info.dnode_ontology_rel.map((n) => {
+                defaultForestMRN.OntologyNodeId.push(n.ontology_id);
+                defaultForestMRN.OntologyConnectNodeId.push(n.network_node_id);
+            });
+        }
         utterance_list_info.map_create_start_and_end.map((n) => {
             const selectElement = document.getElementById("selectiontime");
             const optionElement = document.createElement('option');
@@ -1679,30 +1786,36 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             selectElement.appendChild(optionElement);
         });
         utterance_list_info.recruit.map((n) => {
-            defaultForestMRN.RecruitNodeId.push(n.network_node_id);
-            defaultForestMRN.Recruit.push(n.result_recruit);
             let back_color = "#a0a7ee";
             if(n.result_recruit==="棄却"){
                 back_color = "#da5077"
             }
-            defaultForestMRN.nodes.update({
-                id : n.ontology_id,
-                borderWidth: 5,
-                color: {
-                    border: back_color,
+            if(canUseNetwork){
+                defaultForestMRN.RecruitNodeId.push(n.network_node_id);
+                defaultForestMRN.Recruit.push(n.result_recruit);
+                try{
+                    defaultForestMRN.nodes.update({
+                        id : n.ontology_id,
+                        borderWidth: 5,
+                        color: {
+                            border: back_color,
+                        }
+                    });
+                }catch(_){ }
+                if(n.reason === null){
+                    try{ defaultForestMRN.Feedback.push(n.network_node_id); }catch(_){ }
                 }
-            });
-            if(n.reason === null){
-                defaultForestMRN.Feedback.push(n.network_node_id);
             }
             try {
                 var acc2 = document.getElementById("accordion_discussion");
                 if(acc2){
-                    acc2.innerHTML += "<div id='"+n.network_node_id+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+defaultForestMRN.nodes.get(n.network_node_id).label+"」は"+n.result_recruit+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ n.network_node_id +"' class='accordion-input'>"+n.reason+"</textarea></div></div>";
+                    var nodeLabel = '';
+                    try{ nodeLabel = (canUseNetwork && defaultForestMRN && defaultForestMRN.nodes && defaultForestMRN.nodes.get(n.network_node_id)) ? defaultForestMRN.nodes.get(n.network_node_id).label : (n.label || ''); }catch(_){ nodeLabel = (n.label || ''); }
+                    acc2.innerHTML += "<div id='"+n.network_node_id+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+nodeLabel+"」は"+n.result_recruit+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ n.network_node_id +"' class='accordion-input'>"+n.reason+"</textarea></div></div>";
                 }
             } catch(_){ }
         });
-        console.log(defaultForestMRN.Feedback);
+        try{ console.log((canUseNetwork && defaultForestMRN && defaultForestMRN.Feedback) ? defaultForestMRN.Feedback : []); }catch(_){ }
     }).then(() => {
         const accordionHeaders = document.querySelectorAll('#accordion_discussion .accordion-header');
         accordionHeaders.forEach(header => {
@@ -2908,6 +3021,8 @@ window.addEventListener('load', function() {
     if (el) {
         defaultForestMRN = new ForestMRN("mynetwork", "load");
     }
+    // 初回ロード直後の空表示を防ぐ（サイズ確定後に再描画）
+    try{ if(typeof window.ensureMynetworkReady === 'function') window.ensureMynetworkReady('window-load'); }catch(_){ }
     setUploadedXMLData("meetingUtteranceXmlFileUploader", "uploaded_meeting_utterance_xml_concent_display_area");
     // ラベルXMLアップローダ初期化
     setUploadedLabelXMLData('utteranceLabelXmlUploader', 'uploaded_utterance_label_xml_display_area');
@@ -2985,6 +3100,7 @@ window.addEventListener('load', function() {
         });
     }catch(e){ console && console.warn && console.warn('delegate bind failed', e); }
     displayDiscussionMapData("utterance_area2", null); // 最新の議論内省マップの発話リストを表示
+    try{ setTimeout(function(){ try{ if(typeof window.ensureMynetworkReady === 'function') window.ensureMynetworkReady('after-displayDiscussionMapData'); }catch(_){ } }, 0); }catch(_){ }
     try{ console.log('[label] init end'); }catch(e){}
     // 内省マップ編集ボタンにイベント付与
     $('#mrnb_addNode').on("click", function(e){
