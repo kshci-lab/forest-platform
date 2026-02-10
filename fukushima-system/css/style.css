@@ -1705,7 +1705,17 @@ select[name="user_list"] {
 	height:80px;
 	background:#e6edf8;
 }
-#utterance_area{
+#utterance_area,
+#utterance_area-seci{
+	width: calc((100vw - 350px)*0.15);
+	min-width: 550px;
+	/* height:70vh; */
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	background:#e6edf8;
+	overflow-y: scroll;
+}
+#utterance_area-seci{
 	width: calc((100vw - 350px)*0.15);
 	min-width: 550px;
 	/* height:70vh; */
@@ -1752,12 +1762,14 @@ select[name="user_list"] {
 }
 /* 中・右を等分 */
 #network_container.threecol #utterance_area,
+#network_container.threecol #utterance_area-seci,
 #network_container.threecol #mynetwork2{
 	width: 50% !important;
 	transition: width 0.3s ease;
 }
 /* トグルボタンの配置基準 */
-#network_container.threecol #utterance_area{
+#network_container.threecol #utterance_area,
+#network_container.threecol #utterance_area-seci{
 	position: relative;
 }
 /* トグルボタン（中エリア右端） */
@@ -2299,7 +2311,19 @@ body.shared-mode #network_container.threecol{
 	background-color: #B3E0D8;
 }
 /* ノード追加ボタン */
+.button3-seci{
+    background-color: #90B1AB;
+    color: #fff;
+    width: 50px;
+    height: 25px;
+    font-size: 12px;
+    border:none;
+    margin-left: 0;
+}
 
+.button3-seci:hover {
+	background-color: #B3E0D8;
+}
 
 .button4 {
 	background-color: #90B1AB;
@@ -2316,9 +2340,63 @@ body.shared-mode #network_container.threecol{
 	background-color: #B3E0D8;
 }
 
+.button4-seci{
+    background-color: #90B1AB;
+    color: #fff;
+    height: 25px;
+    font-size: 12px;
+    margin-left: 10px;
+    margin-right: 8px;
+    margin-top: 5px;
+    border:none;
+    overflow: auto;
+}
+
+.button4-seci:hover {
+	background-color: #B3E0D8;
+}
+
 .button-container {
     display: inline-block;
-    margin-left: 20px;
+	margin-left: 20px; 
+}
+
+.button5 {
+	background-color: #FBC362;
+	color: #fff;
+	width: 70px;
+	height: 25px;
+	font-size: 14px;
+	margin-top: 5px;
+}
+.button5:hover {
+	background-color: #ffa200;
+}
+
+.button5-seci {
+    background-color: #90B1AB; /* デフォルトの背景色 */
+    color: #fff;
+    height: 30px;
+    font-size: 15px;
+    margin-left: 1px;
+	margin-right: 1px;
+	margin-top: 1px;
+	border:none;
+    align-items: center; /* 垂直方向の中央寄せ */
+    justify-content: center; /* 水平方向の中央寄せ */
+}
+
+/* アクティブなタブのスタイル */
+.button5-seci.active {
+    background-color: #99cccc; /* アクティブ時の背景色を少し薄く */
+	/* transform: scale(1.15);     1.15倍に拡大  */
+	transform-origin: center bottom;
+    transition: transform 0.15s ease;
+}
+
+/* ホバー時のスタイル */
+.button5-seci:hover {
+    background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
 }
 
 /* Tab container: place tabs and the show-button on one horizontal line */
@@ -2444,7 +2522,16 @@ body.shared-mode #network_container.threecol{
 .button6:hover {
 	background-color: #B3E0D8;
 }
-
+.button6-seci {
+	background-color: #90B1AB;
+	border:none;
+	color: #fff;
+	width: 20%;
+	height: 25px;
+}
+.button6-seci:hover {
+	background-color: #B3E0D8;
+}
 
 /* DBの接続確認ボタン */
 .button7 {
