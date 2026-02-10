@@ -164,7 +164,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <option>議論内省マップモード</option>
                         <option selected>組織知モード</option>
                     </select>
-                    <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
+                    <input type="button" class="button3-seci" value="実行" onclick="ModeChangeButtonClick();" />
                     <!-- shared tabs removed from here and moved to center of the workspace -->
                 </form>
                             
@@ -1301,7 +1301,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                                             <div class="externalization-actions" style="margin-top:10px;">
                                                 <button type="button" id="show-other-labels" class="button6" style="margin-right:8px;">他者のラベルを表示</button>
-                                                <input id="externalization_register" type="button" class="button3" value="登録" onclick="handleExternalizationRegister();" />
+                                                <input id="externalization_register" type="button" class="button3-seci" value="登録" onclick="handleExternalizationRegister();" />
                                                 <!-- <input id="externalization_upload" type="button" class="button3" value="アップロード" onclick="uploadMeetingUtteranceXML();" /> -->
                                             </div>
 

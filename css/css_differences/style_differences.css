@@ -3,164 +3,7 @@
    必要なら追加ブロックを抽出して追記できます。
 */
 
-/* --- Shared/Combination overlay (covers jsmind_container, utterance_area, mynetwork2) --- */
-#shared_combination_overlay {
-    position: fixed; /* JSで上書きされる前提だがフォールバックで全面表示 */
-    left: 0;
-    /* top: 0; */
-    width: 100vw; /* JS失敗時のフォールバック: 以前 0 だったため内容が全く表示されないケースを防止 */
-    height: 100vh; /* 同上 */
-    background: #ffffff;
-    opacity: 1;
-    pointer-events: auto;
-    z-index: 9999;
-    display: none; /* hidden unless combination tab is active */
-    overflow-y: auto; /* 下部フォーム(knowledge_register_area)が隠れないよう縦スクロール許可 */
-    overflow-x: hidden; /* 横は従来通り抑制 */
-}
-
-#shared_combination_overlay .comb-row{
-    display:flex;
-    flex-direction:row;
-    width:100%;
-    height:100%;
-}
-#shared_combination_overlay .comb-left{
-    display:flex;
-    height:100%;
-    flex-direction:column;
-    flex:1 1 75%; /* 親幅に対する75%を基準に伸縮（オーバーフローで右隠れを防止） */
-    min-width:0; /* 内側の横スクロール要素が幅を押し広げない */
-}
-#shared_combination_overlay .comb-left-top,
-#shared_combination_overlay .comb-left-bottom{
-    flex:1 1 0;
-    /* 親では横スクロールを出さず、縦だけに限定する。横は内側リストで制御 */
-    overflow-y:auto;
-    overflow-x:hidden;
-    min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
-}
-#shared_combination_overlay .comb-right{
-    flex:1 1 25%; /* 親幅に対する25%を基準に伸縮 */
-    min-width:0;
-    overflow:auto;
-}
-#shared_combination_overlay .overlay-knowledge-fragments{
-    height:auto;              /* コンテンツに合わせて伸びる */
-    max-height:100%;         /* ただし親の上限は超えない */
-    width:100%;              /* 親幅に追従（固定幅を廃止） */
-    max-width:100%;
-    padding:12px;
-    box-sizing:border-box;
-    min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
-}
-#shared_combination_overlay .overlay-knowledge-fragments{
-    overflow-x: hidden; /* 横スクロールは内側のリストに集約する */
-}
-
-#shared_combination_overlay .overlay-input-area,
-#shared_combination_overlay .overlay-knowledge-tree{
-    height:100%;
-    width:100%;
-    padding:12px;
-    box-sizing:border-box;
-    min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
-    background:#fff; /* ツリー線のマスク色と揃える */
-}
-#overlay_knowledge_tree{
-    font-size:14px;
-}
-
-#overlay_knowledge_tree .kt-node{
-    position:relative;
-    padding-left:18px;
-    line-height:1.6;
-}
-/* 縦の幹（黒・太め） */
-#shared_combination_overlay #overlay_knowledge_tree .kt-children{
-    margin-left:14px;
-    border-left:2px solid #000 !important;
-    padding-left:10px;position:relative;
-}
-#overlay_knowledge_tree .kt-content-title,#overlay_knowledge_tree .kt-title{cursor:default;}
-
-/* overlay fragment list and knowledge_fragment */
-#shared_combination_overlay .knowledge-fragment-list{
-    display:flex;
-    flex-wrap:nowrap;            /* 横一列に並べる */
-    overflow-x:auto;             /* 横スクロールを許可 */
-    overflow-y:visible;          /* 詳細展開時に縦方向へ広がるのを許可 */
-    align-items:flex-start;      /* 各カードの上端を揃える（高さが変わっても崩れにくい） */
-    gap:12px;
-    margin-top:8px;
-    -webkit-overflow-scrolling:touch; /* スクロール慣性（モバイル） */
-    width: 100%;                 /* 親幅に固定 */
-    max-width: 100%;             /* 親幅を超えない */
-    box-sizing: border-box;
-    min-width: 0;                /* コンテンツ幅に引っ張られて広がらない */
-    scrollbar-width: thin;       /* Firefox: 細いスクロールバー */
-}
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{
-    height:10px
-}
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-track{
-    background:#f1f1f1
-}
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb{
-    background:#c9c9c9;
-    border-radius:8px
-}
-#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb:hover{
-    background:#b0b0b0
-}
-#shared_combination_overlay .knowledge_fragment{
-    background:#ffe6e6; /* pale pink */
-    border:1px solid #ccc;
-    border-radius:10px;
-    margin-top: 20px;
-    padding:12px;
-    width:180px; /* 旧:200px */
-    box-sizing:border-box;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    flex:0 0 auto;               /* 横スクロール内で折り返さず表示 */
-}
-#shared_combination_overlay .knowledge_fragment .card-title{
-    font-size:15px;
-    font-weight: 500;
-    color:#444;
-}
-#shared_combination_overlay .knowledge_fragment .card-body{
-    white-space:pre-wrap;
-    color:#333;
-    font-size:14px;
-    line-height:1.5;
-}
-
-/* 思考エリア & thinking-node 系 */
-#shared_combination_overlay .thinking-node,
-.thinking-node{
-    position: relative; /* wrapper が absolute */
-    min-width: 200px;
-    max-width: 260px;
-    background: #ffe6e6; /* フラグメントと同系の淡いピンク */
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
-    padding: 12px;
-    box-sizing: border-box;
-    user-select: none;
-}
-
-#shared_combination_overlay .thinking-node-wrapper,
-.thinking-node-wrapper{
-    position:absolute;
-    cursor:move;
-    user-select:none;
-    border-radius:10px; /* カード角丸と揃える */
-}
-
+/* ここから修正必要！！ */
 /* --- jsmind/nav and layout adjustments (差分) --- */
 #jsmind_nav {
     width: 100%;
@@ -321,6 +164,180 @@
     width: 20%;
     height: 25px;
 }
+
+
+/* 修正ここまで */
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- Shared/Combination overlay (covers jsmind_container, utterance_area, mynetwork2) --- */
+#shared_combination_overlay {
+    position: fixed; /* JSで上書きされる前提だがフォールバックで全面表示 */
+    left: 0;
+    /* top: 0; */
+    width: 100vw; /* JS失敗時のフォールバック: 以前 0 だったため内容が全く表示されないケースを防止 */
+    height: 100vh; /* 同上 */
+    background: #ffffff;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 9999;
+    display: none; /* hidden unless combination tab is active */
+    overflow-y: auto; /* 下部フォーム(knowledge_register_area)が隠れないよう縦スクロール許可 */
+    overflow-x: hidden; /* 横は従来通り抑制 */
+}
+
+#shared_combination_overlay .comb-row{
+    display:flex;
+    flex-direction:row;
+    width:100%;
+    height:100%;
+}
+#shared_combination_overlay .comb-left{
+    display:flex;
+    height:100%;
+    flex-direction:column;
+    flex:1 1 75%; /* 親幅に対する75%を基準に伸縮（オーバーフローで右隠れを防止） */
+    min-width:0; /* 内側の横スクロール要素が幅を押し広げない */
+}
+#shared_combination_overlay .comb-left-top,
+#shared_combination_overlay .comb-left-bottom{
+    flex:1 1 0;
+    /* 親では横スクロールを出さず、縦だけに限定する。横は内側リストで制御 */
+    overflow-y:auto;
+    overflow-x:hidden;
+    min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
+}
+#shared_combination_overlay .comb-right{
+    flex:1 1 25%; /* 親幅に対する25%を基準に伸縮 */
+    min-width:0;
+    overflow:auto;
+}
+#shared_combination_overlay .overlay-knowledge-fragments{
+    height:auto;              /* コンテンツに合わせて伸びる */
+    max-height:100%;         /* ただし親の上限は超えない */
+    width:100%;              /* 親幅に追従（固定幅を廃止） */
+    max-width:100%;
+    padding:12px;
+    box-sizing:border-box;
+    min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
+}
+#shared_combination_overlay .overlay-knowledge-fragments{
+    overflow-x: hidden; /* 横スクロールは内側のリストに集約する */
+}
+
+#shared_combination_overlay .overlay-input-area,
+#shared_combination_overlay .overlay-knowledge-tree{
+    height:100%;
+    width:100%;
+    padding:12px;
+    box-sizing:border-box;
+    min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
+    background:#fff; /* ツリー線のマスク色と揃える */
+}
+#overlay_knowledge_tree{
+    font-size:14px;
+}
+
+#overlay_knowledge_tree .kt-node{
+    position:relative;
+    padding-left:18px;
+    line-height:1.6;
+}
+/* 縦の幹（黒・太め） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children{
+    margin-left:14px;
+    border-left:2px solid #000 !important;
+    padding-left:10px;position:relative;
+}
+#overlay_knowledge_tree .kt-content-title,#overlay_knowledge_tree .kt-title{cursor:default;}
+
+/* overlay fragment list and knowledge_fragment */
+#shared_combination_overlay .knowledge-fragment-list{
+    display:flex;
+    flex-wrap:nowrap;            /* 横一列に並べる */
+    overflow-x:auto;             /* 横スクロールを許可 */
+    overflow-y:visible;          /* 詳細展開時に縦方向へ広がるのを許可 */
+    align-items:flex-start;      /* 各カードの上端を揃える（高さが変わっても崩れにくい） */
+    gap:12px;
+    margin-top:8px;
+    -webkit-overflow-scrolling:touch; /* スクロール慣性（モバイル） */
+    width: 100%;                 /* 親幅に固定 */
+    max-width: 100%;             /* 親幅を超えない */
+    box-sizing: border-box;
+    min-width: 0;                /* コンテンツ幅に引っ張られて広がらない */
+    scrollbar-width: thin;       /* Firefox: 細いスクロールバー */
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{
+    height:10px
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-track{
+    background:#f1f1f1
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb{
+    background:#c9c9c9;
+    border-radius:8px
+}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb:hover{
+    background:#b0b0b0
+}
+#shared_combination_overlay .knowledge_fragment{
+    background:#ffe6e6; /* pale pink */
+    border:1px solid #ccc;
+    border-radius:10px;
+    margin-top: 20px;
+    padding:12px;
+    width:180px; /* 旧:200px */
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    flex:0 0 auto;               /* 横スクロール内で折り返さず表示 */
+}
+#shared_combination_overlay .knowledge_fragment .card-title{
+    font-size:15px;
+    font-weight: 500;
+    color:#444;
+}
+#shared_combination_overlay .knowledge_fragment .card-body{
+    white-space:pre-wrap;
+    color:#333;
+    font-size:14px;
+    line-height:1.5;
+}
+
+/* 思考エリア & thinking-node 系 */
+#shared_combination_overlay .thinking-node,
+.thinking-node{
+    position: relative; /* wrapper が absolute */
+    min-width: 200px;
+    max-width: 260px;
+    background: #ffe6e6; /* フラグメントと同系の淡いピンク */
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+    padding: 12px;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+#shared_combination_overlay .thinking-node-wrapper,
+.thinking-node-wrapper{
+    position:absolute;
+    cursor:move;
+    user-select:none;
+    border-radius:10px; /* カード角丸と揃える */
+}
+
 
 
 /* externalization form: 新規追加 */
@@ -645,98 +662,3 @@
     margin-top:0; 
 }
 
-/* button / tab layout differences */
-.button3{
-    background-color: #90B1AB;
-    color: #fff;
-    width: 50px;
-    height: 25px;
-    font-size: 12px;
-    border:none;
-    margin-left: 0;
-}
-
-.button4{
-    background-color: #90B1AB;
-    color: #fff;
-    height: 25px;
-    font-size: 12px;
-    margin-left: 10px;
-    margin-right: 8px;
-    margin-top: 5px;
-    border:none;
-    overflow: auto;
-}
-
-.button-container {
-    display: inline-block;
-    margin-left: 20px; /* 左側の余白を拡大して Screenshot とタブの間隔を調整 */
-}
-
-.button5 {
-    background-color: #90B1AB; /* デフォルトの背景色 */
-    color: #fff;
-    height: 30px;
-    font-size: 15px;
-    margin-left: 1px;
-    margin-right: 1px;
-    margin-top: 1px;
-    border:none;
-    align-items: center; /* 垂直方向の中央寄せ */
-    justify-content: center; /* 水平方向の中央寄せ */
-}
-.button5.active {
-    background-color: #99cccc; /* アクティブ時の背景色を少し薄く */
-    transform-origin: center bottom;
-    transition: transform 0.15s ease;
-}
-.button5:hover {
-    background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
-}
-
-.button-container ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    gap: 0;
-    position: relative;
-}
-.button-container ul li {
-    flex: 1;
-    padding: 12px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #90B1AB; /* デフォルト色 */
-    color: #fff;
-    border-radius: 12px 12px 0 0;
-    margin-right: 4px;
-}
-.button-container ul li.selected,
-.button-container ul li.active {
-    background: #99cccc; /* Active 色 */
-    color: #fff;
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
-    position: relative;
-    z-index: 2;
-}
-
-.tab-content {
-    display: none;
-    padding: 20px;
-    min-height: 120px;
-    background: #fff;
-    border: 2px solid #99cccc;
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-}
-.tab-content.selected { display: block; }
-
-.button6 {
-    background-color: #90B1AB;
-    border:none;
-    color: #fff;
-    width: 20%;
-    height: 25px;
-}
