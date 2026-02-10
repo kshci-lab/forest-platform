@@ -1680,9 +1680,10 @@ select[name="user_list"] {
 	background:#fff;
 	overflow: hidden;
 	/* float:right; */
-	display: flex;
+	display: none;
 	resize: both;
 }
+
 #mynetwork2{
 	width: 100%;
 	min-width: 300px;
@@ -1738,7 +1739,7 @@ select[name="user_list"] {
 
 #mynetwork {
 	position: relative;
-	width: 100%;
+	width: 97%;
 	min-width: 300px;
 	/* height:70vh; */
 	min-height: 450px;
