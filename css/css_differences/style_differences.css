@@ -58,6 +58,7 @@
     background:#fff;
     overflow: auto;
 }
+/* ↑修正完了 */
 
 #utterance_area{
     width: calc((100vw - 350px)*0.15);
@@ -68,7 +69,7 @@
     background:#e6edf8;
     overflow-y: scroll;
 }
-
+/* ↑修正完了だと思われる */
 
 
 /* この下修正完了 */
