@@ -829,7 +829,12 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
             FeedBackReflection.push(document.getElementById("text"+this.RecruitNodeId[i]).value);
         }
         const node_info = this.nodes.get(this.selectId);
-        document.getElementById("accordion_discussion").innerHTML += "<div id='"+this.selectId+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+node_info.label+"」は"+selectionlist.value+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ this.selectId +"' class='accordion-input'></textarea></div></div>";
+        try {
+            var acc = document.getElementById("accordion_discussion");
+            if(acc){
+                acc.innerHTML += "<div id='"+this.selectId+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+node_info.label+"」は"+selectionlist.value+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ this.selectId +"' class='accordion-input'></textarea></div></div>";
+            }
+        } catch(_){ }
         const accordionHeaders = document.querySelectorAll('#accordion_discussion .accordion-header');
         accordionHeaders.forEach(header => {
           header.addEventListener('click', function () {
@@ -1423,6 +1428,77 @@ const applySelectionHighlight = () => {
     } catch (e) { /* no-op */ }
 };
 
+// 発話ノードクリック時の共通処理（イベント委譲用）
+const handleUtterNodeListClick = (clicked_node, e) => {
+    try {
+        if(!clicked_node || !clicked_node.getAttribute) return;
+        // リスト内の発話ノードにマウスイベント(右クリック)を追加
+        try{ var r = document.getElementById("rclick"); if(r) r.innerHTML = ""; }catch(_){ }
+
+        const clicked_id = String(clicked_node.getAttribute('id'));
+        // 直近で選択した発話IDを保持（DB登録用）
+        try { window.lastRemarkedUtteranceId = clicked_id; } catch(err) {}
+
+        // 複数選択・トグル: 修飾キー押下時は加算/解除のトグル、未押下時は置換/解除
+        var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
+        var already = isSelectedId(clicked_id);
+        var willDeselect = false;
+        if (appendMode) {
+            if (already) { removeSelectedId(clicked_id); willDeselect = true; }
+            else { addSelectedId(clicked_id); }
+        } else {
+            if (already) { clearSelectedIds(); willDeselect = true; }
+            else { clearSelectedIds(); addSelectedId(clicked_id); }
+        }
+        applySelectionHighlight();
+
+        // 外部化フォームへの反映（.externalization-main or #externalization-main）
+        var $extMain = $('#externalization-main');
+        if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
+        // 選択解除の場合はテキストエリアは変更しない
+        if($extMain && $extMain.length && !willDeselect){
+            var addText = clicked_node.getAttribute('utterance') || '';
+            if(addText){
+                var current = $extMain.val();
+                // 複数選択対応: 修飾キー（Ctrl/Shift/Alt/Cmd）押下なら追記、そうでなければ置換
+                var appendMode2 = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
+                if(appendMode2 && current){
+                    $extMain.val(current + "\n" + addText);
+                } else {
+                    $extMain.val(addText);
+                }
+            }
+        }
+
+        if(clicked_node.getAttribute('network_on') === '0'){
+            try{
+                var r2 = document.getElementById("rclick");
+                if(r2) r2.innerHTML = "<input type='button' id='utteranceNodebutton' value='この発言を選択'>";
+            }catch(_){ }
+            $(`#utteranceNodebutton`).off('click.utterSel').on("click.utterSel", () => {
+                defaultForestMRN.addutteranceNode(clicked_node.getAttribute('utterance'));
+                try{ var r3 = document.getElementById("rclick"); if(r3) r3.innerHTML = ""; }catch(_){ }
+                clicked_node.setAttribute('network_on', "1");
+                // ネットワークに追加済みは灰色へ（選択リストからも除外）
+                removeSelectedId(clicked_id);
+                applySelectionHighlight();
+                update_text_on(clicked_node.getAttribute('id'));
+            });
+        }
+    } catch(ex) {
+        try{ console && console.warn && console.warn('handleUtterNodeListClick error', ex); }catch(_){ }
+    }
+};
+
+// 重要: 発話ノードのイベントは「描画後に個別バインド」だとリロード直後に取りこぼすことがあるため、ここで一度だけ委譲バインドする
+try{
+    $(document)
+        .off('click.utterSel', '.utter_node_in_list')
+        .on('click.utterSel', '.utter_node_in_list', function(e){
+            handleUtterNodeListClick(this, e);
+        });
+}catch(_){ }
+
 // 背景色を元に戻す（選択ハイライト解除）
 const restoreListBackgrounds = () => {
     try {
@@ -1551,64 +1627,17 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
             const overed_node = e.target;
             timedisplay_area.empty();
         });
-        $(`.utter_node_in_list`).on('click', (e) => {
-            // リスト内の発話ノードにマウスイベント(右クリック)を追加
-            document.getElementById("rclick").innerHTML="";
-            // クリックされた要素（内側のテキストや<br>ではなく、.utter_node_in_list 本体）
-            const clicked_node = e.currentTarget || e.target;
-            const clicked_id = String(clicked_node.getAttribute('id'));
-            // 直近で選択した発話IDを保持（DB登録用）
-            try { window.lastRemarkedUtteranceId = clicked_id; } catch(err) {}
-
-            // 複数選択・トグル: 修飾キー押下時は加算/解除のトグル、未押下時は置換/解除
-            var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
-            var already = isSelectedId(clicked_id);
-            var willDeselect = false;
-            if (appendMode) {
-                if (already) { removeSelectedId(clicked_id); willDeselect = true; }
-                else { addSelectedId(clicked_id); }
-            } else {
-                if (already) { clearSelectedIds(); willDeselect = true; }
-                else { clearSelectedIds(); addSelectedId(clicked_id); }
-            }
-            applySelectionHighlight();
-            // 外部化フォームへの反映（.externalization-main or #externalization-main）
-            var $extMain = $('#externalization-main');
-            if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
-            // 選択解除の場合はテキストエリアは変更しない
-            if($extMain && $extMain.length && !willDeselect){
-                var addText = clicked_node.getAttribute('utterance') || '';
-                if(addText){
-                    var current = $extMain.val();
-                    // 複数選択対応: 修飾キー（Ctrl/Shift/Alt/Cmd）押下なら追記、そうでなければ置換
-                    var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
-                    if(appendMode && current){
-                        $extMain.val(current + "\n" + addText);
-                    } else {
-                        $extMain.val(addText);
-                    }
-                }
-            }
-            if(clicked_node.getAttribute('network_on') === '0'){
-                document.getElementById("rclick").innerHTML="<input type='button' id='utteranceNodebutton' value='この発言を選択'>";
-                $(`#utteranceNodebutton`).on("click", () => {
-                    defaultForestMRN.addutteranceNode(clicked_node.getAttribute('utterance'));
-                    document.getElementById("rclick").innerHTML="";
-                    clicked_node.setAttribute('network_on', "1");
-                    // ネットワークに追加済みは灰色へ（選択リストからも除外）
-                    removeSelectedId(clicked_id);
-                    applySelectionHighlight();
-                    update_text_on(clicked_node.getAttribute('id'));
-                });
-            }
-        });      
+        // click はイベント委譲で一度だけバインドしている（handleUtterNodeListClick）
         $(`.utter_node_in_list`).on('contextmenu', (e) => {
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             const clicked_node = e.target;
             timedisplay_area.empty();
             // rightclick()
         });
-        document.getElementById("accordion_discussion").innerHTML = "";
+        try {
+            var acc = document.getElementById("accordion_discussion");
+            if(acc){ acc.innerHTML = ""; }
+        } catch(_){ }
         // 再描画後に選択中の発話群があればハイライトを復元
         applySelectionHighlight();
     });
@@ -1666,7 +1695,12 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             if(n.reason === null){
                 defaultForestMRN.Feedback.push(n.network_node_id);
             }
-            document.getElementById("accordion_discussion").innerHTML += "<div id='"+n.network_node_id+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+defaultForestMRN.nodes.get(n.network_node_id).label+"」は"+n.result_recruit+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ n.network_node_id +"' class='accordion-input'>"+n.reason+"</textarea></div></div>";
+            try {
+                var acc2 = document.getElementById("accordion_discussion");
+                if(acc2){
+                    acc2.innerHTML += "<div id='"+n.network_node_id+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+defaultForestMRN.nodes.get(n.network_node_id).label+"」は"+n.result_recruit+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ n.network_node_id +"' class='accordion-input'>"+n.reason+"</textarea></div></div>";
+                }
+            } catch(_){ }
         });
         console.log(defaultForestMRN.Feedback);
     }).then(() => {
@@ -1710,57 +1744,7 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             const overed_node = e.target;
             timedisplay_area.empty();
         });
-        $(`.utter_node_in_list`).on('click', (e) => {
-            // リスト内の発話ノードにマウスイベント(右クリック)を追加
-            document.getElementById("rclick").innerHTML="";
-            // クリックされた要素（内側のテキストや<br>ではなく、.utter_node_in_list 本体）
-            const clicked_node = e.currentTarget || e.target;
-            const clicked_id = String(clicked_node.getAttribute('id'));
-            // 直近で選択した発話IDを保持（DB登録用）
-            try { window.lastRemarkedUtteranceId = clicked_id; } catch(err) {}
-
-            // 複数選択・トグル: 修飾キー押下時は加算/解除のトグル、未押下時は置換/解除
-            var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
-            var already = isSelectedId(clicked_id);
-            var willDeselect = false;
-            if (appendMode) {
-                if (already) { removeSelectedId(clicked_id); willDeselect = true; }
-                else { addSelectedId(clicked_id); }
-            } else {
-                if (already) { clearSelectedIds(); willDeselect = true; }
-                else { clearSelectedIds(); addSelectedId(clicked_id); }
-            }
-            applySelectionHighlight();
-            // 外部化フォームへの反映（.externalization-main or #externalization-main）
-            var $extMain = $('#externalization-main');
-            if(!$extMain.length){ $extMain = $('.externalization-main').first(); }
-            // 選択解除の場合はテキストエリアは変更しない
-            if($extMain && $extMain.length && !willDeselect){
-                var addText = clicked_node.getAttribute('utterance') || '';
-                if(addText){
-                    var current = $extMain.val();
-                    // 複数選択対応: 修飾キー（Ctrl/Shift/Alt/Cmd）押下なら追記、そうでなければ置換
-                    var appendMode = !!(e && (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey));
-                    if(appendMode && current){
-                        $extMain.val(current + "\n" + addText);
-                    } else {
-                        $extMain.val(addText);
-                    }
-                }
-            }
-            if(clicked_node.getAttribute('network_on') === '0'){
-                document.getElementById("rclick").innerHTML="<input type='button' id='utteranceNodebutton' value='この発言を選択'>";
-                $(`#utteranceNodebutton`).on("click", () => {
-                    defaultForestMRN.addutteranceNode(clicked_node.getAttribute('utterance'));
-                    document.getElementById("rclick").innerHTML="";
-                    clicked_node.setAttribute('network_on', "1");
-                    // ネットワークに追加済みは灰色へ（選択リストからも除外）
-                    removeSelectedId(clicked_id);
-                    applySelectionHighlight();
-                    update_text_on(clicked_node.getAttribute('id'));
-                });
-            }
-        });
+        // click はイベント委譲で一度だけバインドしている（handleUtterNodeListClick）
         $(`.utter_node_in_list`).on('contextmenu', (e) => {
             // リスト内の発話ノードにマウスイベント(右クリック)を追加
             const clicked_node = e.target;

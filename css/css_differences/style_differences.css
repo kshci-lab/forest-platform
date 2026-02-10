@@ -45,6 +45,7 @@
     display: flex;
     resize: both;
 }
+/* ↑修正完了 */
 
 #mynetwork {
     position: relative;
