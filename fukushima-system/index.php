@@ -231,7 +231,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
     </div>
 </div> -->
 
-                             <div id="jsmind_nav">
+                             <div id="jsmind_nav-seci">
                                 <div style="text-align: left">
                                     <!-- 【Edit】 -->
                                     <!-- <button class="button4" onclick="add_Qnode();">

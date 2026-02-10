@@ -500,6 +500,19 @@ table[type] {
 	resize: vertical;
 }
 
+#jsmind_nav-seci {
+	width: 100%;
+	height:50px;
+	display: inline;
+	font-size: 1em;
+	border-bottom:double 2px #B3E0D8;
+	box-sizing: border-box;
+	overflow-x: auto;
+	overflow-y: visible;
+	float:left;
+	resize: vertical;
+}
+
 /* 文書化モードのチェックボックス */
 .checkbox {
 	display: flex;
@@ -1738,7 +1751,7 @@ select[name="user_list"] {
 
 #mynetwork {
 	position: relative;
-	width: 100%;
+	width: 97%;
 	min-width: 300px;
 	/* height:70vh; */
 	min-height: 450px;

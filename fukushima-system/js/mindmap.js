@@ -1330,6 +1330,27 @@ function ModeChangeButtonClick() {
   const num = selindex.selectedIndex;
   var ModeLabel = ["自己内対話モード","資料構成作成モード","資料作成モード","議論内省マップモード"]
 
+  // 共有(組織知)モード(=4)から他モードへ戻すとき、SharedModeActive を落としフォーム配置も復元する
+  // （これをしないと SharedModeActive が true のままになり、mynetwork の redraw/fit が抑止されて空表示になりうる）
+  var wasShared = false;
+  try { wasShared = (typeof window !== 'undefined' && window.SharedModeActive === true); } catch(e) { wasShared = false; }
+  try{
+    if (wasShared && num !== 4) {
+      try { SharedModeActive = false; } catch(e){}
+      try { window.SharedModeActive = false; } catch(e){}
+      try { document.body.classList.remove('shared-mode'); } catch(e){}
+      // 表出化フォームを元の場所へ戻し非表示に
+      try{
+        var $ext = $('#externalization_form_section');
+        if($ext && $ext.length){
+          var $orig = $ext.data('origParent');
+          if($orig && $orig.length){ $orig.append($ext); }
+          $ext.hide();
+        }
+      }catch(e){}
+    }
+  }catch(e){ }
+
   console.log(num);
   console.log(ModeLabel);
   target = document.getElementById("output");
@@ -1489,14 +1510,31 @@ function ModeChangeButtonClick() {
     // 議論内省マップモード
     // 組織知モードから戻ってきた場合に vis ネットワークが破棄されている可能性があるため必要なら再初期化
     try{
-      if((!defaultForestMRN || !defaultForestMRN.ownNetwork) && document.getElementById('mynetwork')){
-        defaultForestMRN = new ForestMRN('mynetwork', 'load');
+      var mn = document.getElementById('mynetwork');
+      if(mn){
+        // shared から戻ると mynetwork が空にされているため、強制的に再生成する
+        if(wasShared){
+          try{
+            if(defaultForestMRN && defaultForestMRN.ownNetwork && typeof defaultForestMRN.ownNetwork.destroy === 'function'){
+              defaultForestMRN.ownNetwork.destroy();
+            }
+          }catch(e){}
+          try{ mn.innerHTML = ''; }catch(e){}
+          try{ defaultForestMRN = new ForestMRN('mynetwork', 'load'); }catch(e){}
+        } else {
+          if((!defaultForestMRN || !defaultForestMRN.ownNetwork)){
+            defaultForestMRN = new ForestMRN('mynetwork', 'load');
+          }
+        }
       }
     }catch(e){ console.log('reinit vis network failed', e); }
     document.getElementById('feedback_area').style.display = "block";
     document.getElementById('xml_upload_area').style.display = "block";
     $('#network_container').toggle('fast');
     $('#network_container').css('display','flex');
+    // toggle('fast') はアニメーションでサイズ確定が遅れるため、少し待ってから redraw/fit を保証する
+    try{ if(typeof window.ensureMynetworkReady === 'function') window.ensureMynetworkReady('ModeChange-3'); }catch(e){ }
+    try{ setTimeout(function(){ try{ if(typeof window.ensureMynetworkReady === 'function') window.ensureMynetworkReady('ModeChange-3-post'); }catch(_){ } }, 450); }catch(e){}
     $('#jsmind_container').css('width','50%');
     $('#mind').css('height','90%');
     $('#document').hide();
@@ -1667,7 +1705,12 @@ function activateSharedTab(tabId){
       try { extForm.scrollIntoView({block:'nearest'}); } catch (e) { /* no-op */ }
       try { if (window.console && console.debug) console.debug('activateSharedTab: show externalization form (block)'); } catch (e) {}
       // 起動直後に utterance_area と externalization-card の内容を用意
-      try { window.SharedModeActive = true; } catch(e){}
+      try {
+        // SharedMode のときだけ明示（通常モード起動で誤って shared 扱いになるのを防ぐ）
+        if (typeof window !== 'undefined' && window.SharedModeActive === true) {
+          window.SharedModeActive = true;
+        }
+      } catch(e){}
       try {
         if (typeof displayDiscussionMapData === 'function') {
           // 最新の議論内省マップの発話リストを表示
@@ -1787,11 +1830,11 @@ function detachOverlayAutoResize(){
 
 // 初期化：DOMが使えるようになったらイベントをバインド
 document.addEventListener('DOMContentLoaded', function(){
-  // 初期化: jsmind_nav 内の連結化タブを非表示にし、代わりに表示ボタンを設置する
+  // 初期化: jsmind_nav-seci 内の連結化タブを非表示にし、代わりに表示ボタンを設置する
   try{
-    var jnav = document.getElementById('jsmind_nav');
+    var jnav = document.getElementById('jsmind_nav-seci');
     if(jnav){
-      // 複数ある場合に備え、jsmind_nav 内だけを非表示にする
+      // 複数ある場合に備え、jsmind_nav-seci 内だけを非表示にする
       var combTabs = Array.prototype.slice.call(jnav.querySelectorAll('#tab-combination')) || [];
       combTabs.forEach(function(el){ try{ el.style.display = 'none'; }catch(_){}});
 
@@ -1827,7 +1870,7 @@ document.addEventListener('DOMContentLoaded', function(){
         }catch(e){ console && console.warn && console.warn('show-tab-combination click failed', e); }
       });
     }
-  }catch(e){ console && console.warn && console.warn('jsmind_nav show-tab init failed', e); }
+  }catch(e){ console && console.warn && console.warn('jsmind_nav-seci show-tab init failed', e); }
   var tabIds = ['tab-externalization','tab-combination','tab-internalization'];
   tabIds.forEach(function(id){
     // 同一IDが複数存在するレガシー構造に対応（すべてにハンドラを付与）
