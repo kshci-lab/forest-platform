@@ -845,7 +845,7 @@ input:checked+label::after {
 	/* height:80vh; */
 	/* height: 100%; */
 	margin-bottom:2vh;
- 	/* border:solid 5px #B3E0D8; */
+ 	border:solid 5px #B3E0D8;
 	border: none;
 	box-sizing: border-box;
  	background:#fff;
