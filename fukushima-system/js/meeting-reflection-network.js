@@ -18,6 +18,29 @@ try{
     }
 }catch(_){ }
 
+// utterance_area -> utterance_area-seci 互換
+// - DOM id は `utterance_area-seci`
+// - JSからは `window.utterance_area_seci_id`（文字列）や `window.utterance_area_seci`（要素getter）で参照できるようにする
+try{
+    if(typeof window.utterance_area_seci_id === 'undefined'){
+        window.utterance_area_seci_id = 'utterance_area-seci';
+    }
+    if(typeof window.getUtteranceAreaElement !== 'function'){
+        window.getUtteranceAreaElement = function(){
+            return document.getElementById(window.utterance_area_seci_id)
+                || document.getElementById('utterance_area_seci')
+                || document.getElementById('utterance_area');
+        };
+    }
+    if(typeof window.utterance_area_seci === 'undefined' && typeof Object !== 'undefined' && Object.defineProperty){
+        Object.defineProperty(window, 'utterance_area_seci', {
+            configurable: true,
+            enumerable: false,
+            get: function(){ return window.getUtteranceAreaElement(); }
+        });
+    }
+}catch(_){ }
+
 // 追加のフラグメント選択モード切替ボタン
 $(document).on('click', '#fragment-add-select-toggle', function(){
     try{
@@ -1499,7 +1522,7 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
             defaultForestMRN.addmaterialEdge("material-content_"+u.item_content1_id, "material-content_"+u.item_content2_id, u.item_content1_label+"→"+u.item_content2_label)        
         });
     }).then(() => {
-        $(`#utterance_area`).on('mousedown', (e) => {
+        $(`#utterance_area-seci`).on('mousedown', (e) => {
             // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
             mousedownId = null;
             const overed_node = e.target;
@@ -1507,7 +1530,7 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
                 mousedownId = overed_node.getAttribute('id');
             }
         });
-        $(`#utterance_area`).on('mouseleave', (e) => {
+        $(`#utterance_area-seci`).on('mouseleave', (e) => {
             // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
             $(`#rclick`).empty();
         });
@@ -1658,7 +1681,7 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
         for(var i=0; i<feedbackarea.length; i++){
             feedbackarea[i].style.display = "none";
         }
-         $(`#utterance_area`).on('mousedown', (e) => {
+         $(`#utterance_area-seci`).on('mousedown', (e) => {
             // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
             mousedownId = null;
             const overed_node = e.target;
@@ -1666,7 +1689,7 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
                 mousedownId = overed_node.getAttribute('id');
             }
          });
-         $(`#utterance_area`).on('mouseleave', (e) => {
+         $(`#utterance_area-seci`).on('mouseleave', (e) => {
             // リスト内の発話ノードにマウスイベント（マウスが要素上からでた）を追加
             $(`#rclick`).empty();
         });

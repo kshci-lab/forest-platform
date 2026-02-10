@@ -1717,7 +1717,7 @@ function activateSharedTab(tabId){
   }
 }
 
-// オーバーレイの矩形を、対象3エリア(jsmind_container, utterance_area, mynetwork2)を覆うように計算
+// オーバーレイの矩形を、対象3エリア(jsmind_container, utterance_area-seci, mynetwork2)を覆うように計算
 function updateCombinationOverlayBounds(){
   var overlay = document.getElementById('shared_combination_overlay');
   if(!overlay) return;
@@ -1736,7 +1736,7 @@ function updateCombinationOverlayBounds(){
     }
     // さらに小さい時は既存エリアの合成で補正（旧方式の簡略版）
     if (w < 10 || h < 10) {
-      var ids = ['jsmind_container','utterance_area','mynetwork2'];
+      var ids = ['jsmind_container','utterance_area-seci','mynetwork2'];
       var rects = ids.map(function(id){ var el = document.getElementById(id); return el ? el.getBoundingClientRect() : null; }).filter(Boolean);
       if (rects.length) {
         var left = Math.min.apply(null, rects.map(function(rr){ return rr.left; }));
