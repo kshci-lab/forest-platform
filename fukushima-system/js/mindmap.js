@@ -1798,7 +1798,7 @@ document.addEventListener('DOMContentLoaded', function(){
       // 表示用ボタンを作成してタブコンテナに追加
       var showBtn = document.createElement('button');
       showBtn.id = 'show-tab-combination';
-      showBtn.className = 'button5';
+      showBtn.className = 'button5-seci';
       showBtn.type = 'button';
       showBtn.textContent = '連結化タブ表示';
       // ユーザ指定: ボタンは `#mind.side` コンテナ内に移動する

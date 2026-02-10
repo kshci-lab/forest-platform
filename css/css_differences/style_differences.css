@@ -98,6 +98,7 @@
     display: inline-block;
     margin-left: 20px; /* 左側の余白を拡大して Screenshot とタブの間隔を調整 */
 }
+/* ↑使われてなかった */
 
 .button5 {
     background-color: #90B1AB; /* デフォルトの背景色 */
