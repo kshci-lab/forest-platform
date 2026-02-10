@@ -835,7 +835,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                                                         <!-- 右下：登録ボタン -->
                                                         <div class="kra-actions">
-                                                            <button type="submit" class="button4 kra-submit" id="kra-submit">登録</button>
+                                                            <button type="submit" class="button4-seci kra-submit" id="kra-submit">登録</button>
                                                         </div>
                                                     </form>
                                                     <div id="knowledge_register_feedback" style="margin-top:8px;"></div>

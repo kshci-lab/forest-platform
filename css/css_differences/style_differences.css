@@ -79,6 +79,7 @@
     border:none;
     margin-left: 0;
 }
+/* ↑修正済み */
 
 .button4{
     background-color: #90B1AB;
@@ -91,6 +92,7 @@
     border:none;
     overflow: auto;
 }
+/* ↑修正済み */
 
 .button-container {
     display: inline-block;
