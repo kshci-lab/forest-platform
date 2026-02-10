@@ -69,6 +69,9 @@
     overflow-y: scroll;
 }
 
+
+
+/* この下修正完了 */
 /* button / tab layout differences */
 .button3{
     background-color: #90B1AB;
@@ -168,7 +171,7 @@
     width: 20%;
     height: 25px;
 }
-
+/* ↑ここまで修正完了 */
 
 /* 修正ここまで */
 

@@ -1884,7 +1884,7 @@ select[name="user_list"] {
 	height:80px;
 	background:#e6edf8;
 }
-#utterance_area{
+#utterance_area-seci{
 	width: calc((100vw - 350px)*0.15);
 	min-width: 550px;
 	/* height:70vh; */
@@ -1893,6 +1893,17 @@ select[name="user_list"] {
 	background:#e6edf8;
 	overflow-y: scroll;
 }
+
+#utterance_area{
+	width: calc((100vw - 350px)*0.15);
+	min-width: 100px;
+	/* height:70vh; */
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	background:#e6edf8;
+	overflow-y: scroll;
+}
+
 #utterance_area2{
 	width: calc((100vw - 350px)*0.15);
 	min-width: 500px;
