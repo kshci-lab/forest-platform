@@ -500,7 +500,6 @@ table[type] {
 	resize: vertical;
 }
 
-
 /* 文書化モードのチェックボックス */
 .checkbox {
 	display: flex;
