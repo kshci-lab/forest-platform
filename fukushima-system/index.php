@@ -1300,7 +1300,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             </div>
 
                                             <div class="externalization-actions" style="margin-top:10px;">
-                                                <button type="button" id="show-other-labels" class="button6" style="margin-right:8px;">他者のラベルを表示</button>
+                                                <button type="button" id="show-other-labels" class="button6-seci" style="margin-right:8px;">他者のラベルを表示</button>
                                                 <input id="externalization_register" type="button" class="button3-seci" value="登録" onclick="handleExternalizationRegister();" />
                                                 <!-- <input id="externalization_upload" type="button" class="button3" value="アップロード" onclick="uploadMeetingUtteranceXML();" /> -->
                                             </div>

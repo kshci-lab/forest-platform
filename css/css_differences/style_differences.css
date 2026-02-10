@@ -79,7 +79,7 @@
     border:none;
     margin-left: 0;
 }
-/* ↑修正済み */
+/* ↑修正完了 */
 
 .button4{
     background-color: #90B1AB;
@@ -92,7 +92,7 @@
     border:none;
     overflow: auto;
 }
-/* ↑修正済み */
+/* ↑修正完了 */
 
 .button-container {
     display: inline-block;
@@ -120,6 +120,7 @@
 .button5:hover {
     background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
 }
+/* ↑修正完了 */
 
 .button-container ul {
     margin: 0;
