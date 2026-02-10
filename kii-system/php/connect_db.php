@@ -29,6 +29,7 @@
 	  exit();
 	} else {
     	$mysqli->set_charset("utf8");
+    	$mysqli->set_charset("utf8");
 	}
 
 ?>
