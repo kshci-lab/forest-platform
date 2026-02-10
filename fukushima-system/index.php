@@ -500,7 +500,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             </div>
                             <!--  ここから大槻修正　-->
                             <div id="network_container" class="threecol" oncontextmenu="return false;" >
-                                <div id="utterance_area">
+                                <div id="utterance_area-seci">
                                     <!-- <button id="left-panel-toggle" class="left-toggle-btn" type="button" title="左ペインを折りたたむ">◀</button> -->
                                     <div id="rclick2">
                                         <div id="timedisplay"></div>
