@@ -1,6 +1,13 @@
 <?php
+// エラー表示を抑制（JSONレスポンスのために必須）
+error_reporting(0);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json; charset=UTF-8');
 session_start();
+
+// DB接続情報を読み込み
+require_once("connect_db.php");
 
 // debug flag: when `debug=1` is passed via GET or POST, collect server-side messages
 $debugMode = (isset($_REQUEST['debug']) && ($_REQUEST['debug'] == '1' || $_REQUEST['debug'] === 1));

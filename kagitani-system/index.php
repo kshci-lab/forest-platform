@@ -235,6 +235,8 @@ try {
             console.log('最新 node_id:', <?php echo json_encode($latest_map_id, JSON_UNESCAPED_UNICODE); ?>);
         }catch(e){/* ignore */}
     })();
+    // グローバル変数としてMAPIDを設定
+    window.MAPID = <?php echo json_encode(isset($_SESSION['MAPID']) ? $_SESSION['MAPID'] : null, JSON_UNESCAPED_UNICODE); ?>;
 </script>
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
@@ -392,51 +394,43 @@ try {
 
     </head>
         <style>
-            /* 高級感のある教訓一覧ボタン（メタリックゴールド） */
+            /* 高級感のある教訓一覧ボタン（青×ゴールド） */
             #show-lessons-btn{
-                position:fixed;top:10px;right:360px;z-index:9999;
-                padding:4px 14px;font-size:14px;font-weight:600;letter-spacing:0.02em;
-                color:#2b2000;
-                background:linear-gradient(120deg,#f7e7b8 0%,#d9b44a 20%,#f7e7b8 40%,#c99c2f 60%,#f7e7b8 80%,#d9b44a 100%);
-                border:1px solid #d8ac35;border-radius:11px;
-                box-shadow:0 10px 22px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.22), 0 0 10px rgba(244,197,66,0.48);
-                backdrop-filter:saturate(120%) contrast(110%);
-                overflow:hidden;
+                position:fixed;top:5px;right:200px;z-index:9999;
+                padding:3px 10px;font-size:12px;font-weight:600;letter-spacing:0.03em;
+                height:25px;line-height:1;
+                color:#f4e4a6;
+                background:linear-gradient(180deg, #4a6fa5 0%, #2c4a7c 30%, #1a3a6c 70%, #0f2850 100%);
+                border:2px solid #c9a227;border-radius:6px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
                 cursor:pointer;
-                transition:transform .14s ease, box-shadow .24s ease, background .24s ease, color .2s ease, border-color .2s ease;
+                transition:transform .14s ease, box-shadow .24s ease, background .24s ease;
+                display:flex;align-items:center;gap:6px;
             }
-            #show-lessons-btn::after{
-                content:"";
-                position:absolute;
-                inset:1px 3px auto 3px;
-                height:48%;
-                border-radius:9px;
-                background:linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0));
-                pointer-events:none;
+            #show-lessons-btn::before{
+                content:"📖";
+                font-size:12px;
             }
             #show-lessons-btn:hover{
-                transform:translateY(-2px);
-                background:linear-gradient(120deg,#fff3ca 0%,#e1bb4e 18%,#fff3ca 38%,#d1a63a 58%,#fff3ca 78%,#e1bb4e 100%);
-                border-color:#e7c15c;
-                box-shadow:0 14px 26px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.30), 0 0 12px rgba(255,215,102,0.62);
-                color:#241900;
+                transform:translateY(-1px);
+                background:linear-gradient(180deg, #5a7fb5 0%, #3c5a8c 30%, #2a4a7c 70%, #1f3860 100%);
+                border-color:#d9b237;
+                box-shadow:0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 6px rgba(201,162,39,0.4);
             }
             #show-lessons-btn:active{
                 transform:translateY(0);
-                box-shadow:0 8px 16px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.16);
-                background:linear-gradient(120deg,#e7c55c 0%,#c89c2d 25%,#e7c55c 50%,#b78721 75%,#e7c55c 100%);
+                box-shadow:0 1px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
             }
             #show-lessons-btn:focus{outline:none;}
             #show-lessons-btn:focus-visible{
-                box-shadow:0 0 0 3px rgba(255,215,102,0.55), 0 10px 22px rgba(0,0,0,0.24);
-                border-color:#e7c15c;
+                box-shadow:0 0 0 2px rgba(201,162,39,0.5), 0 2px 8px rgba(0,0,0,0.25);
             }
         </style>
     <body id="all">
         <!-- 言語切替スライダー -->
                 <!-- 教訓一覧を表示ボタン（言語トグルの左隣に配置） -->
                 <button id="show-lessons-btn">
-                    教訓一覧を表示
+                    教訓一覧
                 </button>
                 <div id="language-toggle-container" style="position:fixed;top:10px;right:30px;z-index:9999;">
                         <label style="display:flex;align-items:center;gap:8px;font-size:15px;">
@@ -513,7 +507,7 @@ try {
                 'lang-label-en': 'English',
                 'addWeeklyGoalBtn': 'SRLジャーナル作成',
                 'addWeeklyGoalMenuLabel': '小目標に追加',
-                'showThinkingProcessMapBtn': 'この問いノードの目標手段階層マップを作成',
+                'showThinkingProcessMapBtn': 'この問いノードのSRL整理マップを作成',
                 'sheetbtn': 'シート選択画面に戻る',
                 'logout': 'ログアウト',
                 'addQNodeText': '問いノード追加',
@@ -943,7 +937,7 @@ try {
                                             <button class="main-action-btn compact-btn" onclick="addWeeklyGoal();"><span id="addWeeklyGoalMenuLabel"></span></button>
                                         </li>
                                         <li>
-                                            <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();"><span id="showThinkingProcessMapBtn">この問いノードの目標手段階層マップを作成</span></button>
+                                            <button class="main-action-btn compact-btn" onclick="showThinkingProcessMap();"><span id="showThinkingProcessMapBtn">この問いノードのSRL整理マップを作成</span></button>
         <!-- Duplicate language dictionary removed to avoid redeclaration of `langDict`. Using the main `langDict` defined earlier. -->
         </script>
                                         </li>
@@ -970,6 +964,10 @@ try {
                                     </ul>
                                 </div>
                             </div>
+                            
+                            <!-- リサイズハンドル（jsmind_containerとprocess_network_containerの間） -->
+                            <div id="vertical-resize-handle" class="resize-handle-vertical"></div>
+                            
                             <div id="document_area" oncontextmenu="return false;">
                                 <div id="document_title">
                                     <div class="document_purpose">
@@ -1094,30 +1092,75 @@ try {
                                     <!-- ボタンとシークバーを横並びに配置 -->
                                     <div class="control-panel">
                                         <div id="buttoncluster">
-                                            <!-- `process_close` button removed as it's not needed -->
-                                            <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_addNode" title="手段追加">
-                                                <span class="button-icon">＋</span>
-                                                <span class="button-text" id="processAddNodeText">手段追加</span>
-                                            </button>
-                                            <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_startEditEdge" title="エッジ追加">
-                                                <span class="button-icon">⟷</span>
-                                                <span class="button-text" id="processStartEditEdgeText">エッジ追加</span>
-                                            </button>
-                                            <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_removeNode" title="ノード削除">
-                                                <span class="button-icon">−</span>
-                                                <span class="button-text" id="processRemoveNodeText">ノード削除</span>
-                                            </button>
-                                            <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_ZoomIn" title="拡大">
-                                                <span class="button-text" id="processZoomInText">拡大</span>
-                                            </button>
-                                            <button type="button" class="thinkingProcess_network_button"
-                                                    id="process_ZoomOut" title="縮小">
-                                                <span class="button-text" id="processZoomOutText">縮小</span>
-                                            </button>
+                                            <!-- 追加グループ -->
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button green"
+                                                        id="process_addNode" title="手段追加">
+                                                    <span class="button-icon">+</span>
+                                                </button>
+                                                <span class="button-label">追加</span>
+                                            </div>
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button blue"
+                                                        id="process_startEditEdge" title="エッジ追加">
+                                                    <span class="button-icon">↔</span>
+                                                </button>
+                                                <span class="button-label">接続</span>
+                                            </div>
+                                            
+                                            <div class="button-divider"></div>
+                                            
+                                            <!-- 削除グループ -->
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button red"
+                                                        id="process_removeNode" title="ノード削除">
+                                                    <span class="button-icon">🗑</span>
+                                                </button>
+                                                <span class="button-label">削除</span>
+                                            </div>
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button red"
+                                                        id="process_removeEdge" title="エッジ削除">
+                                                    <span class="button-icon">✂</span>
+                                                </button>
+                                                <span class="button-label">切断</span>
+                                            </div>
+                                            
+                                            <div class="button-divider"></div>
+                                            
+                                            <!-- 履歴グループ -->
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button gray"
+                                                        id="process_undo" title="元に戻す (Ctrl+Z)" disabled>
+                                                    <span class="button-icon">↩</span>
+                                                </button>
+                                                <span class="button-label">戻す</span>
+                                            </div>
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button gray"
+                                                        id="process_redo" title="やり直す (Ctrl+Y)" disabled>
+                                                    <span class="button-icon">↻</span>
+                                                </button>
+                                                <span class="button-label">進む</span>
+                                            </div>
+                                            
+                                            <div class="button-divider"></div>
+                                            
+                                            <!-- ズームグループ -->
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button gray"
+                                                        id="process_ZoomIn" title="拡大">
+                                                    <span class="button-icon">＋</span>
+                                                </button>
+                                                <span class="button-label">拡大</span>
+                                            </div>
+                                            <div class="button-group">
+                                                <button type="button" class="circle-button gray"
+                                                        id="process_ZoomOut" title="縮小">
+                                                    <span class="button-icon">－</span>
+                                                </button>
+                                                <span class="button-label">縮小</span>
+                                            </div>
                                         </div>
                                         <!-- シークバーを隣に配置（横幅いっぱい使用） -->
                                         <div id="timeline_container">
@@ -1129,6 +1172,23 @@ try {
                                     </div>
 
                                         <div id="myProcessnetwork"></div>
+                                        
+                                    <!-- 内省タグ用カスタムツールチップ -->
+                                    <div id="reflection-tooltip" class="reflection-tooltip">
+                                        <div class="reflection-section success">
+                                            <span class="reflection-icon">😊</span>
+                                            <span class="reflection-text" id="reflection-success-content"></span>
+                                        </div>
+                                        <div class="reflection-reason success-reason" id="reflection-success-reason"></div>
+                                        <div class="reflection-section failure">
+                                            <span class="reflection-icon">😢</span>
+                                            <span class="reflection-text" id="reflection-failure-content"></span>
+                                        </div>
+                                        <div class="reflection-reason failure-reason" id="reflection-failure-reason"></div>
+                                        <div class="reflection-when-applicable" id="reflection-when-applicable"></div>
+                                        <div class="reflection-lesson-content" id="reflection-lesson-content"></div>
+                                    </div>
+                                        
                                     <div id="t_Process_conmenu" class="context-menu" role="menu" aria-label="進捗記録メニュー">
                                         <div class="context-menu-header">
                                             <span class="context-menu-title" id="processMenuTitle">進捗記録</span>

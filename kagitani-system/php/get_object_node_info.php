@@ -1,9 +1,47 @@
 <?php
 // node_idと日付範囲でobject_nodes情報を返す．SRLジャーナルに何を表示させるかを管理
-require("../php/connect_db.php");
-header('Content-Type: application/json; charset=utf-8');
+header('Content-Type: application/json; charset=UTF-8');
 
+// デバッグモード
+$debug = isset($_GET['debug']) && $_GET['debug'] == '1';
 
+// エラーハンドラを設定
+set_error_handler(function($errno, $errstr, $errfile, $errline) use ($debug) {
+    if ($debug) {
+        echo json_encode(['success' => false, 'error' => "PHP Error: $errstr", 'file' => $errfile, 'line' => $errline]);
+        exit;
+    }
+});
+
+// 例外ハンドラを設定
+set_exception_handler(function($e) use ($debug) {
+    if ($debug) {
+        echo json_encode(['success' => false, 'error' => 'Exception: ' . $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'サーバーエラー']);
+    }
+    exit;
+});
+
+session_start();
+
+// DB接続
+require_once("connect_db.php");
+
+if (!isset($mysqli) || !$mysqli) {
+    echo json_encode(['success' => false, 'error' => 'DB接続失敗']);
+    exit;
+}
+
+// DB接続確認
+if (!isset($mysqli) || !$mysqli) {
+    echo json_encode(['success' => false, 'error' => 'DB接続変数が未定義', 'loaded_path' => $loaded_path]);
+    exit;
+}
+if ($mysqli->connect_error) {
+    echo json_encode(['success' => false, 'error' => 'DB接続失敗: ' . $mysqli->connect_error]);
+    exit;
+}
 
 $node_id = isset($_GET['node_id']) ? $_GET['node_id'] : '';
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
@@ -104,8 +142,9 @@ if ($rows) {
         }
 
         // ノード集合内のエッジのみ取得（edge_start と edge_end の両方が対象ノード内）
+        // object_edges_histories テーブルが存在しない場合はスキップ
         $sql_edges = "SELECT object_edge_id, edge_start, edge_end, appeared_at FROM object_edges_histories WHERE edge_start IN (" . $inClause . ") AND edge_end IN (" . $inClause . ") " . $edgeDateClause . " ORDER BY object_edge_id, appeared_at DESC";
-        $result_edges = $mysqli->query($sql_edges);
+        $result_edges = @$mysqli->query($sql_edges);
         $edges = [];
         if ($result_edges) {
             $seen_edge_ids = [];
@@ -117,7 +156,8 @@ if ($rows) {
                 }
             }
         } else {
-            error_log('エッジ取得失敗: ' . $mysqli->error . " SQL=" . $sql_edges);
+            // テーブルが存在しない場合はエラーを無視して続行
+            // error_log('エッジ取得失敗: ' . $mysqli->error . " SQL=" . $sql_edges);
         }
 
         // 隣接リストと入次数を作成
@@ -192,8 +232,9 @@ if ($rows) {
     $lessons = [];
     if (!empty($objectNodeIds)) {
         // $inClause は上で定義済み
+        // テーブルが存在しない場合はスキップ
         $sql_lessons = "SELECT object_le_id, object_node_id, lesson_learned, created_at, updated_at FROM `object_lesson-learneds` WHERE object_node_id IN (" . $inClause . ") AND deleted = 0 ORDER BY created_at ASC";
-        $result_lessons = $mysqli->query($sql_lessons);
+        $result_lessons = @$mysqli->query($sql_lessons);
         if ($result_lessons) {
             while ($lr = $result_lessons->fetch_assoc()) {
                 $nid = $lr['object_node_id'];
@@ -201,7 +242,8 @@ if ($rows) {
                 $lessons[$nid][] = $lr;
             }
         } else {
-            error_log('教訓取得失敗: ' . $mysqli->error . " SQL=" . $sql_lessons);
+            // テーブルが存在しない場合はエラーを無視して続行
+            // error_log('教訓取得失敗: ' . $mysqli->error . " SQL=" . $sql_lessons);
         }
     }
 

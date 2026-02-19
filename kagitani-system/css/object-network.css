@@ -1,5 +1,132 @@
 /* -------------------- エリア類の設定 ---------------------- */
 
+/* -------------------- 内省タグカスタムツールチップ ---------------------- */
+.reflection-tooltip {
+    position: fixed;
+    display: none;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    padding: 12px 16px;
+    min-width: 200px;
+    max-width: 320px;
+    z-index: 99999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    pointer-events: none;
+}
+
+.reflection-tooltip.visible {
+    display: block;
+}
+
+.reflection-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.reflection-section.success .reflection-icon {
+    font-size: 16px;
+}
+
+.reflection-section.failure .reflection-icon {
+    font-size: 16px;
+}
+
+.reflection-section.success .reflection-text {
+    color: #2e7d32;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.reflection-section.failure .reflection-text {
+    color: #e65100;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.reflection-reason {
+    font-size: 13px;
+    line-height: 1.5;
+    padding-left: 24px;
+    margin-bottom: 12px;
+}
+
+.reflection-reason.success-reason {
+    color: #388e3c;
+}
+
+.reflection-reason.failure-reason {
+    color: #f57c00;
+}
+
+.reflection-reason:last-child {
+    margin-bottom: 0;
+}
+
+.reflection-when-applicable {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.5;
+}
+
+.reflection-lesson-content {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+    padding-left: 4px;
+    margin-top: 4px;
+}
+
+/* -------------------- 縦リサイズハンドル ---------------------- */
+.resize-handle-vertical {
+    width: calc(100vw - 350px);
+    height: 8px;
+    background: linear-gradient(180deg, #e0e0e0 0%, #d0d0d0 50%, #e0e0e0 100%);
+    cursor: ns-resize;
+    position: relative;
+    z-index: 100;
+    float: left;
+    clear: both;
+    display: none; /* process_network_containerが表示されたときのみ表示 */
+    transition: background 0.2s ease;
+}
+
+.resize-handle-vertical:hover {
+    background: linear-gradient(180deg, #c0c0c0 0%, #a0a0a0 50%, #c0c0c0 100%);
+}
+
+.resize-handle-vertical::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 4px;
+    background: repeating-linear-gradient(
+        90deg,
+        #888 0px,
+        #888 4px,
+        transparent 4px,
+        transparent 8px
+    );
+    border-radius: 2px;
+}
+
+.resize-handle-vertical:active {
+    background: linear-gradient(180deg, #b0b0b0 0%, #909090 50%, #b0b0b0 100%);
+}
+
+/* -------------------- エッジホバーボタン ---------------------- */
+
 /* エッジにホバーした時のプラスボタン */
 .edge-plus-button {
     position: absolute;
@@ -37,8 +164,8 @@
     /* width: calc(100vw - 350px); */
     width: 100%;
     min-width: 300px;
-    height: calc(100vh - 139px); /* 画面の一番下まで伸ばす */
-    min-height: 450px;
+    height: calc(50vh - 50px); /* デフォルトで画面の半分（リサイズハンドル分を引く） */
+    min-height: 150px;
     /* margin-bottom:2vh; */
     /* border-bottom:solid 5px #B3E0D8; */
     /* border-top removed per request */
@@ -46,9 +173,9 @@
     overflow: hidden;
     float:left;
     display: none;
-    resize: vertical;
     flex-direction: row; /* 横並びレイアウト */
     position: relative; /* control-panelの絶対位置の基準 */
+    box-sizing: border-box;
 }
 #myProcessnetwork {
     position: relative;
@@ -431,16 +558,115 @@ input[type="checkbox"][name="check_process"]{
 #buttoncluster {
     display: flex;
     gap: 8px;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    align-items: center;
-    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    align-items: flex-start;
+    flex-wrap: nowrap;
 }
 
-/* 統一された基本ボタンスタイル */
+/* ボタングループ（ボタン＋ラベル） */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ボタンラベル */
+.button-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: #666;
+    white-space: nowrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* グループ間の区切り線 */
+.button-divider {
+    width: 1px;
+    height: 40px;
+    background: #e0e0e0;
+    margin: 0 4px;
+    align-self: center;
+}
+
+/* 丸いボタンの基本スタイル */
+.circle-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.circle-button .button-icon {
+    font-size: 14px;
+    color: white;
+    line-height: 1;
+}
+
+/* 緑色ボタン（Add Node） */
+.circle-button.green {
+    background: linear-gradient(135deg, #4CAF50, #43A047);
+}
+.circle-button.green:hover {
+    background: linear-gradient(135deg, #66BB6A, #4CAF50);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+/* 青色ボタン（Add Edge） */
+.circle-button.blue {
+    background: linear-gradient(135deg, #2196F3, #1E88E5);
+}
+.circle-button.blue:hover {
+    background: linear-gradient(135deg, #42A5F5, #2196F3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+/* 赤色ボタン（Delete） */
+.circle-button.red {
+    background: linear-gradient(135deg, #EF5350, #E53935);
+}
+.circle-button.red:hover {
+    background: linear-gradient(135deg, #EF6D6A, #EF5350);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
+}
+
+/* グレー色ボタン（Undo/Redo/Zoom） */
+.circle-button.gray {
+    background: linear-gradient(135deg, #78909C, #607D8B);
+}
+.circle-button.gray:hover:not(:disabled) {
+    background: linear-gradient(135deg, #90A4AE, #78909C);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(120, 144, 156, 0.4);
+}
+
+/* 無効状態のボタン */
+.circle-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* アクティブ状態 */
+.circle-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* 統一された基本ボタンスタイル（従来のボタン用） */
 .process_close,
 .thinkingProcess_network_button {
     display: flex;
@@ -448,9 +674,9 @@ input[type="checkbox"][name="check_process"]{
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 4px 10px; /* 縦パディングを小さく */
+    padding: 4px 10px;
     min-width: 80px;
-    height: 30px; /* 少し短く */
+    height: 30px;
     border: none;
     border-radius: 6px;
     background: #4a90e2;
@@ -621,14 +847,6 @@ input[type="checkbox"][name="check_process"]{
 
 #process_startEditEdge:hover {
     background: #2980b9 !important;
-}
-
-#process_removeEdge {
-    background: #9b59b6 !important;
-}
-
-#process_removeEdge:hover {
-    background: #8e44ad !important;
 }
 
 #process_ZoomIn,

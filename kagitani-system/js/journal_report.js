@@ -1,6 +1,12 @@
 // journal_report.js
 // Handles export-weekly-btn click handlers and Word export preview/download.
 (function () {
+    // Helper: generate user-specific localStorage key
+    function getStorageKey(baseName) {
+        var mapId = window.MAPID || 'default';
+        return baseName + '_' + mapId;
+    }
+
     // idempotent init
     window.initWeeklyReportHandlers = function (goalHelpers) {
         if (window._weeklyReportInited) return;
@@ -29,7 +35,7 @@
             if (!btn) return;
             try {
                 var idx = parseInt(btn.getAttribute('data-idx'), 10);
-                var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
                 var goal = goals[idx];
                 // Debug: dump relevant variables to console to help trace missing object_journal_id
                 try {
@@ -127,16 +133,21 @@
                                         } catch (e) { console.error('build contentArr error', e); }
                                         resolve({ display: goalContents[i] || '', content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
                                     },
-                                    error: function () {
+                                    error: function (xhr, status, err) {
+                                        console.error('journal_report: get_object_node_info error', {
+                                            nodeId: nodeId,
+                                            status: status,
+                                            error: err,
+                                            response: xhr && xhr.responseText
+                                        });
                                         resolve({ display: goalContents[i] || '', content: [], object_node_ids: [], object_node_history_ids: [], histories: [] });
                                     }
                                 });
                             });
                         });
 
-                                border: '#e8f3f1',
-                                                            Promise.all(promises).then(function(results){
-                                                                try { console.log('journal_report: node fetch results', results); } catch(e){}
+                        Promise.all(promises).then(function(results){
+                            try { console.log('journal_report: node fetch results', results); } catch(e){}
                             var modal = document.createElement('div');
                             modal.className = 'jr-modal-overlay';
                             modal.style.position = 'fixed';
@@ -192,17 +203,81 @@
                             periodHeading.textContent = (startDate || '') + '~' + (endDate || '') + ((getCurrentLang() === 'ja') ? 'に行ったこと' : ' activities');
                             modalContent.appendChild(periodHeading);
 
-                            // Tab container for multiple reflections
+                            // Two-column layout: Activity Process (left) + Reflections (right) + Divider
+                            var twoColumnLayout = document.createElement('div');
+                            twoColumnLayout.className = 'jr-two-column-layout';
+                            modalContent.appendChild(twoColumnLayout);
+
+                            // Left column: Activity Process (always visible)
+                            var leftColumn = document.createElement('div');
+                            leftColumn.className = 'jr-left-column';
+                            var leftHeader = document.createElement('div');
+                            leftHeader.className = 'jr-column-header';
+                            leftHeader.textContent = (getCurrentLang() === 'ja') ? '活動プロセス' : 'Activity Process';
+                            leftColumn.appendChild(leftHeader);
+                            var activityContent = document.createElement('div');
+                            activityContent.className = 'jr-activity-content';
+                            leftColumn.appendChild(activityContent);
+                            twoColumnLayout.appendChild(leftColumn);
+
+                            // Divider (resize bar)
+                            var divider = document.createElement('div');
+                            divider.className = 'jr-col-divider';
+                            twoColumnLayout.appendChild(divider);
+
+                            // Right column: Reflections with tabs
+                            var rightColumn = document.createElement('div');
+                            rightColumn.className = 'jr-right-column';
+                            var rightHeader = document.createElement('div');
+                            rightHeader.className = 'jr-column-header';
+                            rightHeader.textContent = (getCurrentLang() === 'ja') ? '内省' : 'Reflections';
+                            rightColumn.appendChild(rightHeader);
+
+                            // Tab container for multiple reflections (in right column)
                             var tabContainer = document.createElement('div');
                             tabContainer.className = 'jr-tab-container';
-                            modalContent.appendChild(tabContainer);
+                            rightColumn.appendChild(tabContainer);
 
-                            // Tab content container
+                            // Tab content container (in right column)
                             var tabContentContainer = document.createElement('div');
-                            tabContentContainer.className = 'jr-tab-content-container';
-                            modalContent.appendChild(tabContentContainer);
+                            tabContentContainer.className = 'jr-tab-content-container jr-reflection-content';
+                            rightColumn.appendChild(tabContentContainer);
+                            twoColumnLayout.appendChild(rightColumn);
 
-                            // Tab management functions
+                            // Resize logic for divider
+                            (function() {
+                                var dragging = false;
+                                var startX = 0;
+                                var startLeftWidth = 0;
+                                divider.addEventListener('mousedown', function(e) {
+                                    dragging = true;
+                                    startX = e.clientX;
+                                    startLeftWidth = leftColumn.getBoundingClientRect().width;
+                                    document.body.style.cursor = 'col-resize';
+                                    document.body.style.userSelect = 'none';
+                                });
+                                document.addEventListener('mousemove', function(e) {
+                                    if (!dragging) return;
+                                    var dx = e.clientX - startX;
+                                    var parentWidth = twoColumnLayout.getBoundingClientRect().width;
+                                    var newLeft = Math.max(180, Math.min(parentWidth - 220, startLeftWidth + dx));
+                                    var leftPercent = (newLeft / parentWidth) * 100;
+                                    var rightPercent = 100 - leftPercent;
+                                    leftColumn.style.flex = '0 0 ' + leftPercent + '%';
+                                    leftColumn.style.maxWidth = leftPercent + '%';
+                                    rightColumn.style.flex = '0 0 ' + rightPercent + '%';
+                                    rightColumn.style.maxWidth = rightPercent + '%';
+                                });
+                                document.addEventListener('mouseup', function() {
+                                    if (dragging) {
+                                        dragging = false;
+                                        document.body.style.cursor = '';
+                                        document.body.style.userSelect = '';
+                                    }
+                                });
+                            })();
+
+                            // Tab management functions (for reflections only, no Activity Process tab)
                             var _tabIndex = 0;
                             var _tabs = [];
                             var _tabContents = [];
@@ -217,7 +292,7 @@
                                 tabLabel.textContent = label;
                                 tab.appendChild(tabLabel);
                                 
-                                // Add delete button (not for first tab - Activity Process)
+                                // Add delete button (allow delete for all tabs except when only one left)
                                 if (!isFirstTab) {
                                     var deleteBtn = document.createElement('button');
                                     deleteBtn.type = 'button';
@@ -330,13 +405,9 @@
                                 _tabs.forEach(function(tab, i) {
                                     var isActive = tab.classList.contains('jr-tab-active');
                                     var label;
-                                    if (i === 0) {
-                                        // First tab is "活動プロセス" / "Activity Process"
-                                        label = (getCurrentLang() === 'ja') ? '活動プロセス' : 'Activity Process';
-                                    } else {
-                                        // 内省 tabs start from #1 (i=1 -> #1, i=2 -> #2, etc.)
-                                        label = (getCurrentLang() === 'ja') ? ('内省 #' + i) : ('Reflection #' + i);
-                                    }
+                                    // All tabs are reflection tabs now (no Activity Process tab)
+                                    // i=0 -> 内省 #1, i=1 -> 内省 #2, etc.
+                                    label = (getCurrentLang() === 'ja') ? ('内省 #' + (i + 1)) : ('Reflection #' + (i + 1));
                                     if (isActive) label += ' (Active)';
                                     // Update the label span, not the whole tab (to preserve delete button)
                                     var labelSpan = tab.querySelector('.jr-tab-label');
@@ -663,11 +734,11 @@
                                                             var newId = resp.object_journal_reflection_id;
                                                             try { clone.dataset.objectJournalReflectionId = newId; } catch(e){}
                                                             try {
-                                                                var stored = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                                                                var stored = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
                                                                 if (!(stored && stored.length > _weeklyGoalIdx_for_clones && stored[_weeklyGoalIdx_for_clones])) stored[_weeklyGoalIdx_for_clones] = stored[_weeklyGoalIdx_for_clones] || {};
                                                                 if (!Array.isArray(stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids)) stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids = [];
                                                                 stored[_weeklyGoalIdx_for_clones].object_journal_reflection_ids.unshift(newId);
-                                                                localStorage.setItem('weeklyGoals', JSON.stringify(stored));
+                                                                localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(stored));
                                                             } catch(e) { console.warn('failed to persist new reflection id on clone', e); }
                                                             try { if (headerEl) headerEl.textContent = (getCurrentLang() === 'ja' ? '内省' : 'Reflection'); } catch(e){}
                                                         } else {
@@ -975,14 +1046,9 @@
 
                             infoWrap.appendChild(lessonDiv);
                             
-                            // Create the first tab (Activity Process) - NO reflection card here
-                            var firstTab = createTab((getCurrentLang() === 'ja') ? '活動プロセス' : 'Activity Process', false, true);
-                            var firstContent = createTabContent();
-                            // Activity log (itemWrap) will be added later in the results.forEach loop
-                            // Do NOT add infoWrap to first tab - it's only for reflection tabs
-                            _tabIndex++;
-                            activateTab(0);
-                            updateTabLabels();
+                            // Activity Process is now in left column (always visible)
+                            // No need to create a separate tab for it
+                            // itemWrap will be added to activityContent in the results.forEach loop
 
                             // Always fetch canonical reflection row independently so debug output appears
                             try {
@@ -997,7 +1063,7 @@
                                         if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (first fetch) - skipping'); return; }
                                         if (rres && Array.isArray(rres.reflections)) console.log('journal_report: reflections array', rres.reflections);
                                         try {
-                                            // if reflections array present, create one tab per reflection (NOT in first Activity Process tab)
+                                            // if reflections array present, create one tab per reflection
                                             if (rres && rres.success && Array.isArray(rres.reflections) && rres.reflections.length) {
                                                 var refls = rres.reflections;
                                                 // Create a new tab for each reflection
@@ -1010,10 +1076,10 @@
                                                         elemsWithId.forEach(function(el){ var old = el.id; el.id = old + '_' + cidx; });
                                                         var addCont = clone.querySelector('#wr_additionalLessonsContainer'); if (addCont) addCont.id = 'wr_additionalLessonsContainer_' + cidx;
                                                         
-                                                        // Create new tab for this reflection
-                                                        var tabNum = _tabs.length; // First reflection will be tab #1 (since Activity Process is tab 0)
+                                                        // Create new tab for this reflection (i=0 -> tab #1)
+                                                        var tabNum = _tabs.length + 1;
                                                         var tabLabel = (getCurrentLang() === 'ja') ? ('内省 #' + tabNum) : ('Reflection #' + tabNum);
-                                                        createTab(tabLabel, false, false);
+                                                        createTab(tabLabel, false, ri === 0); // first reflection tab cannot be deleted
                                                         var content = createTabContent();
                                                         content.appendChild(clone);
                                                         _tabIndex++;
@@ -1022,9 +1088,9 @@
                                                         populateWrapWithReflection(clone, rf);
                                                     } catch(e) { console.warn('clone populate failed', e); }
                                                 }
-                                                // Update tab labels and activate the last (newest) tab
+                                                // Update tab labels and activate the first reflection tab
                                                 updateTabLabels();
-                                                activateTab(_tabs.length - 1);
+                                                activateTab(0);
                                                 _reflectionsRendered = true;
                                             } else {
                                                 // No reflections found - create first reflection tab
@@ -1035,14 +1101,14 @@
                                                     elemsWithId.forEach(function(el){ var old = el.id; el.id = old + '_' + cidx; });
                                                     
                                                     var tabLabel = (getCurrentLang() === 'ja') ? '内省 #1' : 'Reflection #1';
-                                                    createTab(tabLabel, false, false);
+                                                    createTab(tabLabel, false, true); // first reflection tab cannot be deleted
                                                     var content = createTabContent();
                                                     content.appendChild(clone);
                                                     _tabIndex++;
                                                     
                                                     wireInfoWrapInteractions(clone);
                                                     updateTabLabels();
-                                                    activateTab(1); // Activate first reflection tab
+                                                    activateTab(0); // Activate first reflection tab
                                                 } catch(e) { console.warn('create first reflection tab failed', e); }
                                                 _reflectionsRendered = true;
                                             }
@@ -1357,47 +1423,26 @@
                                 itemWrap.style.maxHeight = '360px';
                                 itemWrap.style.overflowY = 'auto';
 
-                                var heading = document.createElement('h4');
-                                heading.textContent = (getCurrentLang() === 'ja') ? ('思考した問いノード：' + (item.display || '')) : ('Question node: ' + (item.display || ''));
-                                heading.style.margin = '0 0 8px 0';
+                                // タイトル
+                                var heading = document.createElement('div');
                                 heading.style.fontWeight = 'bold';
-                                heading.style.fontSize = '16px';
+                                heading.style.fontSize = '17px';
+                                heading.style.margin = '0 0 8px 0';
+                                heading.textContent = (getCurrentLang() === 'ja') ? ('思考した問いノード：' + (item.display || '')) : ('Question node: ' + (item.display || ''));
                                 itemWrap.appendChild(heading);
 
-                                // Build a table: left column = appeared_at, right column = content (with activity prefix)
-                                var tbl = document.createElement('table');
-                                tbl.style.width = '100%';
-                                tbl.style.borderCollapse = 'collapse';
-                                tbl.style.fontSize = '14px';
-                                var tbody = document.createElement('tbody');
+                                // タイムライン本体
+                                var timeline = document.createElement('div');
+                                timeline.style.display = 'flex';
+                                timeline.style.flexDirection = 'column';
+                                timeline.style.gap = '0px';
+                                timeline.style.margin = '8px 0 0 0';
 
-                                function formatRow(timeText, labelText, detailText) {
-                                    var tr = document.createElement('tr');
-                                    var tdTime = document.createElement('td');
-                                    tdTime.textContent = timeText || '';
-                                    tdTime.style.width = '160px';
-                                    tdTime.style.padding = '8px 10px';
-                                    tdTime.style.verticalAlign = 'top';
-                                    tdTime.style.borderBottom = '1px solid ' + theme.border;
-
-                                    var tdLabel = document.createElement('td');
-                                    tdLabel.textContent = labelText || '';
-                                    tdLabel.style.width = '220px';
-                                    tdLabel.style.padding = '8px 10px';
-                                    tdLabel.style.verticalAlign = 'top';
-                                    tdLabel.style.borderBottom = '1px solid ' + theme.border;
-
-                                    var tdDetail = document.createElement('td');
-                                    tdDetail.textContent = detailText || '';
-                                    tdDetail.style.padding = '8px 10px';
-                                    tdDetail.style.verticalAlign = 'top';
-                                    tdDetail.style.borderBottom = '1px solid ' + theme.border;
-
-                                    tr.appendChild(tdTime);
-                                    tr.appendChild(tdLabel);
-                                    tr.appendChild(tdDetail);
-                                    return tr;
-                                }
+                                // historiesがあればタイムライン表示
+                                var rowsSource = (item.histories && item.histories.length) ? item.histories : null;
+                                var mapJa = { 1: '手段設定', 2: 'ラベル変更', 3: '理由記述', 4: '完了時間記述', 5: '手段開始', 6: '手段中断', 7: '手段終了', 8: '内省記述' };
+                                var mapIcon = { 1: '⚙️', 2: '🏷️', 3: '📝', 4: '⏰', 5: '▶️', 6: '⏸️', 7: '⏹️', 8: '💬' };
+                                // 最新状態タイムラインは表示しない
 
                                 // Prefer histories (which include appeared_at and activity). If none, fall back to item.content strings.
                                 // We will group histories by their raw `content` value and render each content as a heading,
@@ -1591,14 +1636,15 @@
                                         detailsDiv.style.opacity = '0';
                                         detailsDiv.style.transition = 'max-height 0.28s ease, opacity 0.18s ease';
 
-                                        // iterate over all histories in grp (preserves chronological order)
-                                        grp.forEach(function (h) {
-                                            var timeText = h.appeared_at || '';
-                                            var prefix = '';
-                                            var detail = '';
-                                            try {
+                                        // historiesを詳細展開でリスト表示
+                                        if (grp && grp.length) {
+                                            var timelineWrap = document.createElement('div');
+                                            timelineWrap.className = 'jr-timeline-list';
+                                            grp.forEach(function(h, idx) {
                                                 var act = (typeof h.activity !== 'undefined') ? parseInt(h.activity, 10) : 0;
-                                                if (act && act > 0) prefix = (getCurrentLang() === 'ja') ? (mapJa[act] || '') : (mapEn[act] || '');
+                                                var label = (getCurrentLang() === 'ja') ? (mapJa[act] || '') : '';
+                                                var icon = mapIcon[act] || '●';
+                                                var detail = '';
                                                 if (act === 1 || act === 2) {
                                                     detail = h.content || '';
                                                 } else if (act === 3) {
@@ -1612,18 +1658,40 @@
                                                     if (h.attribution) parts.push(h.attribution);
                                                     if (h.application) parts.push(h.application);
                                                     detail = parts.join(' / ');
-                                                } else {
-                                                    detail = '';
                                                 }
-                                            } catch (e) { detail = ''; }
-
-                                            var labelText = prefix || '';
-                                            var detailText = detail || '';
-                                            innerTbody.appendChild(formatRow(timeText, labelText, detailText));
-                                        });
-
-                                        innerTbl.appendChild(innerTbody);
-                                        detailsDiv.appendChild(innerTbl);
+                                                var row = document.createElement('div');
+                                                row.className = 'jr-timeline-row' + (idx === grp.length-1 ? ' last' : '');
+                                                // アイコン＋縦線
+                                                var iconWrap = document.createElement('div');
+                                                iconWrap.className = 'jr-timeline-icon-wrap';
+                                                var iconDiv = document.createElement('div');
+                                                iconDiv.className = 'jr-timeline-icon';
+                                                iconDiv.textContent = icon;
+                                                iconWrap.appendChild(iconDiv);
+                                                row.appendChild(iconWrap);
+                                                // ラベル・内容
+                                                var textDiv = document.createElement('div');
+                                                textDiv.className = 'jr-timeline-text';
+                                                var labelDiv = document.createElement('div');
+                                                labelDiv.className = 'jr-timeline-label';
+                                                labelDiv.textContent = label;
+                                                textDiv.appendChild(labelDiv);
+                                                if (detail) {
+                                                    var detailDiv = document.createElement('div');
+                                                    detailDiv.className = 'jr-timeline-detail';
+                                                    detailDiv.textContent = '内容：' + detail;
+                                                    textDiv.appendChild(detailDiv);
+                                                }
+                                                row.appendChild(textDiv);
+                                                // 日時
+                                                var timeDiv = document.createElement('div');
+                                                timeDiv.className = 'jr-timeline-time';
+                                                timeDiv.textContent = h.appeared_at || '';
+                                                row.appendChild(timeDiv);
+                                                timelineWrap.appendChild(row);
+                                            });
+                                            detailsDiv.appendChild(timelineWrap);
+                                        }
                                         // header click toggles the details
                                         // toggle with smooth height animation and keyboard support
                                         var openDetails = function () {
@@ -1683,15 +1751,16 @@
                                         itemWrap.appendChild(emTbl);
                                     });
                                 } else {
-                                    tbody.appendChild(formatRow('', '', (getCurrentLang() === 'ja') ? '(該当データなし)' : '(no data)'));
+                                    // historiesもcontentもない場合、タイムライン風divで「該当データなし」表示
+                                    var noDataDiv = document.createElement('div');
+                                    noDataDiv.style.color = '#888';
+                                    noDataDiv.style.fontSize = '1em';
+                                    noDataDiv.style.margin = '12px 0';
+                                    noDataDiv.textContent = (getCurrentLang() === 'ja') ? '(該当データなし)' : '(no data)';
+                                    itemWrap.appendChild(noDataDiv);
                                 }
-
-                                tbl.appendChild(tbody);
-                                itemWrap.appendChild(tbl);
-                                // Add to first tab (Activity Process) only
-                                if (_tabContents.length > 0 && _tabContents[0]) {
-                                    _tabContents[0].appendChild(itemWrap);
-                                }
+                                // Add to left column (Activity Process) - always visible
+                                activityContent.appendChild(itemWrap);
                             });
 
                             // Wire download link click event
@@ -2051,7 +2120,7 @@
                                     } catch (e) { refPayload.lessons = '[]'; }
 
                                     // Existing ID?
-                                    var stored = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                                    var stored = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
                                     var existingReflectionIds = [];
                                     if (stored && stored.length > idx && stored[idx] && Array.isArray(stored[idx].object_journal_reflection_ids)) {
                                         existingReflectionIds = stored[idx].object_journal_reflection_ids.slice();
@@ -2076,13 +2145,13 @@
                                                 if (rres && rres.success && rres.object_journal_reflection_id) {
                                                     // Update stored ID and attach id to wrapper so future saves target the same row
                                                     try {
-                                                        var s2 = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                                                        var s2 = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
                                                         if (!(s2 && s2.length > idx && s2[idx])) s2[idx] = s2[idx] || {};
                                                         if (!s2[idx].object_journal_reflection_ids) s2[idx].object_journal_reflection_ids = [];
                                                         // Ensure size
                                                         while (s2[idx].object_journal_reflection_ids.length <= wrapIdx) s2[idx].object_journal_reflection_ids.push(null);
                                                         s2[idx].object_journal_reflection_ids[wrapIdx] = rres.object_journal_reflection_id;
-                                                        localStorage.setItem('weeklyGoals', JSON.stringify(s2));
+                                                        localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(s2));
                                                     } catch (e) { console.warn('persist id fail', e); }
                                                     try { if (wrap && wrap.dataset) wrap.dataset.objectJournalReflectionId = rres.object_journal_reflection_id; } catch (e) {}
                                                     resolve(rres);

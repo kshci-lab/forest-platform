@@ -1,5 +1,9 @@
 <?php
 // get_latest_object_goal.php
+// エラー表示を抑制（JSONレスポンスのために必須）
+error_reporting(0);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json; charset=UTF-8');
 if (function_exists('date_default_timezone_set')) {
     date_default_timezone_set('Asia/Tokyo');
@@ -9,7 +13,7 @@ if (function_exists('date_default_timezone_set')) {
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // require DB connection (provides $mysqli)
-require_once(__DIR__ . '/../../php/connect_db.php');
+require_once(__DIR__ . '/connect_db.php');
 
 $map_id = isset($_SESSION['MAPID']) ? $_SESSION['MAPID'] : '';
 if (!$map_id) {
@@ -27,6 +31,7 @@ try {
     $deletedFilter = $hasDeleted ? "AND (g.deleted IS NULL OR g.deleted = 0)" : "";
 
     // Return weekly goals joined with node content (if any)
+    // object_journal_nodes → node_latest経由でcontentを取得
     $sql = "
         SELECT 
             g.object_journal_id,
@@ -34,13 +39,14 @@ try {
             g.finish_date,
             nl.content AS content
         FROM object_journals g
-        LEFT JOIN object_journal_nodes n
-            ON g.object_journal_id = n.object_journal_id
-            AND (n.deleted IS NULL OR n.deleted = 0)
+        LEFT JOIN object_journal_nodes ojn
+            ON g.object_journal_id = ojn.object_journal_id
+            AND (ojn.deleted IS NULL OR ojn.deleted = 0)
         LEFT JOIN node_latest nl
-            ON n.node_id = nl.node_id
+            ON ojn.node_id = nl.node_id
         WHERE g.map_id = ?
           " . $deletedFilter . "
+          AND (g.`delete` IS NULL OR g.`delete` = 0)
         ORDER BY g.appeared_at DESC
         LIMIT 50";
 

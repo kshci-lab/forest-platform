@@ -1,5 +1,9 @@
 <?php
 // delete_object_goal.php
+
+session_start();
+
+require("connect_db.php");
 header('Content-Type: application/json; charset=UTF-8');
 
 $object_journal_id = $_POST['object_journal_id'] ?? '';

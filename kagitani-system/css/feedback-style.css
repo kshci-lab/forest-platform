@@ -69,6 +69,8 @@
   box-shadow: 0 4px 10px rgba(16,24,40,0.06);
 }
 .fl-card--wide{ width:700px; min-width:500px }
+/* 教訓一覧ツールチップ用の狭い幅 */
+#lessonsTooltip.fl-card{ width:350px; min-width:280px; max-width:380px }
 .fl-header{
   cursor: move;
   background: #f2f4f6;

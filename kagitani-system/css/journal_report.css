@@ -1,3 +1,122 @@
+/* --- タイムライン縦線デザイン --- */
+.jr-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 8px 0 0 0;
+  position: relative;
+}
+.jr-timeline-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  min-height: 38px;
+  margin-bottom: 2px;
+}
+.jr-timeline-icon-wrap {
+  position: relative;
+  width: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.jr-timeline-icon {
+  z-index: 2;
+  background: #fff;
+  border-radius: 50%;
+  font-size: 1.15em;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+.jr-timeline-icon-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 100%;
+  background: #b2dfdb;
+  z-index: 1;
+}
+.jr-timeline-row.last .jr-timeline-icon-wrap::before {
+  height: 18px;
+  /* 最後の要素は線を短く */
+}
+.jr-timeline-row.last {
+  margin-bottom: 8px;
+}
+.jr-timeline-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.jr-timeline-label {
+  font-weight: 600;
+  font-size: 1em;
+}
+.jr-timeline-detail {
+  color: #333;
+  font-size: 0.97em;
+}
+.jr-timeline-time {
+  font-size: 0.92em;
+  color: #888;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+/* --- 活動プロセス タイムライン --- */
+.jr-activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  margin: 8px 0 0 0;
+}
+.jr-activity-timeline-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 2px;
+  padding: 2px 0;
+}
+.jr-activity-timeline-row.latest {
+  background: rgba(43,122,120,0.07);
+  border-radius: 8px;
+  padding: 10px 8px;
+  margin-bottom: 10px;
+}
+.jr-activity-timeline-icon {
+  font-size: 1.1em;
+  margin-top: 2px;
+}
+.jr-activity-timeline-row.latest .jr-activity-timeline-icon {
+  font-size: 1.5em;
+}
+.jr-activity-timeline-label {
+  font-weight: 600;
+  font-size: 1em;
+}
+.jr-activity-timeline-row.latest .jr-activity-timeline-label {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+.jr-activity-timeline-detail {
+  color: #333;
+  font-size: 0.97em;
+}
+.jr-activity-timeline-row.latest .jr-activity-timeline-detail {
+  font-size: 1.05em;
+}
+.jr-activity-timeline-time {
+  font-size: 0.92em;
+  color: #888;
+  white-space: nowrap;
+}
+.jr-activity-timeline-row.latest .jr-activity-timeline-time {
+  font-size: 0.98em;
+}
 /* Styles for journal_report modal and elements */
 .jr-modal{
   position: fixed;
@@ -19,10 +138,90 @@
   border: 1px solid #e8f3f1;
   box-shadow: 0 8px 30px rgba(35,48,67,0.12);
   width: 95vw;
-  max-width: 1100px;
+  max-width: 1400px;
   min-width: 560px;
   max-height: 85vh;
   overflow-y: auto;
+}
+
+/* Two-column layout: Activity Process (left) + Reflections (right) */
+.jr-two-column-layout {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+.jr-left-column {
+  flex: 0 0 33.3333%;
+  max-width: 33.3333%;
+  display: flex;
+  flex-direction: column;
+}
+.jr-right-column {
+  flex: 0 0 66.6666%;
+  max-width: 66.6666%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.jr-column-header {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2b7a78;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #2b7a78;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.jr-column-header::before {
+  font-size: 16px;
+}
+.jr-left-column .jr-column-header::before {
+  content: '📋';
+}
+.jr-right-column .jr-column-header::before {
+  content: '💭';
+}
+.jr-activity-content {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 8px;
+}
+.jr-activity-content::-webkit-scrollbar {
+  width: 6px;
+}
+.jr-activity-content::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+.jr-reflection-content {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+.jr-reflection-content::-webkit-scrollbar {
+  width: 6px;
+}
+.jr-reflection-content::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+/* Responsive: stack columns on narrow screens */
+@media (max-width: 900px) {
+  .jr-two-column-layout {
+    flex-direction: column;
+  }
+  .jr-left-column,
+  .jr-right-column {
+    flex: none;
+    max-width: 100%;
+  }
+  .jr-activity-content,
+  .jr-reflection-content {
+    max-height: 40vh;
+  }
 }
 .jr-title{ margin-bottom: 12px; color: #2b7a78; font-size: 20px; font-weight:700 }
 .jr-period-heading{ margin:0 0 12px 0; font-size:15px; font-weight:600; color:#233043 }
@@ -307,10 +506,10 @@
   flex: 1;
 }
 .jr-tab-delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
+  display: flex;
+  gap: 0;
+  margin-top: 16px;
+  position: relative;
   height: 18px;
   padding: 0;
   margin: 0;
@@ -328,6 +527,39 @@
   background: #fee;
   border-color: #e57373;
   color: #c62828;
+.jr-col-divider {
+  width: 18px;
+  min-width: 18px;
+  max-width: 18px;
+  cursor: col-resize;
+  background: linear-gradient(to right, #26c6da 0%, #00acc1 100%);
+  border-left: 2px solid #0097a7;
+  border-right: 2px solid #0097a7;
+  margin: 0 0;
+  z-index: 10;
+  box-shadow: 0 0 8px 2px #00bcd4, 0 0 0 2px #fff inset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background 0.18s, box-shadow 0.18s;
+}
+.jr-col-divider::after {
+  content: '\21C6'; /* ⇆ */
+  color: #fff;
+  font-size: 1.3em;
+  font-weight: bold;
+  text-shadow: 0 1px 4px #0097a7, 0 0 2px #fff;
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.jr-col-divider:hover {
+  background: linear-gradient(to right, #00bcd4 0%, #00838f 100%);
+  box-shadow: 0 0 16px 4px #00bcd4, 0 0 0 2px #fff inset;
+}
 }
 
 /* Lesson tabs (nested inside reflection card) */

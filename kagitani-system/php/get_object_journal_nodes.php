@@ -1,18 +1,24 @@
 
-
-
 <?php
-ini_set('display_errors', 0); // 本番は0, デバッグは1
-error_reporting(E_ALL);
-header('Content-Type: application/json; charset=UTF-8');
+// エラー表示を抑制（JSONレスポンスのために必須）
+error_reporting(0);
+ini_set('display_errors', 0);
 
-$map_id = $_SESSION['MAPID']; 
+header('Content-Type: application/json; charset=UTF-8');
+session_start();
+
+// DB接続情報を読み込み
+require_once("connect_db.php");
+
+// DB接続確認
+if (!isset($mysqli) || !$mysqli) {
+    echo json_encode(['success' => false, 'error' => 'DB接続失敗']);
+    exit;
+}
+
+$map_id = isset($_SESSION['MAPID']) ? $_SESSION['MAPID'] : null; 
 
 try {
-    require_once('../../php/connect_db.php');
-    if (!isset($mysqli) || !$mysqli) {
-        throw new Exception('DB接続失敗 ($mysqli未定義)');
-    }
 
     $object_journal_id = isset($_GET['object_journal_id']) ? $_GET['object_journal_id'] : '';
     if (!$object_journal_id) {

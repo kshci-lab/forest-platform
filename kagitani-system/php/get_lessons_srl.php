@@ -1,8 +1,14 @@
 <?php
+// エラー表示を抑制
+error_reporting(0);
+ini_set('display_errors', 0);
+
 // SRL由来の教訓: object_journal_lesson-learneds の lesson_learned を返す（map_idで絞り込み）
 header('Content-Type: application/json; charset=UTF-8');
 date_default_timezone_set('Asia/Tokyo');
 
+// DB接続情報を読み込み
+require_once("connect_db.php");
 
 try {
 	if (session_status() !== PHP_SESSION_ACTIVE) session_start();
@@ -56,16 +62,41 @@ try {
 
 	// 基本的には lesson_learned 等を直接取得する
 	// map_id が指定されていれば lesson テーブルの map_id で絞り込む
+	// object_journal_reflection_id を使って object_journals から start_date, finish_date, object_journal_id を取得
 	if ($map_id) {
-		$sql = "SELECT " . $ll_id_col . " AS `object_journal_lesson-learned_id`, ll.`object_journal_reflection_id`, ll.`lesson_learned`, ll.`opportunity`, ll.`created_at`, ll.`updated_at`, ll.`deleted`, ll.`map_id`
+		$sql = "SELECT " . $ll_id_col . " AS `object_journal_lesson-learned_id`, 
+			ll.`object_journal_reflection_id`, 
+			ll.`lesson_learned`, 
+			ll.`opportunity`, 
+			ll.`created_at`, 
+			ll.`updated_at`, 
+			ll.`deleted`, 
+			ll.`map_id`,
+			oj.`object_journal_id` AS object_journal_id,
+			oj.`start_date` AS journal_start_date,
+			oj.`finish_date` AS journal_finish_date
 			FROM " . $ll_table_escaped . " ll
+			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci = ojr.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci
+			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` COLLATE utf8mb4_unicode_ci = oj.`object_journal_id` COLLATE utf8mb4_unicode_ci
 			WHERE (ll.`deleted` IS NULL OR ll.`deleted` = 0) AND ll.`map_id` COLLATE utf8mb4_unicode_ci = CAST(:map_id AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci
 			ORDER BY ll.`updated_at` DESC";
 		$stmt = $pdo->prepare($sql);
 		$stmt->bindValue(':map_id', $map_id, PDO::PARAM_STR);
 	} else {
-		$sql = "SELECT " . $ll_id_col . " AS `object_journal_lesson-learned_id`, ll.`object_journal_reflection_id`, ll.`lesson_learned`, ll.`opportunity`, ll.`created_at`, ll.`updated_at`, ll.`deleted`, ll.`map_id`
+		$sql = "SELECT " . $ll_id_col . " AS `object_journal_lesson-learned_id`, 
+			ll.`object_journal_reflection_id`, 
+			ll.`lesson_learned`, 
+			ll.`opportunity`, 
+			ll.`created_at`, 
+			ll.`updated_at`, 
+			ll.`deleted`, 
+			ll.`map_id`,
+			oj.`object_journal_id` AS object_journal_id,
+			oj.`start_date` AS journal_start_date,
+			oj.`finish_date` AS journal_finish_date
 			FROM " . $ll_table_escaped . " ll
+			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci = ojr.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci
+			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` COLLATE utf8mb4_unicode_ci = oj.`object_journal_id` COLLATE utf8mb4_unicode_ci
 			WHERE (ll.`deleted` IS NULL OR ll.`deleted` = 0)
 			ORDER BY ll.`updated_at` DESC";
 		$stmt = $pdo->prepare($sql);

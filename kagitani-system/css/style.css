@@ -411,7 +411,8 @@ input:checked+label::before {
 	width: calc(100vw - 350px);
 	min-width: 300px;
 	/* height:75vh; */
-	height: calc(100vh - 139px); /* 画面の一番下まで */
+	height: calc(100vh - 85px); /* デフォルトは画面いっぱい */
+	min-height: 150px;
 	/* nav を上に重ねた際にマップ内部が隠れないように上部パディングを確保 */
 	padding-top: 48px;
 	/* 元は75 */
@@ -424,6 +425,7 @@ input:checked+label::before {
 	overscroll-behavior: contain;
 	-webkit-overflow-scrolling: auto;
 	float:left;
+	box-sizing: border-box;
 }
 
 /* --- Hide duplicate jsMind containers to keep only the main one visible --- */
@@ -950,9 +952,8 @@ h3 {
 }
 /* 問い一覧の全体 */
 #side_menu .inquiry_area {
-	/* Make inquiry_area match the visible jsmind container height for consistent vertical alignment */
-	/* Matches #jsmind_container height: calc(100vh - 139px) */
-	height: calc(100vh - 139px);
+	/* デフォルトの高さは45%、ユーザーがリサイズ可能 */
+	height: 45%;
 	max-height: none;
 	overflow-y: auto;
 	border: solid 5px #ccc;

@@ -120,3 +120,190 @@ function macro_disp(){
 		attachLessonsButton();
 	}
 })();
+
+// 縦リサイズ機能（jsmind_container と process_network_container）
+(function(){
+	function initVerticalResize(){
+		const resizeHandle = document.getElementById('vertical-resize-handle');
+		const jsmindContainer = document.getElementById('jsmind_container');
+		const processContainer = document.getElementById('process_network_container');
+		
+		if (!resizeHandle || !jsmindContainer || !processContainer) return;
+
+		let isResizing = false;
+		let startY = 0;
+		let startJsmindHeight = 0;
+		let startProcessHeight = 0;
+		let hasBeenResized = false; // ユーザーが手動でリサイズしたかどうか
+
+		// jsmind_containerの高さを計算する関数
+		function getFullHeight() {
+			return window.innerHeight - 85; // ヘッダー分を引いた高さ
+		}
+
+		// process_network_containerの表示状態を監視してリサイズハンドルを表示/非表示
+		const observer = new MutationObserver(function(mutations) {
+			// リサイズ中は無視
+			if (isResizing) return;
+			
+			mutations.forEach(function(mutation) {
+				if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+					const display = window.getComputedStyle(processContainer).display;
+					if (display !== 'none') {
+						// SRL整理マップが表示されたら
+						resizeHandle.style.display = 'block';
+						
+						// まだ手動リサイズされていない場合のみ、半分に分割
+						if (!hasBeenResized) {
+							const totalHeight = getFullHeight();
+							const halfHeight = Math.floor((totalHeight - 8) / 2); // 8はリサイズハンドルの高さ
+							jsmindContainer.style.height = halfHeight + 'px';
+							processContainer.style.height = halfHeight + 'px';
+						}
+						
+						// jsMindを再描画
+						if (typeof _jm !== 'undefined' && _jm) {
+							try { _jm.resize(); } catch(e) {}
+						}
+					} else {
+						// SRL整理マップが非表示になったら、マインドマップを画面いっぱいに
+						resizeHandle.style.display = 'none';
+						hasBeenResized = false; // リセット
+						jsmindContainer.style.height = getFullHeight() + 'px';
+						
+						// jsMindを再描画
+						if (typeof _jm !== 'undefined' && _jm) {
+							try { _jm.resize(); } catch(e) {}
+						}
+					}
+				}
+			});
+		});
+		observer.observe(processContainer, { attributes: true, attributeFilter: ['style'] });
+
+		// 初期状態をチェック
+		const initialDisplay = window.getComputedStyle(processContainer).display;
+		if (initialDisplay !== 'none') {
+			resizeHandle.style.display = 'block';
+			const totalHeight = getFullHeight();
+			const halfHeight = Math.floor((totalHeight - 8) / 2);
+			jsmindContainer.style.height = halfHeight + 'px';
+			processContainer.style.height = halfHeight + 'px';
+		} else {
+			resizeHandle.style.display = 'none';
+			// デフォルトは画面いっぱい（CSSで設定済み）
+		}
+
+		resizeHandle.addEventListener('mousedown', function(e) {
+			e.preventDefault();
+			isResizing = true;
+			startY = e.clientY;
+			startJsmindHeight = jsmindContainer.offsetHeight;
+			startProcessHeight = processContainer.offsetHeight;
+			
+			document.body.style.cursor = 'ns-resize';
+			document.body.style.userSelect = 'none';
+			
+			// ドラッグ中のイベントリスナー
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
+		});
+
+		function onMouseMove(e) {
+			if (!isResizing) return;
+			
+			const deltaY = e.clientY - startY;
+			const newJsmindHeight = Math.max(150, startJsmindHeight + deltaY);
+			const newProcessHeight = Math.max(150, startProcessHeight - deltaY);
+			
+			// 両方の高さを設定
+			jsmindContainer.style.height = newJsmindHeight + 'px';
+			processContainer.style.height = newProcessHeight + 'px';
+			
+			// vis.jsのネットワークをリサイズに対応させる
+			if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess.ownNetwork) {
+				try {
+					defaultThinkingProcess.ownNetwork.redraw();
+					defaultThinkingProcess.ownNetwork.fit();
+				} catch(e) {}
+			}
+		}
+
+		function onMouseUp(e) {
+			if (!isResizing) return;
+			isResizing = false;
+			hasBeenResized = true; // ユーザーが手動でリサイズした
+			
+			document.body.style.cursor = '';
+			document.body.style.userSelect = '';
+			
+			document.removeEventListener('mousemove', onMouseMove);
+			document.removeEventListener('mouseup', onMouseUp);
+			
+			// リサイズ完了後にネットワークを再描画
+			if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess.ownNetwork) {
+				try {
+					defaultThinkingProcess.ownNetwork.redraw();
+				} catch(e) {}
+			}
+			
+			// jsMindも再描画
+			if (typeof _jm !== 'undefined' && _jm) {
+				try {
+					_jm.resize();
+				} catch(e) {}
+			}
+		}
+
+		// タッチデバイス対応
+		resizeHandle.addEventListener('touchstart', function(e) {
+			e.preventDefault();
+			const touch = e.touches[0];
+			isResizing = true;
+			startY = touch.clientY;
+			startJsmindHeight = jsmindContainer.offsetHeight;
+			startProcessHeight = processContainer.offsetHeight;
+			
+			document.addEventListener('touchmove', onTouchMove, { passive: false });
+			document.addEventListener('touchend', onTouchEnd);
+		});
+
+		function onTouchMove(e) {
+			if (!isResizing) return;
+			e.preventDefault();
+			const touch = e.touches[0];
+			const deltaY = touch.clientY - startY;
+			const newJsmindHeight = Math.max(150, startJsmindHeight + deltaY);
+			const newProcessHeight = Math.max(150, startProcessHeight - deltaY);
+			
+			jsmindContainer.style.height = newJsmindHeight + 'px';
+			processContainer.style.height = newProcessHeight + 'px';
+		}
+
+		function onTouchEnd(e) {
+			if (!isResizing) return;
+			isResizing = false;
+			
+			document.removeEventListener('touchmove', onTouchMove);
+			document.removeEventListener('touchend', onTouchEnd);
+			
+			// リサイズ完了後にネットワークを再描画
+			if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess.ownNetwork) {
+				try {
+					defaultThinkingProcess.ownNetwork.redraw();
+				} catch(e) {}
+			}
+			if (typeof _jm !== 'undefined' && _jm) {
+				try {
+					_jm.resize();
+				} catch(e) {}
+			}
+		}
+	}
+
+	if(document.readyState === 'loading'){
+		document.addEventListener('DOMContentLoaded', initVerticalResize);
+	} else {
+		initVerticalResize();
+	}
+})();

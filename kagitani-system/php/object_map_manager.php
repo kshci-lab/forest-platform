@@ -94,6 +94,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             "evaluation_good AS evaluation_good",
             "attribution AS attribution"
         ];
+        if (in_array('evaluation_bad', $availableCols)) $selectParts[] = 'evaluation_bad';
+        else $selectParts[] = "'' AS evaluation_bad";
         if (in_array('attribution_bad', $availableCols)) $selectParts[] = 'attribution_bad';
         if (in_array('application', $availableCols)) $selectParts[] = 'application';
         else $selectParts[] = "'' AS application";
@@ -403,11 +405,31 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $datetime = $selectedDate . ' 23:59:59';
 
     // 指定された日付とnode_idに存在していたノードの履歴を取得
-    // evaluation_good, attribution, application, estimated_time はテーブルに存在しない可能性があるためNULLを返す
+    // ドラッグ操作（drag=1）の履歴から最新の座標を取得し、それ以外の情報は非ドラッグ履歴から取得
+    // サブクエリで各ノードの指定日時時点での最新座標を取得
     $sql_histories = "
         SELECT 
-            onh.object_node_id, onh.content, onh.object_node_type, onh.x, onh.y, onh.status, 
-            onh.appeared_at, onh.disappeared_at, onh.purpose, 
+            onh.object_node_id, 
+            onh.content, 
+            onh.object_node_type, 
+            COALESCE(
+                (SELECT h2.x FROM object_nodes_histories h2 
+                 WHERE h2.object_node_id = onh.object_node_id 
+                 AND h2.appeared_at <= '".$mysqli->real_escape_string($datetime)."'
+                 ORDER BY h2.appeared_at DESC LIMIT 1), 
+                onh.x
+            ) AS x,
+            COALESCE(
+                (SELECT h2.y FROM object_nodes_histories h2 
+                 WHERE h2.object_node_id = onh.object_node_id 
+                 AND h2.appeared_at <= '".$mysqli->real_escape_string($datetime)."'
+                 ORDER BY h2.appeared_at DESC LIMIT 1), 
+                onh.y
+            ) AS y,
+            onh.status, 
+            onh.appeared_at, 
+            onh.disappeared_at, 
+            onh.purpose, 
             NULL AS evaluation_good, 
             NULL AS attribution, 
             NULL AS attribution_bad,
@@ -419,7 +441,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             object_nodes o_nodes ON onh.object_node_id = o_nodes.object_node_id
         WHERE 
             onh.appeared_at <= '".$mysqli->real_escape_string($datetime)."'
-            AND (onh.disappeared_at IS NULL OR onh.disappeared_at > '".$mysqli->real_escape_string($datetime)."')";
+            AND (onh.disappeared_at IS NULL OR onh.disappeared_at > '".$mysqli->real_escape_string($datetime)."')
+            AND (onh.drag = 0 OR onh.drag IS NULL)";
     
     // selected_node_idが指定されている場合はそのノードに関連するデータのみ取得
     // ただし、topic-tag（問いノード）は常に取得する

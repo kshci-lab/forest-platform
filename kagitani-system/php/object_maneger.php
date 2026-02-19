@@ -277,48 +277,101 @@
 
 			$h_sql = "INSERT INTO object_nodes_histories (" . implode(', ', $insertCols) . ") SELECT " . implode(', ', $selectParts) . " FROM object_nodes WHERE object_node_id = '" . $mysqli->real_escape_string($object_node_id) . "'";
 
-			// 教訓 (application) がある場合は lessons テーブルに保存する
-			// 仕様: application を空行で分割し、最初の段落は既存レコードを更新（なければ挿入）、
-			//       それ以降の段落はすべて新規レコードとして保存する
-			$app_trim = ($application !== NULL) ? trim($application) : '';
-			if ($app_trim !== '') {
-				// split on one or more blank lines (allow spaces)
-				$parts = preg_split('/\r?\n\s*\r?\n/', $application);
-				$parts = array_map('trim', $parts);
-				$parts = array_filter($parts, function($p){ return $p !== ''; });
-				$parts = array_values($parts);
-				if (count($parts) > 0) {
-					// first part: update existing latest lesson if exists, else insert
-					$first = $parts[0];
-					$lesson_text = $mysqli->real_escape_string($first);
-					$check_sql = "SELECT object_le_id FROM `object_lesson-learneds` WHERE object_node_id = '" . $mysqli->real_escape_string($object_node_id) . "' AND deleted = 0 ORDER BY created_at DESC LIMIT 1";
-					$res_check = $mysqli->query($check_sql);
-					if ($res_check && $row_check = $res_check->fetch_assoc()) {
-						$existing_le_id = $row_check['object_le_id'];
-						$update_lesson_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text . "', opportunity = '" . $opportunity_esc . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($existing_le_id) . "'";
-						$mysqli->query($update_lesson_sql);
-						if ($mysqli->error) {
-							error_log('Update lesson error: ' . $mysqli->error . ' SQL: ' . $update_lesson_sql);
-						}
-					} else {
-						$lesson_id = uniqid('lesson_', true);
-						$insert_lesson_sql = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id . "','" . $object_node_id . "','" . $lesson_text . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
-						$mysqli->query($insert_lesson_sql);
-						if ($mysqli->error) {
-							error_log('Insert lesson error: ' . $mysqli->error . ' SQL: ' . $insert_lesson_sql);
+			// 教訓の保存処理
+			// 1. lessons_json がある場合（新しい複数教訓形式）: 各教訓を個別に保存
+			// 2. application のみの場合（従来形式）: 空行で分割して保存
+			$lessons_json = isset($_POST['lessons_json']) ? $_POST['lessons_json'] : null;
+			
+			if ($lessons_json !== null && $lessons_json !== '') {
+				// 新しい形式: JSON配列から各教訓を個別に保存
+				$lessons_array = json_decode($lessons_json, true);
+				if (is_array($lessons_array) && count($lessons_array) > 0) {
+					// まず既存の教訓を取得
+					$existing_lessons_sql = "SELECT object_le_id FROM `object_lesson-learneds` WHERE object_node_id = '" . $mysqli->real_escape_string($object_node_id) . "' AND deleted = 0 ORDER BY created_at ASC";
+					$existing_res = $mysqli->query($existing_lessons_sql);
+					$existing_ids = [];
+					while ($existing_res && $row = $existing_res->fetch_assoc()) {
+						$existing_ids[] = $row['object_le_id'];
+					}
+					
+					foreach ($lessons_array as $idx => $lesson_item) {
+						$lesson_text = isset($lesson_item['lesson']) ? trim($lesson_item['lesson']) : '';
+						$lesson_opp = isset($lesson_item['opportunity']) ? $mysqli->real_escape_string(trim($lesson_item['opportunity'])) : '';
+						$lesson_db_id = isset($lesson_item['object_le_id']) ? trim($lesson_item['object_le_id']) : '';
+						
+						if ($lesson_text === '') continue;
+						
+						$lesson_text_esc = $mysqli->real_escape_string($lesson_text);
+						
+						// object_le_id が指定されている場合は更新、なければ既存IDを使用または新規挿入
+						if ($lesson_db_id !== '') {
+							// 既存レコードを更新
+							$update_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text_esc . "', opportunity = '" . $lesson_opp . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($lesson_db_id) . "'";
+							$mysqli->query($update_sql);
+							if ($mysqli->error) {
+								error_log('Update lesson error: ' . $mysqli->error);
+							}
+						} elseif ($idx < count($existing_ids)) {
+							// 既存のIDがあれば更新
+							$use_id = $existing_ids[$idx];
+							$update_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text_esc . "', opportunity = '" . $lesson_opp . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($use_id) . "'";
+							$mysqli->query($update_sql);
+							if ($mysqli->error) {
+								error_log('Update lesson error: ' . $mysqli->error);
+							}
+						} else {
+							// 新規挿入
+							$new_lesson_id = uniqid('lesson_', true);
+							$insert_sql = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $new_lesson_id . "','" . $mysqli->real_escape_string($object_node_id) . "','" . $lesson_text_esc . "','" . $lesson_opp . "','" . $timestamp . "','" . $timestamp . "',0)";
+							$mysqli->query($insert_sql);
+							if ($mysqli->error) {
+								error_log('Insert lesson error: ' . $mysqli->error);
+							}
 						}
 					}
+				}
+			} else {
+				// 従来形式: application を空行で分割して保存
+				$app_trim = ($application !== NULL) ? trim($application) : '';
+				if ($app_trim !== '') {
+					// split on one or more blank lines (allow spaces)
+					$parts = preg_split('/\r?\n\s*\r?\n/', $application);
+					$parts = array_map('trim', $parts);
+					$parts = array_filter($parts, function($p){ return $p !== ''; });
+					$parts = array_values($parts);
+					if (count($parts) > 0) {
+						// first part: update existing latest lesson if exists, else insert
+						$first = $parts[0];
+						$lesson_text = $mysqli->real_escape_string($first);
+						$check_sql = "SELECT object_le_id FROM `object_lesson-learneds` WHERE object_node_id = '" . $mysqli->real_escape_string($object_node_id) . "' AND deleted = 0 ORDER BY created_at DESC LIMIT 1";
+						$res_check = $mysqli->query($check_sql);
+						if ($res_check && $row_check = $res_check->fetch_assoc()) {
+							$existing_le_id = $row_check['object_le_id'];
+							$update_lesson_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text . "', opportunity = '" . $opportunity_esc . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($existing_le_id) . "'";
+							$mysqli->query($update_lesson_sql);
+							if ($mysqli->error) {
+								error_log('Update lesson error: ' . $mysqli->error . ' SQL: ' . $update_lesson_sql);
+							}
+						} else {
+							$lesson_id = uniqid('lesson_', true);
+							$insert_lesson_sql = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id . "','" . $object_node_id . "','" . $lesson_text . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
+							$mysqli->query($insert_lesson_sql);
+							if ($mysqli->error) {
+								error_log('Insert lesson error: ' . $mysqli->error . ' SQL: ' . $insert_lesson_sql);
+							}
+						}
 
-					// remaining parts: always insert as new lesson records
-					for ($i = 1; $i < count($parts); $i++) {
-						$part = $parts[$i];
-						if (trim($part) === '') continue;
-						$lesson_text_part = $mysqli->real_escape_string($part);
-						$lesson_id_part = uniqid('lesson_', true);
-						$insert_sql_part = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id_part . "','" . $object_node_id . "','" . $lesson_text_part . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
-						$mysqli->query($insert_sql_part);
-						if ($mysqli->error) {
-							error_log('Insert lesson error (additional part): ' . $mysqli->error . ' SQL: ' . $insert_sql_part);
+						// remaining parts: always insert as new lesson records
+						for ($i = 1; $i < count($parts); $i++) {
+							$part = $parts[$i];
+							if (trim($part) === '') continue;
+							$lesson_text_part = $mysqli->real_escape_string($part);
+							$lesson_id_part = uniqid('lesson_', true);
+							$insert_sql_part = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $lesson_id_part . "','" . $object_node_id . "','" . $lesson_text_part . "','" . $opportunity_esc . "','" . $timestamp . "','" . $timestamp . "',0)";
+							$mysqli->query($insert_sql_part);
+							if ($mysqli->error) {
+								error_log('Insert lesson error (additional part): ' . $mysqli->error . ' SQL: ' . $insert_sql_part);
+							}
 						}
 					}
 				}
@@ -365,8 +418,9 @@
 			
 			if ($mysqli->query($sql)) {
 				// 新しい履歴レコードを追加（application は含めない）
+				// evaluation_good, evaluation_bad, attribution, estimated_time はテーブルに存在しない場合があるため除外
 				$h_sql = "INSERT INTO object_nodes_histories 
-					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, evaluation_good, evaluation_bad, attribution, estimated_time, activity)
+					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, activity)
 					SELECT 
 						'$object_h_id',
 						object_node_id,
@@ -378,10 +432,6 @@
 						node_x,
 						node_y,
 						purpose,
-						evaluation_good,
-						evaluation_bad,
-						attribution,
-						estimated_time,
 						4
 					FROM object_nodes
 					WHERE object_node_id = '$node_id'";
@@ -575,8 +625,8 @@
 		if($update_thing === 'node'){
 			$select_update = $_POST['select_update'];   //座標(point) or 内容(label)
 			$node_id = $_POST["node_id"];
-			$node_update_thing1 = $_POST['node_update_thing1'];
-			$node_update_thing2 = $_POST['node_update_thing2'];
+			$node_update_thing1 = isset($_POST['node_update_thing1']) ? $_POST['node_update_thing1'] : '';
+			$node_update_thing2 = isset($_POST['node_update_thing2']) ? $_POST['node_update_thing2'] : '';
 	
 			// 1. 最新の履歴IDを取得
 			$latest_history_id = null;
@@ -623,9 +673,10 @@
 				}
 			
 				// 4. object_nodes_histories に新規レコードを追加（application は含めない）
+				// evaluation_good, evaluation_bad, attribution, estimated_time はテーブルに存在しない場合があるためNULLを使用
 				$insert_history_sql = "
 					INSERT INTO object_nodes_histories 
-						(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, evaluation_good, evaluation_bad, attribution, estimated_time, drag)
+						(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, drag)
 					SELECT 
 						'$object_h_id',
 						object_node_id,
@@ -637,10 +688,6 @@
 						'$node_update_thing1',
 						'$node_update_thing2',
 						purpose,
-						evaluation_good,
-						evaluation_bad,
-						attribution,
-						estimated_time,
 						1
 					FROM object_nodes
 					WHERE object_node_id = '$node_id'
@@ -674,8 +721,9 @@
 				}
 			
 				// 履歴レコードを追加（application は含めない） - label 更新は activity=2 とする
+				// evaluation_good, evaluation_bad, attribution, estimated_time はテーブルに存在しない場合があるためNULLを使用
 				$h_sql = "INSERT INTO object_nodes_histories 
-					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, evaluation_good, evaluation_bad, attribution, estimated_time, activity)
+					(object_node_history_id, object_node_id, object_node_type, status, appeared_at, disappeared_at, content, x, y, purpose, activity)
 					SELECT 
 					'$object_h_id',
 					object_node_id,
@@ -687,10 +735,6 @@
 					node_x,
 					node_y,
 					purpose,
-					evaluation_good,
-					evaluation_bad,
-					attribution,
-					estimated_time,
 					2
 					FROM object_nodes
 					WHERE object_node_id = '$node_id'";

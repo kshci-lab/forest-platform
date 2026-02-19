@@ -1,7 +1,13 @@
 <?php
+// エラー表示を抑制
+error_reporting(0);
+ini_set('display_errors', 0);
+
 // 教訓一覧: deleted=0 かつ application があるレコードを返す
 header('Content-Type: application/json; charset=UTF-8');
 
+// DB接続情報を読み込み
+require_once("connect_db.php");
 
 try {
     // セッションから map_id を取得（GET パラメータでも受け取れるように）
@@ -78,7 +84,10 @@ try {
     ];
     foreach ($candidates as $tbl) {
         try {
-            $sql = "SELECT ol.object_le_id, ol.object_node_id, ol.lesson_learned, ol.opportunity, ol.created_at, ol.updated_at
+            // 問いノード（topic-tag）の情報も取得するためにサブクエリを追加
+            $sql = "SELECT ol.object_le_id, ol.object_node_id, ol.lesson_learned, ol.opportunity, ol.created_at, ol.updated_at, 
+                    o.content AS node_content, o.node_id,
+                    (SELECT t.content FROM object_nodes t WHERE t.node_id = o.node_id AND t.object_nodes_type = 'topic-tag' AND t.deleted = 0 LIMIT 1) AS topic_tag_content
                     FROM {$tbl} ol
                     JOIN object_nodes o ON ol.object_node_id = o.object_node_id
                     WHERE ol.deleted = 0
@@ -93,6 +102,8 @@ try {
             $norm = array_map(function($r){
                 $r['application'] = isset($r['lesson_learned']) ? $r['lesson_learned'] : '';
                 $r['opportunity'] = isset($r['opportunity']) ? $r['opportunity'] : '';
+                $r['source_node_content'] = isset($r['node_content']) ? $r['node_content'] : '';
+                $r['topic_tag_content'] = isset($r['topic_tag_content']) ? $r['topic_tag_content'] : '';
                 return $r;
             }, $rows);
             echo json_encode([ 'success' => true, 'items' => $norm ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -103,10 +114,12 @@ try {
     }
 
     // Fallback: older schema where application stored on object_nodes
-        $sql = "SELECT object_node_id, updated_at, application AS application, content, '' AS opportunity FROM object_nodes 
-            WHERE deleted = 0 AND application IS NOT NULL AND TRIM(application) <> '' 
-            AND node_id IN (SELECT node_id FROM map_node_links WHERE map_id = :map_id)
-            ORDER BY updated_at DESC";
+        $sql = "SELECT o.object_node_id, o.updated_at, o.application AS application, o.content, o.content AS source_node_content, '' AS opportunity, o.node_id,
+            (SELECT t.content FROM object_nodes t WHERE t.node_id = o.node_id AND t.object_nodes_type = 'topic-tag' AND t.deleted = 0 LIMIT 1) AS topic_tag_content
+            FROM object_nodes o
+            WHERE o.deleted = 0 AND o.application IS NOT NULL AND TRIM(o.application) <> '' 
+            AND o.node_id IN (SELECT node_id FROM map_node_links WHERE map_id = :map_id)
+            ORDER BY o.updated_at DESC";
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':map_id', $map_id, PDO::PARAM_STR);
     $stmt->execute();

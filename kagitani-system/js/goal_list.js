@@ -52,8 +52,19 @@ function fetchObjectNodeInfo(nodeId) {
         });
     });
 }
+
+// グローバルヘルパ: localStorageのキーを取得（MAPIDごとに分離）
+function getStorageKey(baseName) {
+    var mapId = window.MAPID || 'default';
+    return baseName + '_' + mapId;
+}
+
 // --- 目標管理エリア（小・中・大目標） ---
 document.addEventListener('DOMContentLoaded', function() {
+    // 注意: SRLジャーナルのデータはDBの`object_journals`テーブルで管理
+    // localStorageは表示キャッシュとしてのみ使用
+    // map_idごとにDBからデータを取得して表示する（fetchWeeklyGoalsFromDB）
+    
     // ヘルパ: 現在の言語を取得（トグルの状態に依存）
     function getCurrentLang() {
         var toggle = document.getElementById('language-toggle');
@@ -125,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         var db = new Date(b.start || b.start_date);
                         return db - da;
                     });
-                    localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+                    localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
                     renderWeeklyGoals();
                 }
             },
@@ -137,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Ensure weeklyGoals entries always have `object_journal_id` normalized
     function normalizeWeeklyGoalsStorage() {
         try {
-            var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+            var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
             if (!Array.isArray(goals) || !goals.length) return;
             var changed = false;
             goals = goals.map(function(g){
@@ -159,13 +170,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (migrated) changed = true;
                 return g;
             });
-            if (changed) localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+            if (changed) localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
         } catch (e) {
             console.warn('normalizeWeeklyGoalsStorage failed', e);
         }
     }
     // Normalize any existing stored weeklyGoals before doing network fetches or rendering.
     try { normalizeWeeklyGoalsStorage(); } catch(e) { console.warn('initial normalizeWeeklyGoalsStorage failed', e); }
+    
+    // DBからデータを取得する前にlocalStorageをクリア
+    // これにより、常にDBのmap_id別データが使用される
+    try { localStorage.removeItem(getStorageKey('weeklyGoals')); } catch(e) {}
+    
     fetchWeeklyGoalsFromDB();
     // 小目標
     var addWeeklyBtn = document.getElementById('addWeeklyGoalBtn');
@@ -290,9 +306,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('insert_object_goal.php response:', res);
                         if (res.success) {
                             var ojId = res.object_journal_id;
-                            var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                            var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
                             goals.unshift({ start: startDate, end: endDate, createdAt: new Date().toISOString(), object_journal_id: ojId });
-                            localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+                            localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
 
                             // Also create an initial reflection record linked to this object_journal
                             try {
@@ -307,10 +323,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                             if (rres && rres.success && rres.object_journal_reflection_id) {
                                                 // persist the reflection id into localStorage for this newly created goal (it's at index 0)
                                                 try {
-                                                    var stored = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+                                                    var stored = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
                                                     if (stored && stored.length && stored[0] && stored[0].object_journal_id == ojId) {
                                                         stored[0].object_journal_reflection_id = rres.object_journal_reflection_id;
-                                                        localStorage.setItem('weeklyGoals', JSON.stringify(stored));
+                                                        localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(stored));
                                                     }
                                                 } catch(e) { console.warn('failed to persist reflection id for new weekly goal', e); }
                                             }
@@ -339,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.renderWeeklyGoals = function() {
         // Normalize stored goals to ensure object_journal_id is present (fallback from object_goal_id)
         normalizeWeeklyGoalsStorage();
-        var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+        var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
         if (!weeklyListDiv) return;
         if (goals.length === 0) {
             weeklyListDiv.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">' + t('noWeeklyGoals') + '</div>';
@@ -664,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         // 日付編集モーダルを開くヘルパ（編集ボタンを廃止し、ダブルクリック/キーボードで利用）
         function openWeeklyDateEditor(idx) {
-            var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+            var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
             var goal = goals[idx];
             if (!goal) return;
             var modal = document.createElement('div');
@@ -745,7 +761,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (res.success) {
                             goals[idx].start = newStart;
                             goals[idx].end = newEnd;
-                            localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+                            localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
                             document.body.removeChild(modal);
                             renderWeeklyGoals();
                         } else {
@@ -834,7 +850,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 関連ノード（contents）個別削除（グローバル定義）
 window.deleteGoalNode = function(goalIdx, contentIdx) {
-    var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+    var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
     if (goals[goalIdx] && goals[goalIdx].contents && goals[goalIdx].contents.length > contentIdx) {
         var deletedContent = goals[goalIdx].contents[contentIdx];
         // DB論理削除リクエスト
@@ -853,12 +869,12 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
             }
         });
         goals[goalIdx].contents.splice(contentIdx, 1);
-        localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+        localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
         window.renderWeeklyGoals();
     }
 };
     window.deleteWeeklyGoal = function(idx) {
-        var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+        var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
         var goal = goals[idx];
         // Confirm before deleting
         try {
@@ -887,7 +903,7 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
             });
         }
         goals.splice(idx, 1);
-        localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+        localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
         renderWeeklyGoals();
     };
 
@@ -1003,7 +1019,7 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
         try {
             var labelEl = document.getElementById('addWeeklyGoalMenuLabel');
             if (!labelEl) return;
-            var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+            var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
             if (goals && goals.length > 0) {
                 var g = goals[0];
                 var s = new Date(g.start || g.start_date);
@@ -1111,7 +1127,7 @@ window.addWeeklyGoal = function() {
         return;
     }
     // 画面を即座に更新（localStorageに仮追加）
-    var goals = JSON.parse(localStorage.getItem('weeklyGoals') || '[]');
+    var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
     if (goals.length > 0) {
         // 最新の小目標にノード内容を追加（先頭が最新）
         var latestGoal = goals[0];
@@ -1121,7 +1137,7 @@ window.addWeeklyGoal = function() {
         var nodeContent = selectedNode && selectedNode.topic ? selectedNode.topic : '(内容なし)';
         console.log('[goal_list] adding nodeContent to latestGoal:', nodeContent);
         latestGoal.contents.push(nodeContent);
-        localStorage.setItem('weeklyGoals', JSON.stringify(goals));
+        localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
         try { renderWeeklyGoals(); } catch(e){ console.warn('[goal_list] renderWeeklyGoals error', e); }
     }
     // PHPへAJAXリクエスト送信

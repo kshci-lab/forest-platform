@@ -1,8 +1,9 @@
 <?php
-header('Content-Type: application/json; charset=UTF-8');
+// PDO 接続
+
 session_start();
 
-// PDO 接続
+require("connect_db.php");
 
 
 try {

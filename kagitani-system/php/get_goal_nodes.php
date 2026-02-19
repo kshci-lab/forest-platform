@@ -1,7 +1,7 @@
 <?php
 // object_journal_idから紐づくnode_id一覧を返すAPI
-require("../php/connect_db.php");
 header('Content-Type: application/json; charset=utf-8');
+require_once("connect_db.php");
 
 $object_journal_id = isset($_GET['object_journal_id']) ? $_GET['object_journal_id'] : '';
 if ($object_journal_id === '') {
