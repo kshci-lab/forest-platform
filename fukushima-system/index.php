@@ -33,14 +33,16 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         $content = file_get_contents($_FILES['ImageFile']['tmp_name']);
         $size = $_FILES['ImageFile']['size'];
 
+        // Use mysqli (this codebase primarily uses $mysqli; $pdo may not be defined).
         $sql = "INSERT INTO images(image_id, image_name, image_type, image_content, image_size, created_at)
-      VALUES ('$uuid', :image_name, :image_type, :image_content, :image_size, now())";
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindValue(':image_name', $name, PDO::PARAM_STR);
-        $stmt->bindValue(':image_type', $type, PDO::PARAM_STR);
-        $stmt->bindValue(':image_content', $content, PDO::PARAM_STR);
-        $stmt->bindValue(':image_size', $size, PDO::PARAM_INT);
-        $stmt->execute();
+                VALUES (?, ?, ?, ?, ?, now())";
+        if ($stmt = $mysqli->prepare($sql)) {
+            $null = null; // placeholder for blob binding
+            $stmt->bind_param("sssbi", $uuid, $name, $type, $null, $size);
+            $stmt->send_long_data(3, $content); // 0-based parameter index for image_content
+            $stmt->execute();
+            $stmt->close();
+        }
     }
     header("Location: index.php");
     // CreateSlide_Image();
@@ -60,13 +62,13 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>自己内対話活性化支援システム</title>
-        <link type="text/css" rel="stylesheet" href="../css/jsmind.css" />
-        <link rel="stylesheet" type="text/css" href="../css/item.css">
-        <link rel="stylesheet" type="text/css" href="../css/font.css">
-        <link rel="stylesheet" type="text/css" href="../css/jquery.cleditor.css">
-        <link rel="stylesheet" type="text/css" href="../css/ui.css">
-        <link rel="stylesheet" type="text/css" href="../css/style.css">
-        <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
+        <link type="text/css" rel="stylesheet" href="../css/fukushima_css/jsmind.css" />
+        <link rel="stylesheet" type="text/css" href="../css/fukushima_css/item.css">
+        <link rel="stylesheet" type="text/css" href="../css/fukushima_css/font.css">
+        <link rel="stylesheet" type="text/css" href="../css/fukushima_css/jquery.cleditor.css">
+        <link rel="stylesheet" type="text/css" href="../css/fukushima_css/ui.css">
+        <link rel="stylesheet" type="text/css" href="../css/fukushima_css/style.css">
+        <link rel="stylesheet" type="text/css" href="../css/fukushima_css/thinking-process-network.css" />
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
@@ -82,7 +84,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/jsmind.screenshot.js"></script>
     <script type="text/javascript" src="js/change_tab.js"></script>
     <script type="text/javascript" src="js/meeting-reflection-network.js"></script>
-        <link rel="stylesheet" type="text/css" href="../css/meeting-reflection-network.css" />
+        <link rel="stylesheet" type="text/css" href="../css/fukushima_css/meeting-reflection-network.css" />
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         </script>

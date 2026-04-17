@@ -5,7 +5,7 @@
 	width: calc(100vw - 350px);
 	/* width: 100%; */
 	min-width: 300px;
-	height:100%;
+	/* height:100%; */
 	min-height: 100%;
 	/* margin-bottom:2vh; */
 	/* border-bottom:solid 5px #fbd393; */
@@ -153,6 +153,21 @@
 
 #group_select_label{
 	color: #412b05;
+}
+
+/* When the group select is placed in the org subtab bar, don't float it. */
+.org-subtabs .group_select_form{
+	margin-left:auto;
+	margin-bottom:0;
+	float:none;
+	display:flex;
+	align-items:center;
+	gap:6px;
+	padding:0;
+}
+.org-subtabs #group_select{
+	margin-top:0;
+	margin-right:0;
 }
 
 #trigger_click{
@@ -348,4 +363,487 @@ input[type="checkbox"][name="check_organizational"]{
 	border-bottom:1px solid #FBC362;
 	color:#412b05;
 	text-decoration:none;
+}
+
+/* ------------------------------------------------------------------------- */
+/* forest-mrn: 組織知マップ（共同化/連結化）サブタブ + 連結化オーバーレイ最小スタイル */
+
+.org-subtabs{
+	display:flex;
+	gap:8px;
+	padding:10px 10px 0 10px;
+	border-bottom:1px solid rgba(0,0,0,0.08);
+	background:linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+}
+.org-subtab{
+	appearance:none;
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	color:#222;
+	padding:8px 12px;
+	border-radius:999px;
+	font-size:14px;
+	cursor:pointer;
+}
+.org-subtab.is-active{
+	background:#111;
+	color:#fff;
+	border-color:#111;
+}
+.org-subtab-panel{
+	padding-top:8px;
+}
+
+#shared_combination_overlay{
+	box-sizing:border-box;
+	width:100%;
+	padding:10px;
+}
+#shared_combination_overlay .comb-row{
+	display:flex;
+	gap:12px;
+	align-items:stretch;
+}
+#shared_combination_overlay .comb-left,
+#shared_combination_overlay .comb-right{
+	background:#fff;
+	border:1px solid rgba(0,0,0,0.12);
+	border-radius:10px;
+	box-shadow:0 2px 8px rgba(0,0,0,0.06);
+	overflow:hidden;
+}
+#shared_combination_overlay .comb-left{
+	flex: 1 1 60%;
+	min-width: 360px;
+	display:flex;
+	flex-direction:column;
+}
+#shared_combination_overlay .comb-right{
+	flex: 0 0 40%;
+	min-width: 320px;
+	padding:0 0 10px 0;
+}
+#shared_combination_overlay .overlay-title{
+	font-size:14px;
+	font-weight:700;
+	padding:10px 12px;
+	border-bottom:1px solid rgba(0,0,0,0.08);
+	background:#fafafa;
+}
+#shared_combination_overlay .overlay-title{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:10px;
+}
+#shared_combination_overlay .kfrag-action-group{
+	display:inline-block;
+	margin-left:10px;
+	white-space:nowrap;
+}
+#shared_combination_overlay .kfrag-action-btn{
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	border-radius:999px;
+	padding:4px 10px;
+	cursor:pointer;
+	font-size:12px;
+	margin-right:6px;
+}
+#shared_combination_overlay .kfrag-action-btn[disabled]{
+	opacity:0.5;
+	cursor:not-allowed;
+}
+
+#shared_combination_overlay .comb-left-top{
+	flex: 1 1 auto;
+	min-height: 260px;
+}
+#shared_combination_overlay .knowledge_fragments_workspace{
+	flex: 1 1 auto;
+	position:relative;
+	overflow:auto;
+	background:#fff;
+	border-top:2px solid #ccc;
+	min-height: 260px;
+}
+
+#shared_combination_overlay .fragment-node-wrapper{
+	position:absolute;
+}
+#shared_combination_overlay .fragment-node-wrapper.kfrag-selected-highlight .knowledge_fragment{
+	outline:2px solid rgba(0,0,0,0.25);
+}
+#shared_combination_overlay .fragment-node-wrapper.additional-selected .knowledge_fragment{
+	outline:2px dashed rgba(0,0,0,0.55);
+}
+#shared_combination_overlay .fragment-number-badge{
+	position:absolute;
+	left:-10px;
+	top:-10px;
+	width:22px;
+	height:22px;
+	border-radius:999px;
+	background:#111;
+	color:#fff;
+	font-size:12px;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	box-shadow:0 2px 6px rgba(0,0,0,0.18);
+}
+#shared_combination_overlay .fragment-discussed-indicator{
+	position:absolute;
+	right:-8px;
+	top:-10px;
+	padding:4px 8px;
+	border-radius:999px;
+	background:#0b6bcb;
+	color:#fff;
+	font-size:11px;
+	font-weight:700;
+	box-shadow:0 2px 6px rgba(0,0,0,0.18);
+}
+#shared_combination_overlay .knowledge_fragment{
+	border:1px solid rgba(255, 99, 132, 0.35);
+	background:rgba(255, 99, 132, 0.06);
+	border-radius:10px;
+	padding:10px 10px 8px 10px;
+	margin:10px 0;
+}
+#shared_combination_overlay .fragment-node-wrapper .knowledge_fragment{
+	margin:0;
+}
+#shared_combination_overlay .knowledge_fragment.is-selected{
+	outline:2px solid rgba(255, 99, 132, 0.55);
+}
+#shared_combination_overlay .knowledge_fragment .card-title{
+	font-weight:700;
+	margin-bottom:6px;
+}
+#shared_combination_overlay .knowledge_fragment .card-actions{
+	margin-top:8px;
+}
+#shared_combination_overlay .knowledge_fragment .detail-button{
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	border-radius:999px;
+	padding:4px 10px;
+	cursor:pointer;
+	font-size:12px;
+}
+#shared_combination_overlay .overlay_knowledge_tree{
+	padding:10px 12px;
+	overflow:auto;
+}
+
+/* forest-mrn: right panel title action (+ add node) */
+#shared_combination_overlay .overlay-title-with-action{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:10px;
+}
+#shared_combination_overlay .kt-add-node-btn{
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	border-radius:999px;
+	width:28px;
+	height:28px;
+	line-height:26px;
+	padding:0;
+	cursor:pointer;
+	font-size:16px;
+	font-weight:700;
+	color:#111;
+	flex:0 0 auto;
+}
+#shared_combination_overlay .kt-add-node-btn:hover{
+	background:rgba(0,0,0,0.04);
+}
+
+/* forest-mrn: knowledge tree DOM is div-based (kt-node/kt-children), matching fukushima-system */
+#overlay_knowledge_tree .kt-node{
+	position:relative;
+	display:block;
+	padding:4px 8px 4px 18px;
+	line-height:1.6;
+	/* room for root move buttons */
+	padding-right:50px;
+}
+#overlay_knowledge_tree .kt-node.is-selected{
+	background:rgba(255, 99, 132, 0.08);
+	border-radius:8px;
+}
+#overlay_knowledge_tree .kt-toggle{
+	position:absolute;
+	left:0;
+	top:4px;
+	width:14px;
+	text-align:center;
+	font-weight:700;
+	color:#111;
+	cursor:pointer;
+	user-select:none;
+}
+#overlay_knowledge_tree .kt-node-title{
+	font-weight:700;
+	cursor:default;
+}
+#overlay_knowledge_tree .kt-node-title.editing{
+	background:#f0f0f0;
+}
+#overlay_knowledge_tree .kt-content-title{
+	cursor:default;
+}
+#overlay_knowledge_tree .kt-comment{
+	margin-top:2px;
+	color:#333;
+	font-size:12px;
+	white-space:pre-wrap;
+}
+#overlay_knowledge_tree .kt-updated{
+	margin-top:2px;
+	color:#666;
+	font-size:11px;
+}
+/* 縦の幹（黒・太め） */
+#shared_combination_overlay #overlay_knowledge_tree .kt-children{
+	margin-left:14px;
+	border-left:2px solid #000 !important;
+	padding-left:10px;
+	position:relative;
+	display:block;
+}
+#overlay_knowledge_tree input.kt-edit{
+	font:inherit;
+	padding:2px 4px;
+	width:calc(100% - 24px);
+}
+
+/* Root category reorder buttons */
+#overlay_knowledge_tree .kt-root-move{
+	position:absolute;
+	right:6px;
+	top:4px;
+	display:flex;
+	gap:4px;
+}
+#overlay_knowledge_tree .kt-root-move-btn{
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	border-radius:6px;
+	width:22px;
+	height:18px;
+	line-height:16px;
+	padding:0;
+	cursor:pointer;
+	font-size:11px;
+	color:#111;
+}
+#overlay_knowledge_tree .kt-root-move-btn:hover{
+	background:rgba(0,0,0,0.04);
+}
+#shared_combination_overlay .knowledge_register_area{
+	margin:10px 12px 0 12px;
+	border:1px solid rgba(0,0,0,0.08);
+	border-radius:10px;
+	overflow:hidden;
+}
+#shared_combination_overlay .knowledge_register_form{
+	padding:10px 12px;
+}
+#shared_combination_overlay .kra-label{
+	display:block;
+	font-size:12px;
+	color:#444;
+	margin:10px 0 6px 0;
+}
+#shared_combination_overlay .kra-control{
+	width:100%;
+	box-sizing:border-box;
+	padding:8px 10px;
+	border:1px solid rgba(0,0,0,0.18);
+	border-radius:8px;
+}
+#shared_combination_overlay .kra-actions{
+	margin-top:10px;
+	text-align:right;
+}
+#shared_combination_overlay .knowledge_register_feedback{
+	padding:0 12px 10px 12px;
+	font-size:12px;
+	color:#444;
+}
+
+/* overlay input area: discussion + register */
+#shared_combination_overlay .overlay-input-area{
+	display:flex;
+	gap:12px;
+	padding:10px 12px 12px 12px;
+	border-top:1px solid rgba(0,0,0,0.08);
+	background:#fff;
+}
+#shared_combination_overlay .discussion_history_area,
+#shared_combination_overlay .knowledge_register_area{
+	flex: 1 1 0;
+	min-width: 280px;
+	margin:0;
+}
+#shared_combination_overlay .discussion_history_area{
+	border:1px solid rgba(0,0,0,0.08);
+	border-radius:10px;
+	overflow:hidden;
+}
+#shared_combination_overlay .discussion_history_area .overlay-title{
+	border-bottom:1px solid rgba(0,0,0,0.08);
+}
+#shared_combination_overlay .fragment-discussed-btn,
+#shared_combination_overlay .fragment-add-select-btn{
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	border-radius:999px;
+	padding:4px 10px;
+	cursor:pointer;
+	font-size:12px;
+}
+#shared_combination_overlay .fragment-add-select-btn{
+	position:relative;
+	padding:4px 10px;
+}
+#shared_combination_overlay .fragment-add-select-btn.is-adding{
+	background:#111;
+	color:#fff;
+	border-color:#111;
+}
+#shared_combination_overlay .fragment-add-select-btn .tooltip{
+	display:none;
+	position:absolute;
+	top:110%;
+	right:0;
+	background:#111;
+	color:#fff;
+	padding:6px 8px;
+	border-radius:8px;
+	font-size:11px;
+	white-space:nowrap;
+}
+#shared_combination_overlay .fragment-add-select-btn:hover .tooltip{
+	display:block;
+}
+#shared_combination_overlay .fragment-selected-area{
+	padding:8px 10px;
+	border-bottom:1px solid rgba(0,0,0,0.08);
+	background:#fff;
+}
+#shared_combination_overlay .fragment-selected-list{
+	margin-top:6px;
+	font-size:12px;
+	color:#333;
+}
+#shared_combination_overlay .selected-item{
+	padding:6px 8px;
+	border:1px solid rgba(0,0,0,0.08);
+	border-radius:8px;
+	background:#fcfcfc;
+}
+#shared_combination_overlay .fragment-selected-item{
+	display:inline-flex;
+	align-items:center;
+	gap:6px;
+	padding:4px 8px;
+	border:1px solid rgba(0,0,0,0.12);
+	border-radius:999px;
+	background:#fff;
+	margin-right:6px;
+	font-size:12px;
+}
+#shared_combination_overlay .fragment-selected-item.primary{
+	background:#111;
+	color:#fff;
+	border-color:#111;
+}
+#shared_combination_overlay .fragment-selected-item .remove-btn{
+	display:inline-block;
+	width:16px;
+	height:16px;
+	line-height:16px;
+	text-align:center;
+	border-radius:999px;
+	background:rgba(0,0,0,0.12);
+	cursor:pointer;
+}
+#shared_combination_overlay .selected-empty{
+	color:#666;
+}
+#shared_combination_overlay .discussion-board{
+	padding:10px;
+}
+#shared_combination_overlay .message-list{
+	border:1px solid rgba(0,0,0,0.08);
+	border-radius:10px;
+	padding:10px;
+	max-height: 22vh;
+	overflow:auto;
+	background:#fff;
+}
+#shared_combination_overlay .discussion-placeholder{
+	padding:12px 10px;
+	color:#666;
+}
+#shared_combination_overlay .message-card{
+	border:1px solid rgba(0,0,0,0.08);
+	border-radius:10px;
+	padding:8px 10px;
+	margin:8px 0;
+	background:#fcfcfc;
+}
+#shared_combination_overlay .message-author{
+	font-weight:700;
+	font-size:12px;
+	color:#333;
+	margin-bottom:4px;
+}
+#shared_combination_overlay .message-body{
+	font-size:13px;
+	color:#222;
+	white-space:pre-wrap;
+}
+#shared_combination_overlay .message-time{
+	margin-top:4px;
+	font-size:11px;
+	color:#888;
+}
+#shared_combination_overlay .post-form{
+	margin-top:10px;
+	display:flex;
+	gap:8px;
+	align-items:flex-end;
+}
+#shared_combination_overlay .post-input{
+	width:100%;
+	box-sizing:border-box;
+	min-height:54px;
+	padding:8px 10px;
+	border:1px solid rgba(0,0,0,0.18);
+	border-radius:10px;
+}
+#shared_combination_overlay .post-button{
+	flex:0 0 auto;
+	border:1px solid rgba(0,0,0,0.18);
+	background:#111;
+	color:#fff;
+	border-radius:10px;
+	padding:10px 12px;
+	cursor:pointer;
+}
+
+@media (max-width: 980px){
+	#shared_combination_overlay .comb-row{ flex-direction:column; }
+	#shared_combination_overlay .comb-left,
+	#shared_combination_overlay .comb-right{ min-width: 0; }
+	#shared_combination_overlay .overlay-input-area{ flex-direction:column; }
+	#shared_combination_overlay .knowledge_fragments_workspace{ min-height: 220px; }
+	#shared_combination_overlay .overlay_knowledge_tree{ max-height: 30vh; }
+	#shared_combination_overlay .message-list{ max-height: 30vh; }
 }

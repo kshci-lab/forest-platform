@@ -74,8 +74,8 @@ if (isset($_POST["signUp"])) {
   <meta charset="UTF-8">
   <title>自己内対話活性化支援システム</title>
 
-  <link rel="stylesheet" href="../css/Semantic-UI/semantic.css">
-  <link rel="stylesheet" type="text/css" href="../css/signup.css">
+  <link rel="stylesheet" href="../css/fukushima_css/Semantic-UI/semantic.css">
+  <link rel="stylesheet" type="text/css" href="../css/fukushima_css/signup.css">
   </head>
   <body>
 

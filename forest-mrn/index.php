@@ -66,8 +66,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="../css/jquery.cleditor.css">
         <link rel="stylesheet" type="text/css" href="../css/ui.css">
         <link rel="stylesheet" type="text/css" href="../css/style.css">
-        <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
-        <link rel="stylesheet" type="text/css" href="../css/organizational-map.css" />
+	        <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
+	        <link rel="stylesheet" type="text/css" href="../css/organizational-map.css" />
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
@@ -82,8 +82,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/get_thinking.js"></script>
         <script type="text/javascript" src="js/jsmind.screenshot.js"></script>
         <script type="text/javascript" src="js/change_tab.js"></script>
-        <script type="text/javascript" src="js/meeting-reflection-network.js"></script>
-        <link rel="stylesheet" type="text/css" href="css/meeting-reflection-network.css" />
+	        <script type="text/javascript" src="js/meeting-reflection-network.js"></script>
+	        <link rel="stylesheet" type="text/css" href="css/meeting-reflection-network.css" />
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         </script>
@@ -827,12 +827,26 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
             </div>
             <!--履歴 yoshioka -->
 
-            <!-- 0817川 組織知マップ -->
-            <div id="tab05">
-                <div id="layout">
-                    <div id="organizational_container">
-                        <div id="myOrganizationalnetwork_area">
-                            <div id="buttoncluster">
+	            <!-- 0817川 組織知マップ -->
+	            <div id="tab05">
+	                <div id="layout">
+	                    <div id="organizational_container">
+                            <!-- 組織知マップ（共同化/連結化）サブタブ -->
+                            <div class="org-subtabs" role="tablist" aria-label="組織知マップ タブ">
+                                <button type="button" id="org-tab-cooperation" class="org-subtab is-active" role="tab" aria-selected="true" aria-controls="org-tabpanel-cooperation">共同化</button>
+                                <button type="button" id="org-tab-combination" class="org-subtab" role="tab" aria-selected="false" aria-controls="org-tabpanel-combination">連結化</button>
+                                <!-- 組織選択プルダウン（organizational_container 内で共通） -->
+                                <form id="group_select_form" class="group_select_form" action="javascript:void(0);">
+                                    <label for="group_select" id="group_select_label">組織選択：</label>
+                                    <select id="group_select" name="group_select">
+                                        <!-- organizational-map.jsでoptionを動的に追加 -->
+                                    </select>
+                                </form>
+                            </div>
+
+                            <div id="org-tabpanel-cooperation" class="org-subtab-panel is-active" role="tabpanel" aria-labelledby="org-tab-cooperation">
+	                        <div id="myOrganizationalnetwork_area">
+	                            <div id="buttoncluster">
                                 <!-- <input type="button" class="Organizational_network_button"
                                         id="organizational_addNode" value="思考ノード追加" />
                                 <input type="button" class="Organizational_network_button"
@@ -855,13 +869,6 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <label for="checkbox_process" data-on-label="On" data-off-label="Off"></label>
                                     <span class="checkbox_process_text">【整合性ノード表示】<br></span>
                                 </div> -->
-                                <!-- 組織選択プルダウン -->
-                                <form id="group_select_form" class="group_select_form">
-                                    <label for="group_select" id="group_select_label">組織選択：</label>
-                                    <select id="group_select" name="group_select">
-                                        <!-- organizational-map.jsでoptionを動的に追加 -->
-                                    </select>
-                                </form>
                             </div>
                             <div id="t_Organizational_conmenu">
                                 <ul>
@@ -883,10 +890,10 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 </select>
                                 <input type="button" value="選択完了" id="p_recruit_select">
                             </div>
-                            <div id="myOrganizationalnetwork"></div>
-                        </div>
+	                            <div id="myOrganizationalnetwork"></div>
+	                        </div>
 
-                    <div id="process_others_network_container" oncontextmenu="return false;" >
+	                    <div id="process_others_network_container" oncontextmenu="return false;" >
                     
                         <div id="othersProcessnetwork_area">
                             <div id="buttoncluster">
@@ -904,12 +911,101 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 </div> -->
                             </div>
 
-                            <div id="othersProcessnetwork"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>    
+	                            <div id="othersProcessnetwork"></div>
+	                        </div>
+	                    </div>
+                            </div><!-- /org-tabpanel-cooperation -->
+
+	                            <div id="org-tabpanel-combination" class="org-subtab-panel" role="tabpanel" aria-labelledby="org-tab-combination" hidden>
+	                                <!-- 福島システムの「連結化タブ」相当: shared_combination_overlay -->
+	                                <div id="shared_combination_overlay">
+	                                    <div class="comb-row">
+	                                        <!-- Left 70%: fragments + discussion/register inputs -->
+	                                        <div class="comb-left">
+	                                            <div class="comb-left-top">
+	                                                <div id="knowledge_fragments_workspace" class="knowledge_fragments_workspace">
+	                                                    <div class="overlay-title">
+	                                                        知識フラグメント一覧
+	                                                        <div class="kfrag-action-group">
+	                                                            <button type="button" id="kfrag-reset" class="kfrag-action-btn">Reset</button>
+	                                                            <button type="button" id="kfrag-undo" class="kfrag-action-btn" disabled>Undo</button>
+	                                                            <button type="button" id="kfrag-redo" class="kfrag-action-btn" disabled>Redo</button>
+	                                                        </div>
+	                                                    </div>
+	                                                    <?php include __DIR__ . '/php/get_knowledge_fragments.php'; ?>
+	                                                    <!-- JSで .knowledge_fragment をノード化してこのワークスペース内に絶対配置します -->
+	                                                </div>
+	                                            </div>
+
+	                                            <div class="overlay-input-area">
+	                                                <!-- 左右2分割: 左=ディスカッション履歴, 右=知識登録フォーム -->
+	                                                <div id="discussion_history_area" class="discussion_history_area">
+	                                                    <div class="overlay-title">
+	                                                        <span class="title-text">ディスカッション履歴</span>
+	                                                        <button type="button" id="fragment-discussed-toggle" class="fragment-discussed-btn">議論開始</button>
+	                                                        <button type="button" id="fragment-add-select-toggle" class="fragment-add-select-btn" aria-label="追加のフラグメントを選択">
+	                                                            <span class="plus-icon" aria-hidden="true">+</span>
+	                                                            <span class="tooltip">追加のフラグメントを選択</span>
+	                                                        </button>
+	                                                    </div>
+	                                                    <div id="fragment-selected-area" class="fragment-selected-area">
+	                                                        <span class="selected-label">現在選択しているノード：</span>
+	                                                        <div id="fragment-selected-list" class="fragment-selected-list" aria-live="polite"></div>
+	                                                    </div>
+	                                                    <div class="discussion-board" id="discussion_board" data-user-name="<?php echo isset($_SESSION['USERNAME']) ? htmlspecialchars($_SESSION['USERNAME'], ENT_QUOTES, 'UTF-8') : 'ユーザー'; ?>">
+	                                                        <div class="message-list" id="discussion_message_list" aria-live="polite">
+	                                                            <div class="discussion-placeholder">議論対象とするフラグメントを選択してください</div>
+	                                                        </div>
+	                                                        <form id="discussion_post_form" class="post-form" action="javascript:void(0)" style="display:none;">
+	                                                            <textarea id="discussion_input" class="post-input" rows="2" maxlength="255" placeholder="コメントを入力..."></textarea>
+	                                                            <button type="submit" class="post-button">投稿</button>
+	                                                        </form>
+	                                                    </div>
+	                                                </div>
+
+	                                                <div id="knowledge_register_area" class="knowledge_register_area">
+	                                                    <div class="overlay-title">知識登録</div>
+	                                                    <form id="knowledge_register_form" class="knowledge_register_form" onsubmit="return false;">
+	                                                        <div class="kra-row kra-top">
+	                                                            <label for="kra_area_select" class="kra-label">追加する領域:</label>
+	                                                            <select id="kra_area_select" class="kra-control">
+	                                                                <option value="知識関連" selected>知識関連</option>
+	                                                                <option value="研究方略関連">研究方略関連</option>
+	                                                                <option value="その他">その他</option>
+	                                                            </select>
+	                                                        </div>
+	                                                        <div class="kra-row kra-body">
+	                                                            <textarea id="kra_knowledge_content" class="kra-control" rows="4" maxlength="255" placeholder="ここに内容を記入"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row kra-comment">
+	                                                            <label for="kra_comment_input" class="kra-label">コメント:</label>
+	                                                            <textarea id="kra_comment_input" class="kra-control" rows="2" maxlength="255" placeholder="任意のコメント(適用場面・記述理由など)"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-actions">
+	                                                            <button type="submit" class="button4-seci kra-submit" id="kra-submit">登録</button>
+	                                                        </div>
+	                                                    </form>
+	                                                    <div id="knowledge_register_feedback" class="knowledge_register_feedback"></div>
+	                                                </div>
+	                                            </div>
+	                                        </div>
+
+	                                        <!-- Right 30%: knowledge tree -->
+	                                        <div class="comb-right">
+	                                            <div class="overlay-knowledge-tree">
+	                                                <div class="overlay-title overlay-title-with-action">
+	                                                    産出した知
+	                                                    <button type="button" id="kt-add-node" class="kt-add-node-btn" aria-label="項目を追加">＋</button>
+	                                                </div>
+	                                                <div id="overlay_knowledge_tree" class="overlay_knowledge_tree"></div>
+	                                            </div>
+	                                        </div>
+	                                    </div>
+	                                </div>
+	                            </div><!-- /org-tabpanel-combination -->
+	                </div>
+	            </div>
+	        </div>    
         
 
         <!-- メインメニュー　Finish -->
@@ -937,8 +1033,9 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
         <script type="text/javascript" src="../js/thinking-process-network.js"></script>
-        <script type="text/javascript" src="../js/organizational-map.js"></script>
-        <script type="text/javascript" src="js/past_sheet.js"></script>
+	        <script type="text/javascript" src="../js/organizational-map.js"></script>
+	        <script type="text/javascript" src="js/organizational-combination-tab.js"></script>
+	        <script type="text/javascript" src="js/past_sheet.js"></script>
         <script type="text/javascript" src="js/record_presentation.js"></script>
         <script type="text/javascript" src="js/presentation.js"></script>
         <script type="text/javascript" src="js/micro.js"></script>
