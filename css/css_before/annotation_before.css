@@ -1,0 +1,25 @@
+
+/* 論文アノテーション配色 */
+span[type="highlight"]{background-color:#FFFBAC;}
+
+span[type="toi"]{background-color:#bee2f9;}
+span[type="konkyo"]{background-color: #fbdae1;}
+span[type="predict"]{background-color:#ffbaa1;}
+span[type="criticism"]{background-color:rgb(245, 132, 120);}
+
+span[type="non-relation"]{background-color:#d2f1c5}
+
+span.highlighted {
+    background-color: #f1fd85;
+}
+span.user_s {
+    background-color: #d2f1c5;;
+}
+
+
+
+/* ユーザごとのアノテーション配色 */
+span[type="user_s"]{background-color: #d2f1c5;}
+span[type="user_m"]{background-color: #F3CCFF;}
+
+

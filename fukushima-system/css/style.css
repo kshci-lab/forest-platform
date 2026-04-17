@@ -202,6 +202,278 @@ table[type] {
 	height: 100%;
 }
 
+/* --- Shared/Combination overlay (covers jsmind_container, utterance_area, mynetwork2) --- */
+#shared_combination_overlay {
+	position: fixed; /* we compute viewport rect and place it */
+	left: 0;
+	top: 0;
+	width: 0;    /* will be set by JS */
+	height: 0;   /* will be set by JS */
+	background: #ffffff;
+	opacity: 1;
+	pointer-events: auto;
+	z-index: 9999;
+	display: none; /* hidden unless combination tab is active */
+}
+
+/* --- Scoped layout for Shared Combination Overlay --- */
+#shared_combination_overlay .comb-row{
+	display:flex;
+	flex-direction:row;
+	width:100%;
+	height:100%;
+}
+#shared_combination_overlay .comb-left{
+	display:flex;
+	flex-direction:column;
+	flex:0 0 75%; /* 75% width */
+}
+#shared_combination_overlay .comb-left-top,
+#shared_combination_overlay .comb-left-bottom{
+	flex:1 1 0;
+	display: flex;             /* 上:一覧, 下:思考エリア */
+	flex-direction: column;
+	overflow-y:auto;
+	overflow-x:hidden;
+	min-width: 0; /* 子要素の横スクロールで幅が広がらないように */
+}
+#shared_combination_overlay .comb-right{
+	flex:0 0 25%; /* 25% width */
+	overflow:auto;
+}
+#shared_combination_overlay .overlay-knowledge-fragments,
+#shared_combination_overlay .overlay-input-area,
+#shared_combination_overlay .overlay-knowledge-tree{
+	height:100%;
+	width:100%;
+	padding:12px;
+	box-sizing:border-box;
+	min-width: 0; /* 内側コンテンツが長くても親幅を広げない */
+}
+
+/* Knowledge tree */
+#overlay_knowledge_tree {
+	font-size: 14px;
+}
+#overlay_knowledge_tree .kt-node {
+	position: relative;
+	padding-left: 18px; /* for toggle */
+	line-height: 1.6;
+	z-index: 5; /* ensure kt-node is above overlays */
+	pointer-events: auto;
+}
+#overlay_knowledge_tree .kt-children {
+	margin-left: 14px;
+	border-left: 1px solid #000; /* ツリーの縦線（黒） */
+	padding-left: 10px;
+}
+#overlay_knowledge_tree .kt-children > .kt-node {
+	position: relative;
+}
+/* 親の縦線からノードへ伸びる水平コネクタ（黒） */
+#overlay_knowledge_tree .kt-children > .kt-node::before {
+	content: '';
+	position: absolute;
+	left: -10px; /* 親 .kt-children の padding-left と同値 */
+#overlay_knowledge_tree .kt-node-title,
+#overlay_knowledge_tree .kt-content-title,
+#overlay_knowledge_tree .kt-title {
+	cursor: default;
+	font-size: 15px;
+}
+#overlay_knowledge_tree .kt-node-title.editing,
+#overlay_knowledge_tree .kt-content-title.editing,
+#overlay_knowledge_tree .kt-title.editing {
+	background: #f0f0f0;
+}
+#overlay_knowledge_tree .kt-node-title { font-weight: 600; font-size: 16px; }
+#overlay_knowledge_tree .kt-comment { margin-top: 4px; font-size: 13px; color: #333; white-space: pre-wrap; }
+#overlay_knowledge_tree .kt-updated { margin-top: 3px; font-size: 12px; color: #666; }
+#overlay_knowledge_tree .kt-renamed{ background: #fffbdd; transition: background 0.5s ease; }
+#overlay_knowledge_tree .kt-comment {
+	margin-top: 4px;
+	font-size: 13px;
+	color: #333;
+	white-space: pre-wrap;
+}
+#overlay_knowledge_tree .kt-updated {
+	margin-top: 3px;
+	font-size: 12px;
+	color: #666;
+}
+	left: 0;
+	top: 0;
+	width: 16px;
+	text-align: center;
+	cursor: pointer;
+	user-select: none;
+	color: #666;
+}
+#overlay_knowledge_tree .kt-content-title,
+#overlay_knowledge_tree .kt-title {
+	cursor: default;
+}
+#overlay_knowledge_tree .kt-content-title.editing,
+#overlay_knowledge_tree .kt-title.editing {
+	background: #f0f0f0;
+}
+#overlay_knowledge_tree input.kt-edit {
+	font: inherit;
+	padding: 2px 4px;
+	width: calc(100% - 24px);
+}
+
+#shared_combination_overlay .overlay-knowledge-fragments{
+	overflow-x: hidden; /* 横スクロールは内側のリストに集約する */
+	height: auto;       /* コンテンツに合わせて伸びる */
+	max-height: 100%;  /* ただし親の上限は超えない */
+}
+
+/* 思考エリア */
+#shared_combination_overlay .knowledge_thinking_area{
+	position: relative;
+	background: #fff;
+	overflow: auto;
+	min-height: 120px;
+}
+
+/* 思考エリア内 ノード（ピンクカード） */
+#shared_combination_overlay .thinking-node,
+.thinking-node{
+	position: relative; /* wrapper が absolute */
+	min-width: 200px;
+	max-width: 260px;
+	background: #ffe6e6; /* フラグメントと同系の淡いピンク */
+	border: 1px solid #ccc;
+	border-radius: 10px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+	padding: 12px;
+	box-sizing: border-box;
+	user-select: none;
+}
+#shared_combination_overlay .thinking-node-wrapper,
+.thinking-node-wrapper{
+	position:absolute;
+	cursor:move;
+	user-select:none;
+	border-radius:10px; /* カード角丸と揃える */
+}
+#shared_combination_overlay .thinking-node .node-title,
+.thinking-node .node-title{
+	font-size:15px;
+	font-weight:500;
+	color:#444;
+	margin-bottom:8px;
+}
+#shared_combination_overlay .thinking-node .node-body,
+.thinking-node .node-body{
+	font-size:14px;
+	color:#333;
+	line-height:1.5;
+	white-space: pre-wrap;
+}
+#shared_combination_overlay .overlay-knowledge-fragments{
+	overflow-x: hidden; /* 横スクロールは内側のリストに集約する */
+    height:auto;       /* コンテンツに合わせて伸びる */
+    max-height:100%;  /* ただし親の上限は超えない */
+}
+#shared_combination_overlay .overlay-title{
+	font-size: 16px;
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+/* Divider lines for the split layout */
+#shared_combination_overlay .comb-left{
+	border-right: 2px solid #ccc;
+	box-sizing: border-box;
+}
+#shared_combination_overlay .comb-left-top{
+	border-bottom: 2px solid #ccc;
+	box-sizing: border-box;
+}
+
+/* Knowledge fragment cards */
+#shared_combination_overlay .knowledge-fragment-list{
+	display:flex;
+	flex-wrap:nowrap;            /* 横一列に並べる */
+	overflow-x:auto;             /* 横スクロールを許可 */
+	overflow-y:visible;          /* 詳細展開時に縦方向へ広がるのを許可 */
+	align-items:flex-start;      /* 各カードの上端を揃える（高さが変わっても崩れにくい） */
+	gap:12px;
+	margin-top:8px;
+	-webkit-overflow-scrolling:touch; /* スクロール慣性（モバイル） */
+	width: 100%;                 /* 親幅に固定 */
+	max-width: 100%;             /* 親幅を超えない */
+	box-sizing: border-box;
+	min-width: 0;                /* コンテンツ幅に引っ張られて広がらない */
+	scrollbar-width: thin;       /* Firefox: 細いスクロールバー */
+    /* 念のためクリックを有効化（外部からの pointer-events:none の影響を打ち消す） */
+    pointer-events: auto;
+}
+/* WebKit系: スクロールバーの視認性を少し上げる */
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar{height:10px}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-track{background:#f1f1f1}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb{background:#c9c9c9;border-radius:8px}
+#shared_combination_overlay .knowledge-fragment-list::-webkit-scrollbar-thumb:hover{background:#b0b0b0}
+#shared_combination_overlay .knowledge_fragment{
+	background:#ffe6e6; /* pale pink */
+	border:1px solid #ccc;
+	border-radius:10px;
+	padding:12px;
+	width:180px;
+	box-sizing:border-box;
+	display:flex;
+	flex-direction:column;
+	gap:8px;
+	flex:0 0 auto;               /* 横スクロール内で折り返さず表示 */
+    /* クリックできないケースの保険（上位で pointer-events: none が当たっても有効化） */
+    pointer-events: auto;
+    cursor: pointer;
+}
+#shared_combination_overlay .knowledge_fragment .card-title{
+	font-size:15px;
+	font-weight: 500;
+	color:#444;
+}
+#shared_combination_overlay .knowledge_fragment .card-body{
+	white-space:pre-wrap;
+	color:#333;
+	font-size:14px;
+	line-height:1.5;
+}
+#shared_combination_overlay .knowledge_fragment .card-actions{
+	margin-top:auto;
+	display:flex;
+	justify-content:flex-end;
+}
+#shared_combination_overlay .knowledge_fragment .detail-button{
+	background:#fff;
+	border:1px solid #bbb;
+	border-radius:4px;
+	padding:4px 8px;
+	font-size:12px;
+	cursor:pointer;
+}
+#shared_combination_overlay .knowledge_fragment .card-detail{
+	display:none;
+	border-top:1px dashed #ccc;
+	padding-top:8px;
+	color:#444;
+	font-size:13px;
+}
+#shared_combination_overlay .knowledge_fragment.is-open .card-detail{
+	display:block;
+}
+/* 簡易Q&Aの体裁 */
+#shared_combination_overlay .knowledge_fragment .qa-item{ margin-top:6px; }
+#shared_combination_overlay .knowledge_fragment .qa-q{ font-weight:600; margin-bottom:2px; }
+#shared_combination_overlay .knowledge_fragment .qa-a{ color:#333; }
+#shared_combination_overlay .no-fragment-note{
+	color:#777;
+	font-size:13px;
+}
+
 /* #layout{
 	height:100%;
 } */
@@ -218,6 +490,19 @@ table[type] {
 #jsmind_nav {
 	width: 100%;
 	height:34px;
+	display: inline;
+	font-size: 1em;
+	border-bottom:double 2px #B3E0D8;
+	box-sizing: border-box;
+	overflow-x: auto;
+	overflow-y: visible;
+	float:left;
+	resize: vertical;
+}
+
+#jsmind_nav-seci {
+	width: 100%;
+	height:50px;
 	display: inline;
 	font-size: 1em;
 	border-bottom:double 2px #B3E0D8;
@@ -1017,13 +1302,13 @@ h3 {
 	animation: blink2 1s infinite;
   }
   
-  #ontology_feedback{
+  /* #ontology_feedback{
 	width: 100%;
 	height: 50px;
 	overflow: scroll;
 	text-align: center;
 	
-  }
+  } */
   .feedback_message{
 	width: fit-content;
     background-color: lightgray;
@@ -1404,22 +1689,23 @@ select[name="user_list"] {
 	min-height: 450px;
 	/* margin-bottom:2vh; */
 	border:solid 5px #9bb7ba;
-	border:solid 5px #9bb7ba;
 	background:#fff;
 	overflow: hidden;
 	/* float:right; */
-	display: none;
+	display: flex;
 	resize: both;
 }
+
 #mynetwork2{
 	width: 100%;
 	min-width: 300px;
+	height: 100%;
 	/* height:70vh; */
 	min-height: 450px;
 	/* margin-bottom:2vh; */
 	border-left:solid 2px #9bb7ba;
 	background:#fff;
-	/* overflow: auto; */
+	overflow: auto;
 	resize: auto;
 }
 #timedisplay{
@@ -1432,9 +1718,19 @@ select[name="user_list"] {
 	height:80px;
 	background:#e6edf8;
 }
-#utterance_area{
+#utterance_area,
+#utterance_area-seci{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 100px;
+	min-width: 550px;
+	/* height:70vh; */
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	background:#e6edf8;
+	overflow-y: scroll;
+}
+#utterance_area-seci{
+	width: calc((100vw - 350px)*0.15);
+	min-width: 550px;
 	/* height:70vh; */
 	min-height: 450px;
 	/* margin-bottom:2vh; */
@@ -1443,7 +1739,7 @@ select[name="user_list"] {
 }
 #utterance_area2{
 	width: calc((100vw - 350px)*0.15);
-	min-width: 100px;
+	min-width: 500px;
 	margin-bottom:2vh;
 	/* border-top:solid 2px #9bb7ba; */
 	background:#e6edf8;
@@ -1452,7 +1748,81 @@ select[name="user_list"] {
 	line-height:20px;
 	cursor: pointer;
 }
+
 #mynetwork {
+	position: relative;
+	width: 97%;
+	min-width: 300px;
+	/* height:70vh; */
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	border-left: solid 0.5px #a8cde0;
+    border-top: solid 0.5px #a8cde0;
+	background:#fff;
+	overflow: auto;
+	/* resize: auto; */
+}
+
+/* ==== Three-column layout and left panel toggle ==== */
+/* 初期は 3 カラム: 左(33.3%) / 中右を wrap (#network_container) 66.6% で 1:2, 内部で 1:1 */
+#jsmind_container.threecol{
+	width: 33.333%;
+	transition: width 0.3s ease;
+}
+#network_container.threecol{
+	width: 66.666%;
+	display: flex;
+	transition: width 0.3s ease;
+}
+/* 中・右を等分 */
+#network_container.threecol #utterance_area,
+#network_container.threecol #utterance_area-seci,
+#network_container.threecol #mynetwork2{
+	width: 50% !important;
+	transition: width 0.3s ease;
+}
+/* トグルボタンの配置基準 */
+#network_container.threecol #utterance_area,
+#network_container.threecol #utterance_area-seci{
+	position: relative;
+}
+/* トグルボタン（中エリア右端） */
+.left-toggle-btn{
+	position: absolute;
+	top: 50%;
+	right: 0;
+	transform: translate(50%, -50%);
+	z-index: 20;
+	border: 1px solid #9bb7ba;
+	background: #ffffff;
+	color: #333;
+	padding: 4px 6px;
+	line-height: 1;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+/* 左ペインを隠した時: 左=0 / 中右親=100%（内部は 1:1） */
+body.left-hidden #jsmind_container.threecol{
+	width: 0 !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	border-width: 0 !important;
+	overflow: hidden !important;
+}
+body.left-hidden #network_container.threecol{
+	width: 100% !important;
+}
+
+/* 組織知モード時は思考整理マップ領域を非表示にして中エリアを全幅に */
+body.shared-mode #jsmind_container{
+	display: none !important;
+}
+body.shared-mode #network_container.threecol{
+	width: 100% !important;
+}
+
+#externalization_form{
 	position: relative;
 	width: 100%;
 	min-width: 300px;
@@ -1466,8 +1836,154 @@ select[name="user_list"] {
 	/* resize: auto; */
 }
 
-/* only mrn */
+/* 表出化メイン入力セクション */
+.externalization-main-section{
+	display:block;
+	/* lighter pink for less visual weight */
+	background: #ffeaf0;
+	border-radius:12px;
+	padding:10px 10px; 
+	margin: 15px 10px 12px 10px;
+}
+.externalization-main-section .externalization-label{
+	display:block;
+	margin-bottom:6px;
+	color:#003049;
+	font-weight:700;
+}
+.externalization-main{
+	width:100%;
+	min-height:100px;
+	resize:vertical; 
+	/*linear-gradient(180deg, #FFF6FB 0%, #F8EAF6 100%); /* pale pink */
+	/*border:2px solid #E8BFE6;*/
+	padding:12px;
+	background:#ffffff; 
+	border-radius:8px; 
+	border:1px solid #e6eef2; 
+	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
+	/*margin: 0px 10px;*/
+	box-sizing:border-box;
+	font-size:14px;
+	resize:vertical;
+}
 
+.qa-pairs{ 
+	display:flex; 
+	flex-direction:column; 
+	gap:12px; 
+	margin-top:15px; 
+}
+.qa{ display:block; 
+	margin-left: 10px; 
+	margin-right: 10px; 
+	/* lighter cyan/blue to reduce contrast */
+	background: #dff4fb; 
+	padding:12px; 
+	border-radius:12px; 
+	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
+}
+.qa-question{ 
+	background:transparent; 
+	color:#003049; 
+	font-weight:700; 
+	/*padding:10px 10px;*/ 
+	border-radius:6px; 
+	margin-bottom:8px; 
+	font-size:16px; 
+}
+
+
+/* 横並びレイアウト（qa-summary 用） */
+.qa-summary{
+	display:flex;
+	flex-direction:row;
+	align-items:center; /* テキストボックス行の中央にラベルを揃える */
+	margin-top:20px; 
+	flex-wrap:wrap; /* 狭い画面で折り返し */
+	min-height:25px; /* 初期の高さを約25pxに */
+	margin-left: 10px; 
+	margin-right: 10px; 
+	background: #dff4fb; 
+	padding:10px; /* 高さを抑えるために余白も縮小 */
+	border-radius:12px; 
+	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
+}
+.qa-summary .qa-question{
+	margin-bottom:0; /* 横並びなので下マージン不要 */
+	flex: 0 1 30%;
+	/* 高さは固定しない。行の中央に揃えるため */
+	display: flex; /* ラベル内の縦中央寄せ */
+	align-items: center;
+	background:transparent; 
+	color:#003049; 
+	font-weight:700; 
+	padding-left:5px;
+	/*padding:10px 10px;*/ 
+	border-radius:6px; 
+	/* margin-bottom:5px;  */
+	font-size:16px;	
+}
+.qa-summary .qa-answer4{
+	flex: 1 1 58%;
+	width: auto; /* グローバルの width:100% を上書きして横並びにする */
+	background:#ffffff; 
+	font-size: 14px;
+	align-items: center;
+	border-radius:8px; 
+	border:1px solid #e6eef2; 
+	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
+	min-height:40px; /* 初期の高さを合わせる */
+	height:40px; /* 初期表示の高さ */
+	resize:vertical; /* ユーザー操作で拡大可 */
+	padding:8px;
+	box-sizing:border-box;
+}
+/* qa-answer4 のプレースホルダーを中央寄せ（水平方向） */
+.qa-answer4::placeholder{
+	align-items: center;
+}
+/* Fallback: 空欄時はテキスト自体を中央寄せ（入力開始で自動的に左寄せへ戻る）*/
+.qa-answer4:placeholder-shown{
+	align-items: center;
+}
+.qa-answer4:not(:placeholder-shown){
+	text-align:left;
+}
+.qa-answer1, .qa-answer2, .qa-answer3{ 
+	width: 100%; 
+	min-height:68px; 
+	resize:vertical; 
+	padding:8px; 
+	box-sizing:border-box; 
+	background:#ffffff; 
+	border-radius:8px; 
+	border:1px solid #e6eef2; 
+	box-shadow: inset 0 1px 0 rgba(0,0,0,0.03); 
+}
+
+.externalization-footer{ margin-top:12px; }
+.externalization-subhead{ font-weight:bold; margin-top:8px; }
+.externalization-own-answer{ 
+	margin: 15px 10px 10px 10px;
+	background: #c1c1ff; 
+	padding:12px; 
+	border-radius:12px; 
+	box-shadow: 0 6px 0 rgba(0,0,0,0.06);
+}
+
+.externalization-actions {
+  /* Flexコンテナにする */
+  display: flex;
+
+  /* 子要素を右端に寄せる */
+  justify-content: flex-end;
+
+  /* 親要素に右側の余白 (padding) を10px設定 */
+  padding-right: 10px;
+}
+
+/* only mrn */
 
 /********************* リフレクションタブ関係 **********************/
 /*リフレクション関係　yoshioka*/
@@ -1724,13 +2240,6 @@ select[name="user_list"] {
 
 /*履歴関係　yoshioka*/
 
-/********************* 組織知タブ関係 **********************/
-#tab05 {
-	width:100%;
-	height: 100%;
-	/* display: none; */
-}
-/* その他はorganizational-map.css内 */
 
 
 /* -------------------- 細かいボタン等の設定 ---------------------- */
@@ -1816,10 +2325,24 @@ select[name="user_list"] {
 	background-color: #B3E0D8;
 }
 /* ノード追加ボタン */
+.button3-seci{
+    background-color: #90B1AB;
+    color: #fff;
+    width: 50px;
+    height: 25px;
+    font-size: 12px;
+    border:none;
+    margin-left: 0;
+}
+
+.button3-seci:hover {
+	background-color: #B3E0D8;
+}
+
 .button4 {
 	background-color: #90B1AB;
 	color: #fff;
-	/* width: 80%; */
+	/* width: 100px; */
 	height: 25px;
 	font-size: 12px;
 	margin-left: 10px;
@@ -1847,22 +2370,98 @@ select[name="user_list"] {
 	background-color: #B3E0D8;
 }
 
-/* context menu */
-.button_conmenu {
-	background-color: #90B1AB;
-	color: #fff;
-	border-color: unset;
-	width: 80%;
-	height: 25px;
-	font-size: 12px;
-	margin-left: 10px;
-	margin-right: 8px;
-	margin-top: 1px;
-    margin-bottom: 1px;
-	overflow: auto;
+.button-container {
+    display: inline-block;
+	margin-left: 20px; 
 }
-.button_conmenu:hover {
-	background-color: #B3E0D8;
+
+.button5 {
+	background-color: #FBC362;
+	color: #fff;
+	width: 70px;
+	height: 25px;
+	font-size: 14px;
+	margin-top: 5px;
+}
+.button5:hover {
+	background-color: #ffa200;
+}
+
+.button5-seci {
+    background-color: #90B1AB; /* デフォルトの背景色 */
+    color: #fff;
+    height: 30px;
+    font-size: 15px;
+    margin-left: 1px;
+	margin-right: 1px;
+	margin-top: 1px;
+	border:none;
+    align-items: center; /* 垂直方向の中央寄せ */
+    justify-content: center; /* 水平方向の中央寄せ */
+}
+
+/* アクティブなタブのスタイル */
+.button5-seci.active {
+    background-color: #99cccc; /* アクティブ時の背景色を少し薄く */
+	/* transform: scale(1.15);     1.15倍に拡大  */
+	transform-origin: center bottom;
+    transition: transform 0.15s ease;
+}
+
+/* ホバー時のスタイル */
+.button5-seci:hover {
+    background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
+}
+
+/* Tab container: place tabs and the show-button on one horizontal line */
+.tab-container{
+	display:flex;
+	align-items:center;
+	gap:8px;
+}
+.tab-container > ul{
+	display:flex;
+	margin:0;
+	padding:0;
+	list-style:none;
+}
+.tab-container > ul > li{
+	display:inline-flex;
+	align-items:center;
+	padding:8px 10px;
+	margin-right:4px;
+	cursor:pointer;
+	background:#ddd;
+	border-radius:5px 5px 0 0;
+}
+.tab-container > ul > li.selected{
+	background: #00473E;
+	color:#fff;
+}
+
+.button5 {
+    background-color: #90B1AB; /* デフォルトの背景色 */
+    color: #fff;
+    height: 25px;
+    font-size: 12px;
+    margin-left: 1px;
+	margin-right: 1px;
+	margin-top: 5px;
+    align-items: center; /* 垂直方向の中央寄せ */
+    justify-content: center; /* 水平方向の中央寄せ */
+}
+
+/* アクティブなタブのスタイル */
+.button5.active {
+    background-color: #99cccc; /* アクティブ時の背景色を少し薄く */
+	/* transform: scale(1.15);     1.15倍に拡大  */
+	transform-origin: center bottom;
+    transition: transform 0.15s ease;
+}
+
+/* ホバー時のスタイル */
+.button5:hover {
+    background-color: #a0c1bc; /* ホバー時に色が明るくなるように */
 }
 
 /*他者の問いノード表示*/
@@ -1916,7 +2515,7 @@ select[name="user_list"] {
 	background-color: #88A47C;
 }
 
-.button5 {
+/*.button5 {
 	background-color: #FBC362;
 	color: #fff;
 	width: 70px;
@@ -1927,7 +2526,7 @@ select[name="user_list"] {
 .button5:hover {
 	background-color: #ffa200;
 }
-
+*/
 .button6 {
 	background-color: #90B1AB;
 	color: #fff;
@@ -1937,17 +2536,16 @@ select[name="user_list"] {
 .button6:hover {
 	background-color: #B3E0D8;
 }
-
 .button6-seci {
 	background-color: #90B1AB;
+	border:none;
 	color: #fff;
-	width: 100%;
+	width: 20%;
 	height: 25px;
 }
 .button6-seci:hover {
 	background-color: #B3E0D8;
 }
-
 
 /* DBの接続確認ボタン */
 .button7 {

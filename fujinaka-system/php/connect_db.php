@@ -1,6 +1,6 @@
 <?php
 
-
+	
 	//ローカルPCから接続するとき．
 	$db_host = "localhost";  // DBサーバのurl
 	$db_port = 8889;  // ポート番号
@@ -28,7 +28,7 @@
 	  print('<p>データベースへの接続に失敗しました。</p>' . $mysqli->connect_error);
 	  exit();
 	} else {
-    $mysqli->set_charset("utf8");
+    	$mysqli->set_charset("utf8");
 	}
 
 ?>
