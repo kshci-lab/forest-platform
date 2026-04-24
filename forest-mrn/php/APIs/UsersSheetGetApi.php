@@ -4,7 +4,7 @@
 $db_host = "localhost:3306";  // DBサーバのurl
 $db_user = "root";
 $db_password = "root";
-$db_dbname = "forest_platform";
+$db_dbname = "forest_platform_past";
 $db_port = 8889;
 
 // mysqlへの接続
