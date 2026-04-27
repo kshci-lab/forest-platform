@@ -77,6 +77,7 @@
                         try {
                             if (Array.isArray(nodeIds)) {
                                 nodeIds.forEach(function(nid){
+                                    // 通常のobject_node_info取得
                                     try {
                                         $.ajax({
                                             url: 'php/get_object_node_info.php',
@@ -92,6 +93,20 @@
                                             error: function(xhr, st, err) { console.warn('journal_report: get_object_node_info error for node_id ' + nid, st, err, xhr && xhr.responseText); }
                                         });
                                     } catch(e){ console.warn('journal_report: ajax for object_node_info failed', e); }
+
+                                    // テスト: node_idのみでobject_nodesを取得する簡易テスト
+                                    try {
+                                        $.ajax({
+                                            url: 'php/get_object_node_info.php',
+                                            type: 'GET',
+                                            dataType: 'json',
+                                            data: { node_id: nid, test_simple: 1 },
+                                            success: function(testRes) {
+                                                console.log('[TEST] node_idのみでobject_nodes取得:', nid, testRes);
+                                            },
+                                            error: function(xhr, st, err) { console.warn('[TEST] get_object_node_info simple error for node_id ' + nid, st, err, xhr && xhr.responseText); }
+                                        });
+                                    } catch(e){ console.warn('[TEST] ajax for object_node_info simple failed', e); }
                                 });
                             }
                         } catch(e) { console.warn('journal_report: object_nodes debug fetch failed', e); }

@@ -1688,7 +1688,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         // 上位ノード（from側）の色を取得してエッジに設定
-        let nodeColor = '#888888'; // デフォルトのグレー
+        let nodeColor = '#a8d5a2'; // デフォルトは緑系（想定外の黒矢印を避ける）
         if (fromNode.color) {
             if (typeof fromNode.color === 'string') {
                 nodeColor = fromNode.color;
@@ -2546,28 +2546,36 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         console.log('テキストエリア要素:', reasontext);
         if (reasontext) {
             reasontext.value = "";
-            
-            // Enterキーで保存するイベントリスナーを追加（重複防止）
-            // IME変換中のEnterは無視する（compositionstartとcompositionendで管理）
-            if (!reasontext._enterListenerAdded) {
-                let isComposing = false;
-                
-                reasontext.addEventListener('compositionstart', () => {
-                    isComposing = true;
-                });
-                
-                reasontext.addEventListener('compositionend', () => {
-                    isComposing = false;
-                });
-                
-                reasontext.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
-                        e.preventDefault(); // 改行を防ぐ
-                        this.add_reason();
-                    }
-                });
-                reasontext._enterListenerAdded = true;
+
+            // Enterキーで保存するイベントリスナー
+            // マップ切替後も古いインスタンスを参照しないよう、毎回現在インスタンスへ付け替える
+            if (reasontext._reasonCompStartHandler) {
+                reasontext.removeEventListener('compositionstart', reasontext._reasonCompStartHandler);
             }
+            if (reasontext._reasonCompEndHandler) {
+                reasontext.removeEventListener('compositionend', reasontext._reasonCompEndHandler);
+            }
+            if (reasontext._reasonKeydownHandler) {
+                reasontext.removeEventListener('keydown', reasontext._reasonKeydownHandler);
+            }
+
+            reasontext._isComposing = false;
+            reasontext._reasonCompStartHandler = () => {
+                reasontext._isComposing = true;
+            };
+            reasontext._reasonCompEndHandler = () => {
+                reasontext._isComposing = false;
+            };
+            reasontext._reasonKeydownHandler = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !reasontext._isComposing) {
+                    e.preventDefault();
+                    this.add_reason();
+                }
+            };
+
+            reasontext.addEventListener('compositionstart', reasontext._reasonCompStartHandler);
+            reasontext.addEventListener('compositionend', reasontext._reasonCompEndHandler);
+            reasontext.addEventListener('keydown', reasontext._reasonKeydownHandler);
         }
         
         console.log('ダイアログを表示します - 座標:', this.BoxDisplay.x, this.BoxDisplay.y);
@@ -2740,28 +2748,30 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     // 理由が記述されたノードへのエッジを実線に変更し、ホバー時に理由を表示する
     updateEdgesToNodeWithReason(nodeId, reasonText = null) {
         try {
+            const nodeIdStr = String(nodeId);
+
             // 理由テキストが渡されていない場合はメモリから取得
             if (!reasonText) {
-                const rIdx = this.ReasonConnectNodeId.indexOf(nodeId);
+                const rIdx = this.ReasonConnectNodeId.indexOf(nodeIdStr);
                 if (rIdx !== -1 && this.ReasonContent[rIdx]) {
                     reasonText = this.ReasonContent[rIdx];
                 }
             }
             
-            // このノードへ向かうすべてのエッジを取得
-            const connectedEdges = this.ownNetwork.getConnectedEdges(nodeId);
-            if (!connectedEdges || connectedEdges.length === 0) {
+            // 型差（number/string）やネットワーク状態差に強くするため、全エッジから to 一致を拾う
+            const allEdges = this.edges.get();
+            const targetEdges = allEdges.filter(e => String(e.to) === nodeIdStr);
+            if (!targetEdges || targetEdges.length === 0) {
                 console.log('ノードに接続されているエッジがありません:', nodeId);
                 return;
             }
             
             // 各エッジをチェックして、toがこのノードのものを実線に変更
-            connectedEdges.forEach(edgeId => {
-                const edgeData = this.edges.get(edgeId);
-                if (edgeData && edgeData.to === nodeId) {
+            targetEdges.forEach(edgeData => {
+                if (edgeData) {
                     // 上位ノード（from側）の色を取得
                     const fromNode = this.nodes.get(edgeData.from);
-                    let nodeColor = '#FFA500'; // デフォルトのオレンジ
+                    let nodeColor = '#8abf8a'; // デフォルトは緑寄りにして黒矢印化を避ける
                     if (fromNode && fromNode.color) {
                         if (typeof fromNode.color === 'string') {
                             nodeColor = fromNode.color;
@@ -2774,7 +2784,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     
                     // エッジを実線に更新し、太く目立つようにする
                     const updateData = { 
-                        id: edgeId, 
+                        id: edgeData.id,
                         dashes: false,
                         width: 3,
                         color: {
@@ -2787,7 +2797,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         updateData.title = '💡 理由: ' + reasonText;
                     }
                     this.edges.update(updateData);
-                    console.log('エッジを実線に変更しました:', edgeId, '-> ノード:', nodeId, '理由:', reasonText);
+                    console.log('エッジを実線に変更しました:', edgeData.id, '-> ノード:', nodeIdStr, '理由:', reasonText);
                 }
             });
         } catch (e) {
@@ -4438,6 +4448,25 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             from: String(edge.from),
             to: String(newNodeId)
         };
+
+        // エッジ1にも明示色を設定（未設定だとデフォルトの黒系になる）
+        {
+            const fromNode1 = this.nodes.get(edge.from);
+            let baseColor1 = '#a8d5a2';
+            if (fromNode1 && fromNode1.color) {
+                if (typeof fromNode1.color === 'string') {
+                    baseColor1 = fromNode1.color;
+                } else if (fromNode1.color.background) {
+                    baseColor1 = fromNode1.color.background;
+                }
+            }
+            const edgeColor1 = darkenColor(baseColor1, 0.3);
+            newEdgeData1.color = {
+                color: edgeColor1,
+                highlight: edgeColor1,
+                hover: edgeColor1
+            };
+        }
         
         console.log(`➕ エッジ1を追加中:`, newEdgeData1);
         this.edges.add(newEdgeData1);
@@ -4450,6 +4479,25 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             from: String(newNodeId),
             to: String(edge.to)
         };
+
+        // エッジ2にも明示色を設定（理由未設定時でも黒矢印にしない）
+        {
+            const fromNode2 = this.nodes.get(newNodeId);
+            let baseColor2 = '#a8d5a2';
+            if (fromNode2 && fromNode2.color) {
+                if (typeof fromNode2.color === 'string') {
+                    baseColor2 = fromNode2.color;
+                } else if (fromNode2.color.background) {
+                    baseColor2 = fromNode2.color.background;
+                }
+            }
+            const edgeColor2 = darkenColor(baseColor2, 0.3);
+            newEdgeData2.color = {
+                color: edgeColor2,
+                highlight: edgeColor2,
+                hover: edgeColor2
+            };
+        }
         
         // 元のエッジに理由があった場合、新ノード→toのエッジに引き継ぐ
         if (originalReasonText && originalReasonText.trim() !== '') {
@@ -6177,6 +6225,10 @@ function ShowRelatedProcess(mode){
         }
         else{
             console.log(check);
+            if (defaultThinkingProcess) {
+                try { defaultThinkingProcess.removeEventLister(); } catch (e) { console.warn('removeEventLister failed', e); }
+                try { sessionStorage.removeItem('currentSelectId'); } catch (e) { /* ignore */ }
+            }
             defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
             displayTriggerData("allRE", "trigger_area_list");
         }
@@ -6220,6 +6272,10 @@ function showThinkingProcessMap() {
     // trigger_areaを非表示にする
     $('#trigger_area').css('display', 'none');
 
+    if (defaultThinkingProcess) {
+        try { defaultThinkingProcess.removeEventLister(); } catch (e) { console.warn('removeEventLister failed', e); }
+        try { sessionStorage.removeItem('currentSelectId'); } catch (e) { /* ignore */ }
+    }
     defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
     displayTriggerData("all", "trigger_area_list");
     
