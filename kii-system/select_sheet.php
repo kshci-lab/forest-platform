@@ -58,7 +58,7 @@ if(isset($_POST["sheetname"])){
 	// 	createSheet();
 
   // }else
-  if($_POST["sheetname"] != "" & $_SESSION["PAPERID"] != ""){
+  if($_POST["sheetname"] != "" && !empty($_SESSION["PAPERID"])){
     createSheet_selectedPaper();
   }
   else{
@@ -166,7 +166,7 @@ if(isset($_POST["sheet"])){
               </div>
               <p>
                 <span class="paper_title">選択した論文</span>
-                 <?php echo $_SESSION["PAPERID"]; ?>
+                 <?php echo isset($_SESSION["PAPERID"]) ? htmlspecialchars((string)$_SESSION["PAPERID"], ENT_QUOTES, "UTF-8") : ""; ?>
               </p>
               
     	       <!-- <p><input class="button2"  name="paper" value="登録済みの論文" onclick="CreateSheet()" id="create_sheet"></p> -->

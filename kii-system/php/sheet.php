@@ -4,6 +4,10 @@
 
 		require "connect_db.php";
 
+		if (!isset($_SESSION["SHEETID"]) || !is_numeric($_SESSION["SHEETID"])) {
+			return;
+		}
+
 		$sql = "SELECT * FROM sheets WHERE id = ".$_SESSION["SHEETID"];
 
 		if($result = $mysqli->query($sql)){

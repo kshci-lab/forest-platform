@@ -1,123 +1,127 @@
-const setTaggedHTMLPaperData = (file_input_btn_id, paper_area_id) => {
-    // 論文のHTMLファイルを入力（選択）して，それをSPANを挟むよう変換して，対象のテキストエリアに挿入するボタンクリックイベントを追加する関数
-    console.log(file_input_btn_id);
-    const btn = document.getElementById("input_htmlfile");
-    console.log(btn);
-    btn.addEventListener("click", () => {
-        btn.addEventListener("change", (evt) => {
-            const file = evt.target.files;
-            //FileReaderの作成
-            const reader = new FileReader();
-            //テキスト形式で読み込む
-            reader.readAsText(file[0]);
+const setTaggedHTMLPaperData = (fileInputBtnId, paperAreaId) => {
+    const btn = document.getElementById(fileInputBtnId);
+    const paperTitleInputs = document.getElementsByName("paper_title");
+    const actionButtons = document.querySelectorAll('input[type="button"][name="newsheet"]');
+    const titleInput = paperTitleInputs.length > 0 ? paperTitleInputs[paperTitleInputs.length - 1] : null;
+    const saveButton = actionButtons.length > 0 ? actionButtons[actionButtons.length - 1] : null;
+    if (!btn || !titleInput || !saveButton) {
+        return;
+    }
 
-            //読込終了後の処理
-            reader.onload = () => {
-                const new_span = document.createElement('span'); // 改行はいやなのでspan
-                new_span.setAttribute('id', 'rebuild');
-                new_span.innerHTML = reader.result; //html要素に変換
+    let pendingPaperContent = "";
+    let pendingPaperId = null;
 
-                //テキストエリアに表示する
-                const area = document.getElementById(paper_area_id);
-                console.log(area);
-                area.innerHTML = new_span.innerHTML;//bodyに追加
+    const isHTMLFile = (file) => {
+        return file && file.name && /\.html?$/i.test(file.name);
+    };
 
+    const addSpansToTextNodes = (rootTarget) => {
+        const recursiveLeafApply = (targetDom) => {
+            if (!targetDom || targetDom.length === 0) {
+                return;
+            }
 
-
-                
-                // こっからSPANを突っ込む処理
-                const add_span = () => {
-                    const recursive_leaf_apply = (target_dom) => {
-                        console.log(target_dom);
-                        if(target_dom.contents().length === 0) {
-                            // もしこれ以上子要素がない＝SPANを追加したい対象の論文文字列である可能性がある場合
-                            const target_dom_value = target_dom[0].nodeValue;
-                            const text_dom_p = typeof target_dom_value === "string" || target_dom_value instanceof String;
-                            
-                            if(text_dom_p) {
-                                // 空のオブジェクトではなく，実際に文字列である場合，SPANでくくって，ID付与
-                                const tmp = [...target_dom_value].map(char => {
-                                    // 元のオブジェクトが１つのSPANに複数の文字が入ってる場合があるので，各文字に対してSPAN付与
-                                    return "<span class='paper_txt_obj' >" + char + "</span>";
-                                }).join('');
-                                target_dom.replaceWith(tmp); // DOMオブジェクトの置き換え
-                                return; // この条件にマッチしてるときは条件分岐移行の処理を殺す
-                            }
-                        }
-                        target_dom.contents().each((ind, elm) => {
-                            // もし，子要素にさらにDOMがある場合（＝さらに掘り下げたところに文字があるかも知れない場合），再帰して，子要素に対してSPAN付与の必要性チェック
-                            return recursive_leaf_apply($(elm));
-                        });
-                    }
-
-                    const add_id = () => {
-                        //spanで区切られた文字にidを付与する
-                        const ptolength=$(".paper_txt_obj").length;
-                        $(".paper_txt_obj").each((index, elm) => {
-                            $(elm).attr({
-                                'char_id': 'p_txt_'+index
-                            });
-                        });
-                    }
-
-                    
-                    const before_spanned_text = $("#page-container");
-                    recursive_leaf_apply(before_spanned_text); // PDF2HTMLEXで変換・スクリプトで一部だけ取得したHTMLファイルの中身を取得して，SPANを付与
-                    add_id();
-                    console.log(area.innerHTML);
+            if (targetDom.contents().length === 0) {
+                const node = targetDom[0];
+                if (!node || node.nodeType !== 3) {
                     return;
                 }
 
-                add_span();
-                             
-                // new Promise(() => {
-                //     $("#tagged_paper_input").val(area.html());
-                // });
-                insert_paper_id = Math.floor(10000000 + Math.random() * 90000000);
-                var title = document.getElementsByName("paper_title")[0].value;
-                var content = area.innerHTML.replace(/'/g, "\\'");
+                const textValue = node.nodeValue || "";
+                if (textValue.length === 0) {
+                    return;
+                }
 
-                
-                
-                
-                $.ajax({
-                    url: "php/insert_paper.php",
-                    type: "POST",
-                    data: { insert : "paper",
-                            id : insert_paper_id,
-                            paper_title : title,
-                            content : content
-                        },
-                    success: function(result){
-                        console.log(result);                 
-                    },
-                    error:function(){
-                        console.log("エラーです");
-                    }
-                });
-                           
+                const replacedHTML = [...textValue].map((char) => {
+                    return "<span class='paper_txt_obj'>" + char + "</span>";
+                }).join("");
+
+                targetDom.replaceWith(replacedHTML);
+                return;
             }
-            
-        }, false);
+
+            targetDom.contents().each((_, elm) => {
+                recursiveLeafApply($(elm));
+            });
+        };
+
+        recursiveLeafApply(rootTarget);
+
+        $(".paper_txt_obj").each((index, elm) => {
+            $(elm).attr({
+                char_id: "p_txt_" + index
+            });
+        });
+    };
+
+    btn.addEventListener("change", (evt) => {
+        const files = evt.target.files;
+        if (!files || !files[0]) {
+            return;
+        }
+
+        const file = files[0];
+        if (!isHTMLFile(file)) {
+            alert("HTMLファイルを選択してください。");
+            evt.target.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsText(file);
+
+        reader.onload = () => {
+            const area = document.getElementById(paperAreaId);
+            if (!area) {
+                return;
+            }
+
+            const rebuild = document.createElement("span");
+            rebuild.setAttribute("id", "rebuild");
+            rebuild.innerHTML = reader.result;
+            area.innerHTML = rebuild.innerHTML;
+
+            const beforeSpannedText = $("#page-container").length > 0 ? $("#page-container") : $(area);
+            addSpansToTextNodes(beforeSpannedText);
+
+            pendingPaperId = Math.floor(10000000 + Math.random() * 90000000);
+            pendingPaperContent = area.innerHTML;
+        };
+    }, false);
+
+    saveButton.addEventListener("click", () => {
+        const title = titleInput.value.trim();
+        if (pendingPaperContent === "") {
+            alert("HTMLファイルを選択してください。");
+            return;
+        }
+
+        if (title === "") {
+            alert("論文のタイトルを入力してください。");
+            titleInput.focus();
+            return;
+        }
+
+        $.ajax({
+            url: "php/insert_paper.php",
+            type: "POST",
+            data: {
+                insert: "paper",
+                id: pendingPaperId,
+                paper_title: title,
+                content: pendingPaperContent
+            },
+            success: function(result) {
+                console.log(result);
+                alert("論文を保存しました。");
+            },
+            error: function(xhr) {
+                console.log("paper save failed");
+                console.log(xhr.responseText);
+                alert("論文データの保存に失敗しました。詳細はコンソールを確認してください。");
+            }
+        });
     });
-    $(file_input_btn_id).off();
-    
-}
+};
 
 setTaggedHTMLPaperData("input_htmlfile", "paper_read_area");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
