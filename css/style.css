@@ -241,7 +241,7 @@ table[type] {
 
 .checkbox_mode {
 	display: flex;
-	width: 20%;
+	/* width: 20%; */
 	flex-direction: column;
 	float: right;
 	vertical-align: middle;
@@ -428,7 +428,6 @@ input:checked+label::after {
 
 /* マインドマップ上で右クリックしたときのメニュー */
 #mindmap_conmenu{
-  width:180px;
   background-color:#f8fffd;
   border:1px solid #B3E0D8;
   display:none;
@@ -1807,7 +1806,7 @@ select[name="user_list"] {
 .button3 {
 	background-color: #90B1AB;
 	color: #fff;
-	width: 50px;
+	width: 70px;
 	height: 25px;
 	font-size: 12px;
 	margin-left: 0;
@@ -1852,10 +1851,10 @@ select[name="user_list"] {
 	background-color: #90B1AB;
 	color: #fff;
 	border-color: unset;
-	width: 80%;
+	width: 95%;
 	height: 25px;
 	font-size: 12px;
-	margin-left: 10px;
+	margin-left: 8px;
 	margin-right: 8px;
 	margin-top: 1px;
     margin-bottom: 1px;

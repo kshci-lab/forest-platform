@@ -89,7 +89,8 @@ function p_disp(){
 								atag.id = $id;
 								atag.setAttribute("concept_id", $concept_id);
 								atag.onclick = Toi_Append;
-								atag.innerHTML = $inquiry_content;
+								atag.setAttribute("data-ja-text", $inquiry_content);
+								atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 								ultag.appendChild(atag);
 
 							}else if($inquiry_content == "なぜこれらは合理的であるといえるのですか？"){
@@ -116,7 +117,8 @@ function p_disp(){
 								atag.id = $id;
 								atag.setAttribute("concept_id", $concept_id);
 								atag.onclick = Toi_Append;
-								atag.innerHTML = $inquiry_content;
+								atag.setAttribute("data-ja-text", $inquiry_content);
+								atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 								ultag.appendChild(atag);
 
 
@@ -155,7 +157,8 @@ function p_disp(){
 								atag.id = $id;
 								atag.setAttribute("concept_id", $concept_id);
 								atag.onclick = Toi_Append;
-								atag.innerHTML = $inquiry_content;
+								atag.setAttribute("data-ja-text", $inquiry_content);
+								atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 								ultag.appendChild(atag);
 
 							}
@@ -179,6 +182,9 @@ function P_showGeneration(){
 	$("div#testxml").html("");
 	$("div#intention").html("");
 	$("div#rationality").html("");
+	if (window.renderInquiryAreaHeaders) {
+		window.renderInquiryAreaHeaders(window.currentLang || "ja");
+	}
 	console.log("P_showGeneration");
 	p_xmlLoad();
 

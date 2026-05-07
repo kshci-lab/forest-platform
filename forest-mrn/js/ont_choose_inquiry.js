@@ -75,7 +75,8 @@ function choose_disp(){
 			atag.href = "#";
 			atag.id = $id;
 			atag.onclick = add_node;//ノードの追加について記述
-			atag.innerHTML = $inquiry_content;
+			atag.setAttribute("data-ja-text", $inquiry_content);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 			ultag.appendChild(atag);
 
 		}else if($inquiry_content == "なぜこれらは合理的であるといえるのですか？"){
@@ -101,7 +102,8 @@ function choose_disp(){
 			atag.href = "#";
 			atag.id = $id;
 			atag.onclick = add_node;
-			atag.innerHTML = $inquiry_content;
+			atag.setAttribute("data-ja-text", $inquiry_content);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 			ultag.appendChild(atag);
 
 
@@ -169,7 +171,8 @@ function choose_disp(){
 											atag.href = "#";
 											atag.id = $id;
 											atag.onclick = add_node;
-											atag.innerHTML = $inquiry_content;
+											atag.setAttribute("data-ja-text", $inquiry_content);
+											atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 											ultag.appendChild(atag);
 
 										}
@@ -230,7 +233,8 @@ function choose_disp(){
 														atag.href = "#";
 														atag.id = $id;
 														atag.onclick = add_node;
-														atag.innerHTML = $inquiry_content;
+														atag.setAttribute("data-ja-text", $inquiry_content);
+														atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 														ultag.appendChild(atag);
 
 
@@ -295,7 +299,8 @@ function choose_disp(){
 														atag.href = "#";
 														atag.id = $id;
 														atag.onclick = add_node;
-														atag.innerHTML = $inquiry_content;
+														atag.setAttribute("data-ja-text", $inquiry_content);
+														atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 														ultag.appendChild(atag);
 
 

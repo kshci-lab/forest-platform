@@ -46,6 +46,7 @@ table[type] {
 	height: 80px;
 	color: #fff;
 	background-color: #1B4383; /* forestgreen */
+	position: relative;
 
 	margin-right: 10px;
 	margin-left: 0;
@@ -1494,6 +1495,13 @@ select[name="mttime_list"] {
 }
 .button3:hover {
 	background-color: #ff8c00;
+}
+
+body.lang-en #zoom-in-button,
+body.lang-en #zoom-out-button {
+	width: 78px;
+	font-size: 11px;
+	white-space: nowrap;
 }
 
 .button4 {

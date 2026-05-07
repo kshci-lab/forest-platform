@@ -93,12 +93,34 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
     </head>
     <body id="all">
+        
         <!---        タイトルメニューStart                 -->
         <div id="main_title">
             <form name="return" method="POST">
                 <span class="title_name">Forest</span>
-                <span><input class="button2" type="submit" name="logout" value="ログアウト"></span>
-                <span><input class="button1" type="submit" name="sheetbtn" value="シート選択画面に戻る"></span>
+                <span><input id="logout-button" class="button2" type="submit" name="logout" value="ログアウト"></span>
+                <span><input id="sheet-select-button" class="button1" type="submit" name="sheetbtn" value="シート選択画面に戻る"></span>
+                <span>
+                    <div id="language-toggle-container" style="position:relative;top:18px;right:20px;float:right;z-index:20;">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:15px;">
+                            <span id="lang-label-ja">JA</span>
+                            <label class="switch">
+                                <input type="checkbox" id="language-toggle" />
+                                <span class="slider round"></span>
+                        </label>
+                        <span id="lang-label-en">EN</span>
+                        </label>
+                    </div>
+                    <style>
+                        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+                        .switch input { opacity: 0; width: 0; height: 0; }
+                        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+                        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #fff; transition: .4s; border-radius: 50%; }
+                        input:checked + .slider { background-color: #2196F3; }
+                        input:checked + .slider:before { transform: translateX(20px); }
+                    </style>
+                    <div id="language-switching-message" style="display:none;position:fixed;top:50px;right:30px;background:#fff3cd;color:#856404;padding:8px 18px;border-radius:7px;box-shadow:0 2px 8px #ccc;z-index:9999;font-size:16px;">Switching language...</div>
+                </span>
             </form>
         </div>
         <!-- <form name="return" method="POST">
@@ -696,12 +718,9 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                         <div id="mind" class="side">
                             <div class="inquiry_area">
-                                <div>【情報の表出化】</div>
                                 <div id="testxml"></div>
                                 <div id="ont"></div>
-                                <div>【理由・目的】</div>
                                 <div id="intention"></div>
-                                <div>【合理性】</div>
                                 <div id="rationality"></div>
                             </div>
                             <div id="ImageAddContent">
@@ -1055,6 +1074,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/ont_scenario_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_audience_model.js"></script>
         <script type="text/javascript" src="js/upload.js"></script>     
+        <script type="text/javascript" src="js/ui_language.js"></script>
         <!-- 2022.shimizu -->
         <script type="text/javascript" src="js/html2canvas.min.js"></script>
         <script type="text/javascript" src="js/add_OntologyArea.js"></script>
