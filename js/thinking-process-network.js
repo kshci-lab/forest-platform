@@ -264,8 +264,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         let position_fixed = false;   // ノードを動かせるかどうか（Falseなら動かせる）
 
         let result_label = '';
-        for (let i = 0; i < node_label.length; i += 10) {
-            result_label += node_label.substr(i, 10) + '\n';
+        for (let i = 0; i < node_label.length; i += 40) {
+            result_label += node_label.substr(i, 40) + '\n';
         }
         result_label = result_label.trim(); // 末尾の不要な改行を除去
         const newNode = {
@@ -305,8 +305,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         let text_color = 'black';   // ノード内文字列の色
         let position_fixed = false;   // ノードを動かせるかどうか（Falseなら動かせる）
         let result_label = '';
-        for (let i = 0; i < node_label.length; i += 10) {
-            result_label += node_label.substr(i, 10) + '\n';
+        for (let i = 0; i < node_label.length; i += 40) {
+            result_label += node_label.substr(i, 40) + '\n';
         }
         result_label = result_label.trim(); // 末尾の不要な改行を除去
         const newNode = {
@@ -690,6 +690,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
             area.appendChild(stage3.titleEl);
             area.appendChild(stage3.prompt);
+            if (window.applyLessonDisplayLanguage) {
+                window.applyLessonDisplayLanguage(window.currentLang || 'ja');
+            }
         }
     }
 

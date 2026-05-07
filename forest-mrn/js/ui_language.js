@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   "use strict";
 
   var translationTargets = [
@@ -67,6 +67,7 @@
     { key: "processRecruitOption1", selector: "#t_Process_recruitselectionlist option:nth-of-type(2)", kind: "text" },
     { key: "processRecruitSelect", selector: "#p_recruit_select", kind: "value" },
     { key: "triggerAdd", selector: "#inputTriggerbutton", kind: "value" },
+    { key: "lessonShareButton", selector: "#lesson_display .lessonbutton", kind: "value" },
     { key: "tabCooperation", selector: "#org-tab-cooperation", kind: "text" },
     { key: "tabCombination", selector: "#org-tab-combination", kind: "text" },
     { key: "groupSelectLabel", selector: "#group_select_label", kind: "text" },
@@ -162,7 +163,8 @@
       processRecruitOption0: "Use",
       processRecruitOption1: "Reject",
       processRecruitSelect: "Apply",
-      triggerAdd: "Add Trigger",
+      triggerAdd: " + Add Activity",
+      lessonShareButton: "Share as Learning",
       tabCooperation: "Externalization",
       tabCombination: "Combination",
       groupSelectLabel: "Select Group:",
@@ -227,12 +229,175 @@
     if (document.body) {
       document.body.classList.toggle("lang-en", lang === "en");
     }
+    applyTriggerAreaLanguage(lang);
+    applyLessonDisplayLanguage(lang);
     if (window.setInquiryLang) {
       window.setInquiryLang(lang);
     } else if (window.applyInquiryLanguageToCurrentArea) {
       window.applyInquiryLanguageToCurrentArea(lang);
     }
   }
+
+  function applyTriggerAreaLanguage(lang) {
+    var triggerButton = document.getElementById("inputTriggerbutton");
+    var triggerActivity = document.getElementById("trigger_activity");
+    var triggerContent = document.getElementById("trigger_content");
+    var triggerNew = document.getElementById("triggerNew");
+    var isOpen = !!triggerActivity;
+    var jaClosed = " \uFF0B \u6D3B\u52D5\u3092\u5165\u529B";
+    var jaOpen = " \u00D7 \u9589\u3058\u308B";
+    var jaOptions = [
+      "-\u6D3B\u52D5\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044-",
+      "\u601D\u8003\u652F\u63F4",
+      "\u4F1A\u8B70\u5185\u7701",
+      "\u4F1A\u8B70",
+      "\u8CC7\u6599\u4F5C\u6210",
+      "\u8CC7\u6599\u691C\u8A0E"
+    ];
+
+    if (triggerButton) {
+      triggerButton.value = lang === "en"
+        ? (isOpen ? "Close" : " + Add Activity")
+        : (isOpen ? jaOpen : jaClosed);
+    }
+
+    if (triggerActivity) {
+      var optionTexts = lang === "en"
+        ? [
+            "- Select an activity -",
+            "Thinking Support",
+            "Meeting Reflection",
+            "Meeting",
+            "Document Creation",
+            "Document Review"
+          ]
+        : jaOptions;
+      for (var i = 0; i < triggerActivity.options.length && i < optionTexts.length; i += 1) {
+        triggerActivity.options[i].text = optionTexts[i];
+      }
+    }
+
+    if (triggerContent) {
+      triggerContent.placeholder = lang === "en"
+        ? "Describe what happened in the activity"
+        : "\u304D\u3063\u304B\u3051\u306B\u306A\u3063\u305F\u51FA\u6765\u4E8B\u3092\u8A18\u8FF0\u3057\u3066\u304F\u3060\u3055\u3044";
+    }
+
+    if (triggerNew) {
+      triggerNew.value = lang === "en"
+        ? "Add as Node"
+        : "\u30CE\u30FC\u30C9\u3068\u3057\u3066\u8FFD\u52A0";
+    }
+  }
+
+  window.applyTriggerAreaLanguage = applyTriggerAreaLanguage;
+
+  function setPromptContent(container, parts) {
+    if (!container) return;
+    container.innerHTML = "";
+    parts.forEach(function (part) {
+      if (part.type === "text") {
+        container.appendChild(document.createTextNode(part.text));
+      } else {
+        var input = document.createElement("textarea");
+        input.className = "lessonTextArea";
+        input.rows = 1;
+        input.placeholder = part.placeholder;
+        container.appendChild(input);
+      }
+    });
+  }
+
+  function applyLessonDisplayLanguage(lang) {
+    var lessonTitle = document.querySelector("#area_lesson_add .lesson-heading-title");
+    var lessonTitleInput = document.querySelector("#area_lesson_add textarea[name='knowledge_fragment_title']");
+    var stage1Title = document.querySelector("#area_lesson_add [data-stage='stage1']") ?
+      document.querySelector("#area_lesson_add [data-stage='stage1']").previousElementSibling : null;
+    var stage2Title = document.querySelector("#area_lesson_add [data-stage='stage2']") ?
+      document.querySelector("#area_lesson_add [data-stage='stage2']").previousElementSibling : null;
+    var stage3Title = document.querySelector("#area_lesson_add [data-stage='stage3']") ?
+      document.querySelector("#area_lesson_add [data-stage='stage3']").previousElementSibling : null;
+    var stage1 = document.querySelector("#area_lesson_add [data-stage='stage1']");
+    var stage2 = document.querySelector("#area_lesson_add [data-stage='stage2']");
+    var stage3 = document.querySelector("#area_lesson_add [data-stage='stage3']");
+
+    if (lessonTitle) {
+      lessonTitle.textContent = lang === "en"
+        ? "Learning Summary"
+        : "\u5B66\u3073\u306E\u8981\u7D04";
+    }
+
+    if (lessonTitleInput) {
+      lessonTitleInput.placeholder = lang === "en"
+        ? "Enter a short title for what you learned"
+        : "\u3069\u3093\u306A\u3053\u3068\u3092\u5B66\u3093\u3060\u304B\u306E\u8981\u7D04\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044";
+    }
+
+    if (stage1Title) {
+      stage1Title.textContent = lang === "en"
+        ? "[Reflection on Experience]"
+        : "\u3010\u5B66\u3073\u306E\u632F\u308A\u8FD4\u308A1\u3011";
+    }
+    if (stage2Title) {
+      stage2Title.textContent = lang === "en"
+        ? "[Activity-Context-Specific Reflection]"
+        : "\u3010\u6D3B\u52D5\u30FB\u5B9F\u8DF5\u5834\u9762\u306E\u632F\u308A\u8FD4\u308A\u3011";
+    }
+    if (stage3Title) {
+      stage3Title.textContent = lang === "en"
+        ? "[Research-Specific Reflection]"
+        : "\u3010\u4ECA\u5F8C\u306E\u884C\u52D5\u306E\u632F\u308A\u8FD4\u308A\u3011";
+    }
+
+    if (stage1) {
+      setPromptContent(stage1, lang === "en" ? [
+        { type: "text", text: "In " },
+        { type: "input", placeholder: "what situation" },
+        { type: "text", text: ", I learned " },
+        { type: "input", placeholder: "what I learned" },
+        { type: "text", text: "." }
+      ] : [
+        { type: "input", placeholder: "\u3069\u306E\u3088\u3046\u306A" },
+        { type: "text", text: "\u5834\u9762\u3067" },
+        { type: "input", placeholder: "\u5B66\u3073" },
+        { type: "text", text: "\u304C\u3042\u308A\u307E\u3057\u305F\u304B" }
+      ]);
+    }
+
+    if (stage2) {
+      setPromptContent(stage2, lang === "en" ? [
+        { type: "text", text: "In my actual thinking activity, " },
+        { type: "input", placeholder: "what happened or what I noticed" },
+        { type: "text", text: ", and I gained " },
+        { type: "input", placeholder: "what I learned or realized" },
+        { type: "text", text: "." }
+      ] : [
+        { type: "text", text: "\u5B9F\u969B\u306E\u601D\u8003\u6D3B\u52D5\u306E\u4E2D\u3067" },
+        { type: "input", placeholder: "\u3069\u306E\u3088\u3046\u306A\u3053\u3068\u304C\u8D77\u3053\u308A/\u611F\u3058\u305F\u3053\u3068\uFF08\u767A\u898B\uFF09" },
+        { type: "text", text: "\u304C\u3042\u308A\u3001\u3069\u306E\u3088\u3046\u306A\u5B66\u3073\u3084" },
+        { type: "input", placeholder: "\u6C17\u3065\u304D\uFF08\u767A\u898B\uFF09" },
+        { type: "text", text: "\u304C\u5F97\u3089\u308C\u307E\u3057\u305F\u304B" }
+      ]);
+    }
+
+    if (stage3) {
+      setPromptContent(stage3, lang === "en" ? [
+        { type: "text", text: "Based on that reflection, I want to " },
+        { type: "input", placeholder: "what I want to do next" },
+        { type: "text", text: ", and for that purpose, I need " },
+        { type: "input", placeholder: "the perspective or effort I need" },
+        { type: "text", text: "." }
+      ] : [
+        { type: "text", text: "\u632F\u308A\u8FD4\u308A\u3092\u8E0F\u307E\u3048\u3066\u3001" },
+        { type: "input", placeholder: "\u4F55\u3092\u884C\u3044\u305F\u3044\u304B/\u53D6\u308A\u7D44\u307F\u305F\u3044\u3053\u3068\uFF08\u767A\u898B\uFF09" },
+        { type: "text", text: "\u304C\u3042\u308A\u3001\u305D\u306E\u305F\u3081\u306B" },
+        { type: "input", placeholder: "\u4F55\u3092\u3069\u306E\u3088\u3046\u306A\u8996\u70B9\u304B\u3089\u8003\u3048/\u53D6\u308A\u7D44\u307F\u305F\u3044\u3053\u3068\uFF08\u6C17\u3065\u304D\uFF09" },
+        { type: "text", text: "\u304C\u3042\u308A\u307E\u3059\u304B" }
+      ]);
+    }
+  }
+
+  window.applyLessonDisplayLanguage = applyLessonDisplayLanguage;
 
   function setLanguage(lang) {
     var message = document.getElementById("language-switching-message");
@@ -276,3 +441,4 @@
     });
   });
 }());
+
