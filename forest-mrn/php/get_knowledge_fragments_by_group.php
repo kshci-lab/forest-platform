@@ -21,19 +21,47 @@ if(!isset($mysqli) || !($mysqli instanceof mysqli)){
 if (session_status() !== PHP_SESSION_ACTIVE) { @session_start(); }
 $user_id = isset($_SESSION['USERID']) ? (string)$_SESSION['USERID'] : '';
 
+/**
+ * Fetch all rows from a prepared statement as associative arrays without mysqlnd.
+ * Returns [] on failure.
+ */
+function __stmt_fetch_all_assoc(mysqli_stmt $stmt): array {
+  $meta = $stmt->result_metadata();
+  if (!$meta) { return []; }
+
+  $fields = $meta->fetch_fields();
+  $meta->free();
+  if (!$fields) { return []; }
+
+  $row = [];
+  $bind = [];
+  foreach ($fields as $field) {
+    $row[$field->name] = null;
+    $bind[] = &$row[$field->name];
+  }
+  if (!call_user_func_array([$stmt, 'bind_result'], $bind)) { return []; }
+
+  $rows = [];
+  while ($stmt->fetch()) {
+    $copy = [];
+    foreach ($row as $k => $v) { $copy[$k] = $v; }
+    $rows[] = $copy;
+  }
+  return $rows;
+}
+
 $group_id = isset($_GET['group_id']) ? trim((string)$_GET['group_id']) : '';
 if ($group_id === '' && $user_id !== '') {
   // pick latest group for the user
   if ($st = $mysqli->prepare("SELECT group_id FROM kgroup_user_link WHERE user_id = ? ORDER BY created_at DESC LIMIT 1")) {
     $st->bind_param('s', $user_id);
     if ($st->execute()) {
-      if ($res = $st->get_result()) {
-        if ($row = $res->fetch_assoc()) {
-          if (isset($row['group_id']) && trim((string)$row['group_id']) !== '') {
-            $group_id = trim((string)$row['group_id']);
-          }
+      $rows = __stmt_fetch_all_assoc($st);
+      if (!empty($rows)) {
+        $row0 = $rows[0];
+        if (isset($row0['group_id']) && trim((string)$row0['group_id']) !== '') {
+          $group_id = trim((string)$row0['group_id']);
         }
-        $res->free();
       }
     }
     $st->close();
@@ -46,13 +74,12 @@ if ($user_id !== '') {
   if ($stmtU = $mysqli->prepare("SELECT name FROM users WHERE user_id = ? LIMIT 1")) {
     $stmtU->bind_param('s', $user_id);
     if ($stmtU->execute()) {
-      if ($resU = $stmtU->get_result()) {
-        if ($rowU = $resU->fetch_assoc()) {
-          if (isset($rowU['name']) && trim((string)$rowU['name']) !== '') {
-            $__current_user_name = (string)$rowU['name'];
-          }
+      $rowsU = __stmt_fetch_all_assoc($stmtU);
+      if (!empty($rowsU)) {
+        $rowU0 = $rowsU[0];
+        if (isset($rowU0['name']) && trim((string)$rowU0['name']) !== '') {
+          $__current_user_name = (string)$rowU0['name'];
         }
-        $resU->free();
       }
     }
     $stmtU->close();
@@ -77,6 +104,7 @@ if ($hasTable) {
                    ek.knowledge_fragment_content AS content,
                    ek.stage1, ek.stage2, ek.stage3,
                    ek.selected_contents,
+                   ek.updated_at AS updated_at,
                    ek.user_id,
                    COALESCE(u.name,'') AS user_name,
                    ek.discussed
@@ -88,30 +116,28 @@ if ($hasTable) {
                AND ek.deleted = 0
                AND ek.knowledge_fragment_content IS NOT NULL
                AND LENGTH(TRIM(ek.knowledge_fragment_content)) > 0
-             ORDER BY ek.updated_at DESC, ek.experience_knowledge_id DESC";
+             ORDER BY updated_at DESC, ek.experience_knowledge_id DESC";
     if ($stmt = $mysqli->prepare($sql)) {
       $stmt->bind_param('s', $group_id);
       if ($stmt->execute()) {
-        if ($result = $stmt->get_result()) {
-          while ($row = $result->fetch_assoc()) {
-            $__val = isset($row['content']) ? (string)$row['content'] : '';
-            if (trim($__val) === '') { continue; }
-            $__user_name = $__current_user_name;
-            if (isset($row['user_name']) && trim((string)$row['user_name']) !== '') {
-              $__user_name = (string)$row['user_name'];
-            }
-            $__kfrag_list[] = [
-              'content' => $__val,
-              'stage1' => isset($row['stage1']) ? (string)$row['stage1'] : '',
-              'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
-              'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
-              'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
-              'user_name' => $__user_name,
-              'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
-              'experience_knowledge_id' => isset($row['experience_knowledge_id']) ? (int)$row['experience_knowledge_id'] : null
-            ];
+        $rows = __stmt_fetch_all_assoc($stmt);
+        foreach ($rows as $row) {
+          $__val = isset($row['content']) ? (string)$row['content'] : '';
+          if (trim($__val) === '') { continue; }
+          $__user_name = $__current_user_name;
+          if (isset($row['user_name']) && trim((string)$row['user_name']) !== '') {
+            $__user_name = (string)$row['user_name'];
           }
-          $result->free();
+          $__kfrag_list[] = [
+            'content' => $__val,
+            'stage1' => isset($row['stage1']) ? (string)$row['stage1'] : '',
+            'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
+            'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
+            'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
+            'user_name' => $__user_name,
+            'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
+            'experience_knowledge_id' => isset($row['experience_knowledge_id']) ? (int)$row['experience_knowledge_id'] : null
+          ];
         }
       }
       $stmt->close();
@@ -133,26 +159,24 @@ if ($hasTable) {
              ORDER BY ek.updated_at DESC, ek.experience_knowledge_id DESC";
     if ($stmt = $mysqli->prepare($sql)) {
       if ($stmt->execute()) {
-        if ($result = $stmt->get_result()) {
-          while ($row = $result->fetch_assoc()) {
-            $__val = isset($row['content']) ? (string)$row['content'] : '';
-            if (trim($__val) === '') { continue; }
-            $__user_name = $__current_user_name;
-            if (isset($row['user_name']) && trim((string)$row['user_name']) !== '') {
-              $__user_name = (string)$row['user_name'];
-            }
-            $__kfrag_list[] = [
-              'content' => $__val,
-              'stage1' => isset($row['stage1']) ? (string)$row['stage1'] : '',
-              'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
-              'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
-              'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
-              'user_name' => $__user_name,
-              'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
-              'experience_knowledge_id' => isset($row['experience_knowledge_id']) ? (int)$row['experience_knowledge_id'] : null
-            ];
+        $rows = __stmt_fetch_all_assoc($stmt);
+        foreach ($rows as $row) {
+          $__val = isset($row['content']) ? (string)$row['content'] : '';
+          if (trim($__val) === '') { continue; }
+          $__user_name = $__current_user_name;
+          if (isset($row['user_name']) && trim((string)$row['user_name']) !== '') {
+            $__user_name = (string)$row['user_name'];
           }
-          $result->free();
+          $__kfrag_list[] = [
+            'content' => $__val,
+            'stage1' => isset($row['stage1']) ? (string)$row['stage1'] : '',
+            'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
+            'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
+            'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
+            'user_name' => $__user_name,
+            'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
+            'experience_knowledge_id' => isset($row['experience_knowledge_id']) ? (int)$row['experience_knowledge_id'] : null
+          ];
         }
       }
       $stmt->close();
@@ -201,4 +225,3 @@ $mysqli->close();
     <div class="no-fragment-note">表示できるフラグメントがありません。</div>
   <?php } ?>
 </div>
-
