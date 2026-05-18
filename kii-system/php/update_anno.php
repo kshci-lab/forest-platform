@@ -8,7 +8,7 @@
 	// $updated_at = date("Y-m-d H:i:s");
 	$deleted = 1;
 
-	$sql = "UPDATE paper_annotations SET deleted = '".$deleted."' WHERE id = '".$_POST['id']."'";
+	$sql = "UPDATE paper_annotations SET deleted = '".$deleted."' WHERE annotation_id = '".$_POST['id']."'";
 	$result = $mysqli->query($sql);
 
 	if (!$result) {

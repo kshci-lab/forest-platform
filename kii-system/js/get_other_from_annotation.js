@@ -4,7 +4,7 @@
 function show_other_mindmap_anno(){
 
     judge_charid(function (result) {
-        if (result.length !== 0) {
+        if (Array.isArray(result) && result.length !== 0) {
             // 成功時の処理
             console.log("result=", result);
             result.sort((a, b) =>
@@ -29,6 +29,7 @@ function show_other_mindmap_anno(){
 
 //論文の選択部のidを取ってくる関数
 function get_charid(){
+    var charid = null;
     var other = document.getElementById("change2").style.display;
 
     if (other == "none"){
@@ -46,16 +47,25 @@ function get_charid(){
             // 選択範囲内の最後の文字の `char_id` を取得
             var endCharId = range.endContainer.parentNode.getAttribute("char_id");
 
+            if (!startCharId || !endCharId) {
+                return null;
+            }
+
             charid = [startCharId, endCharId];
             var i = 0;
 
             for (var i = 0; i < charid.length; i++) {
-                charid[i] = charid[i].match(/\d+/)[0];
+                var match = charid[i].match(/\d+/);
+                if (!match) {
+                    return null;
+                }
+                charid[i] = match[0];
             }      
         }
         return charid;
 
     }
+    return null;
     
 }
 
@@ -65,7 +75,7 @@ function judge_charid(callback) {
     var charid = get_charid(); // 文字IDを取得
     console.log(charid);
 
-    if (charid !== null) { // 選択が行われているかを確認
+    if (Array.isArray(charid) && charid.length >= 2 && charid[0] !== undefined && charid[1] !== undefined) { // 選択が行われているかを確認
         $.ajax({
             url: "php/get_other_annotation.php",
             type: "POST",
@@ -81,12 +91,12 @@ function judge_charid(callback) {
             },
             error: function (error) {
                 console.error("AJAXリクエストでエラーが発生しました:", error);
-                callback(null); // エラー時にもコールバック関数を呼び出す
+                callback([]); // エラー時にもコールバック関数を呼び出す
             }
         });
     } else {
         console.error("テキストが選択されていません。");
-        callback(null); // エラー時にもコールバック関数を呼び出す
+        callback([]); // エラー時にもコールバック関数を呼び出す
     }
 }
 

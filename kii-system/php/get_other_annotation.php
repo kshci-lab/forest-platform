@@ -64,10 +64,16 @@ require "connect_db.php";
         $data_array = array(); // contentとmapidを格納する配列
     
         // SQLクエリを構築
-        $sql = "SELECT pa.*, nl.concept_id, nl.parent_id, nl.map_id FROM paper_annotations pa JOIN node_latest nl ON pa.node_id = nl.node_id 
+        $sql = "SELECT pa.*, nl.concept_id, nl.parent_id, ml.map_id, m.paper_id
+                    FROM paper_annotations pa
+                    JOIN node_latest nl ON pa.node_id = nl.node_id
+                    JOIN map_node_links ml ON pa.node_id = ml.node_id
+                    JOIN maps m ON ml.map_id = m.map_id
                     WHERE ((pa.start_char_id >= '$start_char_id' AND pa.end_char_id <= '$end_char_id')
                         OR (pa.start_char_id < '$start_char_id' AND pa.end_char_id > '$end_char_id'))
-                        AND nl.map_id IN (SELECT map_id FROM map_mode_links WHERE paper_id = '$paper_id' AND map_id NOT LIKE '$map_id');";
+                        AND pa.deleted = 0
+                        AND m.paper_id = '$paper_id'
+                        AND ml.map_id NOT LIKE '$map_id';";
 
         if ($result = $mysqli->query($sql)) {
             $i = 0;
