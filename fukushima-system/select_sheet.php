@@ -1,8 +1,8 @@
 <?php
 
 session_start();
-require("../php/connect_db.php");
-require_once("php/sheet.php");
+require(__DIR__ . "/../php/connect_db.php");
+require_once(__DIR__ . "/../php/sheet.php");
 
 $mt_time_message = "";
 
@@ -99,12 +99,12 @@ if(isset($_POST["record"])){
 	<head>
 		<meta charset="UTF-8">
 		<title>自己内対話活性化支援システム</title>
-		<link rel="stylesheet" type="text/css" href="../css/item.css">
-		<link rel="stylesheet" type="text/css" href="../css/font.css">
-		<link rel="stylesheet" type="text/css" href="../css/jquery.cleditor.css">
-		<link rel="stylesheet" type="text/css" href="../css/ui.css">
-		<link rel="stylesheet" type="text/css" href="../css/select_sheet.css">
-    <link rel="stylesheet" href="../css/Semantic-UI/semantic.css">
+		<link rel="stylesheet" type="text/css" href="css/item.css">
+		<link rel="stylesheet" type="text/css" href="css/font.css">
+		<link rel="stylesheet" type="text/css" href="css/jquery.cleditor.css">
+		<link rel="stylesheet" type="text/css" href="css/ui.css">
+		<link rel="stylesheet" type="text/css" href="css/select_sheet.css">
+    <link rel="stylesheet" href="css/Semantic-UI/semantic.css">
 		<script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
 		<script type="text/javascript" src="js/jquery-ui.min.js"></script>
 	</head>
