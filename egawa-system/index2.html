@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>画像アップロード</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>画像アップロード</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="image" id="image-input">
+        <input type="button" value="アップロード" onclick="uploadImage()">
+    </form>
+    <div id="result"></div>
+
+    <script>
+        function uploadImage() {
+            var form = $('#upload-form')[0];
+            var formData = new FormData(form);
+
+            $.ajax({
+                url: 'php/upload.php',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    $('#result').html(response);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
