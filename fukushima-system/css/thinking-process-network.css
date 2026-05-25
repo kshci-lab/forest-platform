@@ -1,0 +1,382 @@
+/* -------------------- エリア類の設定 ---------------------- */
+
+/*ネットワーク*/
+#process_network_container{
+	/* width: calc(100vw - 350px); */
+	width: 100%;
+	min-width: 300px;
+	height:50%;
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	/* border-bottom:solid 5px #B3E0D8; */
+	border-top:solid 5px #B3E0D8;
+	background:#fff;
+	overflow: hidden;
+	float:left;
+	display: none;
+	resize: vertical;
+}
+#myProcessnetwork {
+	position: relative;
+	width: calc(100vw - 350px);
+	min-width: 300px;
+	height:50%;
+	min-height: 450px;
+	margin-bottom:2vh;
+	border-top:solid 1px #B3E0D8;
+	background:#fff;
+	overflow: auto;
+}
+#myProcessnetwork2{
+	width: 100%;
+	min-width: 300px;
+	/* height:50%; */
+	min-height: 450px;
+	/* margin-bottom:2vh; */
+	/* border-top:solid 5px #B3E0D8; */
+	background:#fff;
+	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	padding: 5px;
+	box-sizing: border-box;
+}
+
+/* triggerを表示するエリア関連の設定 */
+#trigger_area{
+	width: calc((100vw - 350px)*0.3);
+	min-width: 100px;
+	/* height:50%; */
+	min-height: 450px;
+	margin-bottom:1vh;
+	background:#90B1AB;
+	overflow-y: scroll;
+}
+
+#trigger_area_display{
+	position: sticky;
+	top: 0;
+	/* width: calc((100vw - 350px)*0.35); */
+	height:100px;
+	background:#90B1AB;
+}
+#conceptdisplay{
+	height: 25px;
+	color: #03200a;
+	padding-top: 5px;
+	margin-bottom: 5px;
+	text-align: center;
+}
+#trigger_area_add{
+	height: 20px;
+	/* width: 90%; */
+	min-width: 100px;
+	margin-bottom:1vh;
+	/* border:solid 3px #968d8d; */
+	/* background:#c2c3c2; */
+	line-height:20px;
+	cursor: pointer;
+}
+#trigger_area_list{
+	/* width: calc((100vw - 350px)*0.35); */
+	width: 98%;
+	/* margin-bottom:2vh; */
+	background:#90B1AB;
+	/* overflow-y: scroll; */
+	float:left;
+	line-height:20px;
+	cursor: pointer;
+}
+
+/* -------------------- ボタン類の設定 ---------------------- */
+
+
+#trigger_click{
+	height:30px;
+}
+#trigger_time{
+	width:70%;
+	margin-left:3%;
+    margin-top: 3px;
+}
+#trigger_activity{
+	width:70%;
+	margin-left:3%;
+    margin-top: 3px;
+}
+#trigger_content{
+	width: 95%;
+	margin-left:3%;
+    margin-top: 3px;
+	margin-bottom: 3px;
+	resize: vertical;
+}
+#trigger_add{
+	height:0px;
+	width: 97%;
+	margin-left: 10px;
+    margin-bottom: 3px;
+	background-color: #dceadf;
+	transition: 0.3s ease;
+}
+
+.checkbox_process {
+	display: flex;
+	width: 130px;
+    /* height: 40px; */
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 3px;
+	padding: 0.4em;
+	flex-direction: column;
+	float: right;
+	vertical-align: middle;
+}
+/* 通常のチェックボックスの削除 */
+input[type="checkbox"][name="check_process"]{
+	display: none;
+  }
+ 
+ /* アニメーションの設定 */
+ input+label,
+ input+label::before,
+ input+label::after {
+	 -webkit-transition: all .2s;
+	 transition: all .2s;
+ }
+ /* 背景の図形の設定 */
+ input+label {
+	 display: inline-block;
+	 position: relative;
+	 width: 50px;
+	 height: 20px;
+	 border-radius: 24px;
+	 cursor: pointer;
+ }
+ /* On,Offの文字の設定 */
+ input+label::before {
+	 display: block;
+	 content: attr(data-off-label);
+	 position: absolute;
+	 top: 2px;
+	 left: 23px;
+	 color: #fff;
+	 font-family: Arial, sans-serif;
+	 font-size: 15px;
+ }
+ /* スライドする円の設定 */
+ input+label::after {
+	 content: '';
+	 position: absolute;
+	 top: 1px;
+	 left: 3px;
+	 width: 18px;
+	 height: 18px;
+	 background-color: #fff;
+	 border-radius: 50%;
+ }
+ /* Offの文字設定 */
+ input:checked+label::before {
+	 content: attr(data-on-label);
+	 left: 3px;
+	 right: auto;
+	 color: #7fb5ab;
+ }
+ /* ONの文字設定 */
+ input:checked+label::after {
+	 left: 29px;
+	 background-color: #ffffff;
+ }
+ 
+ .checkbox_process+label {
+	 background-color: #dbe8e6;
+	 margin: 0 auto;
+ }
+ .checkbox_process+label::before {
+	 color: #7fb5ab;
+	 margin: 0 auto;
+ }
+ .checkbox_process:checked+label {
+	 background-color: #7fb5ab;
+	 margin: 0 auto;
+ }
+ .checkbox_process:checked+label::before {
+	 color: #dbe8e6;
+	 margin: 0 auto;
+ }
+
+ /* チェックボックス横のテキスト設定 */
+ .checkbox_process_text{
+	 font-size:12px;
+	 float:right;
+	 margin-bottom: 3px;
+	 margin: 0 auto;
+ }
+
+.trigger_title{
+	font-size: 12px;
+	padding: 2px;
+}
+
+.trigger_in_list{
+	border: 2px #60817b solid;
+	margin-left: 5%;
+    margin-right: 3%;
+	margin-bottom: 5px; 
+	padding: 10px; 
+	padding-left: 5px; 
+	font-size: 13px; 
+	line-height: 15px;
+	transition: 0.1s ease;
+    border-radius: 5px;
+}
+.trigger_in_list:hover {
+	box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1);
+	border: 3px #60817b solid;
+}
+.trigger_in_list:active {
+	box-shadow: none;
+	border: 4px #60817b solid;
+}
+.triggerbutton {
+	background-color: #f1f7f2;
+	color: #04210a;
+	width: 120px;
+    height: 35px;
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 3px;
+	padding: 0.4em;
+	display: inline-block;
+	text-decoration: none;
+	text-align: center;
+	user-select: none;
+	border: 1px #60817b solid;
+	border-radius: 5px;
+	transition: 0.4s ease;
+}
+.triggerbutton:hover {
+  color: #f1f7f2;
+  background: #60817b;
+}
+
+#inputTriggerbutton {
+	width: 95%;
+    height: 30px;
+    font-size: 12px;
+	border: 3px #93a3a1 solid;
+	color: #93a3a1;
+	background-color: #f1f7f2;
+	border-radius: 2px;
+	margin:auto;
+    margin-top: 3px;
+	display: inline-block;
+	text-decoration: none;
+	text-align: center;
+	user-select: none;
+	border-radius: 2px;
+	transition: 0.3s ease;
+}
+#inputTriggerbutton:hover {
+  color: #f1f7f2;
+  background: #93a3a1;
+}
+
+
+.process_close{
+	color: #a0a1a1;
+	background: #ffffff;
+	width: 30px;
+    height: 30px;
+    font-size: 12px;
+    margin-left: 10px;
+    margin-top: 5px;
+    margin-bottom: 6px;
+	padding: 0.4em;
+	display: inline-block;
+	text-decoration: none;
+	text-align: center;
+	user-select: none;
+	border: 1px #a0a1a1 solid;
+	transition: 0.4s ease;
+}
+.process_close:hover {
+	background-color: #a0a1a1;
+	color: #ffffff;
+}
+
+.thinkingProcess_network_button{
+	color: #f1f7f2;
+	background: #60817b;
+	width: 100px;
+    height: 30px;
+    font-size: 12px;
+    width: 130px;
+    margin-left: 5px;
+    margin-top: 5px;
+    margin-bottom: 6px;
+	padding: 0.4em;
+	display: inline-block;
+	text-decoration: none;
+	text-align: center;
+	user-select: none;
+	border: 1px #60817b solid;
+	border-radius: 5px;
+	transition: 0.4s ease;
+}
+.thinkingProcess_network_button:hover {
+	background-color: #f1f7f2;
+	color: #04210a;
+}
+
+/* -------------------- conmenu類の設定 ---------------------- */
+
+#t_Process_conmenu{
+	width:300px;
+	background-color:#f8fffd;
+	border:3px solid #B3E0D8;
+	color :#90B1AB;
+	border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#t_Process_conmenu ul{
+list-style:none;
+margin:0px;
+padding:7px;
+}
+#t_Process_conmenu li:hover{
+background-color: #bbdfd8;
+}
+#t_Process_labelselect{
+	width:200px;
+	background-color:#f8fffd;
+	border:2px solid #B3E0D8;
+	border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#t_Process_recruitselect{
+	width:200px;
+	background-color:#f8fffd;
+	border:2px solid #B3E0D8;
+	border-radius: 10px;
+	display:none;
+	position:fixed;
+	z-index: 1000;
+	text-align: center;
+}
+#recruit_reason{
+	display: none;
+}
+#organizational_conmenu1, #organizational_conmenu2, #organizational_conmenu3, #organizational_conmenu4{
+	display:block;
+	padding:5px;
+	border-bottom:1px solid #B3E0D8;
+	color:#1d2927;
+	text-decoration:none;
+}

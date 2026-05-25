@@ -70,11 +70,15 @@
 	color: #f00;
 }
 
-canvas {
+/* canvas {
 	position: absolute;
 	left: 0;
 	top: 0;
-}
+} */
+
+/* canvas {
+	display: none;
+} */
 
 .toggle {
 	position: absolute;
