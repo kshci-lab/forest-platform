@@ -1,7 +1,7 @@
 <?php
 session_start();
-require("../php/connect_db.php");
-require("php/sheet.php");
+require(__DIR__ . "/../php/connect_db.php");
+require(__DIR__ . "/../php/sheet.php");
 
 // ログイン状態のチェック
 if (!isset($_SESSION["USERID"]) ) { //ログイン出来ていない

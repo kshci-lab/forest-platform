@@ -1,8 +1,8 @@
 <?php
 
 session_start();
-require("../php/connect_db.php");
-require_once("php/sheet.php");
+require(__DIR__ . "/../php/connect_db.php");
+require_once(__DIR__ . "/../php/sheet.php");
 
 $mt_time_message = "";
 
