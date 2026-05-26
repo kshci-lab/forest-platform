@@ -752,7 +752,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <!-- メインメニュー　Finish -->
         <script src="https://code.jquery.com/jquery-1.12.4.js" type="text/javascript"></script>
         <script type="text/javascript" src="../js/node_tag.js"></script>
-        <script type="text/javascript" src="js/add_annotations.js"></script>
+        <script type="text/javascript" src="js/add_annotations.js?v=20260518-annotation-save"></script>
         <script type="text/javascript" src="js/version.js"></script>
         <script type="text/javascript" src="js/node_change.js"></script>
         <script type="text/javascript" src="js/add_node.js"></script>
@@ -769,7 +769,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <script type="text/javascript" src="js/ont_rationality.js"></script>
         <script type="text/javascript" src="js/exe.js"></script>
         <script type="text/javascript" src="js/creat_other_question.js"></script>
-        <script type="text/javascript" src="js/get_other_from_annotation.js"></script>
+        <script type="text/javascript" src="js/get_other_from_annotation.js?v=20260518-annotation-save"></script>
         <script type="text/javascript" src="js/get_question.js"></script>
         <script type="text/javascript" src="js/add_comment.js"></script>
         <script type="text/javascript" src="js/reflection.js"></script>

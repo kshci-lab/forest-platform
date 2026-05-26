@@ -16,8 +16,12 @@ $map_id = $_SESSION['MAPID'];    //シートID
 
 /* and user_id=${user_id} */
 
-$sql = "SELECT pa.annotation_id, pa.start_char_id, pa.end_char_id, pa.content, nl.type FROM paper_annotations pa JOIN node_latest nl ON pa.node_id = nl.node_id 
-        WHERE node_id IN (SELECT node_id WHERE map_node_links WHERE map_id='$map_id') ORDER BY created_at DESC"; 
+$sql = "SELECT pa.annotation_id, pa.node_id, pa.start_char_id, pa.end_char_id, pa.content, nl.type
+        FROM paper_annotations pa
+        JOIN node_latest nl ON pa.node_id = nl.node_id
+        WHERE pa.deleted = 0
+          AND pa.node_id IN (SELECT node_id FROM map_node_links WHERE map_id='$map_id')
+        ORDER BY pa.created_at DESC";
 
 $reflections = array();
 

@@ -171,22 +171,10 @@
 
 		$deleted = 0;
 
-		$sql = "UPDATE nodes SET updated_at = '".$updated_at."', deleted = '".$deleted."' WHERE id = '".$_POST['id']."'";
+		$sql = "UPDATE nodes SET deleted = '".$deleted."' WHERE node_id = '".$_POST['id']."'";
 
-		$i = 0;
-		$updated_array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				$updated_array = $updated_array + array($i=>$row["id"]);
-
-				$i += 1;
-
-			}
-
-		}
+		$mysqli->query($sql);
+		echo json_encode(array($_POST['id']));
 
 	}else if ($_POST["update"] == "reflection") {
 		// $sql = "UPDATE nodes SET reflection = '".$_POST["text"]."', class = 'other_to_myanswer', type = 'other_to_myanswer' WHERE id = '".$_POST["nodeid"]."'";

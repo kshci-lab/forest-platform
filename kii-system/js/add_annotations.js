@@ -175,7 +175,7 @@ function add_annotation(type_fromNode, node_id){
         if(s != true && e != true && paper_content.length > 0) {
             
             // let annotation_id =parseInt(Date.now().toString());//idの生成　何回やってもintにしたらOut of range value for columnで怒られちゃった
-            let annotation_id =Date.now().toString();
+            let annotation_id = Math.floor(Math.random() * 2147483647).toString();
             
             // 利用者が文字を後ろから選択したとき
             if(end_t_id < start_t_id){
@@ -185,13 +185,15 @@ function add_annotation(type_fromNode, node_id){
             
     
     
-            obj.id = annotation_id;
-            obj.start_char_id= start_t_id;
-            obj.end_char_id = end_t_id;
-            obj.type=type_fromNode;
-            obj.node_id=node_id;
-            obj.content=paper_content;
-            annotations.push(obj);
+            let annotationObj = {
+                id: annotation_id,
+                start_char_id: start_t_id,
+                end_char_id: end_t_id,
+                type: type_fromNode,
+                node_id: node_id,
+                content: paper_content
+            };
+            annotations.push(annotationObj);
 
             $("[nodeid='"+node_id+"']").attr("start_char_id", start_t_id);
             $("[nodeid='"+node_id+"']").attr("end_char_id", end_t_id);
@@ -199,8 +201,8 @@ function add_annotation(type_fromNode, node_id){
             console.log(annotations);
     
         //文単位でハイライト
-        for(let count=0; count <= (obj.end_char_id - obj.start_char_id); count++){
-            let char_id = obj.start_char_id + count; 
+        for(let count=0; count <= (annotationObj.end_char_id - annotationObj.start_char_id); count++){
+            let char_id = annotationObj.start_char_id + count; 
             let char_id_txt = 'p_txt_'+char_id;  
 
 
@@ -223,8 +225,14 @@ function add_annotation(type_fromNode, node_id){
                     content : paper_content,
                     node_id : node_id,
                  },
-                    success: function (sql) {
-                        console.log(sql);
+                    success: function (response) {
+                        console.log(response);
+                        try {
+                            const result = JSON.parse(response);
+                            if (result.annotation_id) {
+                                annotationObj.id = result.annotation_id;
+                            }
+                        } catch (e) {}
                       },
                       error: function () {
                       console.log("登録失敗");},
@@ -621,6 +629,17 @@ async function add_Anode2(node_type){
                       y : jmnode[j].style.top,
                       content : jmnode[j].innerHTML,
                     },
+              success: function(result) {
+                  if(result){ console.log(result); }
+                  if (typeof result === "string" && result.indexOf("error") !== -1) {
+                      return;
+                  }
+                  add_annotation(node_type, nodeid);
+                  mouseoverNode();
+              },
+              error: function(error) {
+                  console.log("ノード登録失敗:", error);
+              }
 
           });
 
@@ -649,11 +668,6 @@ async function add_Anode2(node_type){
 
   });
 
-  
-  add_annotation(node_type, nodeid);
-  mouseoverNode();
-
-    
 }
 
 

@@ -2,281 +2,72 @@
 
 	session_start();
 
-	/*add_node.jsで木構造を復元するために使用*/
-
 	require("connect_db.php");
 
-	if($_POST["val"] == "id"){
+	$map_id = isset($_POST["mapid"]) ? $_POST["mapid"] : "";
+	$val = isset($_POST["val"]) ? $_POST["val"] : "";
+	$array = array();
 
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
-		$i = 0;
-		$array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["id"]);
-
-					$i += 1;
-
-				}
-
-			}
-
-		}
-
+	if ($map_id === "") {
 		echo json_encode($array);
-
-	}else if($_POST["val"] == "concept_id"){
-
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
-		$i = 0;
-		$array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["concept_id"]);
-
-					$i += 1;
-
-				}
-
-			}
-
-		}
-
-		echo json_encode($array);
-
-	}else if($_POST["val"] == "content"){
-
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
-		$i = 0;
-		$array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["content"]);
-
-					$i += 1;
-
-				}
-
-			}
-
-		}
-
-		echo json_encode($array);
-
-	}else if($_POST["val"] == "type"){
-
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
-		$i = 0;
-		$array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["type"]);
-
-					$i += 1;
-
-				}
-
-			}
-
-		}
-
-		echo json_encode($array);
-
-	}else if($_POST["val"] == "parent_id"){
-
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
-		$i = 0;
-		$array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["parent_id"]);
-
-					$i += 1;
-
-				}
-
-			}
-
-		}
-
-		echo json_encode($array);
-
-	}else if($_POST["val"] == "class"){
-
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
-		$i = 0;
-		$array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["class"]);
-
-					$i += 1;
-
-				}
-
-			}
-
-		}
-
-		echo json_encode($array);
-
+		return;
 	}
-	else if($_POST["val"] == "start_char_id"){
 
-		$id = $_POST["mapid"];
+	$node_columns = array(
+		"id" => "node_id",
+		"concept_id" => "concept_id",
+		"content" => "content",
+		"type" => "type",
+		"parent_id" => "parent_id",
+		"class" => "class"
+	);
 
+	if (isset($node_columns[$val])) {
+		$column = $node_columns[$val];
 		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
 		$i = 0;
-		$array = array();
 
 		if($result = $mysqli->query($sql)){
-
 			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["start_char_id"]);
-
-					$i += 1;
-
-				}
-
+				$array = $array + array($i=>$row[$column]);
+				$i += 1;
 			}
-
 		}
 
 		echo json_encode($array);
-
+		return;
 	}
-	else if($_POST["val"] == "end_char_id"){
 
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
+	if ($val == "start_char_id" || $val == "end_char_id") {
+		$sql = "SELECT $val FROM paper_annotations WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id') AND deleted = 0";
 		$i = 0;
-		$array = array();
 
 		if($result = $mysqli->query($sql)){
-
 			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["end_char_id"]);
-
-					$i += 1;
-
-				}
-
+				$array = $array + array($i=>$row[$val]);
+				$i += 1;
 			}
-
 		}
+
 		echo json_encode($array);
-
+		return;
 	}
-	else if($_POST["val"] == "parent_map_id"){
 
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
-
-		$i = 0;
-		$array = array();
-
-		if($result = $mysqli->query($sql)){
-
-			while($row = mysqli_fetch_assoc($result)){
-
-				if($row["deleted"] == 0){
-
-					$array = $array + array($i=>$row["parent_map_id"]);
-
-					$i += 1;
-
-				}
-
-			}
-
-		}
+	if ($val == "parent_map_id") {
 		echo json_encode($array);
-
+		return;
 	}
-	
-	else if($_POST["val"] == "root"){
 
-		$id = $_POST["mapid"];
-
-		$sql = "SELECT * FROM nodes WHERE map_id = ".$id." AND type = 'root'";
-
+	if ($val == "root") {
+		$sql = "SELECT content FROM node_latest WHERE parent_id = 'root' AND node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$map_id')";
 		if($result = $mysqli->query($sql)){
-
 			while($row = mysqli_fetch_assoc($result)){
-
 				echo $row["content"];
-
 			}
-
 		}
+		return;
+	}
 
-		echo json_encode($array);
-
-	}else if($result == FALSE){
-		echo "false";
-			error_log($result.'$result失敗です'.$mysqli->error, "3", "error_log.txt");
-			// error_log('失敗しました。'.mysqli_error($link), 0);
-		  }else{
-			error_log('$result不明なエラーです', 0);
-		  }
-
+	echo json_encode($array);
 
 ?>

@@ -33,16 +33,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         $content = file_get_contents($_FILES['ImageFile']['tmp_name']);
         $size = $_FILES['ImageFile']['size'];
 
-        // Use mysqli (this codebase primarily uses $mysqli; $pdo may not be defined).
         $sql = "INSERT INTO images(image_id, image_name, image_type, image_content, image_size, created_at)
-                VALUES (?, ?, ?, ?, ?, now())";
-        if ($stmt = $mysqli->prepare($sql)) {
-            $null = null; // placeholder for blob binding
-            $stmt->bind_param("sssbi", $uuid, $name, $type, $null, $size);
-            $stmt->send_long_data(3, $content); // 0-based parameter index for image_content
-            $stmt->execute();
-            $stmt->close();
-        }
+      VALUES ('$uuid', :image_name, :image_type, :image_content, :image_size, now())";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':image_name', $name, PDO::PARAM_STR);
+        $stmt->bindValue(':image_type', $type, PDO::PARAM_STR);
+        $stmt->bindValue(':image_content', $content, PDO::PARAM_STR);
+        $stmt->bindValue(':image_size', $size, PDO::PARAM_INT);
+        $stmt->execute();
     }
     header("Location: index.php");
     // CreateSlide_Image();
@@ -68,7 +66,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="css/jquery.cleditor.css">
         <link rel="stylesheet" type="text/css" href="css/ui.css">
         <link rel="stylesheet" type="text/css" href="css/style.css">
-        <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
+        <link rel="stylesheet" type="text/css" href="css/thinking-process-network.css" />
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>

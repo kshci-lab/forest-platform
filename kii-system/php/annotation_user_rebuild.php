@@ -14,8 +14,12 @@ $today_date = date("Y-m-d");
 $map_id = $_POST['map'];    //シートID
 
 if($_POST["val"] == "all"){
-  $sql = "SELECT pa.annnotation_id, pa.start_char_id, pa.end_char_id, pa.content, pa.node_id, nl.type FROM paper_annotations pa JOIN node_latest nl ON pa.node_id = nl.node_id 
-        WHERE deleted=0 and node_id IN (SELECT node_id WHERE map_node_links WHERE map_id='$map_id') ORDER BY 'created_at' DESC"; 
+  $sql = "SELECT pa.annotation_id, pa.start_char_id, pa.end_char_id, pa.content, pa.node_id, nl.type
+        FROM paper_annotations pa
+        JOIN node_latest nl ON pa.node_id = nl.node_id
+        WHERE pa.deleted = 0
+          AND pa.node_id IN (SELECT node_id FROM map_node_links WHERE map_id='$map_id')
+        ORDER BY pa.created_at DESC";
 
 $reflections = array();
 
@@ -52,8 +56,13 @@ else if($_POST['val'] == 'one'){
 
   /* and user_id=${user_id} */
 
-  $sql = "SELECT pa.annnotation_id, pa.start_char_id, pa.end_char_id, pa.content, pa.node_id, nl.type FROM paper_annotations pa JOIN node_latest nl ON pa.node_id = nl.node_id 
-    WHERE deleted=0 and node_id IN (SELECT node_id WHERE map_node_links WHERE map_id='$map_id') nl.parent_id='$parent_id' ORDER BY 'created_at' DESC"; 
+  $sql = "SELECT pa.annotation_id, pa.start_char_id, pa.end_char_id, pa.content, pa.node_id, nl.type
+    FROM paper_annotations pa
+    JOIN node_latest nl ON pa.node_id = nl.node_id
+    WHERE pa.deleted = 0
+      AND pa.node_id IN (SELECT node_id FROM map_node_links WHERE map_id='$map_id')
+      AND nl.parent_id = '$parent_id'
+    ORDER BY pa.created_at DESC";
   
 
   $reflections = array();
