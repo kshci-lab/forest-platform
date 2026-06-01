@@ -150,6 +150,12 @@ function show_node(id,pid,str,cid,type,cname, sid, eid, is_edited){
 function show_node2(id,pid,str,cid,type,cname, sid, eid, psid){
 
     var i;
+    if (!_jm2 || _jm2.get_node(id)) {
+        return true;
+    }
+    if (pid !== "root" && !_jm2.get_node(pid)) {
+        pid = "root";
+    }
     //add_nodeでデータを格納
     var node = _jm2.add_node(pid,id,str);
 
@@ -164,12 +170,13 @@ function show_node2(id,pid,str,cid,type,cname, sid, eid, psid){
             jmnode[i].className = cname;
             jmnode[i].setAttribute("parent_id",pid);
             jmnode[i].setAttribute("start_char_id",sid);
-            jmnode[i].setAttribute("end_char_id",eid)
-            jmnode[i].setAttribute("parent_map_id",psid);;
+            jmnode[i].setAttribute("end_char_id",eid);
+            jmnode[i].setAttribute("parent_map_id",psid);
 
         }
 
     }
+    return true;
 
 }
 

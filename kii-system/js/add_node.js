@@ -319,6 +319,8 @@ function showNode(arr,mode){
 function getData2(mapid){
 	$("#jsmind_container2").empty();
 	open_empty2();
+	count = 0;
+	showNode2Rendered = false;
 
     // set_root メソッドを呼び出す
 
@@ -519,6 +521,7 @@ function getData2(mapid){
 }
 
 var count = 0;
+var showNode2Rendered = false;
 var id_array = new Array();
 	parent_id_array = new Array();
 	concept_id_array = new Array();
@@ -579,7 +582,8 @@ function showNode2(arr,mode){
 
 	}
 
-	if(count >= 9){
+	if(count >= 9 && !showNode2Rendered){
+		showNode2Rendered = true;
 
 		var n = 1;
 
