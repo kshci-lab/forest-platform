@@ -85,5 +85,14 @@ async function loadNodesData() {
 
 window.addEventListener('load', () => {
 	// HTML本体の描画が完了したら．JSMINDのノード情報をデータベースから取得して表示
-	loadNodesData();
+	(async () => {
+		await loadNodesData();
+		try{
+			if(typeof window.updateNodeVersionBadges === 'function'){
+				window.updateNodeVersionBadges();
+			}
+		}catch(e){
+			console && console.warn && console.warn('updateNodeVersionBadges failed', e);
+		}
+	})();
 });

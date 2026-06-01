@@ -2628,7 +2628,27 @@
                 if(this.opts.support_html){
                     $h(element,node.topic);
                 }else{
-                    $t(element,node.topic);
+                    // Keep extra UI elements (e.g., version badges) by updating only the label span.
+                    try{
+                        var badge = element.querySelector ? element.querySelector('.jm-version-badge') : null;
+                        if(badge && badge.parentNode === element){ element.removeChild(badge); }
+                        var label = element.querySelector ? element.querySelector('.jmnode-label') : null;
+                        if(!label){
+                            element.innerHTML = '';
+                            label = document.createElement('span');
+                            label.className = 'jmnode-label';
+                            element.appendChild(label);
+                        }
+                        label.textContent = node.topic;
+                        if(badge){ element.appendChild(badge); }
+                        try{
+                            if(window.recomputeVersionBadgeLayout){
+                                window.recomputeVersionBadgeLayout();
+                            }
+                        }catch(_){}
+                    }catch(e){
+                        $t(element,node.topic);
+                    }
                 }
             }
             view_data.width = element.clientWidth;
@@ -2646,6 +2666,12 @@
                 node._data.view.element.className += ' selected';
                 this.clear_node_custom_style(node);
             }
+            // Badge width can change when "selected" class toggles; recompute positioning.
+            try{
+                if(window.recomputeVersionBadgeLayout){
+                    setTimeout(function(){ try{ window.recomputeVersionBadgeLayout(); }catch(_){ } }, 0);
+                }
+            }catch(_){}
         },
 
         select_clear:function(){
@@ -2695,7 +2721,23 @@
                     if(this.opts.support_html){
                         $h(element,node.topic);
                     }else{
-                        $t(element,node.topic);
+                        try{
+                            var badge = element.querySelector ? element.querySelector('.jm-version-badge') : null;
+                            if(badge && badge.parentNode === element){ element.removeChild(badge); }
+                            element.innerHTML = '';
+                            var label = document.createElement('span');
+                            label.className = 'jmnode-label';
+                            label.textContent = node.topic;
+                            element.appendChild(label);
+                            if(badge){ element.appendChild(badge); }
+                            try{
+                                if(window.recomputeVersionBadgeLayout){
+                                    window.recomputeVersionBadgeLayout();
+                                }
+                            }catch(_){}
+                        }catch(e){
+                            $t(element,node.topic);
+                        }
                     }
                 }else{
                     this.jm.update_node(node.id,topic);
@@ -2707,7 +2749,9 @@
 
                     if(node.id == jmnode[i].getAttribute("nodeid")){
 
-                        var content = jmnode[i].innerHTML;
+                        var labelEl = null;
+                        try{ labelEl = jmnode[i].querySelector ? jmnode[i].querySelector('.jmnode-label') : null; }catch(_){}
+                        var content = (labelEl && typeof labelEl.textContent === 'string') ? labelEl.textContent : jmnode[i].textContent;
 
                         $.ajax({
 
@@ -2715,7 +2759,7 @@
                             type: "POST",
                             data: { update : "content",
                                     id : node.id,
-                                    content : jmnode[i].innerHTML 
+                                    content : content
                                 },
                                 success:function(result){
                                     if(result){ console.log(result);}
@@ -2729,7 +2773,7 @@
                             versionid, 
                             node.id, 
                             node.parent.id, 
-                            jmnode[i].innerHTML, 
+                            content, 
                             "",
                             "edit"
                             );
@@ -2742,6 +2786,14 @@
                         check_edit_reason(node.id);
                         $('#comment_balloon').hide();
                         $('#comment_balloon').fadeIn(1000);
+                        try{
+                            // After editing, the node DOM is rewritten; re-attach badges if needed.
+                            if(window.refreshNodeVersionBadge){
+                                window.refreshNodeVersionBadge(node.id);
+                            }else if(window.updateNodeVersionBadges){
+                                window.updateNodeVersionBadges();
+                            }
+                        }catch(_){}
 
                     }
 

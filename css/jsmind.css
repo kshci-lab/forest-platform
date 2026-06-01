@@ -23,11 +23,24 @@ canvas{position:absolute;z-index:1;}
 
 /* z-index:2 */
 jmnodes{position:absolute;z-index:2;background-color:rgba(0,0,0,0);}/*background color is necessary*/
-/* Truncate long node labels with ellipsis (single-line). */
-jmnode{position:absolute;cursor:default;display:inline-block;box-sizing:border-box;max-width:1000px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Allow badges/icons to overflow outside the node box. */
+jmnode{position:absolute;cursor:default;display:inline-block;box-sizing:border-box;overflow:visible;}
+/* Truncate long node labels with ellipsis (single-line).
+ * Use fit-content so the label (and thus the node box) shrinks to the visible text,
+ * while max-width still caps long strings. */
+jmnode .jmnode-label{
+    display:inline-block;
+    width:fit-content;
+    max-width:1000px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    vertical-align:top;
+}
 /* Use ch so the cutoff is roughly "characters" regardless of viewport. */
-jmnode:not(.root){max-width:32ch;}
-jmnode.root{max-width:40ch;}
+/* For CJK text, `ch` can create a larger-than-expected box; use `em` instead. */
+jmnode:not(.root) .jmnode-label{max-width:50em;}
+jmnode.root .jmnode-label{max-width:40ch;}
 jmexpander{position:absolute;width:11px;height:11px;display:block;overflow:hidden;line-height:12px;font-size:12px;text-align:center;border-radius:12px;border-width:1px;border-style:solid;cursor:pointer;}
 
 /* default theme */
@@ -37,7 +50,53 @@ jmnode.selected{box-shadow:2px 2px 8px #000;}
 jmnode.root{font-size:12px;}
 jmexpander{border-color:gray;}
 jmexpander:hover{border-color:#000;}
-jmnode[edited-node="true"]::after{content:'';position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:url('../image/pen-solid-full.svg') no-repeat center center;background-size:contain;}
+/* Version count badge (node_id has N node_versions). */
+.jm-version-badge{
+    position:absolute;
+    top:-7px;
+    right:-7px;
+    min-width:18px;
+    height:20px;
+    line-height:18px;
+    padding:0 5px;
+    border-radius:10px;
+    background:#38736c;
+    border: 1px solid #a9afae;
+    color:#fff;
+    font-size:11px;
+    font-weight:bold;
+    text-align:center;
+    box-sizing:border-box;
+    pointer-events:none;
+    z-index:3;
+    box-shadow: 1px 1px 1px #666;
+}
+
+/* Keep the edited pen visible when the version badge is shown. */
+jmnode{padding-right:10px;} /* label width is controlled by .jmnode-label */
+jmnode[edited-node="true"]::after{
+    content:'';
+    position:absolute;
+    top:-7px;
+    right:-7px; /* default: top-right like the version badge */
+    width:18px;
+    height:18px;
+    background:url('../image/pen-solid-full.svg') no-repeat center center;
+    background-size:contain;
+    z-index:3;
+}
+/* When both (badge + pen) are shown, place the pen to the left of the badge. */
+jmnode.jm-has-version-badge[edited-node="true"]::after{
+    right: calc(-7px + var(--jm-badge-w, 18px) + var(--jm-badge-gap, 4px));
+}
+/* When both are shown, change node background color. */
+/* When both are shown, keep the node color as-is; only color the indicators. */
+jmnode.jm-has-both .jm-version-badge{
+    background:#85a9a5 !important;
+}
+jmnode.jm-has-both[edited-node="true"]::after{
+    border-radius:10px;
+}
 
 @media screen and (max-device-width: 1024px) {
     jmnode{padding:5px;border-radius:3px;font-size:14px;}
@@ -321,9 +380,10 @@ jmnode[class="primary_label"]{background-color:#a7c19b;color:#000;border-radius:
 jmnode[class="primary_label"]:hover{background-color:#a7c19b;border-radius: 0px;}
 jmnode[class="primary_label selected"]{background-color:#92ad86;color:#000;border: 10px solid #7e9574;border-radius: 0px;}
 
-jmnode[class="issue_label"]{background-color:#a7c19b;color:#000;border-radius: 0px;}
-jmnode[class="issue_label"]:hover{background-color:#a7c19b;border-radius: 0px;}
-jmnode[class="issue_label selected"]{background-color:#92ad86;color:#000;border: 5px solid #378c12;border-radius: 0px;}
+/* issue_label: use class selectors (not exact class="...") so it works with extra classes. */
+jmnode.issue_label{background-color:#a7c19b;color:#000;border-radius: 0px;}
+jmnode.issue_label:hover{background-color:#a7c19b;border-radius: 0px;}
+jmnode.issue_label.selected{background-color:#92ad86;color:#000;border: 5px solid #378c12;border-radius: 0px;}
 
 jmnode[class="consistency_label"]{background-color:#a7c19b;color:#000;border-radius: 0px;}
 jmnode[class="consistency_label"]:hover{background-color:#a7c19b;border-radius: 0px;}
