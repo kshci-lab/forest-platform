@@ -191,6 +191,45 @@ function recomputeVersionBadgeLayout(){
 }
 window.recomputeVersionBadgeLayout = recomputeVersionBadgeLayout;
 
+function ensureJmnodeLabelWrapping(){
+    try{
+        var nodes = document.querySelectorAll('#jsmind_container jmnode');
+        nodes.forEach(function(el){
+            try{
+                if(el.querySelector && el.querySelector('.jmnode-label')){ return; }
+                // Preserve known children (badges etc.)
+                var preserved = [];
+                Array.prototype.slice.call(el.childNodes || []).forEach(function(ch){
+                    if(ch.nodeType === 1){ // element
+                        preserved.push(ch);
+                    }
+                });
+                var text = '';
+                // Collect text nodes only
+                Array.prototype.slice.call(el.childNodes || []).forEach(function(ch){
+                    if(ch.nodeType === 3){ text += ch.nodeValue || ''; }
+                });
+                text = (text || el.textContent || '').trim();
+
+                // Clear and rebuild: label span + preserved elements
+                while(el.firstChild){ el.removeChild(el.firstChild); }
+                var label = document.createElement('span');
+                label.className = 'jmnode-label';
+                label.textContent = text;
+                el.appendChild(label);
+                preserved.forEach(function(ch){
+                    // Skip if it's the label we just created
+                    try{
+                        if(ch.classList && ch.classList.contains('jmnode-label')){ return; }
+                    }catch(_){}
+                    el.appendChild(ch);
+                });
+            }catch(_){}
+        });
+    }catch(_){}
+}
+window.ensureJmnodeLabelWrapping = ensureJmnodeLabelWrapping;
+
 function clearEditedNodeMarkers(){
     try{
         var nodes = document.querySelectorAll('#jsmind_container jmnode[edited-node="true"]');

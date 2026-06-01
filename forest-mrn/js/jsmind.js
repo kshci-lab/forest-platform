@@ -2642,6 +2642,9 @@
                         label.textContent = node.topic;
                         if(badge){ element.appendChild(badge); }
                         try{
+                            if(window.ensureJmnodeLabelWrapping){
+                                window.ensureJmnodeLabelWrapping();
+                            }
                             if(window.recomputeVersionBadgeLayout){
                                 window.recomputeVersionBadgeLayout();
                             }
@@ -2668,6 +2671,9 @@
             }
             // Badge width can change when "selected" class toggles; recompute positioning.
             try{
+                if(window.ensureJmnodeLabelWrapping){
+                    setTimeout(function(){ try{ window.ensureJmnodeLabelWrapping(); }catch(_){ } }, 0);
+                }
                 if(window.recomputeVersionBadgeLayout){
                     setTimeout(function(){ try{ window.recomputeVersionBadgeLayout(); }catch(_){ } }, 0);
                 }
@@ -2731,6 +2737,9 @@
                             element.appendChild(label);
                             if(badge){ element.appendChild(badge); }
                             try{
+                                if(window.ensureJmnodeLabelWrapping){
+                                    window.ensureJmnodeLabelWrapping();
+                                }
                                 if(window.recomputeVersionBadgeLayout){
                                     window.recomputeVersionBadgeLayout();
                                 }

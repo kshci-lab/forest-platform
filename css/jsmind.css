@@ -29,18 +29,18 @@ jmnode{position:absolute;cursor:default;display:inline-block;box-sizing:border-b
  * Use fit-content so the label (and thus the node box) shrinks to the visible text,
  * while max-width still caps long strings. */
 jmnode .jmnode-label{
-    display:inline-block;
-    width:fit-content;
-    max-width:1000px;
+    display:block;
+    max-width:100%;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
-    vertical-align:top;
 }
+/* Ensure ellipsis behavior remains consistent regardless of selection. */
+jmnode.selected .jmnode-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* Use ch so the cutoff is roughly "characters" regardless of viewport. */
 /* For CJK text, `ch` can create a larger-than-expected box; use `em` instead. */
-jmnode:not(.root) .jmnode-label{max-width:50em;}
-jmnode.root .jmnode-label{max-width:40ch;}
+jmnode:not(.root){max-width:50em;}
+jmnode.root{max-width:40ch;}
 jmexpander{position:absolute;width:11px;height:11px;display:block;overflow:hidden;line-height:12px;font-size:12px;text-align:center;border-radius:12px;border-width:1px;border-style:solid;cursor:pointer;}
 
 /* default theme */
@@ -72,8 +72,8 @@ jmexpander:hover{border-color:#000;}
     box-shadow: 1px 1px 1px #666;
 }
 
-/* Keep the edited pen visible when the version badge is shown. */
-jmnode{padding-right:10px;} /* label width is controlled by .jmnode-label */
+/* Don't reserve extra right padding; badges are positioned outside the node box. */
+jmnode{padding-right:10px;}
 jmnode[edited-node="true"]::after{
     content:'';
     position:absolute;

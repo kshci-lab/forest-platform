@@ -188,7 +188,8 @@ function NodeVersionUpdate(nodes){
 function RecordRelation(count){
 
   var jmnode = document.getElementsByTagName("jmnode");
-  NodeVersionUpdate(NULL);
+  // JS has no NULL literal; use null.
+  NodeVersionUpdate(null);
 
 }
 
