@@ -50,7 +50,8 @@ function c_disp(){
 
 	// 言語切替用: グローバル window.currentLang (default 'ja')
 	var lang = window.currentLang || 'ja';
-	// 問い文の辞書
+	// 問い文の辞書（グローバルに保持して他関数からも参照できるようにする）
+	// NOTE: showGeneration() からも参照されるため、ここでローカル var に閉じない。
 	var inquiryDict = window.inquiryDict || (window.inquiryDict = {
 	'時間的制約を考慮すると、その計画は現実的ですか？': { ja: '時間的制約を考慮すると、その計画は現実的ですか？', en: 'Considering time constraints, is the plan realistic?' },
 	'実践は行いましたか？': { ja: '実践は行いましたか？', en: 'Did you carry out the practice?' },
@@ -183,6 +184,7 @@ function c_disp(){
 	'実践の考察は何ですか？': { ja: '実践の考察は何ですか？', en: 'What are the reflections on the practice?' },
 	'時間的制約を考慮すると，その計画は現実的ですか？': { ja: '時間的制約を考慮すると，その計画は現実的ですか？', en: 'Considering time constraints, is the plan realistic?' },
 	});
+	window.inquiryDict = inquiryDict;
 
 	for(var i=0; i<$concept_tag.length; i++){
 		if($concept_tag[i].getAttribute('instantiation') == undefined){
@@ -240,6 +242,8 @@ function showGeneration(){
 	// console.log("showGeneration");
 	c_xmlLoad();
 	var lang = window.currentLang || 'ja';
+	// Ensure inquiryDict exists even if c_disp() hasn't been executed yet.
+	var inquiryDict = window.inquiryDict || {};
 	var infoHeader = inquiryDict['【情報の表出化】'] ? inquiryDict['【情報の表出化】'][lang] : (lang === 'en' ? '[Externalized Information]' : '【情報の表出化】');
 	$("div#testxml").html('<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;">' + infoHeader + '</div>');
 	// Section header for 【理由・目的】

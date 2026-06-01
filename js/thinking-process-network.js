@@ -1755,24 +1755,53 @@ function showThinkingProcessMap(others_node){
         document.getElementById('xml_upload_area').style.display = "block";
         $('#process_others_network_container').css('display','block');
         // organizational_container をフレックスレイアウトに変更して垂直分割対応
+        // Use a definite pixel height to avoid a feedback loop where vis.js canvas height expands the container,
+        // and the container expansion makes the canvas even larger.
+        try{
+            var oc = document.getElementById('organizational_container');
+            if(oc && !oc.dataset.prevHeight){
+                oc.dataset.prevHeight = String(oc.getBoundingClientRect().height || '');
+            }
+        }catch(_){}
+        var baseH = null;
+        try{
+            var oc2 = document.getElementById('organizational_container');
+            baseH = oc2 ? Math.round(oc2.getBoundingClientRect().height) : null;
+        }catch(_){ baseH = null; }
+        if(!baseH || isNaN(baseH) || baseH < 300){
+            // fallback: viewport-based estimate
+            try{ baseH = Math.max(520, Math.round(window.innerHeight * 0.75)); }catch(_){ baseH = 720; }
+        }
+        var halfH = Math.max(240, Math.floor(baseH / 2));
+
         $('#organizational_container').css({
             'display':'flex',
             'flex-direction':'column',
             'width':'calc(100vw - 350px)',
-            'height':'150%'
+            'height': baseH + 'px'
         });
-        // myOrganizationalnetwork_area と process_others_network_container の高さを設定
         $('#myOrganizationalnetwork_area').css({
-            'height':'50%',
-            'flex':'0 0 50%'
+            'flex':'0 0 ' + halfH + 'px',
+            'height': halfH + 'px',
+            'min-height': halfH + 'px'
         });
         $('#process_others_network_container').css({
             'width':'100%',
-            'height':'50%',
-            'flex':'0 0 50%',
+            'flex':'0 0 ' + halfH + 'px',
+            'height': halfH + 'px',
+            'min-height': halfH + 'px',
             'display':'flex',
             'flex-direction':'column'
         });
+        // After layout change, force redraw so the Organizational map doesn't disappear.
+        try{
+            if(typeof defaultOrganizational !== 'undefined' && defaultOrganizational && defaultOrganizational.ownNetwork){
+                setTimeout(function(){
+                    try{ defaultOrganizational.ownNetwork.redraw(); }catch(_){}
+                    try{ defaultOrganizational.ownNetwork.fit({animation:false}); }catch(_){}
+                }, 0);
+            }
+        }catch(_){}
     
         defaultThinkingProcess = new ThinkingProcess("othersProcessnetwork", "load");
         displayTriggerData("who", others_node);
@@ -1815,6 +1844,8 @@ function closeThinkingProcessMap(){
     // $('#jsmind_container').css('width','calc(100vw - 350px)');
     $('#jsmind_container').css('height','100%');
     $('#mind').css('height','90%');
+    // showThinkingProcessMap() hides the document pane; restore it on close.
+    try{ $('#document').show(); }catch(_){ }
     showTriggerDisplay();
 }
 

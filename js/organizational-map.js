@@ -1283,10 +1283,19 @@ function showOrganizationalMap(){
 function closeOthersThinkingProcessMap(){
   
     $('#process_others_network_container').css('display','none');
+    // restore previous height if we pinned it during split view
+    var prevH = null;
+    try{
+        var oc = document.getElementById('organizational_container');
+        if(oc && oc.dataset && oc.dataset.prevHeight){
+            prevH = parseFloat(oc.dataset.prevHeight);
+            delete oc.dataset.prevHeight;
+        }
+    }catch(_){ prevH = null; }
     $('#organizational_container').css({
         'display':'block',
         'width':'calc(100vw - 350px)',
-        'height':'100%',
+        'height': (prevH && !isNaN(prevH) && prevH > 0) ? (Math.round(prevH) + 'px') : '100%',
         'flex':'none'
     });
     $('#myOrganizationalnetwork_area').css({
@@ -1296,6 +1305,16 @@ function closeOthersThinkingProcessMap(){
     // スプリッターがあれば削除
     const splitter = document.querySelector('.organizational-splitter');
     if(splitter) splitter.remove();
+
+    // vis.js needs a redraw after container resize changes, otherwise the canvas can go blank.
+    try{
+        if(typeof defaultOrganizational !== 'undefined' && defaultOrganizational && defaultOrganizational.ownNetwork){
+            setTimeout(function(){
+                try{ defaultOrganizational.ownNetwork.redraw(); }catch(_){}
+                try{ defaultOrganizational.ownNetwork.fit({animation:false}); }catch(_){}
+            }, 0);
+        }
+    }catch(_){ }
 }
 
 // ロードした際の関数

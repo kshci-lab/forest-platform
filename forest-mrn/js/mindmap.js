@@ -1280,15 +1280,25 @@ function CheckClick(){
   check = document.getElementById("checkbox");
   // checkboxがチェックされている時の処理 → 資料作成モードへの変更
   if(check.checked == true){
+    // Use flex layout so #jsmind_container and #document_area are reliably shown side-by-side.
+    try{
+      $('#area').css({ display: 'flex', 'flex-direction': 'row', 'align-items': 'stretch' });
+    }catch(_){ }
     $('#jsmind_container').css('width','50%');//横幅を全体の40％で表示？
+    try{
+      $('#jsmind_container').css({ flex: '0 0 50%', 'min-width': '300px' });
+    }catch(_){ }
     $('#document').show(); //Menu下の目標設定箇所
     $('#mind').css('height','50%');　//問い一覧箇所
     // $('#mind').toggle('fast');
     // $('#document').toggle('fast');
     $('#document_area').css('width','50%');　//資料作成箇所
-    $('#document_area').toggle('fast'); //資料作成箇所を表示
-    $('#node_slide').toggle('fast');  //
-    $('#presen_menu').toggle('fast'); //資料作成用のボタン
+    try{
+      $('#document_area').css({ flex: '1 1 0', 'min-width': '260px' });
+    }catch(_){ }
+    $('#document_area').show('fast'); //資料作成箇所を表示
+    $('#node_slide').show('fast');  //
+    $('#presen_menu').show('fast'); //資料作成用のボタン
     // $('.changemode_button').toggle('fast');
     console.log($audience_model);
     // console.log($goal);
@@ -1299,14 +1309,20 @@ function CheckClick(){
   }
   else{
     $('#jsmind_container').show();
+    try{
+      // restore layout to legacy (non-flex) mode
+      $('#area').css({ display: 'block' });
+      $('#jsmind_container').css({ flex: '', 'min-width': '' });
+      $('#document_area').css({ flex: '', 'min-width': '' });
+    }catch(_){ }
     // $('#jsmind_container').css('width','calc(100vw - 350px)');
     $('#jsmind_container').css('width','100%');
     $('#mind').css('height','90%');
     $('#document').hide();
     // $('#mind').show();
-    $('#document_area').toggle('fast');
-    $('#node_slide').toggle('fast');
-    $('#presen_menu').toggle('fast');
+    $('#document_area').hide('fast');
+    $('#node_slide').hide('fast');
+    $('#presen_menu').hide('fast');
     // $('.changemode_button').toggle('fast');
     const frame_dom = document.getElementsByClassName("inquiry_area");
     frame_dom[0].style.border = "solid 5px #ccc";
