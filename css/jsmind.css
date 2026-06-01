@@ -23,7 +23,11 @@ canvas{position:absolute;z-index:1;}
 
 /* z-index:2 */
 jmnodes{position:absolute;z-index:2;background-color:rgba(0,0,0,0);}/*background color is necessary*/
-jmnode{position:absolute;cursor:default;max-width:1000px;white-space:nowrap;overflow:visible;text-overflow:ellipsis;}
+/* Truncate long node labels with ellipsis (single-line). */
+jmnode{position:absolute;cursor:default;display:inline-block;box-sizing:border-box;max-width:1000px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Use ch so the cutoff is roughly "characters" regardless of viewport. */
+jmnode:not(.root){max-width:32ch;}
+jmnode.root{max-width:40ch;}
 jmexpander{position:absolute;width:11px;height:11px;display:block;overflow:hidden;line-height:12px;font-size:12px;text-align:center;border-radius:12px;border-width:1px;border-style:solid;cursor:pointer;}
 
 /* default theme */
