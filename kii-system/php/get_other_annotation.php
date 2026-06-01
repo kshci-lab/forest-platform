@@ -31,6 +31,47 @@ require "connect_db.php";
 
     else if ($_POST["val"] == "get_question") {
 
+        $id = isset($_POST["id"]) ? $_POST["id"] : "";
+        $data_array = array();
+        $map_id = $_SESSION["MAPID"];
+        $paper_id = $_SESSION["PAPERID"];
+
+        if ($id === "" || $id === null) {
+            echo json_encode($data_array);
+            exit;
+        }
+
+        $sql = "SELECT nl.content, nl.node_id, nl.parent_id, ml.map_id
+                    FROM node_latest nl
+                    JOIN map_node_links ml ON nl.node_id = ml.node_id
+                    JOIN maps m ON ml.map_id = m.map_id
+                    WHERE nl.concept_id = ?
+                        AND nl.type = 'predict'
+                        AND ml.map_id <> ?
+                        AND m.paper_id = ?
+                        AND (ml.disappeared_at IS NULL OR ml.disappeared_at = '')";
+
+        if ($stmt = $mysqli->prepare($sql)) {
+            $stmt->bind_param("sii", $id, $map_id, $paper_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $i = 0;
+
+            while ($row = mysqli_fetch_assoc($result)) {
+                $data_array[$i] = array(
+                    "content" => $row["content"],
+                    "map_id" => $row["map_id"],
+                    "id" => $row["node_id"],
+                    "parent_id" => $row["parent_id"]
+                );
+                $i++;
+            }
+            $stmt->close();
+        }
+
+        echo json_encode($data_array);
+        exit;
+
         $id = $_POST["id"];   
         $i = 0;
         $data_array = array(); // contentとmapidを格納する配列 

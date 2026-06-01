@@ -237,6 +237,7 @@ function show_selected_sheet(onoff){
         $('#jsmind_container2').css('height','100%');
         $('#jsmind_container2').css('display','none');
         $('#jsmind_container2_menu').css('display','none');
+        $('#mindmap_tab').empty().append('<span id="all_annotation"></span>');
     }
 }
 
