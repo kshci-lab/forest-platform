@@ -62,8 +62,9 @@ function NodeVersionUpdate(nodes){
     var nodeVERSION = jsMind.util.uuid.newid();
     var node = _jm.get_selected_node();
     var nodeID = node.id;
-    var class_name = Get_NodeInfo(nodeID, 'class').split(' ')[0]; // 'XXX selected'になっているのでselectedを取り除く
+    // class can be polluted by UI helper classes; type is the stable key for node_types lookup.
     var type_name = Get_NodeInfo(nodeID, 'type');
+    var class_name = ""; // intentionally empty to query node_types by type only
     var parentID = node.parent.id;
     var nodeTEXT = node.topic;
     var conceptID = Get_NodeInfo(nodeID, 'concept_id');
