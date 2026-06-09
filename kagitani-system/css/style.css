@@ -67,6 +67,10 @@ html {
 	overflow-y : hidden;
 }
 
+:root {
+	--app-font: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
 /* 表示画面全体の大きさ */
 /* vw,vhでビューポートに対する割合にしている */
 body{
@@ -79,6 +83,14 @@ body{
 	background-color: #F0F0F0;
 	overflow-x : hidden;
 	overflow-y : hidden;
+	font-family: var(--app-font);
+}
+
+button,
+input,
+select,
+textarea {
+	font-family: var(--app-font);
 }
 body::-webkit-scrollbar{
 	display: none;
@@ -119,7 +131,7 @@ body #main_title {
 #main_title .title_name {
 	height: auto;
 	text-align: left;
-	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	font-family: inherit;
 	font-size: 18px;
 	font-weight: 700;
 	margin: 0;
@@ -197,7 +209,7 @@ body #main_title {
 
 #session .session_php {
 	/* font-family:fantasy; */ /* フォントの設定　ブラウザによってはだいぶヤバくなる */
-	font-family: Arial, sans-serif;
+	font-family: inherit;
 	font-size: 40px;
 	padding-left: 0.3em;
 }
@@ -257,7 +269,7 @@ body #main_title {
 /* タブので切り替わる要素 */
 /* 親はvh,子は親を参照する％ */
 .tabcontent{
-	width:100vw;
+	width:100%;
 	/* min-width: 765px; */
 	height:calc(100vh - 80px);
 	/* (タイトルメニューとタブメニューの高さの分引く)　*/
@@ -276,8 +288,8 @@ body #main_title {
 
 /* 「問いノード追加」等のボタンがある箇所 */
 #jsmind_nav {
-	width: calc(100vw - 350px);
-	min-width: 450px;
+	width: 100%;
+	min-width: 0;
 	height:37px;
 	display: inline;
 	font-size: 1em;
@@ -408,8 +420,8 @@ input:checked+label::before {
 
 /* マインドマップを表示する枠の設定 */
 #jsmind_container{
-	width: calc(100vw - 350px);
-	min-width: 300px;
+	width: 100% !important;
+	min-width: 0;
 	/* height:75vh; */
 	height: calc(100vh - 85px); /* デフォルトは画面いっぱい */
 	min-height: 150px;
@@ -850,6 +862,154 @@ h3 {
 	box-sizing: border-box;
 }
 
+/* SRL slide-in sidebar */
+.srl-sidebar-toggle{
+	position: static;
+	z-index: 9996;
+	background: #2fb44f;
+	color: #fff;
+	border: 0;
+	border-radius: 999px;
+	padding: 10px 14px;
+	font-size: 13px;
+	font-weight: 700;
+	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+	cursor: pointer;
+}
+
+.srl-sidebar-backdrop{
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.25);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+	z-index: 9996;
+}
+
+.srl-sidebar{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 420px;
+	max-width: 88vw;
+	height: 100vh;
+	background: #f8fafc;
+	border-right: 1px solid rgba(16,24,40,0.08);
+	box-shadow: 8px 0 20px rgba(16,24,40,0.12);
+	transform: translateX(-100%);
+	transition: transform 0.28s ease;
+	z-index: 9997;
+	display: flex;
+	flex-direction: column;
+}
+
+.srl-sidebar.is-open{ transform: translateX(0); }
+.srl-sidebar-backdrop.is-open{ opacity: 0; pointer-events: none; }
+
+.srl-sidebar-resize{
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 8px;
+	height: 100%;
+	cursor: col-resize;
+	background: linear-gradient(to right, rgba(15,23,42,0.04), rgba(15,23,42,0.12));
+}
+
+.srl-sidebar-resize:hover{
+	background: linear-gradient(to right, rgba(15,23,42,0.08), rgba(15,23,42,0.18));
+}
+
+.srl-sidebar-open .tabcontent{
+	margin-left: var(--srl-sidebar-width, 420px);
+	width: calc(100% - var(--srl-sidebar-width, 420px));
+	transition: margin-left 0.28s ease, width 0.28s ease;
+}
+
+.is-resizing .tabcontent{
+	transition: none;
+}
+
+.srl-sidebar-header{
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	border-bottom: 1px solid rgba(16,24,40,0.08);
+	background: #ffffff;
+}
+
+.srl-sidebar-title{
+	font-weight: 700;
+	font-size: 16px;
+	color: #1f2937;
+}
+
+.srl-sidebar-close{
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	border: 1px solid rgba(16,24,40,0.12);
+	background: #fff;
+	color: #6b7280;
+	cursor: pointer;
+}
+
+.srl-sidebar-tabs{
+	display: flex;
+	gap: 6px;
+	padding: 10px 12px;
+	background: #f1f5f9;
+	border-bottom: 1px solid rgba(16,24,40,0.08);
+}
+
+.srl-tab{
+	flex: 1 1 auto;
+	padding: 8px 10px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	background: transparent;
+	font-size: 13px;
+	font-weight: 700;
+	color: #475569;
+	cursor: pointer;
+}
+
+.srl-tab.is-active{
+	background: #ffffff;
+	border-color: rgba(16,24,40,0.08);
+	color: #1f2937;
+	box-shadow: 0 2px 6px rgba(16,24,40,0.06);
+}
+
+.srl-sidebar-body{
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 12px 14px 18px;
+}
+
+.srl-tab-panel{ display: none; }
+.srl-tab-panel.is-active{ display: block; }
+
+.srl-lessons-section{ margin-bottom: 14px; }
+.srl-lessons-header{
+	font-size: 13px;
+	font-weight: 700;
+	color: #1f2937;
+	margin-bottom: 8px;
+}
+.srl-lessons-divider{ height: 1px; background: rgba(0,0,0,0.06); margin: 10px 0; }
+
+/* move feedback area into sidebar */
+.srl-sidebar #feedback_area{
+	display: block;
+	background: transparent;
+	border: 0;
+	padding: 0;
+	max-height: none;
+}
+
   /* アコーディオンメニューのスタイル */
   #accordion_discussion {
     background-color: #f0f0f0;
@@ -1144,13 +1304,13 @@ h3 {
 #edit_model{
 	display: none;
 	font-size:15px;
-	font-family: 'Noto Sans JP', sans-serif;
+	font-family: inherit;
 }
 
 /* -------------------- 過去のマインドマップ表示の設定 ---------------------- */
 #jsmind_nav2 {
-	width: calc(100vw - 350px);
-	min-width: 450px;
+	width: 100%;
+	min-width: 0;
 	height:37px;
 	display: inline;
 	font-size: 1em;
@@ -2027,18 +2187,18 @@ select[name="mttime_list"] {
 	font-size: 15px;
   border-bottom: solid 3px #87CEFA;
 	margin-bottom: 10px;
-	font-family: 'Noto Sans JP', sans-serif;
+	font-family: inherit;
 }
 
 .ad_font{
-	font-family: 'Noto Sans JP', sans-serif;
+	font-family: inherit;
 	font-size: 15px;
 	font-weight: 500;
 	background: linear-gradient(transparent 70%, #CCCCCC 90%);
 }
 
 .nor_font{
-	font-family: 'Noto Sans JP', sans-serif;
+	font-family: inherit;
 	font-size: 15px;
 }
 
@@ -2309,4 +2469,88 @@ select[name="mttime_list"] {
 	position: absolute;
 	background-color: rgba(0, 140, 255, 0.3); /* 薄青色のハイライト */
 	border: 1px solid blue;
+}
+
+/* Inquiry slide-in sidebar (right) */
+.inquiry-sidebar{
+	position: fixed;
+	top: 0;
+	right: 0;
+	width: 360px;
+	max-width: 90vw;
+	height: 100vh;
+	background: #f8fafc;
+	border-left: 1px solid rgba(16,24,40,0.08);
+	box-shadow: -8px 0 20px rgba(16,24,40,0.12);
+	transform: translateX(100%);
+	transition: transform 0.28s ease;
+	z-index: 9997;
+	display: flex;
+	flex-direction: column;
+}
+
+.inquiry-sidebar.is-open{ transform: translateX(0); }
+
+.inquiry-sidebar-resize{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 8px;
+	height: 100%;
+	cursor: col-resize;
+	background: linear-gradient(to left, rgba(15,23,42,0.04), rgba(15,23,42,0.12));
+}
+
+.inquiry-sidebar-resize:hover{
+	background: linear-gradient(to left, rgba(15,23,42,0.08), rgba(15,23,42,0.18));
+}
+
+.inquiry-sidebar-header{
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	border-bottom: 1px solid rgba(16,24,40,0.08);
+	background: #ffffff;
+}
+
+.inquiry-sidebar-title{
+	font-weight: 700;
+	font-size: 14px;
+	color: #1f2937;
+}
+
+.inquiry-sidebar-close{
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	border: 1px solid rgba(16,24,40,0.12);
+	background: #fff;
+	color: #6b7280;
+	cursor: pointer;
+}
+
+.inquiry-sidebar-body{
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 12px 12px 18px;
+}
+
+.inquiry-sidebar .inquiry_area{
+	height: auto;
+	max-height: none;
+	border-width: 2px;
+	resize: none;
+}
+
+.inquiry-sidebar-open .tabcontent{
+	margin-right: var(--inquiry-sidebar-width, 360px);
+	width: calc(100% - var(--inquiry-sidebar-width, 360px));
+	transition: margin-right 0.28s ease, width 0.28s ease;
+}
+
+.srl-sidebar-open.inquiry-sidebar-open .tabcontent{
+	margin-left: var(--srl-sidebar-width, 420px);
+	margin-right: var(--inquiry-sidebar-width, 360px);
+	width: calc(100% - var(--srl-sidebar-width, 420px) - var(--inquiry-sidebar-width, 360px));
 }

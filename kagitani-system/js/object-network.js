@@ -3180,6 +3180,132 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             console.error("フィードバック用ツールチップの要素が見つかりませんでした。");
             return;
         }
+
+        const getCurrentLang = () => {
+            try {
+                if (window.currentLang === 'ja' || window.currentLang === 'en') {
+                    return window.currentLang;
+                }
+                const toggle = document.getElementById('language-toggle');
+                return (toggle && toggle.checked) ? 'en' : 'ja';
+            } catch (e) {
+                return 'ja';
+            }
+        };
+
+        const feedbackDict = {
+            ja: {
+                headerTitle: '振り返り',
+                historyBtn: '過去の記録を見る',
+                successQuestion: 'うまくいった点はありますか？',
+                successPlaceholder: '例: 先生と話してスケジュールが決まった',
+                successReasonLabel: 'なぜそうなったと思いますか？',
+                successReasonPlaceholder: '例: 先に優先順位を共有できた',
+                failureQuestion: 'うまくいかなかった点はありますか？',
+                failurePlaceholder: '例: 想定より確認に時間がかかった',
+                failureReasonLabel: 'なぜそうなったと思いますか？',
+                failureReasonPlaceholder: '例: 事前の段取りが不足していた',
+                lessonLabel: '教訓',
+                lessonFocusLabel: '今後の活動でどのようなことを意識したいですか？',
+                lessonFocusPlaceholder: '例: 次回は開始前にゴールを共有する',
+                lessonWhenLabel: 'その教訓はどのような時に活かせそうですか？',
+                lessonWhenPlaceholder: '例: 次回の準備開始時',
+                cancelBtn: 'キャンセル',
+                saveBtn: '内省記録を終える',
+                historyPanelLabel: '過去の記録',
+                historyTitle: '過去の記録',
+                lessonDeleteConfirm: 'この教訓を削除しますか？',
+                lessonDeleteLastAlert: '最後の教訓は削除できません'
+            },
+            en: {
+                headerTitle: 'Reflection',
+                historyBtn: 'View past records',
+                successQuestion: 'What went well?',
+                successPlaceholder: 'e.g., We aligned the schedule after talking to the instructor',
+                successReasonLabel: 'Why do you think it went that way?',
+                successReasonPlaceholder: 'e.g., We shared priorities early',
+                failureQuestion: 'What did not go well?',
+                failurePlaceholder: 'e.g., Reviews took longer than expected',
+                failureReasonLabel: 'Why do you think it went that way?',
+                failureReasonPlaceholder: 'e.g., The preparation steps were insufficient',
+                lessonLabel: 'Lesson',
+                lessonFocusLabel: 'What do you want to keep in mind for future activities?',
+                lessonFocusPlaceholder: 'e.g., Share the goal before starting next time',
+                lessonWhenLabel: 'When can you apply this lesson?',
+                lessonWhenPlaceholder: 'e.g., At the start of next preparation',
+                cancelBtn: 'Cancel',
+                saveBtn: 'Finish reflection',
+                historyPanelLabel: 'Past records',
+                historyTitle: 'Past records',
+                lessonDeleteConfirm: 'Delete this lesson?',
+                lessonDeleteLastAlert: 'You cannot delete the last lesson'
+            }
+        };
+
+        const t = (key) => {
+            const lang = getCurrentLang();
+            if (feedbackDict[lang] && typeof feedbackDict[lang][key] !== 'undefined') {
+                return feedbackDict[lang][key];
+            }
+            return (feedbackDict.ja && typeof feedbackDict.ja[key] !== 'undefined') ? feedbackDict.ja[key] : key;
+        };
+        const formatLessonLabel = (index) => `${t('lessonLabel')} #${index + 1}`;
+
+        const applyFeedbackTooltipLang = (root) => {
+            if (!root) return;
+            const headerTitle = root.querySelector('#feedbackTooltipHeader > div');
+            if (headerTitle) headerTitle.textContent = t('headerTitle');
+
+            const historyBtn = root.querySelector('#btnReflectionHistory');
+            if (historyBtn) historyBtn.textContent = t('historyBtn');
+
+            const successQuestion = root.querySelector('.feedback-card--success .feedback-card-title .feedback-micro-label');
+            if (successQuestion) successQuestion.textContent = t('successQuestion');
+            const successReasonLabel = root.querySelector('label[for="completionReasonGood"]');
+            if (successReasonLabel) successReasonLabel.textContent = t('successReasonLabel');
+
+            const failureQuestion = root.querySelector('.feedback-card--failure .feedback-card-title .feedback-micro-label');
+            if (failureQuestion) failureQuestion.textContent = t('failureQuestion');
+            const failureReasonLabel = root.querySelector('label[for="completionReasonBad"]');
+            if (failureReasonLabel) failureReasonLabel.textContent = t('failureReasonLabel');
+
+            const successPoints = root.querySelector('#successPoints');
+            if (successPoints) successPoints.placeholder = t('successPlaceholder');
+            const completionReasonGood = root.querySelector('#completionReasonGood');
+            if (completionReasonGood) completionReasonGood.placeholder = t('successReasonPlaceholder');
+            const failurePoints = root.querySelector('#failurePoints');
+            if (failurePoints) failurePoints.placeholder = t('failurePlaceholder');
+            const completionReasonBad = root.querySelector('#completionReasonBad');
+            if (completionReasonBad) completionReasonBad.placeholder = t('failureReasonPlaceholder');
+
+            const lessonFocus = root.querySelector('#challengesAndLearnings');
+            if (lessonFocus) lessonFocus.placeholder = t('lessonFocusPlaceholder');
+            const lessonWhen = root.querySelector('#whenApplicable');
+            if (lessonWhen) lessonWhen.placeholder = t('lessonWhenPlaceholder');
+
+            const lessonLabels = root.querySelectorAll('.lesson-tab-content label.feedback-micro-label');
+            lessonLabels.forEach((label, idx) => {
+                label.textContent = (idx % 2 === 0) ? t('lessonFocusLabel') : t('lessonWhenLabel');
+            });
+
+            const cancelBtn = root.querySelector('#btnCancelFeedback');
+            if (cancelBtn) cancelBtn.textContent = t('cancelBtn');
+            const saveBtn = root.querySelector('#btnSaveFeedback');
+            if (saveBtn) saveBtn.textContent = t('saveBtn');
+
+            const historyPanel = root.querySelector('#reflectionHistoryPanel');
+            if (historyPanel) historyPanel.setAttribute('aria-label', t('historyPanelLabel'));
+            const historyTitle = root.querySelector('.feedback-drawer-title');
+            if (historyTitle) {
+                const icon = historyTitle.querySelector('.feedback-drawer-icon');
+                const iconHtml = icon ? icon.outerHTML : '';
+                historyTitle.innerHTML = iconHtml + t('historyTitle');
+            }
+
+            if (window._lessonTabHelpers && typeof window._lessonTabHelpers.updateLessonTabLabels === 'function') {
+                window._lessonTabHelpers.updateLessonTabLabels();
+            }
+        };
     
         // ノードの位置を取得
         const positions = this.ownNetwork.getPositions(this.selectId);
@@ -3198,75 +3324,103 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         tooltip.style.top = `${canvasPosition.y + 20}px`; // ノードの下に表示
         tooltip.style.position = "fixed";
         tooltip.style.zIndex = "2147483647";
+        if (!tooltip.dataset.initialSized) {
+            tooltip.style.width = '683px';
+            tooltip.style.height = '711px';
+            tooltip.dataset.initialSized = '1';
+        }
         tooltip.classList.add('fl-card','fl-card--wide');
         tooltip.innerHTML = `
-    <div id="feedbackTooltipHeader" class="fl-header">
-        振り返り
+    <div id="feedbackTooltipHeader" class="fl-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div style="font-weight:700;">${t('headerTitle')}</div>
+        <button type="button" id="btnReflectionHistory" class="fp-btn fp-btn-secondary" aria-controls="reflectionHistoryPanel" aria-expanded="false" style="background:#f7f7f7; border:1px solid rgba(34,34,34,0.08); color:#333; padding:6px 10px; font-size:12px; border-radius:6px; cursor:pointer;">${t('historyBtn')}</button>
     </div>
     <div class="fl-body">
+        <div class="feedback-layout">
+        <div class="feedback-main">
         <form id="formFeedbackInput">
-            <div style="display:flex; gap:16px; flex-wrap:wrap;">
-                <!-- Success card (green left border) -->
-                <div style="flex:1; min-width:240px; position:relative; background:#ffffff; border-radius:10px; padding:12px 14px; border:1px solid #c8e6c9; border-left:4px solid #4caf50; box-shadow:0 2px 6px rgba(76,175,80,0.08);">
-                    <div style="display:flex; align-items:center; gap:6px; font-size:0.95em; margin-bottom:8px; color:#2e7d32; font-weight:700; padding-bottom:6px; border-bottom:1px solid #e8f5e9;">
-                        <span style="font-size:1.1em;">😊</span> うまくいった点
-                    </div>
-                    <label style="font-size:0.95em; margin-bottom:8px; color:#333; font-weight:600; display:block;">うまくいった点はありますか？</label>
-                    <textarea id="successPoints" name="successPoints" rows="3" placeholder="例：文献レビューは網羅的だった。" style="width:100%; box-sizing:border-box; border-radius:6px; border:1px solid #e0e0e0; padding:8px 10px; background:#fafafa; resize:vertical; font-size:0.9em;"></textarea>
-                    <label for="completionReasonGood" style="display:block; font-size:0.85em; color:#2e7d32; margin-top:10px; margin-bottom:4px; font-weight:600;">なぜそうなったと思いますか？</label>
-                    <textarea id="completionReasonGood" name="completionReasonGood" rows="2" placeholder="要因、努力、環境、協力者など、成功の理由を深く掘り下げてみましょう。" style="width:100%; box-sizing:border-box; border-radius:6px; border:1px solid #e0e0e0; padding:8px 10px; background:#fafafa; resize:vertical; font-size:0.9em;"></textarea>
+            <div class="feedback-cards">
+                <div class="feedback-card feedback-card--success">
+                    <div class="feedback-card-title"><span class="feedback-card-icon">😊</span><span class="feedback-micro-label">${t('successQuestion')}</span></div>
+                    <textarea id="successPoints" name="successPoints" rows="3" class="feedback-textarea" placeholder="${t('successPlaceholder')}"></textarea>
+                    <label for="completionReasonGood" class="feedback-micro-label">${t('successReasonLabel')}</label>
+                    <textarea id="completionReasonGood" name="completionReasonGood" rows="2" class="feedback-textarea" placeholder="${t('successReasonPlaceholder')}"></textarea>
                 </div>
-                <!-- Failure card (red left border) -->
-                <div style="flex:1; min-width:240px; position:relative; background:#ffffff; border-radius:10px; padding:12px 14px; border:1px solid #ffcdd2; border-left:4px solid #ef5350; box-shadow:0 2px 6px rgba(239,83,80,0.08);">
-                    <div style="display:flex; align-items:center; gap:6px; font-size:0.95em; margin-bottom:8px; color:#c62828; font-weight:700; padding-bottom:6px; border-bottom:1px solid #ffebee;">
-                        <span style="font-size:1.1em;">😔</span> うまくいかなかった点
-                    </div>
-                    <label style="font-size:0.95em; margin-bottom:8px; color:#333; font-weight:600; display:block;">うまくいかなかった点はありますか？</label>
-                    <textarea id="failurePoints" name="failurePoints" rows="3" placeholder="例：想定より時間がかかった。入手困難な資料があった。" style="width:100%; box-sizing:border-box; border-radius:6px; border:1px solid #e0e0e0; padding:8px 10px; background:#fafafa; resize:vertical; font-size:0.9em;"></textarea>
-                    <label for="completionReasonBad" style="display:block; font-size:0.85em; color:#c62828; margin-top:10px; margin-bottom:4px; font-weight:600;">なぜそうなったと思いますか？</label>
-                    <textarea id="completionReasonBad" name="completionReasonBad" rows="2" placeholder="原因、不足していたもの、予期せぬ障害など、失敗の理由を分析しましょう。" style="width:100%; box-sizing:border-box; border-radius:6px; border:1px solid #e0e0e0; padding:8px 10px; background:#fafafa; resize:vertical; font-size:0.9em;"></textarea>
+                <div class="feedback-card feedback-card--failure">
+                    <div class="feedback-card-title"><span class="feedback-card-icon">😔</span><span class="feedback-micro-label">${t('failureQuestion')}</span></div>
+                    <textarea id="failurePoints" name="failurePoints" rows="3" class="feedback-textarea" placeholder="${t('failurePlaceholder')}"></textarea>
+                    <label for="completionReasonBad" class="feedback-micro-label">${t('failureReasonLabel')}</label>
+                    <textarea id="completionReasonBad" name="completionReasonBad" rows="2" class="feedback-textarea" placeholder="${t('failureReasonPlaceholder')}"></textarea>
                 </div>
             </div>
 
             <!-- Lesson section -->
 
-            <div style="margin-top:10px;">
-                <div style="margin-top:8px;">
-                    <div style="background:#eef3f6; padding:12px; border-radius:10px; color:#223; box-shadow:0 4px 10px rgba(16,24,40,0.04)">
-                        
-                        <!-- Lesson tabs container -->
-                        <div id="lessonTabContainer" style="display:flex; align-items:center; gap:0; border-bottom:1px solid #d0d5dd; margin-bottom:12px; padding:0; overflow-x:auto;">
-                            <div class="lesson-tab lesson-tab-active" data-lesson-index="0" style="display:flex; align-items:center; gap:4px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:600; color:#2b7a78; background:transparent; border:none; border-bottom:2px solid #2b7a78; margin-bottom:-1px; transition:color 0.2s, border-color 0.2s; white-space:nowrap;">
-                                <span class="lesson-tab-label">教訓 #1 (Active)</span>
-                            </div>
-                            <button type="button" id="btnAddLessonTab" style="padding:8px 12px; cursor:pointer; font-size:16px; font-weight:700; color:#999; background:transparent; border:none; transition:color 0.2s;">+</button>
+            <div class="lesson-panel">
+                <div class="lesson-panel-header">
+                    <span class="lesson-panel-icon">💡</span>
+                    <div id="lessonTabContainer" class="lesson-tabs">
+                        <div class="lesson-tab lesson-tab-active" data-lesson-index="0">
+                            <span class="lesson-tab-label">${formatLessonLabel(0)}</span>
                         </div>
-                        
-                        <!-- Lesson tab content container -->
-                        <div id="lessonTabContentContainer" style="background:white; border-radius:8px; padding:10px;">
-                            <div class="lesson-tab-content lesson-tab-content-active" data-lesson-index="0" style="display:block;">
-                                <div style="font-weight:700; font-size:1.02em; margin-bottom:8px; color:#223;">今後の活動でどのようなことを意識したいですか？</div>
-                                <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="2" placeholder="導き出された教訓をここに入力してください。" style="width:100%; box-sizing:border-box; border:1px solid #e0e0e0; padding:8px; resize:vertical; border-radius:6px; background:#fafafa; font-size:0.95em;"></textarea>
-                                <label style="display:block; font-size:0.9em; color:#333; margin-top:8px; margin-bottom:4px; font-weight:600;">その教訓は次にどのような時に活かせそうですか？</label>
-                                <textarea id="whenApplicable" name="whenApplicable" rows="1" placeholder="例：次のプロジェクト開始時 / 次回のレビュー時" style="width:100%; margin-top:0; padding:6px; border-radius:6px; border:1px solid #e0e0e0; background:#fafafa;"></textarea>
-                            </div>
-                        </div>
+                        <button type="button" id="btnAddLessonTab" class="lesson-tab-add">+</button>
+                    </div>
+                </div>
+                <div id="lessonTabContentContainer" class="lesson-tab-content-container">
+                    <div class="lesson-tab-content lesson-tab-content-active" data-lesson-index="0">
+                        <label class="feedback-micro-label">${t('lessonFocusLabel')}</label>
+                        <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="2" class="feedback-textarea" placeholder="${t('lessonFocusPlaceholder')}"></textarea>
+                        <label class="feedback-micro-label">${t('lessonWhenLabel')}</label>
+                        <textarea id="whenApplicable" name="whenApplicable" rows="1" class="feedback-textarea" placeholder="${t('lessonWhenPlaceholder')}"></textarea>
                     </div>
                 </div>
             </div>
 
-            <div style="position:relative; margin-top:12px; padding:0 12px;">
-                <button type="button" id="btnCancelFeedback" class="fp-btn fp-btn-secondary" style="position:absolute; left:0; top:0; background:transparent; border:1px solid rgba(34,34,34,0.06); color:#333;">キャンセル</button>
-                <div style="display:flex; justify-content:center;">
-                    <button type="button" id="btnSaveFeedback" class="fp-btn fp-btn-primary" style="background:#4b6b7a; border-color:#425963; color:white;">内省記録を終える</button>
-                </div>
+            <div class="feedback-actions">
+                <button type="button" id="btnCancelFeedback" class="fp-btn fp-btn-secondary feedback-action-btn">${t('cancelBtn')}</button>
+                <button type="button" id="btnSaveFeedback" class="fp-btn fp-btn-primary feedback-action-btn">${t('saveBtn')}</button>
             </div>
         </form>
+        </div>
+        <aside id="reflectionHistoryPanel" class="feedback-drawer" aria-label="${t('historyPanelLabel')}">
+            <div class="feedback-drawer-header">
+                <div class="feedback-drawer-title"><span class="feedback-drawer-icon">🕒</span>${t('historyTitle')}</div>
+            </div>
+            <div id="reflectionHistoryList" class="history-list"></div>
+        </aside>
+        </div>
     </div>
 
     `;
     
+        tooltip.classList.remove('feedback-drawer-open');
+        const historyBtn = document.getElementById('btnReflectionHistory');
+        if (historyBtn) {
+            historyBtn.textContent = t('historyBtn');
+            historyBtn.setAttribute('aria-expanded', 'false');
+        }
         tooltip.style.display = "block";
+        this.setupReflectionHistoryButton();
+
+        const applyAutoGrow = (ta) => {
+            if (!ta) return;
+            ta.style.overflow = 'hidden';
+            const resize = () => {
+                ta.style.height = 'auto';
+                ta.style.height = `${ta.scrollHeight}px`;
+            };
+            ta.addEventListener('input', resize);
+            setTimeout(resize, 0);
+        };
+
+        tooltip.querySelectorAll('textarea').forEach((ta) => applyAutoGrow(ta));
+
+        // Update tooltip text when language changes without re-rendering inputs.
+        window.updateFeedbackTooltipLang = () => {
+            const currentTooltip = document.getElementById('feedbackTooltip');
+            if (!currentTooltip || currentTooltip.style.display === 'none') return;
+            applyFeedbackTooltipLang(currentTooltip);
+        };
 
         // 保存ボタンのイベントリスナーを設定
         this.setupTooltipSaveButton(tooltip);
@@ -3298,12 +3452,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     tabs.forEach((t, i) => {
                         if (i === index) {
                             t.classList.add('lesson-tab-active');
-                            t.style.color = '#2b7a78';
-                            t.style.borderBottom = '2px solid #2b7a78';
                         } else {
                             t.classList.remove('lesson-tab-active');
-                            t.style.color = '#666';
-                            t.style.borderBottom = '2px solid transparent';
                         }
                     });
                     contents.forEach((c, i) => {
@@ -3322,8 +3472,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     const tabs = getLessonTabs();
                     tabs.forEach((tab, i) => {
                         const isActive = tab.classList.contains('lesson-tab-active');
-                        let label = '教訓 #' + (i + 1);
-                        if (isActive) label += ' (Active)';
+                        let label = formatLessonLabel(i);
                         const labelSpan = tab.querySelector('.lesson-tab-label');
                         if (labelSpan) labelSpan.textContent = label;
                     });
@@ -3334,11 +3483,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     const tab = document.createElement('div');
                     tab.className = 'lesson-tab';
                     tab.dataset.lessonIndex = tabs.length;
-                    tab.style.cssText = 'display:flex; align-items:center; gap:4px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:600; color:#666; background:transparent; border:none; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color 0.2s, border-color 0.2s; white-space:nowrap;';
                     
                     const tabLabel = document.createElement('span');
                     tabLabel.className = 'lesson-tab-label';
-                    tabLabel.textContent = '教訓 #' + (tabs.length + 1);
+                    tabLabel.textContent = formatLessonLabel(tabs.length);
                     tab.appendChild(tabLabel);
                     
                     if (!isFirst) {
@@ -3372,33 +3520,35 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     content.dataset.lessonIndex = contents.length;
                     content.style.display = 'none';
                     if (dbId) content.dataset.objectLeId = dbId;
-                    
-                    const questionLabel = document.createElement('div');
-                    questionLabel.textContent = '今後の活動でどのようなことを意識したいですか？';
-                    questionLabel.style.cssText = 'font-weight:700; font-size:1.02em; margin-bottom:8px; color:#223;';
-                    content.appendChild(questionLabel);
-                    
+
+                    const labelFocus = document.createElement('label');
+                    labelFocus.textContent = t('lessonFocusLabel');
+                    labelFocus.className = 'feedback-micro-label';
+                    content.appendChild(labelFocus);
+
                     const taFocus = document.createElement('textarea');
                     taFocus.className = 'lesson-focus';
                     taFocus.rows = 2;
-                    taFocus.placeholder = '導き出された教訓をここに入力してください。';
-                    taFocus.style.cssText = 'width:100%; box-sizing:border-box; border:1px solid #e0e0e0; padding:8px; resize:vertical; border-radius:6px; background:#fafafa; font-size:0.95em;';
+                    taFocus.placeholder = t('lessonFocusPlaceholder');
+                    taFocus.classList.add('feedback-textarea');
                     if (focusVal) taFocus.value = focusVal;
                     content.appendChild(taFocus);
-                    
+
                     const labelWhen = document.createElement('label');
-                    labelWhen.textContent = 'その教訓は次にどのような時に活かせそうですか？';
-                    labelWhen.style.cssText = 'display:block; font-size:0.9em; color:#333; margin-top:8px; margin-bottom:4px; font-weight:600;';
+                    labelWhen.textContent = t('lessonWhenLabel');
+                    labelWhen.className = 'feedback-micro-label';
                     content.appendChild(labelWhen);
-                    
+
                     const taWhen = document.createElement('textarea');
                     taWhen.className = 'lesson-when';
                     taWhen.rows = 1;
-                    taWhen.placeholder = '例：次のプロジェクト開始時 / 次回のレビュー時';
-                    taWhen.style.cssText = 'width:100%; margin-top:0; padding:6px; border-radius:6px; border:1px solid #e0e0e0; background:#fafafa;';
+                    taWhen.placeholder = t('lessonWhenPlaceholder');
+                    taWhen.classList.add('feedback-textarea');
                     if (whenVal) taWhen.value = whenVal;
                     content.appendChild(taWhen);
-                    
+
+                    applyAutoGrow(taFocus);
+                    applyAutoGrow(taWhen);
                     lessonTabContentContainer.appendChild(content);
                     return content;
                 };
@@ -3407,10 +3557,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     const tabs = getLessonTabs();
                     const contents = getLessonTabContents();
                     if (tabs.length <= 1) {
-                        alert('最後の教訓は削除できません');
+                        alert(t('lessonDeleteLastAlert'));
                         return;
                     }
-                    if (!confirm('この教訓を削除しますか？')) return;
+                    if (!confirm(t('lessonDeleteConfirm'))) return;
                     
                     const arrIndex = tabs.indexOf(tabEl);
                     if (arrIndex < 0) return;
@@ -3454,8 +3604,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 });
                 
                 // Hover effect for add button
-                addLessonTabBtn.addEventListener('mouseenter', () => { addLessonTabBtn.style.color = '#2b7a78'; });
-                addLessonTabBtn.addEventListener('mouseleave', () => { addLessonTabBtn.style.color = '#999'; });
+                addLessonTabBtn.addEventListener('mouseenter', () => { addLessonTabBtn.style.color = '#2a241c'; });
+                addLessonTabBtn.addEventListener('mouseleave', () => { addLessonTabBtn.style.color = '#7a7166'; });
             }
         } catch (e) { console.warn('lesson tab setup error', e); }
         
@@ -3612,6 +3762,197 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             console.warn('error while pre-filling feedbackTooltip from reflection-tag', e);
         }
     }
+
+    setupReflectionHistoryButton() {
+        const historyBtn = document.getElementById('btnReflectionHistory');
+        const tooltip = document.getElementById('feedbackTooltip');
+        if (!historyBtn || !tooltip) return;
+
+        historyBtn.addEventListener('click', () => {
+            const isOpen = tooltip.classList.contains('feedback-drawer-open');
+            if (isOpen) {
+                tooltip.classList.remove('feedback-drawer-open');
+                historyBtn.textContent = '過去の記録を見る';
+                historyBtn.setAttribute('aria-expanded', 'false');
+                return;
+            }
+            tooltip.classList.add('feedback-drawer-open');
+            historyBtn.textContent = '過去の記録を閉じる';
+            historyBtn.setAttribute('aria-expanded', 'true');
+            this.loadReflectionHistory();
+        });
+    }
+
+    escapeReflectionHtml(value) {
+        const str = value === null || value === undefined ? '' : String(value);
+        return str.replace(/[&<>"]/g, (ch) => {
+            switch (ch) {
+                case '&': return '&amp;';
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '"': return '&quot;';
+                default: return ch;
+            }
+        });
+    }
+
+    formatReflectionDateTime(ts) {
+        if (!ts) return '';
+        const clean = String(ts).replace(/\.\d+$/, '');
+        const parts = clean.split(' ');
+        if (parts.length === 0) return clean;
+        const datePart = parts[0] || '';
+        const timePart = parts[1] || '';
+        const d = datePart.split('-');
+        const t = timePart.split(':');
+        if (d.length < 3) return clean;
+        const yyyy = d[0];
+        const mm = d[1] || '00';
+        const dd = d[2] || '00';
+        const hh = t[0] || '00';
+        const mi = t[1] || '00';
+        return `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
+    }
+
+    buildReflectionHistoryItemHTML(rec, isOpen) {
+        const created = this.formatReflectionDateTime(rec.created_at);
+        const good = this.escapeReflectionHtml(rec.evaluation_good || '');
+        const goodReason = this.escapeReflectionHtml(rec.attribution || '');
+        const bad = this.escapeReflectionHtml(rec.evaluation_bad || '');
+        const badReason = this.escapeReflectionHtml(rec.attribution_bad || '');
+        const lessons = Array.isArray(rec.lessons) ? rec.lessons : [];
+
+        const lessonsHtml = lessons.length > 0
+            ? lessons.map((l) => {
+                const opp = this.escapeReflectionHtml(l.opportunity || '');
+                const text = this.escapeReflectionHtml(l.lesson_learned || l.lesson || '');
+                const attrText = (text || '').replace(/\s+/g, ' ').trim();
+                return `
+                    <div class="history-lesson-item">
+                        <div class="history-lesson-text">${text || '-'}</div>
+                        ${opp ? `<div class="history-lesson-opportunity">${opp}</div>` : ''}
+                        <button type="button" class="history-copy-btn" data-lesson-text="${attrText}">教訓をコピー</button>
+                    </div>
+                `;
+            }).join('')
+            : '<div class="history-empty">教訓はありません。</div>';
+
+        return `
+            <div class="history-timeline-item">
+                <div class="history-timeline-dot"></div>
+                <div class="history-timeline-line"></div>
+                <details class="history-card" ${isOpen ? 'open' : ''}>
+                    <summary class="history-card-header">
+                        <span class="history-card-date">${created || '日時不明'}</span>
+                    </summary>
+                    <div class="history-card-body">
+                        <div class="history-lesson">
+                            <div class="history-lesson-title"><span class="history-icon">💡</span>教訓</div>
+                            <div class="history-lesson-list">${lessonsHtml}</div>
+                        </div>
+                        <div class="history-section">
+                            <div class="history-section-title history-good"><span class="history-icon">😊</span>うまくいった点</div>
+                            <div class="history-section-content">${good || '-'}</div>
+                            <div class="history-section-title history-good"><span class="history-icon">✅</span>理由</div>
+                            <div class="history-section-content">${goodReason || '-'}</div>
+                        </div>
+                        <div class="history-section">
+                            <div class="history-section-title history-bad"><span class="history-icon">😔</span>うまくいかなかった点</div>
+                            <div class="history-section-content">${bad || '-'}</div>
+                            <div class="history-section-title history-bad"><span class="history-icon">🧭</span>理由</div>
+                            <div class="history-section-content">${badReason || '-'}</div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        `;
+    }
+
+    prependReflectionHistoryItem(rec) {
+        const listEl = document.getElementById('reflectionHistoryList');
+        if (!listEl) return;
+
+        const emptyEl = listEl.querySelector('[data-empty="1"]');
+        if (emptyEl) listEl.innerHTML = '';
+
+        const html = this.buildReflectionHistoryItemHTML(rec, true);
+        listEl.insertAdjacentHTML('afterbegin', html);
+    }
+
+    loadReflectionHistory() {
+        const listEl = document.getElementById('reflectionHistoryList');
+        if (!listEl) return;
+
+        listEl.innerHTML = '<div class="history-empty">読み込み中...</div>';
+
+        $.ajax({
+            url: 'php/get_reflection_records.php',
+            type: 'GET',
+            dataType: 'json',
+            data: { object_node_id: this.selectId },
+            success: (res) => {
+                if (!res || !res.success) {
+                    listEl.innerHTML = '<div class="history-empty history-error">読み込みに失敗しました。</div>';
+                    return;
+                }
+                const records = Array.isArray(res.records) ? res.records : [];
+                const visibleRecords = records.length > 1 ? records.slice(1) : [];
+                if (visibleRecords.length === 0) {
+                    listEl.innerHTML = '<div data-empty="1" class="history-empty">過去の記録はありません。</div>';
+                    return;
+                }
+
+                const html = visibleRecords.map((rec, idx) => this.buildReflectionHistoryItemHTML(rec, idx === 0)).join('');
+                listEl.innerHTML = html;
+            },
+            error: () => {
+                listEl.innerHTML = '<div class="history-empty history-error">読み込みに失敗しました。</div>';
+            }
+        });
+    }
+
+    saveReflectionHistoryRecord(payload) {
+        const postData = {
+            object_node_id: payload.object_node_id,
+            evaluation_good: payload.evaluation_good || '',
+            evaluation_bad: payload.evaluation_bad || '',
+            attribution: payload.attribution || '',
+            attribution_bad: payload.attribution_bad || ''
+        };
+
+        if (payload.lessons && payload.lessons.length > 0) {
+            postData.lessons_json = JSON.stringify(payload.lessons);
+        }
+
+        $.ajax({
+            url: 'php/insert_reflection_record.php',
+            type: 'POST',
+            data: postData,
+            success: (res) => {
+                try {
+                    const parsed = typeof res === 'string' ? JSON.parse(res) : res;
+                    if (!parsed || !parsed.success) {
+                        console.warn('reflection history save failed', parsed);
+                        return;
+                    }
+
+                    const nowStamp = new Date();
+                    const localStamp = `${nowStamp.getFullYear()}-${String(nowStamp.getMonth() + 1).padStart(2, '0')}-${String(nowStamp.getDate()).padStart(2, '0')} ${String(nowStamp.getHours()).padStart(2, '0')}:${String(nowStamp.getMinutes()).padStart(2, '0')}:00`;
+
+                    const tooltip = document.getElementById('feedbackTooltip');
+                    const isOpen = !!(tooltip && tooltip.classList.contains('feedback-drawer-open'));
+                    if (isOpen) {
+                        this.loadReflectionHistory();
+                    }
+                } catch (e) {
+                    console.warn('reflection history response parse error', e);
+                }
+            },
+            error: function(xhr) {
+                console.warn('reflection history save error', xhr && xhr.responseText ? xhr.responseText : xhr);
+            }
+        });
+    }
     
     setupTooltipSaveButton(tooltip) {
         const saveButton = document.getElementById("btnSaveFeedback");
@@ -3686,15 +4027,22 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             if (completionReason) payload.attribution = completionReason;
             if (completionReasonGood) payload.attribution_good = completionReasonGood;
             if (completionReasonBad) payload.attribution_bad = completionReasonBad;
-            if (challengesAndLearnings) payload.application = challengesAndLearnings;
-            if (whenApplicable) payload.application_timing = whenApplicable;
-            // 複数教訓をJSON形式で送信
-            if (lessonsArray.length > 0) {
-                payload.lessons_json = JSON.stringify(lessonsArray);
-            }
+            // Note: lessons are saved via insert_reflection_record.php to avoid double inserts
             payload.object_node_id = this.selectId;
             payload.purpose = 'record';
             payload.record_thing = 'reflection';
+
+            const historyPayload = {
+                object_node_id: this.selectId,
+                evaluation_good: successPoints,
+                evaluation_bad: failurePoints,
+                attribution: completionReasonGood,
+                attribution_bad: completionReasonBad,
+                lessons: lessonsArray.map((l) => ({
+                    lesson: l.lesson || l.lesson_learned || '',
+                    opportunity: l.opportunity || ''
+                }))
+            };
 
             $.ajax({
                 url: "php/object_maneger.php",
@@ -3702,6 +4050,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 data: payload,
                 success: (response) => {
                     console.log("サーバーの応答:", response);
+                    this.saveReflectionHistoryRecord(historyPayload);
 
                     // ノードの見た目を更新（完了状態にする）
                     this.nodes.update({
@@ -6250,9 +6599,9 @@ function showThinkingProcessMap() {
     document.getElementById('feedback_area').style.display = "block";
     document.getElementById('xml_upload_area').style.display = "block";
     $('#process_network_container').css('display', 'flex');
-    $('#process_network_container').css('width', 'calc(-350px + 100vw)');
+    $('#process_network_container').css('width', 'calc(100% - 300px)');
     $('#process_network_container').css('height', '80vh'); // 明示的に高さを設定
-    $('#jsmind_container').css('width', 'calc(-350px + 100vw)');
+    $('#jsmind_container').css('width', 'calc(100% - 300px)');
     $('#jsmind_container').css('min-width', '300px');
     $('#jsmind_container').css('height', '40%');
     $('#jsmind_container').css('float', 'left');
@@ -6315,7 +6664,7 @@ function closeThinkingProcessMap(){
     document.getElementById('feedback_area').style.display = "block";
     document.getElementById('xml_upload_area').style.display = "block";
     $('#process_network_container').css('display','none');
-    $('#jsmind_container').css('width','calc(100vw - 350px)');
+    $('#jsmind_container').css('width','calc(100% - 300px)');
     $('#jsmind_container').css('min-width', '300px');
     $('#jsmind_container').css('height','100%');
     $('#jsmind_container').css('float', 'left');

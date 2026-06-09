@@ -45,6 +45,89 @@ function open_empty(){
 
 open_empty();
 
+// Enable background panning for jsMind (drag to scroll in any direction)
+function setupMindmapPan() {
+  var container = document.getElementById('jsmind_container');
+  if (!container) return;
+
+  var isPanning = false;
+  var startX = 0;
+  var startY = 0;
+  var startLeft = 0;
+  var startTop = 0;
+
+  function getScrollEl() {
+    return container.querySelector('.jsmind-inner') || container;
+  }
+
+  function shouldIgnoreTarget(target) {
+    if (!target) return false;
+    if (target.closest && (target.closest('jmnode') || target.closest('jmexpander'))) return true;
+    var tag = (target.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'button' || tag === 'select';
+  }
+
+  function onDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    if (shouldIgnoreTarget(e.target)) return;
+    var scroller = getScrollEl();
+    isPanning = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = scroller.scrollLeft;
+    startTop = scroller.scrollTop;
+    container.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+
+  function onMove(e) {
+    if (!isPanning) return;
+    var scroller = getScrollEl();
+    var dx = e.clientX - startX;
+    var dy = e.clientY - startY;
+    scroller.scrollLeft = startLeft - dx;
+    scroller.scrollTop = startTop - dy;
+  }
+
+  function onUp() {
+    if (!isPanning) return;
+    isPanning = false;
+    container.style.cursor = '';
+  }
+
+  container.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+
+  container.addEventListener('touchstart', function(e) {
+    if (!e.touches || !e.touches.length) return;
+    if (shouldIgnoreTarget(e.target)) return;
+    var touch = e.touches[0];
+    var scroller = getScrollEl();
+    isPanning = true;
+    startX = touch.clientX;
+    startY = touch.clientY;
+    startLeft = scroller.scrollLeft;
+    startTop = scroller.scrollTop;
+  }, { passive: true });
+
+  container.addEventListener('touchmove', function(e) {
+    if (!isPanning || !e.touches || !e.touches.length) return;
+    var touch = e.touches[0];
+    var scroller = getScrollEl();
+    var dx = touch.clientX - startX;
+    var dy = touch.clientY - startY;
+    scroller.scrollLeft = startLeft - dx;
+    scroller.scrollTop = startTop - dy;
+  }, { passive: true });
+
+  container.addEventListener('touchend', function() {
+    isPanning = false;
+  });
+}
+
+setupMindmapPan();
+
 // クリックしたノードのIDをとってくる関数
 function get_selected_nodeid(){
     var selected_node = _jm.get_selected_node();

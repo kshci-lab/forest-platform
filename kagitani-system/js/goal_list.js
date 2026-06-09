@@ -125,9 +125,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 contents: []
                             };
                         }
-                        if (row.content) {
-                            goalMap[journalId].contents.push(row.content);
-                        }
+                        goalMap[journalId].contents.push({
+                            node_id: row.node_id || '',
+                            content: row.content || ''
+                        });
                     });
                     var goals = Object.values(goalMap);
                     // 最新の目標を先頭に表示するため、開始日で降順ソート（新しいものを先頭に）
@@ -299,7 +300,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     type: 'POST',
                     data: {
                         start_date: startDate,
-                        finish_date: endDate
+                        finish_date: endDate,
+                        map_id: (typeof window.MAPID !== 'undefined') ? window.MAPID : ''
                     },
                     dataType: 'json',
                     success: function(res) {
@@ -368,10 +370,18 @@ document.addEventListener('DOMContentLoaded', function() {
             var jmnodeStyle = 'display:inline-block;margin:4px 6px 4px 0;padding:10px;background-color:#bee2f9;color:#333;border-radius:12px;box-shadow:1px 1px 1px #666;font:12px/1.125 Verdana,Arial,Helvetica,sans-serif;border:1.5px solid #7ec3e6;';
             var nodeHtml = '';
             if (goal.contents && goal.contents.length) {
-                nodeHtml = goal.contents.map(function(content, cidx) {
+                nodeHtml = goal.contents.map(function(contentItem, cidx) {
+                    var contentText = '';
+                    if (contentItem && typeof contentItem === 'object') {
+                        contentText = (contentItem.content || contentItem.node_id || '').trim();
+                    } else {
+                        contentText = (contentItem || '').toString().trim();
+                    }
+                    if (!contentText) contentText = t('unlinked');
                     // data 属性を付与して後でイベントバインドしやすくする
-                    return '<div class="jmnode" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" style="' + jmnodeStyle + '">' +
-                        '<span>' + content + '</span>' +
+                    var nodeIdAttr = (contentItem && typeof contentItem === 'object' && contentItem.node_id) ? contentItem.node_id : '';
+                    return '<div class="jmnode" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" data-node-id="' + nodeIdAttr + '" style="' + jmnodeStyle + '">' +
+                        '<span>' + contentText + '</span>' +
                         '<button onclick="deleteGoalNode(' + idx + ',' + cidx + ')" class="goal-delete-btn" title="削除">' +
                         '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>' +
                         '</button>' +
@@ -382,8 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             var startDate = new Date(goal.start || goal.start_date);
             var endDate = new Date(goal.end || goal.finish_date);
-            var startStr = (startDate.getMonth()+1) + '月' + startDate.getDate() + '日';
-            var endStr = (endDate.getMonth()+1) + '月' + endDate.getDate() + '日';
+            var startStr = (startDate.getMonth()+1) + '/' + startDate.getDate();
+            var endStr = (endDate.getMonth()+1) + '/' + endDate.getDate();
             html += '<div style="background:#eafbe7;border:1.5px solid #28a745;border-radius:7px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:16px;">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
                 + '<span class="weekly-goal-date-range" data-idx="' + idx + '" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
@@ -410,6 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     var gidx = el.getAttribute('data-goal-idx');
                     var cidx = el.getAttribute('data-content-idx');
                     var text = (el.querySelector('span') ? el.querySelector('span').textContent.trim() : '');
+                    var explicitNodeId = el.getAttribute('data-node-id') || '';
 
                     // mindmap の jmnode 要素から nodeid を探すヘルパ
                     function findMindmapNodeIdByText(targetText) {
@@ -433,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return null;
                     }
 
-                    var nodeId = findMindmapNodeIdByText(text);
+                    var nodeId = explicitNodeId || findMindmapNodeIdByText(text);
                     console.log('クリックした', { goalIndex: gidx, contentIndex: cidx, text: text, nodeId: nodeId });
 
                     // 優先: マインドマップ上で対応するノードを選択して、
@@ -581,7 +592,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     try {
                         var span = chip.querySelector('span');
                         var txt = span ? span.textContent.trim() : '';
-                        var nid = mapTextToMindmapNodeId(txt);
+                        var explicitNid = chip.getAttribute('data-node-id') || '';
+                        var nid = explicitNid || mapTextToMindmapNodeId(txt);
                         if (nid && nid === active) {
                             chip.classList.add('goal-chip-active');
                         }

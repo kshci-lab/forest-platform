@@ -32,6 +32,9 @@ function c_parse_xml(xml,status){
 	$(xml).find('W_CONCEPTS').each(function(){
 		c_disp.call(this);
 	});
+	if (typeof document !== 'undefined') {
+		document.dispatchEvent(new CustomEvent('inquiry-list-updated'));
+	}
 }
 
 // HTML生成関数
@@ -182,6 +185,7 @@ function c_disp(){
 		'実践の理想の結果は何ですか？': { ja: '実践の理想の結果は何ですか？', en: 'What is the ideal outcome of the practice?' },
 		'実践の考察は何ですか？': { ja: '実践の考察は何ですか？', en: 'What are the reflections on the practice?' },
 	};
+	window.inquiryDict = inquiryDict;
 
 	for(var i=0; i<$concept_tag.length; i++){
 		if($concept_tag[i].getAttribute('instantiation') == undefined){
@@ -204,7 +208,9 @@ function c_disp(){
 							}
 							var testxml = document.getElementById(targetId);
 							var ultag = document.createElement('ul');
-							ultag.className = $concept_id;
+							ultag.className = $concept_id + ' inquiry-item';
+							ultag.setAttribute('data-inquiry', $inquiry_content);
+							ultag.setAttribute('data-concept', $concept_content);
 							ultag.state = 'hide';
 							testxml.appendChild(ultag);
 							var imgtag = document.createElement('img');
@@ -238,12 +244,13 @@ function showGeneration(){
 	$("div#rationality").html("");	//[合理性]　を空白に
 	// console.log("showGeneration");
 	c_xmlLoad();
+	var dict = window.inquiryDict || {};
 	// Section header for 【理由・目的】
 	var lang = window.currentLang || 'ja';
-	var reasonHeader = inquiryDict['【理由・目的】'] ? inquiryDict['【理由・目的】'][lang] : (lang === 'en' ? '[Reason/Purpose]' : '【理由・目的】');
+	var reasonHeader = dict['【理由・目的】'] ? dict['【理由・目的】'][lang] : (lang === 'en' ? '[Reason/Purpose]' : '【理由・目的】');
 	$("div#intention").html('<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">' + reasonHeader + '</div>');
 	// Section header for 【合理性】
-	var rationalityHeader = inquiryDict['【合理性】'] ? inquiryDict['【合理性】'][lang] : (lang === 'en' ? '[Rationality]' : '【合理性】');
+	var rationalityHeader = dict['【合理性】'] ? dict['【合理性】'][lang] : (lang === 'en' ? '[Rationality]' : '【合理性】');
 	$("div#rationality").html('<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">' + rationalityHeader + '</div>');
 }
 

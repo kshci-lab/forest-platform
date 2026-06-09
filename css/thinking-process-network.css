@@ -2,8 +2,7 @@
 
 /*ネットワーク*/
 #process_network_container{
-	/* width: calc(100vw - 350px); */
-	width: 100%;
+	width: calc(100% - 300px);
 	min-width: 300px;
 	height:50%;
 	min-height: 450px;
@@ -18,7 +17,7 @@
 }
 #myProcessnetwork {
 	position: relative;
-	width: calc(100vw - 350px);
+	width: calc(100% - 300px);
 	min-width: 300px;
 	height:50%;
 	min-height: 450px;
@@ -28,7 +27,7 @@
 	overflow: auto;
 }
 #myProcessnetwork2{
-	width: calc(100vw - 350px);
+	width: calc(100% - 300px);
 	min-width: 300px;
 	/* height:50%; */
 	min-height: 450px;

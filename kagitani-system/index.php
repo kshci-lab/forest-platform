@@ -257,6 +257,7 @@ try {
         <script type="text/javascript" src="js/navigator.js"></script>
         <script type="text/javascript" src="js/object-network.js"></script>
         <link rel="stylesheet" type="text/css" href="css/object-network.css" />
+        <link rel="stylesheet" type="text/css" href="css/feedbackTooltip.css" />
         <script type="text/javascript" src="js/timeline_slider.js"></script>
         <script type="text/javascript" src="js/goal_list.js"></script>
         <script type="text/javascript" src="js/journal_report.js"></script>
@@ -396,7 +397,8 @@ try {
         <style>
             /* 高級感のある教訓一覧ボタン（青×ゴールド） */
             #show-lessons-btn{
-                position:fixed;top:5px;right:200px;z-index:9999;
+                position:fixed;top:calc(35px / 2 + 7px);right:300px;z-index:9999;
+                transform:translateY(-50%);
                 padding:3px 10px;font-size:12px;font-weight:600;letter-spacing:0.03em;
                 height:25px;line-height:1;
                 color:#f4e4a6;
@@ -412,13 +414,13 @@ try {
                 font-size:12px;
             }
             #show-lessons-btn:hover{
-                transform:translateY(-1px);
+                transform:translateY(calc(-50% - 1px));
                 background:linear-gradient(180deg, #5a7fb5 0%, #3c5a8c 30%, #2a4a7c 70%, #1f3860 100%);
                 border-color:#d9b237;
                 box-shadow:0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 6px rgba(201,162,39,0.4);
             }
             #show-lessons-btn:active{
-                transform:translateY(0);
+                transform:translateY(-50%);
                 box-shadow:0 1px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
             }
             #show-lessons-btn:focus{outline:none;}
@@ -428,20 +430,103 @@ try {
         </style>
     <body id="all">
         <!-- 言語切替スライダー -->
-                <!-- 教訓一覧を表示ボタン（言語トグルの左隣に配置） -->
-                <button id="show-lessons-btn">
-                    教訓一覧
-                </button>
-                <div id="language-toggle-container" style="position:fixed;top:10px;right:30px;z-index:9999;">
-                        <label style="display:flex;align-items:center;gap:8px;font-size:15px;">
-                                <span id="lang-label-ja">日本語</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="language-toggle" />
-                                    <span class="slider round"></span>
-                                </label>
-                                <span id="lang-label-en">English</span>
-                        </label>
+                <!-- 教訓一覧ボタン削除 -->
+                <div id="language-toggle-container" style="position:fixed;top:12px;right:30px;z-index:9999;display:flex;align-items:center;gap:12px;">
+                        <div class="hamburger-menu">
+                            <button class="settings-button" type="button" aria-label="Settings">
+                                <svg class="settings-icon" viewBox="0 0 24 24" role="img" aria-hidden="true">
+                                    <path d="M12 8.75a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5Zm8.25 3.25a6.3 6.3 0 0 0-.1-1.1l2.03-1.58-2-3.46-2.44.86a7.54 7.54 0 0 0-1.9-1.1l-.4-2.56H10.6l-.4 2.56c-.68.27-1.32.64-1.9 1.1l-2.44-.86-2 3.46 2.03 1.58a6.3 6.3 0 0 0 0 2.2L3.86 13.7l2 3.46 2.44-.86c.58.46 1.22.83 1.9 1.1l.4 2.56h4.8l.4-2.56c.68-.27 1.32-.64 1.9-1.1l2.44.86 2-3.46-2.03-1.58c.07-.36.1-.73.1-1.1Z"/>
+                                </svg>
+                            </button>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-item language-toggle-item">
+                                    <label style="display:flex;align-items:center;gap:8px;font-size:15px;">
+                                            <span id="lang-label-ja">日本語</span>
+                                            <label class="switch">
+                                                <input type="checkbox" id="language-toggle" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span id="lang-label-en">English</span>
+                                    </label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <form name="return" method="POST">
+                                    <input class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="シート選択画面に戻る">
+                                    <input class="dropdown-item logout-btn" type="submit" name="logout" id="logout" value="ログアウト">
+                                </form>
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-section">
+                                    <span class="dropdown-section-title">画面切り替え</span>
+                                    <div class="tab-navigation">
+                                        <button class="dropdown-tab-item active" onclick="switchTab('tab01')">思考整理支援システム</button>
+                                        <button class="dropdown-tab-item" onclick="switchTab('tab04')">過去のマインドマップ</button>
+                                    </div>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-section">
+                                    <span class="dropdown-section-title">モード選択</span>
+                                    <form name="target_mode" action="">
+                                        <select class="dropdown-select" name="Select1">
+                                            <option>自己内対話モード</option>
+                                            <option>資料構成作成モード</option>
+                                            <option>資料作成モード</option>
+                                            <option>議論内省マップモード</option>
+                                        </select>
+                                        <input type="button" class="dropdown-button" value="実行" onclick="ModeChangeButtonClick();" />
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                 </div>
+                <!-- SRL sidebar toggle moved into header -->
+                <div id="srlSidebarBackdrop" class="srl-sidebar-backdrop" aria-hidden="true"></div>
+                <aside id="srlSidebar" class="srl-sidebar" aria-hidden="true">
+                    <div class="srl-sidebar-header">
+                        <span class="srl-sidebar-title">SRL</span>
+                        <button id="srlSidebarClose" class="srl-sidebar-close" type="button" aria-label="Close">×</button>
+                    </div>
+                    <div class="srl-sidebar-tabs">
+                        <button class="srl-tab is-active" type="button" data-tab="journal">SRLジャーナル一覧</button>
+                        <button class="srl-tab" type="button" data-tab="lessons">教訓一覧</button>
+                    </div>
+                    <div class="srl-sidebar-body">
+                        <div class="srl-tab-panel is-active" data-tab-panel="journal">
+                            <div id="srlSidebarJournal"></div>
+                        </div>
+                        <div class="srl-tab-panel" data-tab-panel="lessons">
+                            <div class="srl-lessons-section">
+                                <div class="srl-lessons-header" id="srlLessonsHeaderMap">🗺️ SRL整理マップから</div>
+                                <div id="srlLessonsBodyMap"></div>
+                            </div>
+                            <div class="srl-lessons-divider"></div>
+                            <div class="srl-lessons-section">
+                                <div class="srl-lessons-header" id="srlLessonsHeaderSrl">📒 SRLジャーナルから</div>
+                                <div id="srlLessonsBodySrl"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="srl-sidebar-resize" role="separator" aria-orientation="vertical" aria-label="Resize SRL sidebar"></div>
+                </aside>
+                <aside id="inquirySidebar" class="inquiry-sidebar" aria-hidden="true">
+                    <div class="inquiry-sidebar-header">
+                        <span class="inquiry-sidebar-title">問い一覧</span>
+                        <button id="inquirySidebarClose" class="inquiry-sidebar-close" type="button" aria-label="Close">×</button>
+                    </div>
+                    <div class="inquiry-sidebar-body">
+                        <div class="inquiry_area">
+                            <button id="showQuestionsBtn" style="display: block; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; padding: 6px 0; margin-bottom: 8px; font-size: 13px; font-weight: bold; cursor: pointer;" onclick="showGeneration();"><span id="showQuestionsBtnText">問い一覧</span></button>
+                            <!-- <div id="questionsList" style="display:none; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px; padding:8px; margin-bottom:8px; max-height:120px; overflow-y:auto;"></div> -->
+                            <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;"><span id="inquiryAreaTitle">【情報の表出化】</span></div>
+                            <div id="testxml"></div>
+                            <div id="ont"></div>
+                            <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;"><span id="reasonPurposeTitle">【理由・目的】</span></div>
+                            <div id="intention"></div>
+                            <!-- Rationality header removed to eliminate extra spacing under inquiry_area -->
+                            <div id="rationality"></div>
+                        </div>
+                    </div>
+                    <div class="inquiry-sidebar-resize" role="separator" aria-orientation="vertical" aria-label="Resize inquiry sidebar"></div>
+                </aside>
                 <style>
                 .switch {
                     position: relative;
@@ -534,10 +619,12 @@ try {
                 'notStartedLabel': '未着手',
                 'navigatorGreetingHeader': 'こんにちは！',
                 'navigatorGreetingSub': '目標手段階層マップへようこそ',
+                'title_name':'自己調整学習活性化システム',
                 'weeklyGoalTooltip': '次のMTの１週間の目標',
                 'weeklyGoalStartLabel': '開始日',
                 'weeklyGoalEndLabel': '終了日',
                 'addWeeklyGoalBtnText': '追加',
+                'show-lessons-btn': '教訓一覧',
                 'exportWeeklyGoalBtnText': '振り返る',
                 'editWeeklyGoalBtnText': '編集',
                 'deleteWeeklyGoalBtnText': '削除',
@@ -565,11 +652,11 @@ try {
                 'addMediumGoalBtnText': 'Add',
                 'mediumGoalTextPlaceholder': 'Enter medium goal',
                 'lang-label-en': 'English',
-                'addWeeklyGoalBtn': 'Add Weekly Goal',
+                'addWeeklyGoalBtn': 'Add SRL Journal',
                 'addWeeklyGoalMenuLabel': 'Add Weekly Goal',
                 'showThinkingProcessMapBtn': 'Goal Hierarchy Map',
                 'editWeeklyGoalBtnText': 'Edit',
-                'exportWeeklyGoalBtnText': 'Export Journal',
+                'exportWeeklyGoalBtnText': 'Reflection',
                 'deleteWeeklyGoalBtnText': 'Delete',
                 'sheetbtn': 'Back to Sheet Selection',
                 'logout': 'Logout',
@@ -597,13 +684,16 @@ try {
                 'notStartedLabel': 'Not Started',
                 'navigatorGreetingHeader': 'Hello!',
                 'navigatorGreetingSub': 'Welcome to the Goal Hierarchy Map',
+                'title_name': 'Self-Regulated Learning Activation System',
                 'weeklyGoalTitle': 'Weekly Goal',
                 'weeklyGoalStartLabel': 'Start Date',
                 'weeklyGoalEndLabel': 'End Date',
                 'addWeeklyGoalBtnText': 'Add',
+                'show-lessons-btn': 'Lesson learnt',
             }
         };
         function setLanguage(lang) {
+            window.currentLang = lang;
                 // 週目標日付範囲の表示も切り替え
                 const weeklyGoalsList = document.getElementById('weeklyGoalsList');
                 if (weeklyGoalsList) {
@@ -611,22 +701,20 @@ try {
                     dateRanges.forEach(span => {
                         const start = span.getAttribute('data-start');
                         const end = span.getAttribute('data-end');
-                        if (lang === 'ja') {
-                            // 日本語: 10月3日〜10月9日
-                            span.textContent = start + '〜' + end;
-                        } else {
-                            // 英語: Oct 3 - Oct 9
-                            // 日本語日付を英語に変換
-                            function jaToEnDate(jp) {
-                                const m = jp.match(/(\d+)月(\d+)日/);
-                                if (!m) return jp;
-                                const month = parseInt(m[1], 10);
-                                const day = parseInt(m[2], 10);
-                                const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                return monthsEn[month-1] + ' ' + day;
-                            }
-                            span.textContent = jaToEnDate(start) + ' - ' + jaToEnDate(end);
+                        function formatMD(input) {
+                            if (!input) return '';
+                            var m;
+                            m = String(input).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+                            if (m) return parseInt(m[2], 10) + '/' + parseInt(m[3], 10);
+                            m = String(input).match(/(\d{1,2})\/(\d{1,2})/);
+                            if (m) return parseInt(m[1], 10) + '/' + parseInt(m[2], 10);
+                            m = String(input).match(/(\d{1,2})月(\d{1,2})日/);
+                            if (m) return parseInt(m[1], 10) + '/' + parseInt(m[2], 10);
+                            return String(input);
                         }
+                        var startText = formatMD(start);
+                        var endText = formatMD(end);
+                        span.textContent = (lang === 'ja') ? (startText + '〜' + endText) : (startText + ' - ' + endText);
                     });
                 }
             document.getElementById('language-switching-message').style.display = 'block';
@@ -672,6 +760,12 @@ try {
                 if (window.setInquiryLang) {
                     window.setInquiryLang(lang);
                 }
+                if (window.updateFeedbackTooltipLang) {
+                    window.updateFeedbackTooltipLang();
+                }
+                if (window.updateLessonsTooltipLang) {
+                    window.updateLessonsTooltipLang();
+                }
             }, 700);
         }
         document.addEventListener('DOMContentLoaded', function() {
@@ -690,41 +784,8 @@ try {
         <!---        タイトルメニューStart                 -->
         <div id="main_title">
             <div class="header-container">
-                <div class="hamburger-menu">
-                    <div class="hamburger-icon">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                    <div class="dropdown-menu">
-                        <form name="return" method="POST">
-                            <input class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="シート選択画面に戻る">
-                            <input class="dropdown-item logout-btn" type="submit" name="logout" id="logout" value="ログアウト">
-                        </form>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-section">
-                            <span class="dropdown-section-title">画面切り替え</span>
-                            <div class="tab-navigation">
-                                <button class="dropdown-tab-item active" onclick="switchTab('tab01')">思考整理支援システム</button>
-                                <button class="dropdown-tab-item" onclick="switchTab('tab04')">過去のマインドマップ</button>
-                            </div>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-section">
-                            <span class="dropdown-section-title">モード選択</span>
-                            <form name="target_mode" action="">
-                                <select class="dropdown-select" name="Select1">
-                                    <option>自己内対話モード</option>
-                                    <option>資料構成作成モード</option>
-                                    <option>資料作成モード</option>
-                                    <option>議論内省マップモード</option>
-                                </select>
-                                <input type="button" class="dropdown-button" value="実行" onclick="ModeChangeButtonClick();" />
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <span class="title_name">Forest-自己調整学習活性化システム</span>
+                <button id="srlSidebarToggle" class="srl-sidebar-toggle" type="button" aria-controls="srlSidebar" aria-expanded="false">SRL</button>
+                <span class="title_name" id="title_name">自己調整学習活性化システム</span>
             </div>
             <!-- Hamburger menu icon -->
             <!-- <span id="hamburger_menu" style="display: inline-block; cursor: pointer; margin-right: 10px;">
@@ -786,6 +847,7 @@ try {
                             <div id="jsmind_nav">
                                 <div style="text-align: left">
                                     <!-- 【Edit】 -->
+                                    <button class="button4" id="toggleInquirySidebarBtn" type="button">問い一覧</button>
                                     <button class="button4" id="addQNodeBtn" onclick="add_Qnode();"><span id="addQNodeText">問いノード追加</span></button>
                                     <button class="button4" id="addAnodeBtn" onclick="add_Anode();"><span id="addAnodeText">答えノード追加</span></button>
                                     <button class="button4" id="addLabelBtn" onclick="add_Label('primary_label');"><span id="addLabelText">ラベル追加</span></button>
@@ -1548,16 +1610,16 @@ try {
                  </div> -->
 
                  <!--サイドメニュー　start-->
-                <div id="side_menu">
+                <!-- <div id="side_menu">
                     
                     <!-- マインドマップ編集のサイドメニュー -->
                     
-                    <div id="mind">
+                    <!-- <div id="mind"> -->
                         
                         <!--チェックメニュー　Start  -->
                         
 
-                        <div class="toi_list" style="text-align: center;">
+                        <!-- <div class="toi_list" style="text-align: center;"> -->
     <!-- <div id="mind_all">
         <input class="button5" type="button" onclick="showGeneration();" value="問い一覧">
          <b>マインドマップモード</b> -->
@@ -1569,17 +1631,6 @@ try {
                         </div>
 
                         <div id="mind" class="side">
-                            <div class="inquiry_area">
-<button id="showQuestionsBtn" style="display: block; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; padding: 6px 0; margin-bottom: 8px; font-size: 13px; font-weight: bold; cursor: pointer;" onclick="showGeneration();"><span id="showQuestionsBtnText">問い一覧</span></button>
-<!-- <div id="questionsList" style="display:none; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px; padding:8px; margin-bottom:8px; max-height:120px; overflow-y:auto;"></div> -->
-<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;"><span id="inquiryAreaTitle">【情報の表出化】</span></div>
-<div id="testxml"></div>
-<div id="ont"></div>
-<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;"><span id="reasonPurposeTitle">【理由・目的】</span></div>
-<div id="intention"></div>
-<!-- Rationality header removed to eliminate extra spacing under inquiry_area -->
-<div id="rationality"></div>
-                            </div>
 
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none; width: 100%; overflow: auto; box-sizing: border-box;">
@@ -1683,7 +1734,7 @@ try {
                     </div> <!-- mind fin -->
 
                     
-                </div>
+                <!-- </div>  -->
                 <!--サイドメニュー　finish-->
             </div>
             <!--tab01 fin-->
@@ -1806,6 +1857,8 @@ try {
         <script type="text/javascript" src="js/micro.js"></script>
         <script type="text/javascript" src="js/macro.js"></script>
         <script type="text/javascript" src="js/lesson-learned-list.js"></script>
+        <script type="text/javascript" src="js/srl_sidebar.js"></script>
+        <script type="text/javascript" src="js/inquiry_sidebar.js"></script>
         <script type="text/javascript" src="js/macrolevel_advice.js"></script>
         <script type="text/javascript" src="js/rationality.js"></script>
         <script type="text/javascript" src="plugins/Sortable-master/Sortable.js"></script>

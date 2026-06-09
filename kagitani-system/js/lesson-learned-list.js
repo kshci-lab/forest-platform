@@ -2,6 +2,64 @@
 // 今後、モーダルやサイドパネルでの詳細表示に拡張可能
 
 (function(){
+  function getCurrentLang(){
+    try {
+      if (window.currentLang === 'ja' || window.currentLang === 'en') return window.currentLang;
+      var toggle = document.getElementById('language-toggle');
+      return (toggle && toggle.checked) ? 'en' : 'ja';
+    } catch (e) {
+      return 'ja';
+    }
+  }
+
+  var lessonsDict = {
+    ja: {
+      closeLabel: '閉じる',
+      headerMap: '🗺️ SRL整理マップから',
+      headerSrl: '📒 SRLジャーナルから',
+      loading: '読み込み中...',
+      empty: '該当する教訓は見つかりませんでした。',
+      loadError: '読み込みに失敗しました。',
+      mapFallbackOpportunity: '実践するとき',
+      srlFallbackOpportunity: '次の機会に活用',
+      periodLabel: '期間: '
+    },
+    en: {
+      closeLabel: 'Close',
+      headerMap: '🗺️ From SRL Map',
+      headerSrl: '📒 From SRL Journal',
+      loading: 'Loading...',
+      empty: 'No lessons found.',
+      loadError: 'Failed to load.',
+      mapFallbackOpportunity: 'When applying',
+      srlFallbackOpportunity: 'Use next time',
+      periodLabel: 'Period: '
+    }
+  };
+
+  function t(key){
+    var lang = getCurrentLang();
+    if (lessonsDict[lang] && typeof lessonsDict[lang][key] !== 'undefined') return lessonsDict[lang][key];
+    return (lessonsDict.ja && typeof lessonsDict.ja[key] !== 'undefined') ? lessonsDict.ja[key] : key;
+  }
+
+  function applyTooltipLang(tip){
+    if (!tip) return;
+    var closeBtn = tip.querySelector('#lessonsTooltipClose');
+    if (closeBtn) closeBtn.setAttribute('aria-label', t('closeLabel'));
+    var headerMap = tip.querySelector('#lessonsTooltipHeader');
+    if (headerMap) headerMap.textContent = t('headerMap');
+    var headerSrl = tip.querySelector('#lessonsTooltipHeaderSRL');
+    if (headerSrl) headerSrl.textContent = t('headerSrl');
+  }
+
+  function applySidebarLang(){
+    var headerMap = document.getElementById('srlLessonsHeaderMap');
+    if (headerMap) headerMap.textContent = t('headerMap');
+    var headerSrl = document.getElementById('srlLessonsHeaderSrl');
+    if (headerSrl) headerSrl.textContent = t('headerSrl');
+  }
+
   // Helper: generate user-specific localStorage key
   function getStorageKey(baseName) {
     var mapId = window.MAPID || 'default';
@@ -30,11 +88,11 @@
     tip.style.maxWidth = '350px';
     tip.style.boxSizing = 'border-box';
 
-    tip.innerHTML = '<button id="lessonsTooltipClose" aria-label="閉じる" style="position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.15s ease;z-index:10;">×</button>' +
-      '<div id="lessonsTooltipHeader" style="background:linear-gradient(135deg, #f97316, #fb923c);color:#fff;padding:10px 14px;margin:-10px -14px 12px -14px;border-radius:16px 16px 0 0;font-weight:700;font-size:14px;">🗺️ SRL整理マップから</div>' +
+    tip.innerHTML = '<button id="lessonsTooltipClose" aria-label="' + t('closeLabel') + '" style="position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;color:#6b7280;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);transition:all 0.15s ease;z-index:10;">×</button>' +
+      '<div id="lessonsTooltipHeader" style="background:linear-gradient(135deg, #f97316, #fb923c);color:#fff;padding:10px 14px;margin:-10px -14px 12px -14px;border-radius:16px 16px 0 0;font-weight:700;font-size:14px;">' + t('headerMap') + '</div>' +
       '<div id="lessonsTooltipBody" style="max-height:240px;overflow:auto;line-height:1.45;padding-top:6px"></div>' +
       '<div style="height:1px;margin:14px 0;background:linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.02));"></div>' +
-      '<div id="lessonsTooltipHeaderSRL" style="background:linear-gradient(135deg, #28a745, #5cb85c);color:#fff;padding:10px 14px;margin:0 -14px 12px -14px;font-weight:700;font-size:14px;">📒 SRLジャーナルから</div>' +
+      '<div id="lessonsTooltipHeaderSRL" style="background:linear-gradient(135deg, #28a745, #5cb85c);color:#fff;padding:10px 14px;margin:0 -14px 12px -14px;font-weight:700;font-size:14px;">' + t('headerSrl') + '</div>' +
       '<div id="lessonsTooltipBodySRL" style="max-height:320px;overflow:auto;line-height:1.45;padding-top:6px"></div>';
 
     document.body.appendChild(tip);
@@ -72,10 +130,15 @@
 
     if(btn){
       var r = btn.getBoundingClientRect();
-      // position to the left of language toggle area: try above-right of button
-      tip.style.left = Math.max(12, r.left - 360) + 'px';
+      var tipWidth = tip.offsetWidth || 350;
+      var maxLeft = Math.max(12, window.innerWidth - tipWidth - 12);
+      var targetLeft = r.right - tipWidth;
+      // align right edge of tooltip with button right edge
+      tip.style.left = Math.min(maxLeft, Math.max(12, targetLeft)) + 'px';
       tip.style.top = (r.bottom + 8) + 'px';
     }
+
+    applyTooltipLang(tip);
 
     // render both lists
     renderLessons();
@@ -96,10 +159,14 @@
   }
 
   // fetch and render map-derived lessons
-  function renderLessons(){
-    var tip = ensureTooltip();
-    var body = tip.querySelector('#lessonsTooltipBody');
-    body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">読み込み中...</div>';
+  function renderLessons(targetBody){
+    var body = targetBody;
+    if (!body) {
+      var tip = ensureTooltip();
+      body = tip.querySelector('#lessonsTooltipBody');
+    }
+    if (!body) return;
+    body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">' + t('loading') + '</div>';
     // map_idをパラメータとして渡す
     var mapIdParam = (window.MAPID !== undefined && window.MAPID !== null) ? '?map_id=' + encodeURIComponent(window.MAPID) : '';
     fetch('php/get_lessons.php' + mapIdParam)
@@ -109,7 +176,7 @@
       })
       .then(data => {
         if (!data || !data.items || data.items.length === 0) {
-          body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">該当する教訓は見つかりませんでした。</div>';
+          body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">' + t('empty') + '</div>';
           return;
         }
         body.innerHTML = '';
@@ -127,7 +194,7 @@
 
           // ラベル（色付きバッジ）- SRL整理マップはオレンジ
           const label = document.createElement('span');
-          const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : '実践するとき';
+          const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : t('mapFallbackOpportunity');
           label.style.cssText = 'display:inline-block;background:#f97316;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;';
           label.textContent = oppLabel;
           leftWrap.appendChild(label);
@@ -189,17 +256,20 @@
         });
       })
       .catch(err => {
-        body.innerHTML = '<div style="color:#dc2626;padding:8px 6px;font-size:13px">読み込みに失敗しました。</div>';
+        body.innerHTML = '<div style="color:#dc2626;padding:8px 6px;font-size:13px">' + t('loadError') + '</div>';
         console.error('get_lessons error', err);
       });
   }
 
   // fetch and render SRL-derived lessons
-  function renderSRLLessons(){
-    var tip = ensureTooltip();
-    var body = tip.querySelector('#lessonsTooltipBodySRL');
+  function renderSRLLessons(targetBody){
+    var body = targetBody;
+    if (!body) {
+      var tip = ensureTooltip();
+      body = tip.querySelector('#lessonsTooltipBodySRL');
+    }
     if(!body) return;
-    body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">読み込み中...</div>';
+    body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">' + t('loading') + '</div>';
     // map_idをパラメータとして渡す
     var srlMapIdParam = (window.MAPID !== undefined && window.MAPID !== null) ? '&map_id=' + encodeURIComponent(window.MAPID) : '';
     fetch('php/get_lessons_srl.php?debug=1' + srlMapIdParam)
@@ -214,7 +284,7 @@
       })
       .then(data => {
         if (!data.items || data.items.length === 0) {
-          body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">該当する教訓は見つかりませんでした。</div>';
+          body.innerHTML = '<div style="color:#6b7280;padding:8px 6px;font-size:13px">' + t('empty') + '</div>';
           return;
         }
         body.innerHTML = '';
@@ -232,7 +302,7 @@
 
           // ラベル（色付きバッジ）- SRLジャーナルは緑色
           const label = document.createElement('span');
-          const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : '次の機会に活用';
+          const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : t('srlFallbackOpportunity');
           label.style.cssText = 'display:inline-block;background:#28a745;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;';
           label.textContent = oppLabel;
           leftWrap.appendChild(label);
@@ -244,20 +314,21 @@
             sourceInfo.innerHTML = '📅';
             
             let dateRange = '';
+            var rangeSep = (getCurrentLang() === 'en') ? ' - ' : ' 〜 ';
             if (item.journal_start_date && item.journal_finish_date) {
               const startDate = new Date(item.journal_start_date);
               const endDate = new Date(item.journal_finish_date);
               const formatDate = (d) => (d.getMonth()+1) + '/' + d.getDate();
-              dateRange = formatDate(startDate) + ' 〜 ' + formatDate(endDate);
+              dateRange = formatDate(startDate) + rangeSep + formatDate(endDate);
             } else if (item.journal_start_date) {
               const startDate = new Date(item.journal_start_date);
-              dateRange = (startDate.getMonth()+1) + '/' + startDate.getDate() + ' 〜';
+              dateRange = (startDate.getMonth()+1) + '/' + startDate.getDate() + rangeSep;
             } else if (item.journal_finish_date) {
               const endDate = new Date(item.journal_finish_date);
-              dateRange = '〜 ' + (endDate.getMonth()+1) + '/' + endDate.getDate();
+              dateRange = rangeSep + (endDate.getMonth()+1) + '/' + endDate.getDate();
             }
             const textSpan = document.createElement('span');
-            textSpan.textContent = '期間: ' + dateRange;
+            textSpan.textContent = t('periodLabel') + dateRange;
             sourceInfo.appendChild(textSpan);
             leftWrap.appendChild(sourceInfo);
           }
@@ -294,10 +365,31 @@
         });
       })
       .catch(err => {
-        body.innerHTML = '<div style="color:#dc2626;padding:8px 6px;font-size:13px">読み込みに失敗しました。</div>';
+        body.innerHTML = '<div style="color:#dc2626;padding:8px 6px;font-size:13px">' + t('loadError') + '</div>';
         console.error('get_lessons_srl error', err);
       });
   }
+
+  window.updateLessonsTooltipLang = function(){
+    var tip = document.getElementById('lessonsTooltip');
+    if (tip && tip.style.display !== 'none') {
+      applyTooltipLang(tip);
+      renderLessons();
+      renderSRLLessons();
+    }
+    applySidebarLang();
+    if (typeof window.renderLessonsSidebar === 'function') {
+      window.renderLessonsSidebar();
+    }
+  };
+
+  window.renderLessonsSidebar = function(){
+    var mapBody = document.getElementById('srlLessonsBodyMap');
+    var srlBody = document.getElementById('srlLessonsBodySrl');
+    if (mapBody) renderLessons(mapBody);
+    if (srlBody) renderSRLLessons(srlBody);
+    applySidebarLang();
+  };
 
   function escapeHtml(str){
     if(str == null) return '';

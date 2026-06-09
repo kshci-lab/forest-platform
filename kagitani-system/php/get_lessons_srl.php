@@ -26,13 +26,7 @@ try {
 		PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 		PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 	]);
-	// 防止: 照合順序の混在によるエラー
-	try {
-		$pdo->exec("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
-		$pdo->exec("SET collation_connection = 'utf8mb4_unicode_ci'");
-	} catch (PDOException $e) {
-		error_log('set collation failed: '. $e->getMessage());
-	}
+	// Keep defaults; avoid forcing utf8mb4 collation on utf8mb3 connections.
 
 	// テーブル名バリエーション (ハイフン/アンダースコアなど)
 	$candidates = [
@@ -76,9 +70,20 @@ try {
 			oj.`start_date` AS journal_start_date,
 			oj.`finish_date` AS journal_finish_date
 			FROM " . $ll_table_escaped . " ll
-			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci = ojr.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci
-			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` COLLATE utf8mb4_unicode_ci = oj.`object_journal_id` COLLATE utf8mb4_unicode_ci
-			WHERE (ll.`deleted` IS NULL OR ll.`deleted` = 0) AND ll.`map_id` COLLATE utf8mb4_unicode_ci = CAST(:map_id AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci
+			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` = ojr.`object_journal_reflection_id`
+			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` = oj.`object_journal_id`
+			WHERE (ll.`deleted` IS NULL OR ll.`deleted` = 0)
+			  AND ll.`map_id` = :map_id
+			  AND ojr.`journal_history_id` = (
+				SELECT ojr2.`journal_history_id`
+				FROM " . $ll_table_escaped . " ll2
+				LEFT JOIN `object_journal_reflections` ojr2 ON ll2.`object_journal_reflection_id` = ojr2.`object_journal_reflection_id`
+				WHERE (ll2.`deleted` IS NULL OR ll2.`deleted` = 0)
+				  AND ll2.`map_id` = :map_id
+				  AND ojr2.`journal_history_id` IS NOT NULL
+				ORDER BY COALESCE(ojr2.`update_at`, ojr2.`created_at`) DESC
+				LIMIT 1
+			  )
 			ORDER BY ll.`updated_at` DESC";
 		$stmt = $pdo->prepare($sql);
 		$stmt->bindValue(':map_id', $map_id, PDO::PARAM_STR);
@@ -95,9 +100,18 @@ try {
 			oj.`start_date` AS journal_start_date,
 			oj.`finish_date` AS journal_finish_date
 			FROM " . $ll_table_escaped . " ll
-			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci = ojr.`object_journal_reflection_id` COLLATE utf8mb4_unicode_ci
-			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` COLLATE utf8mb4_unicode_ci = oj.`object_journal_id` COLLATE utf8mb4_unicode_ci
+			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` = ojr.`object_journal_reflection_id`
+			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` = oj.`object_journal_id`
 			WHERE (ll.`deleted` IS NULL OR ll.`deleted` = 0)
+			  AND ojr.`journal_history_id` = (
+				SELECT ojr2.`journal_history_id`
+				FROM " . $ll_table_escaped . " ll2
+				LEFT JOIN `object_journal_reflections` ojr2 ON ll2.`object_journal_reflection_id` = ojr2.`object_journal_reflection_id`
+				WHERE (ll2.`deleted` IS NULL OR ll2.`deleted` = 0)
+				  AND ojr2.`journal_history_id` IS NOT NULL
+				ORDER BY COALESCE(ojr2.`update_at`, ojr2.`created_at`) DESC
+				LIMIT 1
+			  )
 			ORDER BY ll.`updated_at` DESC";
 		$stmt = $pdo->prepare($sql);
 	}

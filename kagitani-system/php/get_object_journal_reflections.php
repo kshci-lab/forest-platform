@@ -21,7 +21,7 @@ if (!isset($mysqli)) {
 }
 
 try {
-    $sql = "SELECT object_journal_reflection_id, object_journal_id, evaluation_good, evaluation_bad, attribution, attribution_bad, created_at, update_at, deleted FROM object_journal_reflections WHERE object_journal_id = ? AND deleted = 0 ORDER BY update_at ";
+    $sql = "SELECT object_journal_reflection_id, object_journal_id, journal_history_id, evaluation_good, evaluation_bad, attribution, attribution_bad, created_at, update_at, deleted FROM object_journal_reflections WHERE object_journal_id = ? AND deleted = 0 AND journal_history_id IS NOT NULL ORDER BY update_at DESC";
     if ($stmt = $mysqli->prepare($sql)) {
         $debug[] = 'prepared reflection select';
         // object_journal_id may be a string (e.g. 'goal_...'), bind as string
@@ -66,7 +66,52 @@ try {
             }
         }
 
-        $out = array('success' => true, 'reflections' => $reflections);
+        // Group by journal_history_id to build snapshot sets
+        $groups = array();
+        foreach ($reflections as $row) {
+            $hid = isset($row['journal_history_id']) ? $row['journal_history_id'] : '';
+            if ($hid === '' || $hid === null) continue;
+            if (!isset($groups[$hid])) {
+                $groups[$hid] = array(
+                    'journal_history_id' => $hid,
+                    'created_at' => isset($row['created_at']) ? $row['created_at'] : null,
+                    'update_at' => isset($row['update_at']) ? $row['update_at'] : null,
+                    'reflections' => array()
+                );
+            }
+            // Track latest update_at within the snapshot
+            if (isset($row['update_at'])) {
+                $cur = $groups[$hid]['update_at'];
+                if ($cur === null || strtotime($row['update_at']) > strtotime($cur)) {
+                    $groups[$hid]['update_at'] = $row['update_at'];
+                }
+            }
+            if (isset($row['created_at'])) {
+                $curc = $groups[$hid]['created_at'];
+                if ($curc === null || strtotime($row['created_at']) < strtotime($curc)) {
+                    $groups[$hid]['created_at'] = $row['created_at'];
+                }
+            }
+            $groups[$hid]['reflections'][] = $row;
+        }
+
+        $snapshots = array_values($groups);
+        usort($snapshots, function($a, $b){
+            $ta = isset($a['update_at']) ? strtotime($a['update_at']) : 0;
+            $tb = isset($b['update_at']) ? strtotime($b['update_at']) : 0;
+            return $tb - $ta;
+        });
+
+        $latestSnapshot = count($snapshots) > 0 ? $snapshots[0] : null;
+
+        // Exclude the latest snapshot (most recent update_at) from history
+        if (count($snapshots) > 1) {
+            $snapshots = array_slice($snapshots, 1);
+        } else {
+            $snapshots = array();
+        }
+
+        $out = array('success' => true, 'snapshots' => $snapshots, 'latest_snapshot' => $latestSnapshot);
         if ($debugMode) $out['debug'] = $debug;
         echo json_encode($out);
         $stmt->close();

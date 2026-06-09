@@ -16,6 +16,30 @@
             try { return (goalHelpers && typeof goalHelpers.getCurrentLang === 'function') ? goalHelpers.getCurrentLang() : ((document.getElementById('language-toggle') && document.getElementById('language-toggle').checked) ? 'en' : 'ja'); } catch (e) { return 'ja'; }
         }
 
+        function formatRow(label, detail, time) {
+            var tr = document.createElement('tr');
+
+            var tdLabel = document.createElement('td');
+            tdLabel.textContent = label || '';
+            tdLabel.style.padding = '6px 8px';
+            tdLabel.style.fontWeight = '600';
+
+            var tdDetail = document.createElement('td');
+            tdDetail.textContent = detail || '';
+            tdDetail.style.padding = '6px 8px';
+
+            var tdTime = document.createElement('td');
+            tdTime.textContent = time || '';
+            tdTime.style.padding = '6px 8px';
+            tdTime.style.whiteSpace = 'nowrap';
+            tdTime.style.color = '#888';
+
+            tr.appendChild(tdLabel);
+            tr.appendChild(tdDetail);
+            tr.appendChild(tdTime);
+            return tr;
+        }
+
         var weeklyListDiv = document.getElementById('weeklyGoalsList');
         if (!weeklyListDiv) return;
 
@@ -243,21 +267,189 @@
                             // Right column: Reflections with tabs
                             var rightColumn = document.createElement('div');
                             rightColumn.className = 'jr-right-column';
+
+                            var reflectionCard = document.createElement('div');
+                            reflectionCard.className = 'jr-reflection-card';
+
                             var rightHeader = document.createElement('div');
-                            rightHeader.className = 'jr-column-header';
-                            rightHeader.textContent = (getCurrentLang() === 'ja') ? '内省' : 'Reflections';
-                            rightColumn.appendChild(rightHeader);
+                            rightHeader.className = 'jr-reflection-header';
+                            var rightTitle = document.createElement('div');
+                            rightTitle.className = 'jr-reflection-title';
+                            rightTitle.textContent = (getCurrentLang() === 'ja') ? '内省' : 'Reflections';
+                            rightHeader.appendChild(rightTitle);
+
+                            var historyBtn = document.createElement('button');
+                            historyBtn.type = 'button';
+                            historyBtn.className = 'jr-history-toggle';
+                            historyBtn.textContent = (getCurrentLang() === 'ja') ? '過去の記録を見る' : 'View history';
+                            historyBtn.setAttribute('aria-expanded', 'false');
+                            rightHeader.appendChild(historyBtn);
+
+                            reflectionCard.appendChild(rightHeader);
+
+                            var reflectionBody = document.createElement('div');
+                            reflectionBody.className = 'jr-reflection-body';
 
                             // Tab container for multiple reflections (in right column)
                             var tabContainer = document.createElement('div');
                             tabContainer.className = 'jr-tab-container';
-                            rightColumn.appendChild(tabContainer);
+                            reflectionBody.appendChild(tabContainer);
 
                             // Tab content container (in right column)
                             var tabContentContainer = document.createElement('div');
                             tabContentContainer.className = 'jr-tab-content-container jr-reflection-content';
-                            rightColumn.appendChild(tabContentContainer);
+                            reflectionBody.appendChild(tabContentContainer);
+
+                            reflectionCard.appendChild(reflectionBody);
+
+                            var historyPanel = document.createElement('div');
+                            historyPanel.className = 'jr-history-panel';
+                            historyPanel.setAttribute('aria-label', (getCurrentLang() === 'ja') ? '過去の記録' : 'History');
+
+                            var historyHeader = document.createElement('div');
+                            historyHeader.className = 'jr-history-header';
+                            historyHeader.textContent = (getCurrentLang() === 'ja') ? '過去の記録' : 'History';
+                            historyPanel.appendChild(historyHeader);
+
+                            var historyList = document.createElement('div');
+                            historyList.className = 'jr-history-list';
+                            historyPanel.appendChild(historyList);
+
+                            reflectionCard.appendChild(historyPanel);
+                            rightColumn.appendChild(reflectionCard);
                             twoColumnLayout.appendChild(rightColumn);
+
+                            function escapeHtml(str) {
+                                if (!str && str !== 0) return '';
+                                return String(str)
+                                    .replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/"/g, '&quot;')
+                                    .replace(/\'/g, '&#39;');
+                            }
+
+                            function formatJrDateTime(ts) {
+                                if (!ts) return '';
+                                var clean = String(ts).replace(/\.\d+$/, '');
+                                var parts = clean.split(' ');
+                                if (!parts.length) return clean;
+                                var datePart = parts[0] || '';
+                                var timePart = parts[1] || '';
+                                var d = datePart.split('-');
+                                var t = timePart.split(':');
+                                if (d.length < 3) return clean;
+                                var yyyy = d[0];
+                                var mm = d[1] || '00';
+                                var dd = d[2] || '00';
+                                var hh = t[0] || '00';
+                                var mi = t[1] || '00';
+                                return yyyy + '/' + mm + '/' + dd + ' ' + hh + ':' + mi;
+                            }
+
+                            function renderHistory(listEl, snapshots) {
+                                if (!listEl) return;
+                                var items = Array.isArray(snapshots) ? snapshots.slice() : [];
+                                if (!items.length) {
+                                    listEl.innerHTML = '<div class="jr-history-empty">過去の記録はありません。</div>';
+                                    return;
+                                }
+
+                                var html = items.map(function (snap, sIdx) {
+                                    var snapDate = formatJrDateTime(snap.update_at || snap.created_at || '');
+                                    var reflections = Array.isArray(snap.reflections) ? snap.reflections : [];
+                                    if (!reflections.length) return '';
+
+                                    var cards = reflections.map(function (rec, rIdx) {
+                                        var good = escapeHtml(rec.evaluation_good || '');
+                                        var goodReason = escapeHtml(rec.attribution || '');
+                                        var bad = escapeHtml(rec.evaluation_bad || '');
+                                        var badReason = escapeHtml(rec.attribution_bad || '');
+                                        var lessons = Array.isArray(rec.lessons) ? rec.lessons : [];
+                                        var lessonsHtml = lessons.length
+                                            ? lessons.map(function (l) {
+                                                var text = escapeHtml(l.lesson_learned || l.lesson || '');
+                                                var opp = escapeHtml(l.opportunity || '');
+                                                return '<div class="jr-history-lesson-item">'
+                                                    + '<div class="jr-history-lesson-text">' + (text || '-') + '</div>'
+                                                    + (opp ? '<div class="jr-history-lesson-opportunity">' + opp + '</div>' : '')
+                                                    + '</div>';
+                                            }).join('')
+                                            : '<div class="jr-history-empty">教訓はありません。</div>';
+
+                                        var title = (getCurrentLang() === 'ja') ? ('内省 #' + (rIdx + 1)) : ('Reflection #' + (rIdx + 1));
+                                        return '<details class="jr-history-card" ' + ((sIdx === 0 && rIdx === 0) ? 'open' : '') + '>'
+                                            + '<summary class="jr-history-summary">' + title + '</summary>'
+                                            + '<div class="jr-history-body">'
+                                            + '<div class="jr-history-section">'
+                                            + '<div class="jr-history-section-title"><span class="jr-history-icon">💡</span>教訓</div>'
+                                            + '<div class="jr-history-lesson-list">' + lessonsHtml + '</div>'
+                                            + '</div>'
+                                            + '<div class="jr-history-section">'
+                                            + '<div class="jr-history-section-title good"><span class="jr-history-icon">😊</span>うまくいった点</div>'
+                                            + '<div class="jr-history-section-content">' + (good || '-') + '</div>'
+                                            + '<div class="jr-history-section-title good"><span class="jr-history-icon">✅</span>理由</div>'
+                                            + '<div class="jr-history-section-content">' + (goodReason || '-') + '</div>'
+                                            + '</div>'
+                                            + '<div class="jr-history-section">'
+                                            + '<div class="jr-history-section-title bad"><span class="jr-history-icon">😔</span>うまくいかなかった点</div>'
+                                            + '<div class="jr-history-section-content">' + (bad || '-') + '</div>'
+                                            + '<div class="jr-history-section-title bad"><span class="jr-history-icon">🧭</span>理由</div>'
+                                            + '<div class="jr-history-section-content">' + (badReason || '-') + '</div>'
+                                            + '</div>'
+                                            + '</div>'
+                                            + '</details>';
+                                    }).join('');
+
+                                    return '<div class="jr-history-item">'
+                                        + '<div class="jr-history-snapshot-title">' + (snapDate || '日時不明') + '</div>'
+                                        + cards
+                                        + '</div>';
+                                }).join('');
+
+                                listEl.innerHTML = html;
+                            }
+
+                            function loadJournalHistory() {
+                                if (!historyList) return;
+                                historyList.innerHTML = '<div class="jr-history-empty">読み込み中...</div>';
+                                $.ajax({
+                                    url: 'php/get_object_journal_reflections.php',
+                                    type: 'GET',
+                                    dataType: 'json',
+                                    data: { object_journal_id: objectJournalId },
+                                    success: function (res) {
+                                        if (!res || !res.success) {
+                                            historyList.innerHTML = '<div class="jr-history-empty">読み込みに失敗しました。</div>';
+                                            return;
+                                        }
+                                        var snapshots = [];
+                                        if (Array.isArray(res.snapshots)) {
+                                            snapshots = res.snapshots;
+                                        } else if (Array.isArray(res.reflections)) {
+                                            snapshots = [{ reflections: res.reflections }];
+                                        }
+                                        renderHistory(historyList, snapshots);
+                                    },
+                                    error: function () {
+                                        historyList.innerHTML = '<div class="jr-history-empty">読み込みに失敗しました。</div>';
+                                    }
+                                });
+                            }
+
+                            historyBtn.addEventListener('click', function () {
+                                var isOpen = historyPanel.classList.contains('jr-history-open');
+                                if (isOpen) {
+                                    historyPanel.classList.remove('jr-history-open');
+                                    historyBtn.textContent = (getCurrentLang() === 'ja') ? '過去の記録を見る' : 'View history';
+                                    historyBtn.setAttribute('aria-expanded', 'false');
+                                    return;
+                                }
+                                historyPanel.classList.add('jr-history-open');
+                                historyBtn.textContent = (getCurrentLang() === 'ja') ? '過去の記録を閉じる' : 'Hide history';
+                                historyBtn.setAttribute('aria-expanded', 'true');
+                                loadJournalHistory();
+                            });
 
                             // Resize logic for divider
                             (function() {
@@ -1078,9 +1270,15 @@
                                         if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (first fetch) - skipping'); return; }
                                         if (rres && Array.isArray(rres.reflections)) console.log('journal_report: reflections array', rres.reflections);
                                         try {
+                                            var latest = null;
+                                            if (rres && rres.latest_snapshot && Array.isArray(rres.latest_snapshot.reflections)) {
+                                                latest = rres.latest_snapshot.reflections;
+                                            } else if (rres && Array.isArray(rres.reflections)) {
+                                                latest = rres.reflections;
+                                            }
                                             // if reflections array present, create one tab per reflection
-                                            if (rres && rres.success && Array.isArray(rres.reflections) && rres.reflections.length) {
-                                                var refls = rres.reflections;
+                                            if (rres && rres.success && Array.isArray(latest) && latest.length) {
+                                                var refls = latest;
                                                 // Create a new tab for each reflection
                                                 for (var ri = 0; ri < refls.length; ri++) {
                                                     var rf = refls[ri];
@@ -1382,9 +1580,15 @@
                                                             if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (second fetch) - skipping'); return; }
                                                             if (rres && Array.isArray(rres.reflections)) console.log('get_object_journal_reflections reflections', rres.reflections);
                                                                 try {
+                                                                    var latest = null;
+                                                                    if (rres && rres.latest_snapshot && Array.isArray(rres.latest_snapshot.reflections)) {
+                                                                        latest = rres.latest_snapshot.reflections;
+                                                                    } else if (rres && Array.isArray(rres.reflections)) {
+                                                                        latest = rres.reflections;
+                                                                    }
                                                                     // if reflections array present, render cards similarly to above
-                                                                    if (rres && rres.success && Array.isArray(rres.reflections) && rres.reflections.length) {
-                                                                        var refls = rres.reflections;
+                                                                    if (rres && rres.success && Array.isArray(latest) && latest.length) {
+                                                                        var refls = latest;
                                                                         for (var ri = 0; ri < refls.length; ri++) {
                                                                             var rf = refls[ri];
                                                                             if (ri === 0) populateWrapWithReflection(infoWrap, rf);
@@ -2014,177 +2218,79 @@
                                         return;
                                     }
 
-                                    // Determine index of this wrapper
                                     var allWraps = Array.from(modal.querySelectorAll('.jr-info-wrap'));
-                                    var wrapIdx = allWraps.indexOf(wrap);
-                                    if (wrapIdx === -1) wrapIdx = 0; // fallback
+                                    var reflectionsPayload = allWraps.map(function (w) {
+                                        var spEl = w.querySelector('.wr-successPoints');
+                                        var fbEl = w.querySelector('.wr-failurePoints');
+                                        var agEl = w.querySelector('.wr-attribution-good');
+                                        var abEl = w.querySelector('.wr-attribution-bad');
 
-                                    // Gather fields from this wrap using classes
-                                    var spEl = wrap.querySelector('.wr-successPoints');
-                                    var fbEl = wrap.querySelector('.wr-failurePoints');
-                                    var crEl = wrap.querySelector('.wr-completionReason');
-                                    var agEl = wrap.querySelector('.wr-attribution-good');
-                                    var abEl = wrap.querySelector('.wr-attribution-bad');
+                                        var successPoints = spEl ? (spEl.value || '').trim() : '';
+                                        var failurePoints = fbEl ? (fbEl.value || '').trim() : '';
+                                        var attributionGoodVal = agEl ? (agEl.value || '').trim() : '';
+                                        var attributionBadVal = abEl ? (abEl.value || '').trim() : '';
 
-                                    var successPoints = spEl ? (spEl.value || '').trim() : '';
-                                    var failurePoints = fbEl ? (fbEl.value || '').trim() : '';
-                                    var completionReasonVal = crEl ? (crEl.value || '').trim() : '';
-                                    var attributionGoodVal = agEl ? (agEl.value || '').trim() : '';
-                                    var attributionBadVal = abEl ? (abEl.value || '').trim() : '';
+                                        var lessonsArr = [];
+                                        try {
+                                            var lessonTabContents = w.querySelectorAll('.jr-lesson-tab-content');
+                                            if (lessonTabContents && lessonTabContents.length) {
+                                                lessonTabContents.forEach(function (tc) {
+                                                    try {
+                                                        var focusEl = tc.querySelector('.wr-lesson-focus');
+                                                        var whenEl = tc.querySelector('.wr-lesson-when');
+                                                        var fv = (focusEl && focusEl.value) ? focusEl.value.trim() : '';
+                                                        var wv = (whenEl && whenEl.value) ? whenEl.value.trim() : '';
+                                                        if (fv || wv) lessonsArr.push({ lesson: fv, opportunity: wv });
+                                                    } catch (e) { }
+                                                });
+                                            }
+                                        } catch (e) { /* ignore */ }
 
-                                    // Collect lessons from lesson tabs
-                                    var lessonsArr = [];
-                                    try {
-                                        var lessonTabContents = wrap.querySelectorAll('.jr-lesson-tab-content');
-                                        if (lessonTabContents && lessonTabContents.length) {
-                                            lessonTabContents.forEach(function (tc) {
-                                                try {
-                                                    var focusEl = tc.querySelector('.wr-lesson-focus');
-                                                    var whenEl = tc.querySelector('.wr-lesson-when');
-                                                    var fv = (focusEl && focusEl.value) ? focusEl.value.trim() : '';
-                                                    var wv = (whenEl && whenEl.value) ? whenEl.value.trim() : '';
-                                                    var dbId = tc.dataset.objectLeId || '';
-                                                    if (fv || wv) lessonsArr.push({ lesson: fv, opportunity: wv, dbId: dbId });
-                                                } catch (e) { }
-                                            });
-                                        }
-                                    } catch (e) { /* ignore */ }
-                                    
-                                    // Extract first lesson for legacy fields
-                                    var focus = lessonsArr.length > 0 ? (lessonsArr[0].lesson || '') : '';
-                                    var when = lessonsArr.length > 0 ? (lessonsArr[0].opportunity || '') : '';
-                                    var extrasArr = lessonsArr.slice(1);
+                                        var focus = lessonsArr.length > 0 ? (lessonsArr[0].lesson || '') : '';
+                                        var when = lessonsArr.length > 0 ? (lessonsArr[0].opportunity || '') : '';
+                                        var extrasArr = lessonsArr.slice(1);
 
-                                    var promises = [];
-
-                                    // 1. If this is the main wrapper (index 0), update object_goal fields (legacy)
-                                    if (wrapIdx === 0) {
-                                        // Reconstruct legacy "application" string
-                                        var mainLesson = focus;
-                                        if (when) mainLesson = mainLesson ? mainLesson + '\n\n' + when : when;
-                                        // Legacy extra strings
-                                        var extrasStrings = extrasArr.map(function (x) { return x.lesson + (x.opportunity ? '\n\n' + x.opportunity : ''); }).filter(Boolean);
-                                        var combinedApplication = mainLesson || '';
-                                        if (extrasStrings.length) {
-                                            if (combinedApplication) combinedApplication = combinedApplication + '\n\n' + extrasStrings.join('\n\n');
-                                            else combinedApplication = extrasStrings.join('\n\n');
+                                        var mainLessonText = focus || '';
+                                        if (when) mainLessonText = mainLessonText ? (mainLessonText + '\n\n' + when) : when;
+                                        var reflectionText = mainLessonText;
+                                        var extraStringsRef = extrasArr.map(function (x) { return x.lesson + (x.opportunity ? '\n\n' + x.opportunity : ''); });
+                                        if (extraStringsRef.length) {
+                                            reflectionText = reflectionText ? (reflectionText + '\n\n' + extraStringsRef.join('\n\n')) : extraStringsRef.join('\n\n');
                                         }
 
-                                        var data = {
-                                            object_journal_id: object_journal_id,
+                                        return {
                                             evaluation_good: successPoints,
                                             evaluation_bad: failurePoints,
-                                            // keep legacy keys
-                                            success_points: successPoints,
-                                            failure_points: failurePoints,
-                                            // legacy attribution column now carries good-attribution value
                                             attribution: attributionGoodVal,
-                                            // include explicit good/bad attribution so server can persist/append them
                                             attribution_good: attributionGoodVal,
                                             attribution_bad: attributionBadVal,
-                                            start_date: startDate,
-                                            finish_date: endDate,
-                                            node_id: goal.node_id || '',
-                                            appeared_at: goal.appeared_at || '',
-                                            update_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                                            deleted: (typeof goal.deleted !== 'undefined') ? goal.deleted : 0
+                                            reflection_text: reflectionText,
+                                            lessons: lessonsArr
                                         };
-                                        var ajaxUrl = './php/update_object_goal_fields.php';
-                                        promises.push(new Promise(function (resolve, reject) {
-                                            $.ajax({
-                                                url: ajaxUrl, type: 'POST', data: data, dataType: 'json',
-                                                success: function (res) {
-                                                    if (res && res.success) {
-                                                        try {
-                                                            if (goalHelpers && typeof goalHelpers.fetchWeeklyGoalsFromDB === 'function') goalHelpers.fetchWeeklyGoalsFromDB();
-                                                        } catch (e) { }
-                                                        resolve(res);
-                                                    } else {
-                                                        reject(res);
-                                                    }
-                                                },
-                                                error: function (xhr, st, err) { reject(err); }
-                                            });
-                                        }));
-                                    }
-
-                                    // 2. Insert/Update Reflection for this wrapper
-                                    var mainLessonText = focus || '';
-                                    if (when) mainLessonText = mainLessonText ? (mainLessonText + '\n\n' + when) : when;
-                                    var reflectionText = mainLessonText;
-                                    var extraStringsRef = extrasArr.map(function (x) { return x.lesson + (x.opportunity ? '\n\n' + x.opportunity : ''); });
-                                    if (extraStringsRef.length) {
-                                        reflectionText = reflectionText ? (reflectionText + '\n\n' + extraStringsRef.join('\n\n')) : extraStringsRef.join('\n\n');
-                                    }
-
-                                    var refPayload = {
-                                        object_journal_id: object_journal_id,
-                                        evaluation_good: successPoints,
-                                        evaluation_bad: failurePoints,
-                                        // ensure legacy `attribution` column contains the 'good' attribution
-                                        attribution: attributionGoodVal,
-                                        attribution_good: attributionGoodVal,
-                                        attribution_bad: attributionBadVal,
-                                        reflection_text: reflectionText,
-                                        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                                        debug: 1
-                                    };
-                                    // structured lessons
-                                    try {
-                                        refPayload.lessons = JSON.stringify([].concat([{ lesson: focus, opportunity: when }].filter(function (x) { return x.lesson || x.opportunity; })).concat(extrasArr));
-                                    } catch (e) { refPayload.lessons = '[]'; }
-
-                                    // Existing ID?
-                                    var stored = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
-                                    var existingReflectionIds = [];
-                                    if (stored && stored.length > idx && stored[idx] && Array.isArray(stored[idx].object_journal_reflection_ids)) {
-                                        existingReflectionIds = stored[idx].object_journal_reflection_ids.slice();
-                                    }
-                                    // Prefer any reflection id attached to this wrapper via data- attribute (clone / prior save)
-                                    try {
-                                        var wrapRefId = wrap.dataset && wrap.dataset.objectJournalReflectionId ? wrap.dataset.objectJournalReflectionId : null;
-                                        // If wrapRefId is a temp id (starts with 'temp-'), treat as no existing id (will INSERT)
-                                        if (wrapRefId && typeof wrapRefId === 'string' && wrapRefId.indexOf('temp-') !== 0) {
-                                            refPayload.object_journal_reflection_id = wrapRefId;
-                                        } else if (existingReflectionIds[wrapIdx]) {
-                                            refPayload.object_journal_reflection_id = existingReflectionIds[wrapIdx];
-                                        }
-                                    } catch (e) {
-                                        if (existingReflectionIds[wrapIdx]) refPayload.object_journal_reflection_id = existingReflectionIds[wrapIdx];
-                                    }
-
-                                    promises.push(new Promise(function (resolve, reject) {
-                                        $.ajax({
-                                            url: './php/insert_object_journal_reflection.php', type: 'POST', data: refPayload, dataType: 'json',
-                                            success: function (rres) {
-                                                if (rres && rres.success && rres.object_journal_reflection_id) {
-                                                    // Update stored ID and attach id to wrapper so future saves target the same row
-                                                    try {
-                                                        var s2 = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
-                                                        if (!(s2 && s2.length > idx && s2[idx])) s2[idx] = s2[idx] || {};
-                                                        if (!s2[idx].object_journal_reflection_ids) s2[idx].object_journal_reflection_ids = [];
-                                                        // Ensure size
-                                                        while (s2[idx].object_journal_reflection_ids.length <= wrapIdx) s2[idx].object_journal_reflection_ids.push(null);
-                                                        s2[idx].object_journal_reflection_ids[wrapIdx] = rres.object_journal_reflection_id;
-                                                        localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(s2));
-                                                    } catch (e) { console.warn('persist id fail', e); }
-                                                    try { if (wrap && wrap.dataset) wrap.dataset.objectJournalReflectionId = rres.object_journal_reflection_id; } catch (e) {}
-                                                    resolve(rres);
-                                                } else {
-                                                    reject(rres);
-                                                }
-                                            },
-                                            error: function (xhr, st, err) { reject(err); }
-                                        });
-                                    }));
-
-                                    Promise.all(promises).then(function () {
-                                        alert((getCurrentLang() === 'ja') ? '保存しました' : 'Saved');
-                                    }).catch(function (e) {
-                                        console.warn('save failed', e);
-                                        alert((getCurrentLang() === 'ja') ? '保存に失敗しました' : 'Save failed');
                                     });
 
+                                    $.ajax({
+                                        url: './php/insert_object_journal_history_snapshot.php',
+                                        type: 'POST',
+                                        dataType: 'json',
+                                        data: {
+                                            object_journal_id: object_journal_id,
+                                            reflections_json: JSON.stringify(reflectionsPayload),
+                                            map_id: (typeof window.MAPID !== 'undefined') ? window.MAPID : ''
+                                        },
+                                        success: function (res) {
+                                            if (res && res.success) {
+                                                alert((getCurrentLang() === 'ja') ? '保存しました' : 'Saved');
+                                            } else {
+                                                console.warn('snapshot save failed', res);
+                                                alert((getCurrentLang() === 'ja') ? '保存に失敗しました' : 'Save failed');
+                                            }
+                                        },
+                                        error: function (xhr, st, err) {
+                                            console.warn('snapshot save error', st, err, xhr && xhr.responseText);
+                                            alert((getCurrentLang() === 'ja') ? '保存に失敗しました' : 'Save failed');
+                                        }
+                                    });
                                 } catch (e) {
                                     console.error('saveWrapper error', e);
                                     alert('Error');

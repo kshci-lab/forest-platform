@@ -37,6 +37,7 @@ try {
             g.object_journal_id,
             g.start_date,
             g.finish_date,
+            ojn.node_id,
             nl.content AS content
         FROM object_journals g
         LEFT JOIN object_journal_nodes ojn

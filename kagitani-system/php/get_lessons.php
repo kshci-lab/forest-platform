@@ -41,11 +41,43 @@ try {
             '`object_lesson-learneds`', '`object_lesson-learned`', '`object_lesson_learneds`', '`object_lesson_learned`'
         ];
         $rows = [];
+        $latest_reflection_id = '';
+        try {
+            $chk = $pdo->query("SHOW TABLES LIKE 'object_reflection_records'");
+            if ($chk && $chk->rowCount() > 0) {
+                $stmtRef = $pdo->prepare("SELECT reflection_id FROM object_reflection_records WHERE object_node_id = :object_node_id ORDER BY created_at DESC LIMIT 1");
+                $stmtRef->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
+                $stmtRef->execute();
+                $refRow = $stmtRef->fetch();
+                if ($refRow && !empty($refRow['reflection_id'])) {
+                    $latest_reflection_id = $refRow['reflection_id'];
+                }
+            }
+        } catch (Exception $e) {
+            $latest_reflection_id = '';
+        }
+
         foreach ($candidates as $tbl) {
             try {
-                $sql = "SELECT object_le_id, object_node_id, lesson_learned, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND deleted = 0 ORDER BY created_at ASC";
-                $stmt = $pdo->prepare($sql);
-                $stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
+                $has_reflection_id = false;
+                try {
+                    $col = $pdo->query("SHOW COLUMNS FROM {$tbl} LIKE 'reflection_id'");
+                    if ($col && $col->rowCount() > 0) $has_reflection_id = true;
+                } catch (Exception $e) {
+                    $has_reflection_id = false;
+                }
+
+                if ($latest_reflection_id !== '' && $has_reflection_id) {
+                    $sql = "SELECT object_le_id, object_node_id, lesson_learned, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND reflection_id = :reflection_id AND deleted = 0 ORDER BY created_at ASC";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
+                    $stmt->bindValue(':reflection_id', $latest_reflection_id, PDO::PARAM_STR);
+                } else {
+                    $sql = "SELECT object_le_id, object_node_id, lesson_learned, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND deleted = 0 ORDER BY created_at ASC";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
+                }
+
                 $stmt->execute();
                 $rows = $stmt->fetchAll();
                 break;
@@ -84,15 +116,39 @@ try {
     ];
     foreach ($candidates as $tbl) {
         try {
+            $has_reflection_id = false;
+            $has_reflection_records = false;
+            try {
+                $col = $pdo->query("SHOW COLUMNS FROM {$tbl} LIKE 'reflection_id'");
+                if ($col && $col->rowCount() > 0) $has_reflection_id = true;
+            } catch (Exception $e) {
+                $has_reflection_id = false;
+            }
+            try {
+                $chk = $pdo->query("SHOW TABLES LIKE 'object_reflection_records'");
+                if ($chk && $chk->rowCount() > 0) $has_reflection_records = true;
+            } catch (Exception $e) {
+                $has_reflection_records = false;
+            }
+
+            $latest_reflection_join = '';
+            $latest_reflection_where = '';
+            if ($has_reflection_id && $has_reflection_records) {
+                $latest_reflection_join = "\n                    JOIN (\n                        SELECT r1.object_node_id, r1.reflection_id\n                        FROM object_reflection_records r1\n                        JOIN (\n                            SELECT object_node_id, MAX(created_at) AS max_created_at\n                            FROM object_reflection_records\n                            GROUP BY object_node_id\n                        ) r2 ON r1.object_node_id = r2.object_node_id AND r1.created_at = r2.max_created_at\n                    ) latest_ref ON latest_ref.object_node_id = ol.object_node_id";
+                $latest_reflection_where = "\n                      AND ol.reflection_id = latest_ref.reflection_id";
+            }
+
             // 問いノード（topic-tag）の情報も取得するためにサブクエリを追加
             $sql = "SELECT ol.object_le_id, ol.object_node_id, ol.lesson_learned, ol.opportunity, ol.created_at, ol.updated_at, 
                     o.content AS node_content, o.node_id,
                     (SELECT t.content FROM object_nodes t WHERE t.node_id = o.node_id AND t.object_nodes_type = 'topic-tag' AND t.deleted = 0 LIMIT 1) AS topic_tag_content
                     FROM {$tbl} ol
                     JOIN object_nodes o ON ol.object_node_id = o.object_node_id
+                    {$latest_reflection_join}
                     WHERE ol.deleted = 0
                       AND (ol.lesson_learned IS NOT NULL AND TRIM(ol.lesson_learned) <> '')
                       AND o.node_id IN (SELECT node_id FROM map_node_links WHERE map_id = :map_id)
+                      {$latest_reflection_where}
                     ORDER BY ol.updated_at DESC";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':map_id', $map_id, PDO::PARAM_STR);
