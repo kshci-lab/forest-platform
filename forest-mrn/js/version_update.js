@@ -61,9 +61,14 @@ function NodeVersionUpdate(nodes){
   if(!nodes){
     var nodeVERSION = jsMind.util.uuid.newid();
     var node = _jm.get_selected_node();
+    if(!node){
+      console.warn("NodeVersionUpdate skipped: no selected node.");
+      return;
+    }
     var nodeID = node.id;
-    var class_name = Get_NodeInfo(nodeID, 'class').split(' ')[0]; // 'XXX selected'になっているのでselectedを取り除く
+    // class can be polluted by UI helper classes; type is the stable key for node_types lookup.
     var type_name = Get_NodeInfo(nodeID, 'type');
+    var class_name = ""; // intentionally empty to query node_types by type only
     var parentID = node.parent.id;
     var nodeTEXT = node.topic;
     var conceptID = Get_NodeInfo(nodeID, 'concept_id');
@@ -76,7 +81,20 @@ function NodeVersionUpdate(nodes){
       type: "POST",
       data: { class: class_name, type: type_name },
       success: function(response) {
-        typeID = JSON.parse(response)['node_type_id'];
+        var parsed = null;
+        try{
+          parsed = (typeof response === 'string') ? JSON.parse(response) : response;
+        }catch(e){
+          console && console.warn && console.warn('get_Typeid JSON parse error', e, response);
+          alert('ノード種別の取得に失敗しました（応答が不正）');
+          return;
+        }
+        if(!parsed || typeof parsed.node_type_id === 'undefined' || parsed.node_type_id === null || parsed.node_type_id === ''){
+          console && console.warn && console.warn('get_Typeid returned no node_type_id', parsed);
+          alert('ノード種別(node_type_id)が見つかりませんでした。node_typesテーブルを確認してください。');
+          return;
+        }
+        typeID = parsed.node_type_id;
         
         //　node_type_idを取得できたらversion更新
         $.ajax({
@@ -103,6 +121,14 @@ function NodeVersionUpdate(nodes){
             for(var i=0; i<jmnode.length; i++){
               jmnode[i].removeAttribute("edited-node");
             }
+            try{
+              // Also bump the visible version-count badge after a successful update.
+              if(typeof window.refreshNodeVersionBadge === 'function'){
+                window.refreshNodeVersionBadge(nodeID);
+              }else if(typeof window.updateNodeVersionBadges === 'function'){
+                window.updateNodeVersionBadges();
+              }
+            }catch(e){}
 
             // 親ノードIDがnodeIDと一致する子ノードのインデックスを取得
             node.children.forEach(childNode => {
@@ -166,7 +192,8 @@ function NodeVersionUpdate(nodes){
 function RecordRelation(count){
 
   var jmnode = document.getElementsByTagName("jmnode");
-  NodeVersionUpdate(NULL);
+  // JS has no NULL literal; use null.
+  NodeVersionUpdate(null);
 
 }
 

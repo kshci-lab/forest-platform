@@ -23,12 +23,287 @@ var mind = null; // jsmind_containerの中身
 var thisId;
 var parent_concept_id;
 
+function getJmnodePlainText(jmnode){
+    if(!jmnode){ return ""; }
+    try{
+        var label = jmnode.querySelector ? jmnode.querySelector(".jmnode-label") : null;
+        if(label && typeof label.textContent === "string"){
+            return label.textContent.trim();
+        }
+    }catch(_){}
+
+    try{
+        var clone = jmnode.cloneNode(true);
+        var badges = clone.querySelectorAll ? clone.querySelectorAll(".jm-version-badge") : [];
+        for(var i = 0; i < badges.length; i++){
+            if(badges[i].parentNode){ badges[i].parentNode.removeChild(badges[i]); }
+        }
+        return (clone.textContent || "").trim();
+    }catch(_){}
+
+    return (jmnode.textContent || "").trim();
+}
+
 var $audience_model = 6;//聴衆モデル（教員）のコンセプトID
 var $goal = [];//学習者が選択した聴衆の観点のテキストの配列
 var $sub_goal = [];//学習者が選択した聴衆の観点（その他）のテキストの配列
 var $add_goal = [];//学習者が自由記述で追加した聴衆の観点のテキスト
 
 var BeforeSelectModeNumber = 0;
+
+// --- Node version-count badges (node_id -> number of node_version records) ---
+// This is called after the mindmap nodes are rendered (see add_node.js).
+function updateNodeVersionBadges(){
+    try{
+        if(typeof window.jQuery === 'undefined'){ return; }
+        var $ = window.jQuery;
+
+        var nodes = document.querySelectorAll('#jsmind_container jmnode[nodeid]');
+        if(!nodes || nodes.length === 0){ return; }
+
+        // Clear previous badges (avoid duplicates on reload/resize)
+        nodes.forEach(function(n){
+            try{
+                var old = n.querySelector('.jm-version-badge');
+                if(old && old.parentNode){ old.parentNode.removeChild(old); }
+            }catch(_){}
+        });
+
+        var uniq = {};
+        nodes.forEach(function(n){
+            var id = n.getAttribute('nodeid');
+            if(!id || id === 'root'){ return; }
+            uniq[id] = true;
+        });
+        var ids = Object.keys(uniq);
+        if(ids.length === 0){ return; }
+
+        $.ajax({
+            url: 'php/get_node_version_counts.php',
+            type: 'POST',
+            dataType: 'text', // avoid jQuery auto-JSON parse (we want to debug raw responses)
+            data: { node_ids: ids.join(',') },
+            success: function(resp){
+                var data = null;
+                try{
+                    data = (typeof resp === 'string') ? JSON.parse(resp) : resp;
+                }catch(e){
+                    console && console.warn && console.warn('get_node_version_counts JSON parse error', e);
+                    try{
+                        console && console.warn && console.warn('get_node_version_counts raw response (first 300 chars):', String(resp).slice(0, 300));
+                    }catch(_){}
+                    return;
+                }
+                if(!data || data.status !== 'ok' || !data.counts){ return; }
+
+                var counts = data.counts || {};
+                nodes.forEach(function(n){
+                    try{
+                        var id = n.getAttribute('nodeid');
+                        if(!id || id === 'root'){ return; }
+                        var cnt = counts[id];
+                        if(typeof cnt === 'undefined' || cnt === null){ cnt = 0; }
+                        // Show only if versions >= 2
+                        if(parseInt(cnt, 10) < 2){ return; }
+
+                        var badge = document.createElement('span');
+                        badge.className = 'jm-version-badge';
+                        badge.textContent = String(cnt);
+                        badge.title = 'node_version数: ' + String(cnt);
+                        n.appendChild(badge);
+
+                        // Mark for CSS (and allow pseudo-elements to position relative to badge width)
+                        try{
+                            n.classList.add('jm-has-version-badge');
+                            // After attaching, measure badge width and set CSS var for positioning the pen icon.
+                            var w = badge.offsetWidth || 18;
+                            n.style.setProperty('--jm-badge-w', w + 'px');
+                            n.style.setProperty('--jm-badge-gap', '4px');
+                            if(n.getAttribute('edited-node') === 'true'){
+                                n.classList.add('jm-has-both');
+                            }
+                        }catch(_){}
+                    }catch(_){}
+                });
+            },
+            error: function(xhr, status){
+                console && console.warn && console.warn('get_node_version_counts failed', status, (xhr && xhr.status));
+                try{
+                    console && console.warn && console.warn('get_node_version_counts response (first 300 chars):', String(xhr && xhr.responseText ? xhr.responseText : '').slice(0, 300));
+                }catch(_){}
+            }
+        });
+    }catch(e){
+        console && console.warn && console.warn('updateNodeVersionBadges error', e);
+    }
+}
+window.updateNodeVersionBadges = updateNodeVersionBadges;
+
+// Update badge count for a single node_id (re-fetch from DB so it stays correct).
+function refreshNodeVersionBadge(nodeId){
+    try{
+        if(!nodeId || nodeId === 'root' || typeof window.jQuery === 'undefined'){ return; }
+        var $ = window.jQuery;
+        $.ajax({
+            url: 'php/get_node_version_counts.php',
+            type: 'POST',
+            dataType: 'text',
+            data: { node_ids: String(nodeId) },
+            success: function(resp){
+                var data = null;
+                try{ data = JSON.parse(resp); }catch(_){ return; }
+                if(!data || data.status !== 'ok' || !data.counts){ return; }
+                var cnt = data.counts[String(nodeId)];
+                if(typeof cnt === 'undefined' || cnt === null){ cnt = 0; }
+                cnt = parseInt(cnt, 10) || 0;
+
+                var nodes = document.querySelectorAll('#jsmind_container jmnode[nodeid=\"' + String(nodeId) + '\"]');
+                nodes.forEach(function(n){
+                    try{
+                        var old = n.querySelector('.jm-version-badge');
+                        if(old && old.parentNode){ old.parentNode.removeChild(old); }
+                        n.classList.remove('jm-has-version-badge');
+                        n.classList.remove('jm-has-both');
+                        n.style.removeProperty('--jm-badge-w');
+                        n.style.removeProperty('--jm-badge-gap');
+
+                        if(cnt >= 2){
+                            var badge = document.createElement('span');
+                            badge.className = 'jm-version-badge';
+                            badge.textContent = String(cnt);
+                            badge.title = 'node_version数: ' + String(cnt);
+                            n.appendChild(badge);
+                            n.classList.add('jm-has-version-badge');
+                            try{
+                                n.style.setProperty('--jm-badge-w', (badge.offsetWidth || 18) + 'px');
+                                n.style.setProperty('--jm-badge-gap', '4px');
+                                if(n.getAttribute('edited-node') === 'true'){
+                                    n.classList.add('jm-has-both');
+                                }
+                            }catch(_){}
+                        }
+                    }catch(_){}
+                });
+            }
+        });
+    }catch(_){}
+}
+window.refreshNodeVersionBadge = refreshNodeVersionBadge;
+
+// Recompute badge width variables (used to position the pen icon) for all nodes.
+function recomputeVersionBadgeLayout(){
+    try{
+        var nodes = document.querySelectorAll('#jsmind_container jmnode');
+        nodes.forEach(function(n){
+            try{
+                var badge = n.querySelector ? n.querySelector('.jm-version-badge') : null;
+                if(!badge){ return; }
+                n.classList.add('jm-has-version-badge');
+                n.style.setProperty('--jm-badge-w', (badge.offsetWidth || 18) + 'px');
+                n.style.setProperty('--jm-badge-gap', '4px');
+                if(n.getAttribute('edited-node') === 'true'){
+                    n.classList.add('jm-has-both');
+                }else{
+                    n.classList.remove('jm-has-both');
+                }
+            }catch(_){}
+        });
+    }catch(_){}
+}
+window.recomputeVersionBadgeLayout = recomputeVersionBadgeLayout;
+
+function ensureJmnodeLabelWrapping(){
+    try{
+        var nodes = document.querySelectorAll('#jsmind_container jmnode');
+        nodes.forEach(function(el){
+            try{
+                if(el.querySelector && el.querySelector('.jmnode-label')){ return; }
+                // Preserve known children (badges etc.)
+                var preserved = [];
+                Array.prototype.slice.call(el.childNodes || []).forEach(function(ch){
+                    if(ch.nodeType === 1){ // element
+                        preserved.push(ch);
+                    }
+                });
+                var text = '';
+                // Collect text nodes only
+                Array.prototype.slice.call(el.childNodes || []).forEach(function(ch){
+                    if(ch.nodeType === 3){ text += ch.nodeValue || ''; }
+                });
+                text = (text || el.textContent || '').trim();
+
+                // Clear and rebuild: label span + preserved elements
+                while(el.firstChild){ el.removeChild(el.firstChild); }
+                var label = document.createElement('span');
+                label.className = 'jmnode-label';
+                label.textContent = text;
+                el.appendChild(label);
+                preserved.forEach(function(ch){
+                    // Skip if it's the label we just created
+                    try{
+                        if(ch.classList && ch.classList.contains('jmnode-label')){ return; }
+                    }catch(_){}
+                    el.appendChild(ch);
+                });
+            }catch(_){}
+        });
+    }catch(_){}
+}
+window.ensureJmnodeLabelWrapping = ensureJmnodeLabelWrapping;
+
+function clearEditedNodeMarkers(){
+    try{
+        var nodes = document.querySelectorAll('#jsmind_container jmnode[edited-node="true"]');
+        nodes.forEach(function(n){
+            try{
+                n.removeAttribute('edited-node');
+                n.classList.remove('jm-has-both');
+            }catch(_){}
+        });
+        // Reset badge color to default by removing the "both" marker as well.
+        var both = document.querySelectorAll('#jsmind_container jmnode.jm-has-both');
+        both.forEach(function(n){
+            try{ n.classList.remove('jm-has-both'); }catch(_){}
+        });
+    }catch(e){
+        console && console.warn && console.warn('clearEditedNodeMarkers error', e);
+    }
+}
+window.clearEditedNodeMarkers = clearEditedNodeMarkers;
+
+// Clear markers when version update actions are triggered.
+// - "マップver更新" button has id map-snapshot-button
+// - "ノードver更新" is triggered by NodeVersionUpdate() (called from context menu); we wrap it if present.
+(function(){
+    try{
+        if(typeof window.jQuery !== 'undefined'){
+            window.jQuery(function(){
+                try{
+                    window.jQuery('#map-snapshot-button').off('click._clearEdited').on('click._clearEdited', function(){
+                        // Run after current call stack (MapSnapShot runs inline onclick).
+                        setTimeout(function(){ try{ clearEditedNodeMarkers(); }catch(_){ } }, 0);
+                    });
+                }catch(_){}
+            });
+        }
+    }catch(_){}
+
+    try{
+        if(typeof window.NodeVersionUpdate === 'function' && !window.NodeVersionUpdate._wrapped_clearEdited){
+            var orig = window.NodeVersionUpdate;
+            var wrapped = function(){
+                var ret = orig.apply(this, arguments);
+                try{
+                    // If NodeVersionUpdate is async via ajax, clear markers after a short delay.
+                    setTimeout(function(){ try{ clearEditedNodeMarkers(); }catch(_){ } }, 800);
+                }catch(_){}
+                return ret;
+            };
+            wrapped._wrapped_clearEdited = true;
+            window.NodeVersionUpdate = wrapped;
+        }
+    }catch(_){}
+})();
 
 function open_empty(){
 
@@ -72,6 +347,19 @@ function show_node(id,pid,str,cid,type,cname,is_edited){
     for(i=0; i<jmnode.length; i++){
 
         if(id == jmnode[i].getAttribute("nodeid")){
+
+            // Wrap label text to keep ellipsis while allowing badges to overflow.
+            try{
+                var el = jmnode[i];
+                if(!el.querySelector || !el.querySelector('.jmnode-label')){
+                    var label = document.createElement('span');
+                    label.className = 'jmnode-label';
+                    label.textContent = el.textContent || '';
+                    // Remove existing text nodes; keep other elements if any.
+                    while(el.firstChild){ el.removeChild(el.firstChild); }
+                    el.appendChild(label);
+                }
+            }catch(_){}
 
             jmnode[i].setAttribute("concept_id",cid);
             jmnode[i].setAttribute("type",type);
@@ -237,7 +525,7 @@ async function add_node(){
                         concept_id : jmnode[i].getAttribute("concept_id"),
                         x : jmnode[i].style.left,
                         y : jmnode[i].style.top,
-                        content : jmnode[i].innerHTML
+                        content : getJmnodePlainText(jmnode[i])
                       },
                       success:function(result){
                         if(result){ console.log(result);}
@@ -281,7 +569,7 @@ async function add_node(){
              Record_activities(thisId,
                                 parent_id,
                                 "edit",
-                                jmnode[i].innerHTML,
+                                getJmnodePlainText(jmnode[i]),
                                 jmnode[i].getAttribute("concept_id"),
                                 "prepared_question",
                                 jsMind.util.uuid.newid()
@@ -352,7 +640,7 @@ async function add_Qnode(){
                       concept_id : jmnode[i].getAttribute("concept_id"),
                       x : jmnode[i].style.left,
                       y : jmnode[i].style.top,
-                      content : jmnode[i].innerHTML
+                      content : getJmnodePlainText(jmnode[i])
                     },
               success:function(result){
                 if(result){ console.log(result);}
@@ -385,7 +673,7 @@ async function add_Qnode(){
             Record_activities(nodeid,
                               parent_id,
                               "add",
-                              jmnode[i].innerHTML,
+                              getJmnodePlainText(jmnode[i]),
                               jmnode[i].getAttribute("concept_id"),
                               "question",
                               jsMind.util.uuid.newid()
@@ -479,7 +767,7 @@ async function add_Anode(){
                       concept_id : p_concept,
                       x : jmnode[j].style.left,
                       y : jmnode[j].style.top,
-                      content : jmnode[j].innerHTML
+                      content : getJmnodePlainText(jmnode[j])
                     },
                     success:function(result){
                       if(result){ console.log(result);}
@@ -513,7 +801,7 @@ async function add_Anode(){
             Record_activities(nodeid,
                               parent_id,
                               "add",
-                              jmnode[j].innerHTML,
+                              getJmnodePlainText(jmnode[j]),
                               p_concept,
                               "answer",
                               jsMind.util.uuid.newid()
@@ -629,7 +917,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                             concept_id : p_concept,
                             x : jmnode[j].style.left,
                             y : jmnode[j].style.top,
-                            content : jmnode[j].innerHTML
+                            content : getJmnodePlainText(jmnode[j])
                           },
                     success:function(result){
                       if(result){ console.log(result);}
@@ -644,7 +932,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                   Record_activities(nodeid,
                                     parent_id,
                                     "add",
-                                    jmnode[j].innerHTML,
+                                    getJmnodePlainText(jmnode[j]),
                                     p_concept,
                                     "s_answer",
                                     jsMind.util.uuid.newid()
@@ -695,7 +983,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                             concept_id : p_concept_id,
                             x : jmnode[i].style.left,
                             y : jmnode[i].style.top,
-                            content : jmnode[i].innerHTML
+                            content : getJmnodePlainText(jmnode[i])
                           },
                     success:function(result){
                       if(result){ console.log(result);}
@@ -710,7 +998,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                   Record_activities(nodeid,
                                     parent_id,
                                     "add",
-                                    jmnode[i].innerHTML,
+                                    getJmnodePlainText(jmnode[i]),
                                     jmnode[i].getAttribute("concept_id"),
                                     toi_type,
                                     jsMind.util.uuid.newid()
@@ -828,7 +1116,7 @@ async function add_Label(node_type){
                       concept_id : concept,
                       x : jmnode[j].style.left,
                       y : jmnode[j].style.top,
-                      content : jmnode[j].innerHTML,
+                      content : getJmnodePlainText(jmnode[j]),
                   },
                   success:function(result){
                     if(result){ console.log(result);}

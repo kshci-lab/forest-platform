@@ -303,7 +303,7 @@ input[type="checkbox"][name="check_organizational"]{
 	z-index: 1000;
 	text-align: center;
 }
-#organizational_conmenu1, #organizational_conmenu2, #organizational_conmenu3, #organizational_conmenu4{
+#organizational_conmenu1, #organizational_conmenu2, #organizational_conmenu3, #organizational_conmenu4, #organizational_conmenu5, #organizational_conmenu6{
 	display:block;
 	padding:5px;
 	border-bottom:1px solid #FBC362;

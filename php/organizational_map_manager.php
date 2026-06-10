@@ -104,7 +104,9 @@ if (!empty($user_ids_in_latest_group)) {
         INNER JOIN experience_knowledges ec ON sn.experience_knowledge_id = ec.experience_knowledge_id
         WHERE ec.user_id IN ($user_ids_in_sql)
             AND sn.knowledge_group_id IN ($group_id_latest) 
-            AND sn.deleted = 0  ORDER BY sn.created_at DESC;";
+            AND sn.deleted = 0
+            AND ec.deleted = 0
+        ORDER BY sn.created_at DESC;";
     
     $result_organi_map_node = $mysqli->query($sql_nodes);
     $organi_map_node = [];
@@ -120,6 +122,7 @@ if (empty($return_data)) {
     echo json_encode(["error" => "not"]);
     return;
 } else {
+    $return_data['current_user_id'] = $user_id;
     echo json_encode($return_data);
     return;
 }

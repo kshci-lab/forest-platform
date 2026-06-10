@@ -167,7 +167,7 @@ function create_mindmapbutton(map_id_Array, judge, concept_id=null){
 }
 
 function hasSheetId(map_id) {
-    var elements = document.querySelectorAll('[data-map_id]');
+    var elements = document.querySelectorAll('#mindmap_tab [data-map_id]');
     console.log(elements);
   
     for (var i = 0; i < elements.length; i++) {

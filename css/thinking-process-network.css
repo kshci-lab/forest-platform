@@ -50,6 +50,11 @@
 	min-height: 450px;
 	margin-bottom:1vh;
 	background:#90B1AB;
+	/* Make the lesson/trigger panels a stable scroll region */
+	display:flex;
+	flex-direction:column;
+	height:100%;
+	overflow:hidden;
 }
 #conceptdisplay{
 	height: 25px;
@@ -61,11 +66,17 @@
 
 /* trigger関連 */
 #trigger_display{
-	position: sticky;
-	top: 0;
+	/* Use a flex column so only the candidate list scrolls. */
+	position: relative;
+	top: auto;
 	/* width: calc((100vw - 350px)*0.35); */
-	height:100px;
+	flex: 1 1 auto;
+	min-height: 0;
+	height:auto;
 	background:#90B1AB;
+	display:flex;
+	flex-direction:column;
+	overflow:hidden;
 }
 #area_trigger_add{
 	height: 20px;
@@ -76,30 +87,60 @@
 	/* background:#c2c3c2; */
 	line-height:20px;
 	cursor: pointer;
+	flex: 0 0 auto;
 }
 #trigger_candidate_list{
 	/* width: calc((100vw - 350px)*0.35); */
 	width: 98%;
 	/* margin-bottom:2vh; */
 	background:#90B1AB;
-	/* overflow-y: scroll; */
-	float:left;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
 	line-height:20px;
 	cursor: pointer;
 }
 
 /* 学びの共有関連 */
 #lesson_display{
-	position: sticky;
-	top: 0;
+	/* Sticky inside a scroll container can prevent reaching the true bottom on some layouts.
+	   Use flex + overflow instead. */
+	position: relative;
 	/* width: calc((100vw - 350px)*0.35); */
-	height:100%;
+	flex: 1 1 auto;
+	min-height: 0; /* allow the flex item to shrink so overflow works */
+	height:auto;
 	color: #3a2300;
 	font-size: small;
 	background:#fff8ed;
 	display: none;
-	padding: 3%;
-	overflow-y: scroll;
+	padding: 1.5%;
+	box-sizing: border-box;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+#lesson_display.lesson-display-overlay{
+	position: fixed;
+	top: 64px;
+	right: 24px;
+	bottom: 24px;
+	width: min(460px, calc(100vw - 48px));
+	max-height: calc(100vh - 88px);
+	z-index: 3000;
+	border: 3px solid #fece82;
+	border-radius: 8px 0 0 8px;
+	box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+}
+#lesson_display.lesson-display-overlay::before{
+	content: "";
+	position: absolute;
+	top: -3px;
+	left: -42px;
+	width: 40px;
+	height: 96px;
+	background: #fece82;
+	border-radius: 8px 0 0 8px;
+	box-shadow: -4px 8px 18px rgba(0, 0, 0, 0.16);
 }
 #area_lesson_add{
 	/* width: 90%; */
@@ -192,6 +233,7 @@
 #trigger_click{
 	height:30px;
 	width:100%;
+	flex: 0 0 auto;
 }
 #trigger_time{
 	width:70%;
@@ -500,7 +542,7 @@ background-color: #bbdfd8;
 #recruit_reason{
 	display: none;
 }
-#organizational_conmenu1, #organizational_conmenu2, #organizational_conmenu3, #organizational_conmenu4{
+#organizational_conmenu1, #organizational_conmenu2, #organizational_conmenu3, #organizational_conmenu4, #organizational_conmenu5, #organizational_conmenu6{
 	display:block;
 	padding:5px;
 	border-bottom:1px solid #B3E0D8;
