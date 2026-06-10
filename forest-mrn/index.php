@@ -537,7 +537,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <!-- 組織へ共有する学び関連の表示 -->
                                     <div id="lesson_display">
                                         <input type="button" class="area_close" value="×" onclick="showTriggerDisplay()" />
-                                        <input type="button" class="lessonbutton" value="組織へ共有" onclick="selectShareOrganization()"/>
+                                        <input type="button" class="lessonbutton" id="lesson_action_button" value="組織へ共有" onclick="selectShareOrganization()"/>
                                         <div id="area_lesson_add"></div>
                                     </div>
                                 </div>
@@ -868,6 +868,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <li><a href="javascript:void(0);" id="organizational_conmenu1">思考過程表出化マップを表示</a></li>
                                     <!-- <li><a href="javascript:void(0);" id="organizational_conmenu2">マインドマップと対応付ける</a></li> -->
                                     <!-- <li><a href="javascript:void(0);" id="organizational_conmenu3" style="display:none">採用/棄却をつける</a></li> -->
+                                    <li><a href="javascript:void(0);" id="organizational_conmenu6" style="display:none">組織知を編集する</a></li>
+                                    <li><a href="javascript:void(0);" id="organizational_conmenu5" style="display:none">組織知を削除する</a></li>
                                     <li><a href="javascript:void(0);" id="organizational_conmenu4">キャンセル</a></li>
                                 </ul>
                             </div>

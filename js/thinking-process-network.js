@@ -3,6 +3,214 @@ let defaultThinkingProcess;
 let defaultRecordThinkingProcess;
 let defaultShowThinkingProcess;
 
+function getLessonPromptDefinitions(){
+    return [
+        {
+            stageName: 'stage1',
+            titleText: '【経験の振り返り】',
+            parts: [
+                { placeholder: 'どのように' },
+                '考えたことで，',
+                { placeholder: '何' },
+                'が達成された．'
+            ]
+        },
+        {
+            stageName: 'stage2',
+            titleText: '【活動文脈固有の振り返り】',
+            parts: [
+                '現在の思考の文脈で',
+                { placeholder: 'どのように考えること/取り組むこと（手段）' },
+                'が，研究活動の',
+                { placeholder: '何に資する（目的）' },
+                '．'
+            ]
+        },
+        {
+            stageName: 'stage3',
+            titleText: '【研究固有の振り返り】',
+            parts: [
+                '研究に取り組むとき，',
+                { placeholder: '何を考える/取り組むこと（目的）' },
+                'が大切で，そのために，',
+                { placeholder: '何をどのようにどのような観点から考える/取り組むこと（手段）' },
+                'が効果的である．'
+            ]
+        }
+    ];
+}
+
+function splitLessonStageText(stageText, parts){
+    const text = (stageText || '').trim();
+    const inputCount = parts.filter((part) => typeof part !== 'string').length;
+    if (!text) return new Array(inputCount).fill('');
+
+    const values = new Array(inputCount).fill('');
+    let position = 0;
+    let inputIndex = 0;
+
+    parts.forEach((part, partIndex) => {
+        if (typeof part === 'string') {
+            if (text.indexOf(part, position) === position) {
+                position += part.length;
+                return;
+            }
+
+            const foundIndex = text.indexOf(part, position);
+            if (foundIndex !== -1) {
+                position = foundIndex + part.length;
+            }
+            return;
+        }
+
+        const nextLiteral = parts.slice(partIndex + 1).find((nextPart) => typeof nextPart === 'string');
+        if (!nextLiteral) {
+            values[inputIndex] = text.slice(position).trim();
+            position = text.length;
+            inputIndex += 1;
+            return;
+        }
+
+        const nextLiteralIndex = text.indexOf(nextLiteral, position);
+        if (nextLiteralIndex === -1) {
+            values[inputIndex] = text.slice(position).trim();
+            position = text.length;
+        } else {
+            values[inputIndex] = text.slice(position, nextLiteralIndex).trim();
+            position = nextLiteralIndex;
+        }
+        inputIndex += 1;
+    });
+
+    return values;
+}
+
+function createLessonStagePrompt(stageDefinition, initialStageText){
+    const titleEl = document.createElement('h5');
+    titleEl.className = 'lesson-heading-stage';
+    titleEl.textContent = stageDefinition.titleText;
+
+    const prompt = document.createElement('div');
+    prompt.setAttribute('data-stage-block', 'true');
+    prompt.setAttribute('data-stage', stageDefinition.stageName);
+
+    const inputValues = splitLessonStageText(initialStageText, stageDefinition.parts);
+    let inputIndex = 0;
+    stageDefinition.parts.forEach((part) => {
+        if (typeof part === 'string') {
+            prompt.appendChild(document.createTextNode(part));
+        } else {
+            const input = document.createElement('textarea');
+            input.className = 'lessonTextArea';
+            input.rows = 1;
+            input.placeholder = part.placeholder || '';
+            input.value = inputValues[inputIndex] || '';
+            inputIndex += 1;
+            prompt.appendChild(input);
+        }
+    });
+
+    return { titleEl, prompt };
+}
+
+function renderLessonForm(initialValues){
+    const area = document.getElementById('area_lesson_add');
+    if (!area) return;
+
+    const values = initialValues || {};
+    area.innerHTML = '';
+
+    const title = document.createElement('h5');
+    title.className = 'lesson-heading-title';
+    title.textContent = '経験知の要約';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'lessonTextArea';
+    textarea.name = 'knowledge_fragment_title';
+    textarea.placeholder = 'どんなことを学んだかの要約を入力してください';
+    textarea.value = values.knowledge_fragment_title || '';
+
+    area.insertBefore(title, area.firstChild);
+    area.appendChild(document.createElement('br'));
+    area.appendChild(textarea);
+
+    getLessonPromptDefinitions().forEach((stageDefinition) => {
+        const stage = createLessonStagePrompt(stageDefinition, values[stageDefinition.stageName] || '');
+        area.appendChild(stage.titleEl);
+        area.appendChild(stage.prompt);
+    });
+}
+
+function collectLessonFormData(){
+    const titleEl = document.querySelector('textarea.lessonTextArea[name="knowledge_fragment_title"]');
+    const filteredContents = [];
+    const stageBlocks = document.querySelectorAll('[data-stage-block="true"]');
+
+    if (stageBlocks.length > 0) {
+        stageBlocks.forEach((block) => {
+            const stageName = block.getAttribute('data-stage') || 'stage';
+            let value = '';
+            block.childNodes.forEach((node) => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    value += node.textContent;
+                } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'TEXTAREA') {
+                    value += node.value || '';
+                }
+            });
+            filteredContents.push({ type: stageName, content: value });
+        });
+    } else {
+        const lessonAreas = document.getElementsByClassName('lessonTextArea');
+        for (let i = 0; i < lessonAreas.length; i++) {
+            const name = lessonAreas[i].name || ('text' + i);
+            if (name === 'knowledge_fragment_title') continue;
+            filteredContents.push({ type: name, content: lessonAreas[i].value || '' });
+        }
+    }
+
+    return {
+        knowledge_fragment_title: titleEl ? titleEl.value : '',
+        contents: filteredContents
+    };
+}
+
+function setLessonActionButton(value, handler){
+    const actionButton = document.getElementById('lesson_action_button') || document.querySelector('#lesson_display .lessonbutton');
+    if (!actionButton) return;
+    actionButton.value = value;
+    actionButton.onclick = handler;
+}
+
+function attachLessonDisplayToLessonArea(){
+    const lesson = document.getElementById('lesson_display');
+    const lessonArea = document.getElementById('lesson_area');
+    if (!lesson || !lessonArea) return lesson;
+
+    lesson.classList.remove('lesson-display-overlay');
+    if (lesson.parentNode !== lessonArea) {
+        lessonArea.appendChild(lesson);
+    }
+    return lesson;
+}
+
+function showLessonDisplayOverlay(){
+    const lesson = document.getElementById('lesson_display');
+    if (!lesson) return null;
+
+    if (lesson.parentNode !== document.body) {
+        document.body.appendChild(lesson);
+    }
+    lesson.classList.add('lesson-display-overlay');
+    lesson.style.display = 'block';
+    return lesson;
+}
+
+window.renderLessonForm = renderLessonForm;
+window.collectLessonFormData = collectLessonFormData;
+window.setLessonActionButton = setLessonActionButton;
+window.attachLessonDisplayToLessonArea = attachLessonDisplayToLessonArea;
+window.showLessonDisplayOverlay = showLessonDisplayOverlay;
+
 class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     constructor(container, load) {
         // this.ownNetwork = this.generateThinkingProcessNetworkCanvas(container, {}, {}); // デフォルトのマップを表示
@@ -602,95 +810,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         const conmenu = document.getElementById('t_Process_conmenu');
         if (conmenu) conmenu.style.display = 'none';
 
-        const trigger = document.getElementById('trigger_display');
-        if (trigger) trigger.style.display = 'none';
-    
-        // 2. lesson_displayを表示
-        const lesson = document.getElementById('lesson_display');
-        if (lesson) lesson.style.display = 'block';
-    
-        // 3. area_lesson_addにテキスト入力ボックスを3つ作成
-        const area = document.getElementById('area_lesson_add');
-        if (area) {
-            area.innerHTML = '';
+        // 2. lesson_displayをオーバーレイタブとして表示
+        const lesson = showLessonDisplayOverlay();
 
-            // タイトル追加
-            const title = document.createElement('h5');
-            title.className = 'lesson-heading-title';
-            title.textContent = '経験知の要約';
-            const textarea = document.createElement('textarea');
-            textarea.className = 'lessonTextArea';
-            textarea.name = 'knowledge_fragment_title';
-            textarea.placeholder = 'どんなことを学んだかの要約を入力してください';
-
-            const createStagePrompt = (stageName, titleText, parts) => {
-                const titleEl = document.createElement('h5');
-                titleEl.className = 'lesson-heading-stage';
-                titleEl.textContent = titleText;
-                const prompt = document.createElement('div');
-                prompt.setAttribute('data-stage-block', 'true');
-                prompt.setAttribute('data-stage', stageName);
-                parts.forEach((part) => {
-                    if (typeof part === 'string') {
-                        prompt.appendChild(document.createTextNode(part));
-                    } else {
-                        const input = document.createElement('textarea');
-                        input.className = 'lessonTextArea';
-                        input.rows = 1;
-                        input.placeholder = part.placeholder || '';
-                        prompt.appendChild(input);
-                    }
-                });
-                return { titleEl, prompt };
-            };
-
-            const stage1 = createStagePrompt(
-                'stage1',
-                '【経験の振り返り】',
-                [
-                    { placeholder: 'どのように' },
-                    '考えたことで，',
-                    { placeholder: '何' },
-                    'が達成された．'
-                ]
-            );
-            const stage2 = createStagePrompt(
-                'stage2',
-                '【活動文脈固有の振り返り】',
-                [
-                    '現在の思考の文脈で',
-                    { placeholder: 'どのように考えること/取り組むこと（手段）' },
-                    'が，研究活動の',
-                    { placeholder: '何に資する（目的）' },
-                    '．'
-                ]
-            );
-            const stage3 = createStagePrompt(
-                'stage3',
-                '【研究固有の振り返り】',
-                [
-                    '研究に取り組むとき，',
-                    { placeholder: '何を考える/取り組むこと（目的）' },
-                    'が大切で，そのために，',
-                    { placeholder: '何をどのようにどのような観点から考える/取り組むこと（手段）' },
-                    'が効果的である．'
-                ]
-            );
-    
-            // 各ラベルとテキストエリアを追加
-            area.insertBefore(title, area.firstChild);
-            area.appendChild(document.createElement('br'));
-            area.appendChild(textarea);
-
-            area.appendChild(stage1.titleEl);
-            area.appendChild(stage1.prompt);
-    
-            area.appendChild(stage2.titleEl);
-            area.appendChild(stage2.prompt);
-    
-            area.appendChild(stage3.titleEl);
-            area.appendChild(stage3.prompt);
-        }
+        renderLessonForm({});
+        setLessonActionButton('組織へ共有', function() {
+            if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess.selectShareOrganization) {
+                defaultThinkingProcess.selectShareOrganization();
+            }
+        });
     }
 
     closeLessonArea(){
@@ -760,35 +888,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // 学び(lesson)のテキストエリアを収集してサーバへ保存
         try {
-            // タイトルは別に取り出す（最初のタイトル要素をnameで判別）
-            const titleEl = document.querySelector('textarea.lessonTextArea[name="knowledge_fragment_title"]');
-            const knowledge_fragment_title = titleEl ? titleEl.value : '';
-
-            // stageごとの入力を「平文＋入力内容」で結合して送信する
-            const filteredContents = [];
-            const stageBlocks = document.querySelectorAll('[data-stage-block="true"]');
-            if (stageBlocks.length > 0) {
-                stageBlocks.forEach((block) => {
-                    const stageName = block.getAttribute('data-stage') || 'stage';
-                    let value = '';
-                    block.childNodes.forEach((node) => {
-                        if (node.nodeType === Node.TEXT_NODE) {
-                            value += node.textContent;
-                        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'TEXTAREA') {
-                            value += node.value || '';
-                        }
-                    });
-                    filteredContents.push({ type: stageName, content: value });
-                });
-            } else {
-                const lessonAreas = document.getElementsByClassName('lessonTextArea');
-                for (let i = 0; i < lessonAreas.length; i++) {
-                    const name = lessonAreas[i].name || ('text' + i);
-                    if (name === 'knowledge_fragment_title') continue;
-                    const value = lessonAreas[i].value || '';
-                    filteredContents.push({ type: name, content: value });
-                }
-            }
+            const lessonData = collectLessonFormData();
+            const knowledge_fragment_title = lessonData.knowledge_fragment_title;
+            const filteredContents = lessonData.contents;
 
             // ノード種類に関係なく共有：thought_experience_node_id に常に nodeId を送る。
             const node = defaultThinkingProcess.nodes.get(nodeId) || {};
@@ -1798,7 +1900,7 @@ function showThinkingProcessMap(others_node){
 }
 
 function showTriggerDisplay(){
-    const lesson = document.getElementById('lesson_display');
+    const lesson = attachLessonDisplayToLessonArea();
     if (lesson) lesson.style.display = 'none';
     const trigger = document.getElementById('trigger_display');
     if (trigger) trigger.style.display = 'block';
