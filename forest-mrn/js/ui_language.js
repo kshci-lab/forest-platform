@@ -294,6 +294,10 @@
 
   function setPromptContent(container, parts) {
     if (!container) return;
+    var currentValues = Array.prototype.map.call(container.querySelectorAll("textarea"), function (input) {
+      return input.value || "";
+    });
+    var inputIndex = 0;
     container.innerHTML = "";
     parts.forEach(function (part) {
       if (part.type === "text") {
@@ -303,9 +307,30 @@
         input.className = "lessonTextArea";
         input.rows = 1;
         input.placeholder = part.placeholder;
+        input.value = currentValues[inputIndex] || "";
+        inputIndex += 1;
         container.appendChild(input);
       }
     });
+  }
+
+  function getJapaneseLessonPromptParts(stageName) {
+    if (!window.getLessonPromptDefinitions) return null;
+    var definitions = window.getLessonPromptDefinitions();
+    var definition = definitions.find(function (item) {
+      return item.stageName === stageName;
+    });
+    if (!definition) return null;
+
+    return {
+      titleText: definition.titleText,
+      parts: definition.parts.map(function (part) {
+        if (typeof part === "string") {
+          return { type: "text", text: part };
+        }
+        return { type: "input", placeholder: part.placeholder || "" };
+      })
+    };
   }
 
   function applyLessonDisplayLanguage(lang) {
@@ -324,7 +349,7 @@
     if (lessonTitle) {
       lessonTitle.textContent = lang === "en"
         ? "Learning Summary"
-        : "\u5B66\u3073\u306E\u8981\u7D04";
+        : "\u7D4C\u9A13\u77E5\u306E\u8981\u7D04";
     }
 
     if (lessonTitleInput) {
@@ -334,66 +359,72 @@
     }
 
     if (stage1Title) {
+      var jaStage1 = getJapaneseLessonPromptParts("stage1");
       stage1Title.textContent = lang === "en"
         ? "[Reflection on Experience]"
-        : "\u3010\u5B66\u3073\u306E\u632F\u308A\u8FD4\u308A1\u3011";
+        : (jaStage1 ? jaStage1.titleText : "\u3010\u7D4C\u9A13\u306E\u632F\u308A\u8FD4\u308A\u3011");
     }
     if (stage2Title) {
+      var jaStage2 = getJapaneseLessonPromptParts("stage2");
       stage2Title.textContent = lang === "en"
         ? "[Activity-Context-Specific Reflection]"
-        : "\u3010\u6D3B\u52D5\u30FB\u5B9F\u8DF5\u5834\u9762\u306E\u632F\u308A\u8FD4\u308A\u3011";
+        : (jaStage2 ? jaStage2.titleText : "\u3010\u6D3B\u52D5\u6587\u8108\u56FA\u6709\u306E\u632F\u308A\u8FD4\u308A\u3011");
     }
     if (stage3Title) {
+      var jaStage3 = getJapaneseLessonPromptParts("stage3");
       stage3Title.textContent = lang === "en"
         ? "[Research-Specific Reflection]"
-        : "\u3010\u4ECA\u5F8C\u306E\u884C\u52D5\u306E\u632F\u308A\u8FD4\u308A\u3011";
+        : (jaStage3 ? jaStage3.titleText : "\u3010\u7814\u7A76\u56FA\u6709\u306E\u632F\u308A\u8FD4\u308A\u3011");
     }
 
     if (stage1) {
+      var jaStage1Prompt = getJapaneseLessonPromptParts("stage1");
       setPromptContent(stage1, lang === "en" ? [
         { type: "text", text: "In " },
         { type: "input", placeholder: "what situation" },
         { type: "text", text: ", I learned " },
         { type: "input", placeholder: "what I learned" },
         { type: "text", text: "." }
-      ] : [
-        { type: "input", placeholder: "\u3069\u306E\u3088\u3046\u306A" },
-        { type: "text", text: "\u5834\u9762\u3067" },
-        { type: "input", placeholder: "\u5B66\u3073" },
-        { type: "text", text: "\u304C\u3042\u308A\u307E\u3057\u305F\u304B" }
-      ]);
+      ] : (jaStage1Prompt ? jaStage1Prompt.parts : [
+        { type: "input", placeholder: "\u3069\u306E\u3088\u3046\u306B" },
+        { type: "text", text: "\u8003\u3048\u305F\u3053\u3068\u3067\uFF0C" },
+        { type: "input", placeholder: "\u4F55" },
+        { type: "text", text: "\u304C\u9054\u6210\u3055\u308C\u305F\uFF0E" }
+      ]));
     }
 
     if (stage2) {
+      var jaStage2Prompt = getJapaneseLessonPromptParts("stage2");
       setPromptContent(stage2, lang === "en" ? [
         { type: "text", text: "In my actual thinking activity, " },
         { type: "input", placeholder: "what happened or what I noticed" },
         { type: "text", text: ", and I gained " },
         { type: "input", placeholder: "what I learned or realized" },
         { type: "text", text: "." }
-      ] : [
-        { type: "text", text: "\u5B9F\u969B\u306E\u601D\u8003\u6D3B\u52D5\u306E\u4E2D\u3067" },
-        { type: "input", placeholder: "\u3069\u306E\u3088\u3046\u306A\u3053\u3068\u304C\u8D77\u3053\u308A/\u611F\u3058\u305F\u3053\u3068\uFF08\u767A\u898B\uFF09" },
-        { type: "text", text: "\u304C\u3042\u308A\u3001\u3069\u306E\u3088\u3046\u306A\u5B66\u3073\u3084" },
-        { type: "input", placeholder: "\u6C17\u3065\u304D\uFF08\u767A\u898B\uFF09" },
-        { type: "text", text: "\u304C\u5F97\u3089\u308C\u307E\u3057\u305F\u304B" }
-      ]);
+      ] : (jaStage2Prompt ? jaStage2Prompt.parts : [
+        { type: "text", text: "\u73FE\u5728\u306E\u601D\u8003\u306E\u6587\u8108\u3067" },
+        { type: "input", placeholder: "\u3069\u306E\u3088\u3046\u306B\u8003\u3048\u308B\u3053\u3068/\u53D6\u308A\u7D44\u3080\u3053\u3068\uFF08\u624B\u6BB5\uFF09" },
+        { type: "text", text: "\u304C\uFF0C\u7814\u7A76\u6D3B\u52D5\u306E" },
+        { type: "input", placeholder: "\u4F55\u306B\u8CC7\u3059\u308B\uFF08\u76EE\u7684\uFF09" },
+        { type: "text", text: "\uFF0E" }
+      ]));
     }
 
     if (stage3) {
+      var jaStage3Prompt = getJapaneseLessonPromptParts("stage3");
       setPromptContent(stage3, lang === "en" ? [
         { type: "text", text: "Based on that reflection, I want to " },
         { type: "input", placeholder: "what I want to do next" },
         { type: "text", text: ", and for that purpose, I need " },
         { type: "input", placeholder: "the perspective or effort I need" },
         { type: "text", text: "." }
-      ] : [
-        { type: "text", text: "\u632F\u308A\u8FD4\u308A\u3092\u8E0F\u307E\u3048\u3066\u3001" },
-        { type: "input", placeholder: "\u4F55\u3092\u884C\u3044\u305F\u3044\u304B/\u53D6\u308A\u7D44\u307F\u305F\u3044\u3053\u3068\uFF08\u767A\u898B\uFF09" },
-        { type: "text", text: "\u304C\u3042\u308A\u3001\u305D\u306E\u305F\u3081\u306B" },
-        { type: "input", placeholder: "\u4F55\u3092\u3069\u306E\u3088\u3046\u306A\u8996\u70B9\u304B\u3089\u8003\u3048/\u53D6\u308A\u7D44\u307F\u305F\u3044\u3053\u3068\uFF08\u6C17\u3065\u304D\uFF09" },
-        { type: "text", text: "\u304C\u3042\u308A\u307E\u3059\u304B" }
-      ]);
+      ] : (jaStage3Prompt ? jaStage3Prompt.parts : [
+        { type: "text", text: "\u7814\u7A76\u306B\u53D6\u308A\u7D44\u3080\u3068\u304D\uFF0C" },
+        { type: "input", placeholder: "\u4F55\u3092\u8003\u3048\u308B/\u53D6\u308A\u7D44\u3080\u3053\u3068\uFF08\u76EE\u7684\uFF09" },
+        { type: "text", text: "\u304C\u5927\u5207\u3067\uFF0C\u305D\u306E\u305F\u3081\u306B\uFF0C" },
+        { type: "input", placeholder: "\u4F55\u3092\u3069\u306E\u3088\u3046\u306B\u3069\u306E\u3088\u3046\u306A\u89B3\u70B9\u304B\u3089\u8003\u3048\u308B/\u53D6\u308A\u7D44\u3080\u3053\u3068\uFF08\u624B\u6BB5\uFF09" },
+        { type: "text", text: "\u304C\u52B9\u679C\u7684\u3067\u3042\u308B\uFF0E" }
+      ]));
     }
   }
 

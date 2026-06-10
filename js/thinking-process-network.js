@@ -210,6 +210,7 @@ window.collectLessonFormData = collectLessonFormData;
 window.setLessonActionButton = setLessonActionButton;
 window.attachLessonDisplayToLessonArea = attachLessonDisplayToLessonArea;
 window.showLessonDisplayOverlay = showLessonDisplayOverlay;
+window.getLessonPromptDefinitions = getLessonPromptDefinitions;
 
 class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     constructor(container, load) {
@@ -888,84 +889,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         if (conmenu) conmenu.style.display = 'none';
 
         // 2. lesson_displayをオーバーレイタブとして表示
-        const lesson = showLessonDisplayOverlay();
+        showLessonDisplayOverlay();
+        renderLessonForm();
+        setLessonActionButton('組織へ共有', this.selectShareOrganization.bind(this));
 
-        // タイトル追加
-        const title = document.createElement('h5');
-        title.className = 'lesson-heading-title';
-        title.textContent = '経験知の要約';
-        const textarea = document.createElement('textarea');
-        textarea.className = 'lessonTextArea';
-        textarea.name = 'knowledge_fragment_title';
-        textarea.placeholder = 'どんなことを学んだかの要約を入力してください';
-
-        const createStagePrompt = (stageName, titleText, parts) => {
-            const titleEl = document.createElement('h5');
-            titleEl.className = 'lesson-heading-stage';
-            titleEl.textContent = titleText;
-            const prompt = document.createElement('div');
-            prompt.setAttribute('data-stage-block', 'true');
-            prompt.setAttribute('data-stage', stageName);
-            parts.forEach((part) => {
-                if (typeof part === 'string') {
-                    prompt.appendChild(document.createTextNode(part));
-                } else {
-                    const input = document.createElement('textarea');
-                    input.className = 'lessonTextArea';
-                    input.rows = 1;
-                    input.placeholder = part.placeholder || '';
-                    prompt.appendChild(input);
-                }
-            });
-            return { titleEl, prompt };
-        };
-
-        const stage1 = createStagePrompt(
-            'stage1',
-            '【経験の振り返り】',
-            [
-                { placeholder: 'どのように' },
-                '考えたことで，',
-                { placeholder: '何' },
-                'が達成された．'
-            ]
-        );
-        const stage2 = createStagePrompt(
-            'stage2',
-            '【活動文脈固有の振り返り】',
-            [
-                '現在の思考の文脈で',
-                { placeholder: 'どのように考えること/取り組むこと（手段）' },
-                'が，研究活動の',
-                { placeholder: '何に資する（目的）' },
-                '．'
-            ]
-        );
-        const stage3 = createStagePrompt(
-            'stage3',
-            '【研究固有の振り返り】',
-            [
-                '研究に取り組むとき，',
-                { placeholder: '何を考える/取り組むこと（目的）' },
-                'が大切で，そのために，',
-                { placeholder: '何をどのようにどのような観点から考える/取り組むこと（手段）' },
-                'が効果的である．'
-            ]
-        );
-
-        // 各ラベルとテキストエリアを追加
-        area.insertBefore(title, area.firstChild);
-        area.appendChild(document.createElement('br'));
-        area.appendChild(textarea);
-
-        area.appendChild(stage1.titleEl);
-        area.appendChild(stage1.prompt);
-
-        area.appendChild(stage2.titleEl);
-        area.appendChild(stage2.prompt);
-
-        area.appendChild(stage3.titleEl);
-        area.appendChild(stage3.prompt);
         if (window.applyLessonDisplayLanguage) {
             window.applyLessonDisplayLanguage(window.currentLang || 'ja');
         }

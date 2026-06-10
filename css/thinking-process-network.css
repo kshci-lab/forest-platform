@@ -35,7 +35,6 @@
 	/* margin-bottom:2vh; */
 	/* border-top:solid 5px #B3E0D8; */
 	background:#fff;
-	overflow: auto;
 	display: flex;
 	flex-direction: column;
 	padding: 5px;
