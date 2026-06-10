@@ -61,6 +61,10 @@ function NodeVersionUpdate(nodes){
   if(!nodes){
     var nodeVERSION = jsMind.util.uuid.newid();
     var node = _jm.get_selected_node();
+    if(!node){
+      console.warn("NodeVersionUpdate skipped: no selected node.");
+      return;
+    }
     var nodeID = node.id;
     // class can be polluted by UI helper classes; type is the stable key for node_types lookup.
     var type_name = Get_NodeInfo(nodeID, 'type');

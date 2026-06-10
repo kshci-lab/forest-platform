@@ -23,6 +23,27 @@ var mind = null; // jsmind_containerの中身
 var thisId;
 var parent_concept_id;
 
+function getJmnodePlainText(jmnode){
+    if(!jmnode){ return ""; }
+    try{
+        var label = jmnode.querySelector ? jmnode.querySelector(".jmnode-label") : null;
+        if(label && typeof label.textContent === "string"){
+            return label.textContent.trim();
+        }
+    }catch(_){}
+
+    try{
+        var clone = jmnode.cloneNode(true);
+        var badges = clone.querySelectorAll ? clone.querySelectorAll(".jm-version-badge") : [];
+        for(var i = 0; i < badges.length; i++){
+            if(badges[i].parentNode){ badges[i].parentNode.removeChild(badges[i]); }
+        }
+        return (clone.textContent || "").trim();
+    }catch(_){}
+
+    return (jmnode.textContent || "").trim();
+}
+
 var $audience_model = 6;//聴衆モデル（教員）のコンセプトID
 var $goal = [];//学習者が選択した聴衆の観点のテキストの配列
 var $sub_goal = [];//学習者が選択した聴衆の観点（その他）のテキストの配列
@@ -504,7 +525,7 @@ async function add_node(){
                         concept_id : jmnode[i].getAttribute("concept_id"),
                         x : jmnode[i].style.left,
                         y : jmnode[i].style.top,
-                        content : jmnode[i].innerHTML
+                        content : getJmnodePlainText(jmnode[i])
                       },
                       success:function(result){
                         if(result){ console.log(result);}
@@ -548,7 +569,7 @@ async function add_node(){
              Record_activities(thisId,
                                 parent_id,
                                 "edit",
-                                jmnode[i].innerHTML,
+                                getJmnodePlainText(jmnode[i]),
                                 jmnode[i].getAttribute("concept_id"),
                                 "prepared_question",
                                 jsMind.util.uuid.newid()
@@ -619,7 +640,7 @@ async function add_Qnode(){
                       concept_id : jmnode[i].getAttribute("concept_id"),
                       x : jmnode[i].style.left,
                       y : jmnode[i].style.top,
-                      content : jmnode[i].innerHTML
+                      content : getJmnodePlainText(jmnode[i])
                     },
               success:function(result){
                 if(result){ console.log(result);}
@@ -652,7 +673,7 @@ async function add_Qnode(){
             Record_activities(nodeid,
                               parent_id,
                               "add",
-                              jmnode[i].innerHTML,
+                              getJmnodePlainText(jmnode[i]),
                               jmnode[i].getAttribute("concept_id"),
                               "question",
                               jsMind.util.uuid.newid()
@@ -746,7 +767,7 @@ async function add_Anode(){
                       concept_id : p_concept,
                       x : jmnode[j].style.left,
                       y : jmnode[j].style.top,
-                      content : jmnode[j].innerHTML
+                      content : getJmnodePlainText(jmnode[j])
                     },
                     success:function(result){
                       if(result){ console.log(result);}
@@ -780,7 +801,7 @@ async function add_Anode(){
             Record_activities(nodeid,
                               parent_id,
                               "add",
-                              jmnode[j].innerHTML,
+                              getJmnodePlainText(jmnode[j]),
                               p_concept,
                               "answer",
                               jsMind.util.uuid.newid()
@@ -896,7 +917,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                             concept_id : p_concept,
                             x : jmnode[j].style.left,
                             y : jmnode[j].style.top,
-                            content : jmnode[j].innerHTML
+                            content : getJmnodePlainText(jmnode[j])
                           },
                     success:function(result){
                       if(result){ console.log(result);}
@@ -911,7 +932,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                   Record_activities(nodeid,
                                     parent_id,
                                     "add",
-                                    jmnode[j].innerHTML,
+                                    getJmnodePlainText(jmnode[j]),
                                     p_concept,
                                     "s_answer",
                                     jsMind.util.uuid.newid()
@@ -962,7 +983,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                             concept_id : p_concept_id,
                             x : jmnode[i].style.left,
                             y : jmnode[i].style.top,
-                            content : jmnode[i].innerHTML
+                            content : getJmnodePlainText(jmnode[i])
                           },
                     success:function(result){
                       if(result){ console.log(result);}
@@ -977,7 +998,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
                   Record_activities(nodeid,
                                     parent_id,
                                     "add",
-                                    jmnode[i].innerHTML,
+                                    getJmnodePlainText(jmnode[i]),
                                     jmnode[i].getAttribute("concept_id"),
                                     toi_type,
                                     jsMind.util.uuid.newid()
@@ -1095,7 +1116,7 @@ async function add_Label(node_type){
                       concept_id : concept,
                       x : jmnode[j].style.left,
                       y : jmnode[j].style.top,
-                      content : jmnode[j].innerHTML,
+                      content : getJmnodePlainText(jmnode[j]),
                   },
                   success:function(result){
                     if(result){ console.log(result);}

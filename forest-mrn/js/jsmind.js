@@ -2459,6 +2459,17 @@
             jm.util.dom.add_event(this.e_editor,'blur',function(e){
                 v.edit_node_end();
             });
+            var stop_editor_event = function(e){
+                var evt = e || event;
+                if(evt.stopPropagation){ evt.stopPropagation(); }
+                evt.cancelBubble = true;
+            };
+            jm.util.dom.add_event(this.e_editor,'mousedown',stop_editor_event);
+            jm.util.dom.add_event(this.e_editor,'mouseup',stop_editor_event);
+            jm.util.dom.add_event(this.e_editor,'click',stop_editor_event);
+            jm.util.dom.add_event(this.e_editor,'dblclick',stop_editor_event);
+            jm.util.dom.add_event(this.e_editor,'touchstart',stop_editor_event);
+            jm.util.dom.add_event(this.e_editor,'pointerdown',stop_editor_event);
 
             this.container.appendChild(this.e_panel);
 
