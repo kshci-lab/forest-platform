@@ -739,6 +739,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             console.log(defaultThinkingProcess.nodes.get(selectNodeId));
             const node_group = defaultThinkingProcess.nodes.get(selectNodeId).group;
             console.log(node_group);
+            if(node_group == "versions" || node_group == "versionsBro"){
+                this.deleteNodeVersion(selectNodeId);
+                return;
+            }
             if(node_group == "trigger"){
                 defaultRecordThinkingProcess.delete_trigger_Node(selectNodeId);
             }else{
@@ -769,6 +773,79 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             // });
             // defaultRecordThinkingProcess.delete_connection(selectNodeId);
         }
+    }
+
+    deleteNodeVersion(nodeVersionId){
+        if(!confirm("選択したノードのバージョンを本当に削除していいですか？")){
+            return;
+        }
+
+        $.ajax({
+            url: "../php/delete_node_version.php",
+            type: "POST",
+            dataType: "json",
+            data: {
+                node_version_id: nodeVersionId
+            }
+        }).done((response) => {
+            if(response && response.status === "ok"){
+                const connectedEdges = this.ownNetwork.getConnectedEdges(nodeVersionId);
+                const deletedNodeVersionId = String(nodeVersionId);
+                const triggerFromRewireNodeVersionId = response.trigger_from_rewire_node_version_id || response.previous_node_version_id;
+                const triggerToRewireNodeVersionId = response.trigger_to_rewire_node_version_id || response.next_node_version_id || response.previous_node_version_id;
+                const processRewireNodeVersionId = response.process_rewire_node_version_id || response.next_node_version_id || response.previous_node_version_id;
+                const edgesToRemove = [];
+                const edgesToUpdate = [];
+
+                connectedEdges.forEach((edgeId) => {
+                    const edge = this.edges.get(edgeId);
+                    if(!edge){
+                        return;
+                    }
+                    if(edge.group === "versionEdges"){
+                        edgesToRemove.push(edgeId);
+                        return;
+                    }
+
+                    const updatedEdge = Object.assign({}, edge);
+                    let rewireNodeVersionId = processRewireNodeVersionId;
+                    if(edge.group === "trigger_from"){
+                        rewireNodeVersionId = triggerFromRewireNodeVersionId;
+                    }else if(edge.group === "trigger_to"){
+                        rewireNodeVersionId = triggerToRewireNodeVersionId;
+                    }
+
+                    if(!rewireNodeVersionId){
+                        edgesToRemove.push(edgeId);
+                        return;
+                    }
+                    if(String(updatedEdge.from) === deletedNodeVersionId){
+                        updatedEdge.from = rewireNodeVersionId;
+                    }
+                    if(String(updatedEdge.to) === deletedNodeVersionId){
+                        updatedEdge.to = rewireNodeVersionId;
+                    }
+                    edgesToUpdate.push(updatedEdge);
+                });
+
+                if(edgesToUpdate.length > 0){
+                    this.edges.update(edgesToUpdate);
+                }
+                if(edgesToRemove.length > 0){
+                    this.edges.remove(edgesToRemove);
+                }
+                this.nodes.remove({id: nodeVersionId});
+
+                if(response.previous_node_version_id && response.next_node_version_id){
+                    this.addVersionEdge(response.previous_node_version_id, response.next_node_version_id);
+                }
+            }else{
+                alert((response && response.message) ? response.message : "ノードバージョンの削除に失敗しました");
+            }
+        }).fail((xhr) => {
+            console.error("delete node version error:", xhr.responseText);
+            alert("ノードバージョンの削除に失敗しました");
+        });
     }
 
     // 右クリック時
