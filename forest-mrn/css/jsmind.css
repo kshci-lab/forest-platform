@@ -23,7 +23,18 @@ canvas{position:absolute;z-index:1;}
 
 /* z-index:2 */
 jmnodes{position:absolute;z-index:2;background-color:rgba(0,0,0,0);}/*background color is necessary*/
-jmnode{position:absolute;cursor:default;max-width:1000px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Allow badges/icons to overflow outside the node box, while truncating only the label text. */
+jmnode{position:absolute;cursor:default;display:inline-block;box-sizing:border-box;overflow:visible;}
+jmnode .jmnode-label{
+    display:block;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+jmnode.selected .jmnode-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Use em (not ch) so CJK doesn't create a larger-than-expected box. */
+jmnode:not(.root){max-width:50em;}
 jmexpander{position:absolute;width:11px;height:11px;display:block;overflow:hidden;line-height:12px;font-size:12px;text-align:center;border-radius:6px;border-width:1px;border-style:solid;cursor:pointer;}
 
 /* default theme */

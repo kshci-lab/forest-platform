@@ -39,6 +39,12 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <link rel="stylesheet" type="text/css" href="../css/button.css">
         <link rel="stylesheet" type="text/css" href="../css/annotation.css">
         <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
+        <style>
+          jmnode[edited-node="true"]::after {
+            display: none !important;
+            content: none !important;
+          }
+        </style>
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
@@ -236,11 +242,11 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
 
             <div id="mindmap_conmenu">
               <ul>
-              <li>
+              <!-- <li>
                   <button class="button_conmenu" onclick="showThinkingProcessMap()">
                       思考過程表出化マップ
                   </button>
-              </li>
+              </li> -->
               <li>
                   ノード情報変更
               </li>
@@ -249,11 +255,11 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   ノードの削除
                 </button>
               </li>
-              <li>
+              <!-- <li>
                 <button class="button_conmenu" onclick="NodeVersionUpdate()">
                     ノードverを更新
                 </button>
-              </li>
+              </li> -->
               <li>
                 <!-- <button class="button_conmenu" onclick="move2anno_from_node(annotations);">
                       紐付いた文参照
@@ -267,33 +273,33 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                  <li>
                   論文からノード追加
                 </li> 
-                <li>  <button class="button4" onclick="add_Qnode2();">
+                <li>  <button class="button_conmenu" onclick="add_Qnode2();">
                     問いノード追加
                   </button>
                 </li>
-                <li>  <button class="button4" onclick="add_Anode2('konkyo');">
+                <li>  <button class="button_conmenu" onclick="add_Anode2('konkyo');">
                     根拠ノード追加
                   </button>
                 </li>       
                 <!-- <li><a href="javascript:void(0);" target="_blank" onClick="SetPurpose('提案')">ノード追加</a></li>  -->
                 <li>
-                  <button class="button4" onclick="add_Anode2('predict');">
+                  <button class="button_conmenu" onclick="add_Anode2('predict');">
                     解釈ノード追加
                   </button>
                 </li>
                 <li>
-                  <button class="button4" onclick="add_Cnode('criticism');">
+                  <button class="button_conmenu" onclick="add_Cnode('criticism');">
                     批評ノード追加
                   </button> 
                 </li>
                 <!-- <li>
-                  <button class="button4" onclick="add_Label('primary_label');">
+                  <button class="button_conmenu" onclick="add_Label('primary_label');">
                     ラベル追加
                   </button> 
                 </li> -->
                 <li>  
                   
-                  <button class="button6 other" onclick="show_other_mindmap_all()">
+                  <button class="button_conmenu" onclick="show_other_mindmap_all()">
                     マインドマップ表示
                   </button>
                   
@@ -755,8 +761,8 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <script type="text/javascript" src="js/add_annotations.js?v=20260518-annotation-save"></script>
         <script type="text/javascript" src="js/version.js"></script>
         <script type="text/javascript" src="js/node_change.js"></script>
-        <script type="text/javascript" src="js/add_node.js"></script>
-        <script type="text/javascript" src="js/mindmap.js"></script>
+       <script type="text/javascript" src="js/add_node.js?v=20260601-other-map-fix"></script>
+       <script type="text/javascript" src="js/mindmap.js?v=20260601-other-map-fix"></script>
         <script type="text/javascript" src="js/user_sheet.js"></script>
         <script type="text/javascript" src="js/document.js"></script>
         <script type="text/javascript" src="plugins/Sortable-master/Sortable.js"></script>

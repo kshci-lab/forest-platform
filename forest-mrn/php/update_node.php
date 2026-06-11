@@ -8,6 +8,9 @@
 	$updated_at = date("Y-m-d H:i:s");
 	$node_history_id = uniqid(rand(0,64));
 	$node_action_id = uniqid(rand(0,64));
+	$node_content = isset($_POST['content'])
+		? $mysqli->real_escape_string(trim(html_entity_decode(strip_tags($_POST['content']), ENT_QUOTES, 'UTF-8')))
+		: '';
 
 	if($_POST["update"] == "content"){
 
@@ -15,7 +18,7 @@
 		// 挿入順を変えるとappeared_at，disappeared_atが狂うので注意
 		$sql_new_1 = "CREATE TEMPORARY TABLE tmp_node_histories AS SELECT * FROM node_histories WHERE node_history_id = (SELECT node_history_id FROM node_latest WHERE node_id = '".$_POST['id']."');";
 		$sql_update = "UPDATE node_histories SET disappeared_at = '".$updated_at."' WHERE node_history_id = (SELECT node_history_id FROM tmp_node_histories);";
-		$sql_new_2 = "UPDATE tmp_node_histories set node_history_id = '".$node_history_id."', content = '".$_POST['content']."', appeared_at = '".$updated_at."', disappeared_at = NULL;";
+		$sql_new_2 = "UPDATE tmp_node_histories set node_history_id = '".$node_history_id."', content = '".$node_content."', appeared_at = '".$updated_at."', disappeared_at = NULL;";
 		$sql_new_3 = "INSERT INTO node_histories SELECT * FROM tmp_node_histories;";
 		$sql_act = "INSERT INTO node_actions  (node_action_id, node_history_id, time, act)
 						VALUES ('".$node_action_id."', '".$node_history_id."', '".$updated_at."','edit');";

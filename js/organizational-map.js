@@ -49,6 +49,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         // this.Feedback = [];//フィードバック書いたかどうか
         // this.FeedbackNodeId = null; //フィードバック書かれるノードID
         this.selectId = null;//選択されたノードID
+        this.selectedOrganizationalNode = null;
         // this.interval = null; //インターバル抜けるための変数
         this.material_id = null;
         this.concept_id = null;
@@ -164,6 +165,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         // this.bindconnect_network = this.connect_network.bind(this);
         // this.bindRecruit_Idea = this.Recruit_Idea.bind(this);
         this.bindContentmenuCancel = this.ContentmenuCancel.bind(this);
+        this.bindDeleteExperienceKnowledge = this.deleteExperienceKnowledge.bind(this);
+        this.bindOpenExperienceKnowledgeEdit = this.openExperienceKnowledgeEdit.bind(this);
         // this.bindaddontology = this.addontology.bind(this);
         // this.bindSelected_Recruit_Idea = this.Selected_Recruit_Idea.bind(this);
         // this.bindfeedback = this.feedback.bind(this);
@@ -173,6 +176,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         // $(`#organizational_conmenu2`).on('click',this.bindconnect_network);
         // $(`#organizational_conmenu3`).on('click',this.bindRecruit_Idea);
         $(`#organizational_conmenu4`).on('click',this.bindContentmenuCancel);
+        $(`#organizational_conmenu5`).off('click.organizationalDelete').on('click.organizationalDelete', this.bindDeleteExperienceKnowledge);
+        $(`#organizational_conmenu6`).off('click.organizationalEdit').on('click.organizationalEdit', this.bindOpenExperienceKnowledgeEdit);
         // $(`#p_ontology_select`).on('click',this.bindaddontology);
         // $(`#p_recruit_select`).on('click',this.bindSelected_Recruit_Idea);
         // $(`#feedbackrecord`).on('click',this.bindfeedback);
@@ -247,6 +252,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         // $(`#organizational_conmenu2`).off('click',this.bindconnect_network);
         // $(`#organizational_conmenu3`).off('click',this.bindRecruit_Idea);
         $(`#organizational_conmenu4`).off('click',this.bindContentmenuCancel);
+        $(`#organizational_conmenu5`).off('click.organizationalDelete');
+        $(`#organizational_conmenu6`).off('click.organizationalEdit');
         // $(`#p_ontology_select`).off('click',this.bindaddontology);
         // $(`#p_recruit_select`).off('click',this.bindSelected_Recruit_Idea);
         // $(`#feedbackrecord`).off('click',this.bindfeedback);
@@ -373,6 +380,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         const newNode = {
             id: `${node_id}`, label: contentLabel,
             group: node_type,
+            experience_knowledge_id: `${node_id}`,
             concept_id: concept_id,
             thought_experience_node_id: thought_experience_node_id,
             user_id: user_id,
@@ -612,6 +620,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             $('#jsmind_container').css('height','50%');
             const NetworkMenu = document.getElementById('t_Organizational_conmenu');
             this.selectId = params.nodes[0];
+            this.selectedOrganizationalNode = this.nodes.get(this.selectId);
+            this.updateDeleteExperienceKnowledgeMenu();
             const pointerX = params.pointer.DOM.x;
             const pointerY = params.pointer.DOM.y;
             const mynetPosition = document.getElementById("myOrganizationalnetwork").getBoundingClientRect();
@@ -621,6 +631,22 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             NetworkMenu.style.top = this.BoxDisplay.y;
             NetworkMenu.style.display = "block";//ここようわからん未完成かも
         }
+    }
+
+    isOwnExperienceKnowledgeNode(node) {
+        return node
+            && node.experience_knowledge_id
+            && organizational_current_user_id !== null
+            && String(node.user_id) === String(organizational_current_user_id);
+    }
+
+    updateDeleteExperienceKnowledgeMenu() {
+        const deleteMenu = document.getElementById('organizational_conmenu5');
+        const editMenu = document.getElementById('organizational_conmenu6');
+        const canEdit = this.isOwnExperienceKnowledgeNode(this.selectedOrganizationalNode);
+
+        if (deleteMenu) deleteMenu.style.display = canEdit ? "" : "none";
+        if (editMenu) editMenu.style.display = canEdit ? "" : "none";
     }
 
     //ラベルの選択（完了）
@@ -728,6 +754,118 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
 
     ContentmenuCancel(){
         document.getElementById('t_Organizational_conmenu').style.display = "none";
+    }
+
+    deleteExperienceKnowledge(){
+        const selectedNode = this.selectedOrganizationalNode || this.nodes.get(this.selectId);
+        if (!this.isOwnExperienceKnowledgeNode(selectedNode)) {
+            return;
+        }
+
+        document.getElementById('t_Organizational_conmenu').style.display = "none";
+        if (!confirm('選択した組織知を削除していいですか')) {
+            return;
+        }
+
+        $.ajax({
+            url: "../php/delete_experience_knowledge.php",
+            type: "POST",
+            dataType: "json",
+            data: {
+                experience_knowledge_id: selectedNode.experience_knowledge_id
+            }
+        }).done((response) => {
+            if (response && response.status === "ok") {
+                this.edges.remove(this.ownNetwork.getConnectedEdges(selectedNode.id));
+                this.nodes.remove({ id: selectedNode.id });
+                this.selectId = null;
+                this.selectedOrganizationalNode = null;
+            } else {
+                alert((response && response.message) ? response.message : '組織知の削除に失敗しました');
+            }
+        }).fail(() => {
+            alert('組織知の削除に失敗しました');
+        });
+    }
+
+    openExperienceKnowledgeEdit(){
+        const selectedNode = this.selectedOrganizationalNode || this.nodes.get(this.selectId);
+        if (!this.isOwnExperienceKnowledgeNode(selectedNode)) {
+            return;
+        }
+
+        document.getElementById('t_Organizational_conmenu').style.display = "none";
+
+        const trigger = document.getElementById('trigger_display');
+        if (trigger) trigger.style.display = 'none';
+
+        if (typeof showLessonDisplayOverlay === 'function') {
+            showLessonDisplayOverlay();
+        } else {
+            const lesson = document.getElementById('lesson_display');
+            if (lesson) lesson.style.display = 'block';
+        }
+
+        const tooltipData = selectedNode.tooltip_data || {};
+        if (typeof renderLessonForm === 'function') {
+            renderLessonForm({
+                knowledge_fragment_title: selectedNode.label || '',
+                stage1: tooltipData.stage1 || '',
+                stage2: tooltipData.stage2 || '',
+                stage3: tooltipData.stage3 || ''
+            });
+        }
+
+        if (typeof setLessonActionButton === 'function') {
+            setLessonActionButton('編集を保存', this.saveExperienceKnowledgeEdit.bind(this));
+        }
+    }
+
+    saveExperienceKnowledgeEdit(){
+        const selectedNode = this.selectedOrganizationalNode || this.nodes.get(this.selectId);
+        if (!this.isOwnExperienceKnowledgeNode(selectedNode)) {
+            return;
+        }
+        if (typeof collectLessonFormData !== 'function') {
+            alert('編集フォームを読み込めませんでした。ページをリロードしてください。');
+            return;
+        }
+
+        const lessonData = collectLessonFormData();
+        const stageData = {};
+        lessonData.contents.forEach((item) => {
+            stageData[item.type] = item.content;
+        });
+
+        $.ajax({
+            url: "../php/update_experience_knowledge.php",
+            type: "POST",
+            dataType: "json",
+            data: {
+                experience_knowledge_id: selectedNode.experience_knowledge_id,
+                knowledge_fragment_title: lessonData.knowledge_fragment_title,
+                contents: JSON.stringify(lessonData.contents)
+            }
+        }).done((response) => {
+            if (response && response.status === "ok") {
+                const tooltipData = selectedNode.tooltip_data || {};
+                const updatedNode = Object.assign({}, selectedNode, {
+                    label: lessonData.knowledge_fragment_title,
+                    tooltip_data: Object.assign({}, tooltipData, {
+                        stage1: stageData.stage1 || '',
+                        stage2: stageData.stage2 || '',
+                        stage3: stageData.stage3 || ''
+                    })
+                });
+                this.nodes.update(updatedNode);
+                this.selectedOrganizationalNode = this.nodes.get(selectedNode.id);
+                alert('組織知を更新しました。');
+            } else {
+                alert((response && response.message) ? response.message : '組織知の更新に失敗しました');
+            }
+        }).fail(() => {
+            alert('組織知の更新に失敗しました');
+        });
     }
 
     //マインドマップとネットワークつなげる(今後動作確認はいる多分行けた)，(複雑なので何してるか聞きたいなら大槻まで)
@@ -1152,6 +1290,7 @@ class RecordOrganizational{
 let organizational_mode;
 let organizational_group_id;
 let organizational_list;
+let organizational_current_user_id = null;
 const getOrganizationalMapDataFromDB = (callback) => {
     console.log(organizational_group_id);
     //選択されているノードIDとconcept_id
@@ -1167,6 +1306,7 @@ const getOrganizationalMapDataFromDB = (callback) => {
             }).success((r) => {
                 // console.log(r);
                 organizational_list = JSON.parse(r);
+                organizational_current_user_id = organizational_list.current_user_id || null;
                 console.log(organizational_list);
                 callback(organizational_list);
             });

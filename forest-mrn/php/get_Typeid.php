@@ -13,7 +13,15 @@ if($class_name == ""){
     $result = $mysqli->query($sql);
     if($result){
         $row = $result->fetch_assoc();
-        echo json_encode($row);
+        if($row && isset($row["node_type_id"])){
+            echo json_encode($row);
+        } else {
+            echo json_encode([
+                "error" => "node_type not found",
+                "class" => $class_name,
+                "type" => $type_name
+            ]);
+        }
     } else {
         echo json_encode(["error" => "SQL error: " . $mysqli->error]);
     }
@@ -24,7 +32,15 @@ if($class_name == ""){
     $result = $mysqli->query($sql);
 	if($result){
         $row = $result->fetch_assoc();
-        echo json_encode($row);
+        if($row && isset($row["node_type_id"])){
+            echo json_encode($row);
+        } else {
+            echo json_encode([
+                "error" => "node_type not found",
+                "class" => $class_name,
+                "type" => $type_name
+            ]);
+        }
     } else {
         echo json_encode(["error" => "SQL error: " . $mysqli->error]);
     }

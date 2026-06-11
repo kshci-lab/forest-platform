@@ -1,6 +1,20 @@
 
 let select_c = document.querySelector('[name="add_criticism"]');
 
+function getNodeTextForSave(jmnode){
+    if(typeof getJmnodePlainText === "function"){
+        return getJmnodePlainText(jmnode);
+    }
+    if(!jmnode){ return ""; }
+    try{
+        var label = jmnode.querySelector ? jmnode.querySelector(".jmnode-label") : null;
+        if(label && typeof label.textContent === "string"){
+            return label.textContent.trim();
+        }
+    }catch(_){}
+    return (jmnode.textContent || "").trim();
+}
+
 if(select_c){
   select_c.onchange = event => { 
     value = select_c.value;
@@ -100,7 +114,7 @@ function change_tag(type,topic){
                             type: "POST",
                             data: { update : "content",
                                     id : selected_id,
-                                    content : jmnode[i].innerHTML }
+                                    content : getNodeTextForSave(jmnode[i]) }
 
                         });
 
