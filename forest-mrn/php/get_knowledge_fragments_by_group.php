@@ -184,6 +184,57 @@ if ($hasTable) {
   }
 }
 
+if (!empty($__kfrag_list)) {
+  $totalInitial = count($__kfrag_list);
+  foreach ($__kfrag_list as $idxInitial => &$itemInitial) {
+    $itemInitial['display_num'] = $totalInitial - $idxInitial;
+  }
+  unset($itemInitial);
+
+  $orderMap = [];
+  if ($resP = $mysqli->query("SHOW TABLES LIKE 'knowledge_fragment_positions'")) {
+    $hasPositions = ($resP->num_rows > 0);
+    $resP->free();
+    if ($hasPositions) {
+      $idsForOrder = [];
+      foreach ($__kfrag_list as $item) {
+        $idForOrder = isset($item['experience_knowledge_id']) ? intval($item['experience_knowledge_id'], 10) : 0;
+        if ($idForOrder > 0) { $idsForOrder[] = $idForOrder; }
+      }
+      $idsForOrder = array_values(array_unique($idsForOrder));
+      if ($idsForOrder) {
+        $in = implode(',', array_map('intval', $idsForOrder));
+        if ($resO = $mysqli->query("SELECT externalized_contents_id, pos_y FROM knowledge_fragment_positions WHERE externalized_contents_id IN ($in)")) {
+          while ($rowO = $resO->fetch_assoc()) {
+            $orderMap[intval($rowO['externalized_contents_id'], 10)] = floatval($rowO['pos_y']);
+          }
+          $resO->free();
+        }
+      }
+    }
+  }
+  if (!empty($orderMap)) {
+    $indexMap = [];
+    foreach ($__kfrag_list as $idx => $item) {
+      $idForIndex = isset($item['experience_knowledge_id']) ? intval($item['experience_knowledge_id'], 10) : 0;
+      if ($idForIndex > 0) { $indexMap[$idForIndex] = $idx; }
+    }
+    usort($__kfrag_list, function($a, $b) use ($orderMap, $indexMap) {
+      $aid = isset($a['experience_knowledge_id']) ? intval($a['experience_knowledge_id'], 10) : 0;
+      $bid = isset($b['experience_knowledge_id']) ? intval($b['experience_knowledge_id'], 10) : 0;
+      $ap = array_key_exists($aid, $orderMap) ? $orderMap[$aid] : PHP_INT_MAX;
+      $bp = array_key_exists($bid, $orderMap) ? $orderMap[$bid] : PHP_INT_MAX;
+      if ($ap == $bp) {
+        $ai = array_key_exists($aid, $indexMap) ? $indexMap[$aid] : PHP_INT_MAX;
+        $bi = array_key_exists($bid, $indexMap) ? $indexMap[$bid] : PHP_INT_MAX;
+        if ($ai == $bi) { return 0; }
+        return ($ai < $bi) ? -1 : 1;
+      }
+      return ($ap < $bp) ? -1 : 1;
+    });
+  }
+}
+
 $mysqli->close();
 ?>
 <div class="knowledge-fragment-list">
@@ -197,28 +248,33 @@ $mysqli->close();
             $__s2 = isset($__kfrag_raw['stage2']) ? (string)$__kfrag_raw['stage2'] : '';
             $__s3 = isset($__kfrag_raw['stage3']) ? (string)$__kfrag_raw['stage3'] : '';
             $__uname = isset($__kfrag_raw['user_name']) ? (string)$__kfrag_raw['user_name'] : $__current_user_name;
-            $num = $totalK - $i;
+            $num = isset($__kfrag_raw['display_num']) ? intval($__kfrag_raw['display_num'], 10) : ($totalK - $i);
   ?>
-    <div class="knowledge_fragment" data-kfrag-num="<?php echo intval($num,10); ?>"<?php 
-      $disc = isset($__kfrag_raw['discussed']) ? trim($__kfrag_raw['discussed']) : ''; 
-      if($disc!==''){ echo ' data-discussed="'.htmlspecialchars($disc,ENT_QUOTES,'UTF-8').'"'; }
+    <div class="fragment-node-wrapper"<?php
       $extId = isset($__kfrag_raw['experience_knowledge_id']) ? intval($__kfrag_raw['experience_knowledge_id'],10) : 0;
       if($extId>0){ echo ' data-ext-id="'.$extId.'"'; }
     ?>>
-      <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>
-      <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>
-      <div class="card-detail" aria-hidden="true">
-        <?php 
-          $__sel = isset($__kfrag_raw['selected_contents']) ? trim((string)$__kfrag_raw['selected_contents']) : '';
-          if ($__sel !== '') { ?>
-            <div class="selected-utterance">時間: <?php echo nl2br(htmlspecialchars($__sel, ENT_QUOTES, 'UTF-8')); ?></div>
-        <?php } ?>
-        <div class="qa-item"><div class="qa-q">【経験の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s1, ENT_QUOTES, 'UTF-8')); ?></div></div>
-        <div class="qa-item"><div class="qa-q">【活動文脈固有の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s2, ENT_QUOTES, 'UTF-8')); ?></div></div>
-        <div class="qa-item"><div class="qa-q">【研究固有の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s3, ENT_QUOTES, 'UTF-8')); ?></div></div>
-      </div>
-      <div class="card-actions">
-        <button type="button" class="detail-button">詳細▼</button>
+      <div class="fragment-number-badge" aria-hidden="true"><?php echo intval($num,10); ?></div>
+      <div class="knowledge_fragment" data-kfrag-num="<?php echo intval($num,10); ?>"<?php 
+      $disc = isset($__kfrag_raw['discussed']) ? trim($__kfrag_raw['discussed']) : ''; 
+      if($disc!==''){ echo ' data-discussed="'.htmlspecialchars($disc,ENT_QUOTES,'UTF-8').'"'; }
+      if($extId>0){ echo ' data-ext-id="'.$extId.'"'; }
+    ?>>
+        <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>
+        <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>
+        <div class="card-detail" aria-hidden="true">
+          <?php 
+            $__sel = isset($__kfrag_raw['selected_contents']) ? trim((string)$__kfrag_raw['selected_contents']) : '';
+            if ($__sel !== '') { ?>
+              <div class="selected-utterance">経験: <?php echo nl2br(htmlspecialchars($__sel, ENT_QUOTES, 'UTF-8')); ?></div>
+          <?php } ?>
+          <div class="qa-item"><div class="qa-q">【経験の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s1, ENT_QUOTES, 'UTF-8')); ?></div></div>
+          <div class="qa-item"><div class="qa-q">【活動文脈固有の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s2, ENT_QUOTES, 'UTF-8')); ?></div></div>
+          <div class="qa-item"><div class="qa-q">【研究固有の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s3, ENT_QUOTES, 'UTF-8')); ?></div></div>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="detail-button">詳細▼</button>
+        </div>
       </div>
     </div>
   <?php } } else { ?>

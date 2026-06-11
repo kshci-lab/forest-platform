@@ -2718,6 +2718,10 @@
             var ncs = getComputedStyle(element);
             this.e_editor.value = topic;
             this.e_editor.style.width = (element.clientWidth-parseInt(ncs.getPropertyValue('padding-left'))-parseInt(ncs.getPropertyValue('padding-right')))+'px';
+            this.editing_node_version_badge = element.querySelector ? element.querySelector('.jm-version-badge') : null;
+            if(this.editing_node_version_badge){
+                this.editing_node_version_badge = this.editing_node_version_badge.cloneNode(true);
+            }
             element.innerHTML = '';
             element.appendChild(this.e_editor);
             element.style.zIndex = 5;
@@ -2732,21 +2736,23 @@
                 var view_data = node._data.view;
                 var element = view_data.element;
                 var topic = this.e_editor.value;
+                var version_badge = this.editing_node_version_badge || null;
+                this.editing_node_version_badge = null;
                 element.style.zIndex = 'auto';
                 element.removeChild(this.e_editor);
-                if(jm.util.text.is_empty(topic) || node.topic === topic){
+                var topic_changed = !jm.util.text.is_empty(topic) && node.topic !== topic;
+                if(!topic_changed){
                     if(this.opts.support_html){
                         $h(element,node.topic);
+                        if(version_badge){ element.appendChild(version_badge); }
                     }else{
                         try{
-                            var badge = element.querySelector ? element.querySelector('.jm-version-badge') : null;
-                            if(badge && badge.parentNode === element){ element.removeChild(badge); }
                             element.innerHTML = '';
                             var label = document.createElement('span');
                             label.className = 'jmnode-label';
                             label.textContent = node.topic;
                             element.appendChild(label);
-                            if(badge){ element.appendChild(badge); }
+                            if(version_badge){ element.appendChild(version_badge); }
                             try{
                                 if(window.ensureJmnodeLabelWrapping){
                                     window.ensureJmnodeLabelWrapping();
@@ -2761,6 +2767,10 @@
                     }
                 }else{
                     this.jm.update_node(node.id,topic);
+                }
+
+                if(!topic_changed){
+                    return;
                 }
 
                 var jmnode = document.getElementsByTagName("jmnode");
@@ -2787,25 +2797,6 @@
 
                         });
 
-                        //hatakeyama 内容変更によるver更新
-                        var versionid = jsMind.util.uuid.newid();
-                        NodeEdit(
-                            versionid, 
-                            node.id, 
-                            node.parent.id, 
-                            content, 
-                            "",
-                            "edit"
-                            );
-                        CheckEdit(node.id).then(function (data) {   //過去にeditがあるかチェック(dataはeditの回数)
-                            RecordRelation(data);
-                        });
-                        //ここから大槻修正
-                        $("#reason").html("");
-                        //ここまで大槻修正
-                        check_edit_reason(node.id);
-                        $('#comment_balloon').hide();
-                        $('#comment_balloon').fadeIn(1000);
                         try{
                             // After editing, the node DOM is rewritten; re-attach badges if needed.
                             if(window.refreshNodeVersionBadge){
