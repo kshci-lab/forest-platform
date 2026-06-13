@@ -5,8 +5,8 @@ let defaultShowThinkingProcess;
 let globalParams = null; //クリックされたネットワークノード
 let undoRedoManager = null; // Undo/Redo管理インスタンス
 
-// Undo/Redo管理クラス
-class UndoRedoManager {
+// Undo/Redo管理クラス（レガシー互換用。現在はモジュール版を使用）
+class LegacyUndoRedoManager {
     constructor() {
         this.undoStack = []; // 元に戻す操作のスタック
         this.redoStack = []; // やり直す操作のスタック
@@ -495,8 +495,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // this.ownNetwork = this.generateThinkingProcessNetworkCanvas(container, {}, {}); // デフォルトのマップを表示
 
         defaultRecordThinkingProcess = new RecordThinkingProcess();
-        // Undo/Redo管理インスタンスを初期化
-        undoRedoManager = new UndoRedoManager();
+        // Undo/Redo管理インスタンスをモジュール版から初期化（依存性注入）
+        undoRedoManager = new window.UndoRedoManager(this, defaultRecordThinkingProcess);
         this.nodes = new vis.DataSet();
         // エッジDataSetの初期化時にIDフィールドを明示
         this.edges = new vis.DataSet([], { 
@@ -530,7 +530,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             'topic-tag': {
                 color: {
                     background: '#7eb6e6',
-                    border: '#FF8C00'
+                    border: '#48bb78'
                 },
                 borderWidth: 3,
                 borderWidthSelected: 4,
@@ -636,7 +636,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 if (currentNode) {
                     // 内省タグ（reflection-tag）の場合、カスタムツールチップを表示
                     if (currentNode.group === 'reflection-tag') {
-                        console.log("reflection-tag detected, showing tooltip");
+                        // カスタムツールチップを確実に表示
                         this.showReflectionTooltip(params.node, params);
                     }
                     // 影は常に有効なので、ホバー時の影変更は不要
@@ -727,6 +727,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             }
         }
         this.choose_input_xmlLoad();
+        // ミニマップ（ナビゲーター）の初期化
+        this.initMinimap("myProcessnetwork");
     }
 
     // jmnode 要素の右クリックをガードする (type="answer" のときは無効化)
@@ -1092,7 +1094,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // 問いノード（topic-tag）の場合の色設定
         if (node_type === "topic-tag") {
             node_color = '#7eb6e6'; // 青色
-            border_color = '#FF8C00'; // オレンジ色の枠線
+            border_color = '#48bb78'; // 緑色の枠線
             border_width = 3;       // 太い枠線
             text_color = '#333';    // 暗い文字色
             position_fixed = true;  // 固定位置
@@ -1205,7 +1207,70 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         console.log(this.nodes);
         return this.nodes;
     }
-    
+
+    // 既存ノード同士を結ぶエッジを新規生成するメソッド
+    addEdgeBetweenNodes(fromNodeId, toNodeId) {
+        // 重複チェック
+        let notable = true;
+        const connectedEdges = this.ownNetwork.getConnectedEdges(fromNodeId);
+        const ConnectSelectNode = connectedEdges.map(n => 
+            this.ownNetwork.getConnectedNodes(n).filter(node => node !== fromNodeId)[0]
+        );
+        if (ConnectSelectNode.includes(toNodeId)) {
+            notable = false;
+        }
+        if (!notable) {
+            console.log("⚠️ エッジは既に存在します。");
+            return false;
+        }
+
+        const fromNode = this.nodes.get(fromNodeId);
+        const toNode = this.nodes.get(toNodeId);
+        if (!fromNode || !toNode || fromNode.shape === "ellipse" || toNode.shape === "ellipse") {
+            console.log("⚠️ 楕円ノードとの接続は無効です。");
+            return false;
+        }
+
+        // 新しいエッジIDを生成
+        let edge_id = this.generateUniqueNumberText();
+        
+        // エッジの色を設定
+        let nodeColor = '#888888';
+        if (fromNode && fromNode.color) {
+            if (typeof fromNode.color === 'string') {
+                nodeColor = fromNode.color;
+            } else if (fromNode.color.background) {
+                nodeColor = fromNode.color.background;
+            }
+        }
+        const edgeColor = darkenColor(nodeColor, 0.3);
+
+        const edgeData = {
+            id: edge_id, 
+            from: fromNodeId, 
+            to: toNodeId,
+            color: {
+                color: edgeColor,
+                highlight: edgeColor,
+                hover: edgeColor
+            }
+        };
+
+        this.edges.add(edgeData);
+        defaultRecordThinkingProcess.record_Edge(edge_id, fromNodeId, toNodeId);
+
+        // Undo/Redo の登録
+        if (undoRedoManager) {
+            undoRedoManager.recordAction({
+                type: 'ADD_EDGE',
+                edgeId: edge_id,
+                edgeData: { ...edgeData }
+            });
+        }
+        
+        console.log("✅ エッジを新しく接続しました:", edge_id);
+        return true;
+    }
 
     // ノードの追加（リロード用）(完了)
     addReloadNode(node_id, node_label, node_type, node_x, node_y, status, purpose = null, evaluation_good = null, attribution = null, attribution_bad = null, application = null, estimated_time = null, evaluation_bad = null) {
@@ -1233,7 +1298,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // 問いノード（topic-tag）の場合の色設定
         if (node_type === "topic-tag") {
             node_color = '#7eb6e6'; // 青色
-            border_color = '#FF8C00'; // オレンジ色の枠線
+            border_color = '#48bb78'; // 緑色の枠線
             border_width = 3;       // 太い枠線
             border_width_selected = 4;
             text_color = '#333';    // 暗い文字色
@@ -1415,28 +1480,30 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             setTimeout(() => {
                 const nodeBoundingBox = defaultThinkingProcess.ownNetwork.getBoundingBox(`${node_id}`);
                 const reflectionTagId = `reflection-tag-${node_id}`;
+                
+                // ツールチップ用のテキストを生成
+                const titleParts = [];
+                if (evaluation_good) titleParts.push(`【成功点】${evaluation_good}`);
+                if (attribution) titleParts.push(`【成功の理由】${attribution}`);
+                if (evaluation_bad) titleParts.push(`【失敗点】${evaluation_bad}`);
+                if (attribution_bad) titleParts.push(`【失敗の理由】${attribution_bad}`);
+                if (application) titleParts.push(`【今後の教訓】${application}`);
+                const titleText = titleParts.join('<br>');
+
                 const reflectionTag = {
                     id: reflectionTagId,
-                    label: '💭',
-                    shape: 'ellipse',
-                    size: 20,
-                    color: {
-                        background: '#FF7F7F',
-                        border: '#CC0000'
-                    },
+                    label: '📝',
+                    shape: 'text',
                     font: { 
-                        size: 18,
-                        color: '#660000'
+                        size: 24,
+                        face: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
                     },
-                    x: nodeBoundingBox.right - 8,
-                    y: nodeBoundingBox.top + 8,
+                    x: nodeBoundingBox.right - 4,
+                    y: nodeBoundingBox.top + 4,
                     fixed: true,
                     physics: false,
                     group: 'reflection-tag',
-                    title: undefined,  // カスタムツールチップを使用するためvis.jsのデフォルトは無効化
-                    borderWidth: 0,
-                    borderWidthSelected: 0,
-                    shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 },
+                    title: titleText || '内省データ',
                     // 内省データを保持
                     reflectionData: {
                         successPoints: evaluation_good || '',
@@ -1644,9 +1711,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             group: "trigger",
             type: t_type,
             color: color,
-            shape: node_shape,
-            image: DIR_img + image,
-            imagePadding: 7,
+            shape: 'box',
             fixed: false,
             x: node_x, y: node_y,
         };
@@ -3208,6 +3273,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 lessonLabel: '教訓',
                 lessonFocusLabel: '今後の活動でどのようなことを意識したいですか？',
                 lessonFocusPlaceholder: '例: 次回は開始前にゴールを共有する',
+                lessonWhyLabel: 'なぜその教訓が大切だと考えますか？',
+                lessonWhyPlaceholder: '（例）この教訓を意識することで、次に類似した課題に直面した際、同じ失敗を回避できると考えたため。',
                 lessonWhenLabel: 'その教訓はどのような時に活かせそうですか？',
                 lessonWhenPlaceholder: '例: 次回の準備開始時',
                 cancelBtn: 'キャンセル',
@@ -3231,6 +3298,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 lessonLabel: 'Lesson',
                 lessonFocusLabel: 'What do you want to keep in mind for future activities?',
                 lessonFocusPlaceholder: 'e.g., Share the goal before starting next time',
+                lessonWhyLabel: 'Why do you think this lesson is important?',
+                lessonWhyPlaceholder: 'e.g., By keeping this in mind, I can avoid the same failure when facing a similar task next time.',
                 lessonWhenLabel: 'When can you apply this lesson?',
                 lessonWhenPlaceholder: 'e.g., At the start of next preparation',
                 cancelBtn: 'Cancel',
@@ -3326,7 +3395,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         tooltip.style.zIndex = "2147483647";
         if (!tooltip.dataset.initialSized) {
             tooltip.style.width = '683px';
-            tooltip.style.height = '711px';
+            tooltip.style.height = 'auto';
             tooltip.dataset.initialSized = '1';
         }
         tooltip.classList.add('fl-card','fl-card--wide');
@@ -3370,6 +3439,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     <div class="lesson-tab-content lesson-tab-content-active" data-lesson-index="0">
                         <label class="feedback-micro-label">${t('lessonFocusLabel')}</label>
                         <textarea id="challengesAndLearnings" name="challengesAndLearnings" rows="2" class="feedback-textarea" placeholder="${t('lessonFocusPlaceholder')}"></textarea>
+                        <label class="feedback-micro-label">${t('lessonWhyLabel')}</label>
+                        <textarea id="whyImportant" name="whyImportant" rows="2" class="feedback-textarea" placeholder="${t('lessonWhyPlaceholder')}"></textarea>
                         <label class="feedback-micro-label">${t('lessonWhenLabel')}</label>
                         <textarea id="whenApplicable" name="whenApplicable" rows="1" class="feedback-textarea" placeholder="${t('lessonWhenPlaceholder')}"></textarea>
                     </div>
@@ -3513,7 +3584,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     return tab;
                 };
                 
-                const createLessonTabContent = (focusVal, whenVal, dbId) => {
+                const createLessonTabContent = (focusVal, whyVal, whenVal, dbId) => {
                     const contents = getLessonTabContents();
                     const content = document.createElement('div');
                     content.className = 'lesson-tab-content';
@@ -3534,6 +3605,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     if (focusVal) taFocus.value = focusVal;
                     content.appendChild(taFocus);
 
+                    const labelWhy = document.createElement('label');
+                    labelWhy.textContent = t('lessonWhyLabel');
+                    labelWhy.className = 'feedback-micro-label';
+                    content.appendChild(labelWhy);
+
+                    const taWhy = document.createElement('textarea');
+                    taWhy.className = 'lesson-why';
+                    taWhy.rows = 2;
+                    taWhy.placeholder = t('lessonWhyPlaceholder');
+                    taWhy.classList.add('feedback-textarea');
+                    if (whyVal) taWhy.value = whyVal;
+                    content.appendChild(taWhy);
+
                     const labelWhen = document.createElement('label');
                     labelWhen.textContent = t('lessonWhenLabel');
                     labelWhen.className = 'feedback-micro-label';
@@ -3548,6 +3632,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     content.appendChild(taWhen);
 
                     applyAutoGrow(taFocus);
+                    applyAutoGrow(taWhy);
                     applyAutoGrow(taWhen);
                     lessonTabContentContainer.appendChild(content);
                     return content;
@@ -3597,7 +3682,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 // Wire add button
                 addLessonTabBtn.addEventListener('click', () => {
                     createLessonTab(false);
-                    createLessonTabContent('', '');
+                    createLessonTabContent('', '', '');
                     const tabs = getLessonTabs();
                     updateLessonTabLabels();
                     activateLessonTab(tabs.length - 1);
@@ -3703,6 +3788,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                             if (helpers && items.length > 0) {
                                                 // 最初の教訓はメインのtextarea（タブ#1）に入れる
                                                 lEl.value = items[0].lesson_learned || items[0].application || '';
+                                                try { if (document.getElementById('whyImportant')) document.getElementById('whyImportant').value = items[0].why_important || ''; } catch(e) {}
                                                 try { if (wEl) wEl.value = items[0].opportunity || ''; } catch(e) {}
                                                 
                                                 // 最初のタブコンテンツにobject_le_idを設定
@@ -3715,12 +3801,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                                 for (var i = 1; i < items.length; i++) {
                                                     try {
                                                         var text = items[i].lesson_learned || items[i].application || '';
+                                                        var why = items[i].why_important || '';
                                                         var opp = items[i].opportunity || '';
                                                         var dbId = items[i].object_le_id || '';
                                                         
                                                         // 新しいタブとコンテンツを作成
                                                         helpers.createLessonTab(false);
-                                                        helpers.createLessonTabContent(text, opp, dbId);
+                                                        helpers.createLessonTabContent(text, why, opp, dbId);
                                                     } catch(e) { console.warn('failed to create lesson tab', e); }
                                                 }
                                                 
@@ -3730,6 +3817,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                             } else if (items.length > 0) {
                                                 // フォールバック: helpersがない場合は最初の教訓だけ表示
                                                 lEl.value = items[0].lesson_learned || items[0].application || '';
+                                                try { if (document.getElementById('whyImportant')) document.getElementById('whyImportant').value = items[0].why_important || ''; } catch(e) {}
                                                 try { if (wEl) wEl.value = items[0].opportunity || ''; } catch(e) {}
                                             }
                                         }
@@ -3826,10 +3914,12 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             ? lessons.map((l) => {
                 const opp = this.escapeReflectionHtml(l.opportunity || '');
                 const text = this.escapeReflectionHtml(l.lesson_learned || l.lesson || '');
+                const why = this.escapeReflectionHtml(l.why_important || '');
                 const attrText = (text || '').replace(/\s+/g, ' ').trim();
                 return `
                     <div class="history-lesson-item">
                         <div class="history-lesson-text">${text || '-'}</div>
+                        ${why ? `<div class="history-lesson-why">${why}</div>` : ''}
                         ${opp ? `<div class="history-lesson-opportunity">${opp}</div>` : ''}
                         <button type="button" class="history-copy-btn" data-lesson-text="${attrText}">教訓をコピー</button>
                     </div>
@@ -3981,9 +4071,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             try {
                 // 最初の教訓（固定のID）
                 const firstLesson = (document.getElementById("challengesAndLearnings") || {value:''}).value.trim();
+                const firstWhy = (document.getElementById("whyImportant") || {value:''}).value.trim();
                 const firstWhen = (document.getElementById("whenApplicable") || {value:''}).value.trim();
-                if (firstLesson) {
-                    lessonsArray.push({ lesson: firstLesson, opportunity: firstWhen });
+                if (firstLesson || firstWhy || firstWhen) {
+                    lessonsArray.push({ lesson: firstLesson, why_important: firstWhy, opportunity: firstWhen });
                 }
                 
                 // タブコンテンツから追加の教訓を収集
@@ -3993,13 +4084,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     if (idx === 0) return;
                     
                     const focusEl = content.querySelector('.lesson-focus');
+                    const whyEl = content.querySelector('.lesson-why');
                     const whenEl = content.querySelector('.lesson-when');
                     const lessonText = focusEl ? focusEl.value.trim() : '';
+                    const whyText = whyEl ? whyEl.value.trim() : '';
                     const whenText = whenEl ? whenEl.value.trim() : '';
                     const dbId = content.dataset.objectLeId || '';
                     
-                    if (lessonText) {
-                        lessonsArray.push({ lesson: lessonText, opportunity: whenText, object_le_id: dbId });
+                    if (lessonText || whyText || whenText) {
+                        lessonsArray.push({ lesson: lessonText, why_important: whyText, opportunity: whenText, object_le_id: dbId });
                     }
                 });
                 
@@ -4040,6 +4133,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 attribution_bad: completionReasonBad,
                 lessons: lessonsArray.map((l) => ({
                     lesson: l.lesson || l.lesson_learned || '',
+                    why_important: l.why_important || '',
                     opportunity: l.opportunity || ''
                 }))
             };
@@ -4085,13 +4179,29 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         const nodeBoundingBox = this.ownNetwork.getBoundingBox(this.selectId);
                         const reflectionTagId = `reflection-tag-${this.selectId}`;
                         
+                        // ツールチップ用のテキストを生成
+                        const titleParts = [];
+                        if (successPoints) titleParts.push(`【成功点】${successPoints}`);
+                        if (completionReasonGood) titleParts.push(`【成功の理由】${completionReasonGood}`);
+                        if (failurePoints) titleParts.push(`【失敗点】${failurePoints}`);
+                        if (completionReasonBad) titleParts.push(`【失敗の理由】${completionReasonBad}`);
+                        if (challengesAndLearnings) titleParts.push(`【今後の教訓】${challengesAndLearnings}`);
+                        if (whenApplicable) titleParts.push(`【適用場面】${whenApplicable}`);
+                        const titleText = titleParts.join('<br>');
+
                         // 既存の内省タグがあるかチェック
                         const existingReflectionTag = this.nodes.get(reflectionTagId);
                         if (existingReflectionTag) {
-                            // 既存のタグを更新（titleはundefinedでvis.jsデフォルトツールチップを無効化）
+                            // 既存のタグを更新
                             this.nodes.update({
                                 id: reflectionTagId,
-                                title: undefined,
+                                label: '📝',
+                                shape: 'text',
+                                font: { 
+                                    size: 24,
+                                    face: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
+                                },
+                                title: titleText || '内省データ',
                                 reflectionData: {
                                     successPoints: successPoints || '',
                                     failurePoints: failurePoints || '',
@@ -4099,33 +4209,25 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                     completionReasonBad: completionReasonBad || '',
                                     challengesAndLearnings: challengesAndLearnings || '',
                                     whenApplicable: whenApplicable || ''
-                                },
-                                borderWidth: 0,
-                                borderWidthSelected: 0,
-                                shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
+                                }
                             });
                             console.log('既存の内省タグを更新しました:', reflectionTagId);
                         } else {
                             // 新しい内省タグを追加
                             const reflectionTag = {
                                 id: reflectionTagId,
-                                label: '💭',
-                                shape: 'ellipse',
-                                size: 20,
-                                color: {
-                                    background: '#FF7F7F',
-                                    border: '#CC0000'
-                                },
+                                label: '📝',
+                                shape: 'text',
                                 font: { 
-                                    size: 18,
-                                    color: '#660000'
+                                    size: 24,
+                                    face: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
                                 },
-                                x: nodeBoundingBox.right - 8,
-                                y: nodeBoundingBox.top + 8,
+                                x: nodeBoundingBox.right - 4,
+                                y: nodeBoundingBox.top + 4,
                                 fixed: true,
                                 physics: false,
                                 group: 'reflection-tag',
-                                title: undefined,
+                                title: titleText || '内省データ',
                                 reflectionData: {
                                     successPoints: successPoints || '',
                                     failurePoints: failurePoints || '',
@@ -4133,10 +4235,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                     completionReasonBad: completionReasonBad || '',
                                     challengesAndLearnings: challengesAndLearnings || '',
                                     whenApplicable: whenApplicable || ''
-                                },
-                                borderWidth: 0,
-                                borderWidthSelected: 0,
-                                shadow: { enabled: true, color: 'rgba(0,0,0,0.12)', size: 2, x: 2, y: 2 }
+                                }
                             };
                             this.nodes.add(reflectionTag);
                             console.log('新しい内省タグを追加しました:', reflectionTagId);
@@ -4296,7 +4395,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         if (!nodeBoundingBox) return;
 
         // ネットワークキャンバスのDOM要素とその位置を取得
-        const networkCanvas = document.getElementById("myProcessnetwork2");
+        const networkCanvas = document.getElementById("myProcessnetwork");
         const canvasRect = networkCanvas.getBoundingClientRect();
 
         // ノードの実際の座標を取得して画面座標に変換
@@ -4316,7 +4415,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         const addButton = document.createElement('button');
         addButton.id = 'addNodeButton';
         addButton.innerHTML = '＋';
-        addButton.title = '手段を追加';
+        addButton.title = 'クリックで手段追加 / ドラッグでエッジ接続';
         addButton.style.cssText = `
             position: fixed;
             left: ${buttonX}px;
@@ -4339,6 +4438,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             line-height: 1;
         `;
 
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        const threshold = 5; // 5px以上の移動でドラッグ判定
+
         // ホバー効果
         addButton.addEventListener('mouseenter', () => {
             addButton.style.background = '#45a049';
@@ -4352,31 +4456,115 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             addButton.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
             // ボタンからマウスが離れた時は少し遅らせて非表示
             setTimeout(() => {
-                this.hideAddNodeButton();
+                if (!isDragging) {
+                    this.hideAddNodeButton();
+                }
             }, 200);
         });
 
-        // クリックイベント
-        // 過去表示中はクリックを無効化
+        // ドラッグ用ポインター移動イベント
+        const onPointerMove = (moveEvent) => {
+            const dx = moveEvent.clientX - startX;
+            const dy = moveEvent.clientY - startY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (!isDragging && distance > threshold) {
+                isDragging = true;
+                // ドラッグ開始を認識したらボタンを半透明にする
+                addButton.style.opacity = '0.3';
+            }
+
+            if (isDragging) {
+                // ボタンの中心座標から現在のカーソル位置までプレビュー線を描画
+                drawEdgeDragPreview(buttonX + 12, buttonY + 12, moveEvent.clientX, moveEvent.clientY);
+            }
+        };
+
+        // ドラッグ終了（マウスリリース）イベント
+        const onPointerUp = (upEvent) => {
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+
+            if (isDragging) {
+                removeEdgeDragPreview();
+                isDragging = false;
+                
+                // ドロップ位置の vis.js ノードを取得
+                const rect = networkCanvas.getBoundingClientRect();
+                const domPos = {
+                    x: upEvent.clientX - rect.left,
+                    y: upEvent.clientY - rect.top
+                };
+                const dropNodeId = this.ownNetwork.getNodeAt(domPos);
+
+                console.log("📍 Drag & Drop Connection Debug:", {
+                    clientX: upEvent.clientX,
+                    clientY: upEvent.clientY,
+                    rectLeft: rect.left,
+                    rectTop: rect.top,
+                    domX: domPos.x,
+                    domY: domPos.y,
+                    startNodeId: nodeId,
+                    dropNodeId: dropNodeId
+                });
+
+                if (dropNodeId && dropNodeId !== nodeId) {
+                    const success = this.addEdgeBetweenNodes(nodeId, dropNodeId);
+                    if (success) {
+                        // 結線成功時に理由入力ダイアログを表示
+                        setTimeout(() => {
+                            this.selectId = dropNodeId;
+                            try { sessionStorage.setItem('currentSelectId', dropNodeId); } catch(e) {}
+                            
+                            // BoxDisplayの位置をドロップ先ノードの近くに設定
+                            const dropNodeBoundingBox = this.ownNetwork.getBoundingBox(dropNodeId);
+                            if (dropNodeBoundingBox) {
+                                const node = this.nodes.get(dropNodeId);
+                                const nodeX = node ? node.x : 0;
+                                const nodeScreenPos = this.ownNetwork.canvasToDOM({
+                                    x: nodeX,
+                                    y: dropNodeBoundingBox.bottom
+                                });
+                                const networkCanvas = document.getElementById("myProcessnetwork2");
+                                const canvasRect = networkCanvas.getBoundingClientRect();
+                                this.BoxDisplay.x = canvasRect.left + nodeScreenPos.x;
+                                this.BoxDisplay.y = canvasRect.top + nodeScreenPos.y + 20;
+                            }
+                            this.show_reason_input();
+                        }, 100);
+                    }
+                }
+            } else {
+                // 通常クリック時は新規ノード自動生成
+                if (!this.isViewingPastData) {
+                    this.addChildNode(nodeId);
+                }
+            }
+            
+            this.hideAddNodeButton();
+        };
+
+        // mousedown/pointerdown でドラッグ＆クリック判定を開始
+        // 過去表示中は無効化
         if (this.isViewingPastData) {
             addButton.disabled = true;
             addButton.setAttribute('aria-disabled', 'true');
             addButton.title = '過去表示では操作できません';
             addButton.style.opacity = '0.45';
             addButton.style.cursor = 'not-allowed';
-        }
+        } else {
+            addButton.addEventListener('pointerdown', (downEvent) => {
+                downEvent.stopPropagation();
+                downEvent.preventDefault();
 
-        addButton.addEventListener('click', (e) => {
-            // 過去表示モードでは何もしない
-            if (this.isViewingPastData) {
-                e.stopPropagation();
-                console.log('過去データ表示中のため、ノード追加ボタンは無効です');
-                return;
-            }
-            e.stopPropagation();
-            this.addChildNode(nodeId);
-            this.hideAddNodeButton();
-        });
+                isDragging = false;
+                startX = downEvent.clientX;
+                startY = downEvent.clientY;
+
+                document.addEventListener('pointermove', onPointerMove);
+                document.addEventListener('pointerup', onPointerUp);
+            });
+        }
 
         // ドキュメントに追加
         document.body.appendChild(addButton);
@@ -5132,8 +5320,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 const reflectionTag = this.nodes.get(reflectionTagId);
                 if (reflectionTag) {
                     const nodeBoundingBox = this.ownNetwork.getBoundingBox(movedNodeId);
-                    const tag_x = nodeBoundingBox.right - 8;
-                    const tag_y = nodeBoundingBox.top + 8;
+                    const tag_x = nodeBoundingBox.right - 4;
+                    const tag_y = nodeBoundingBox.top + 4;
                     this.nodes.update({ 
                         id: reflectionTagId, 
                         x: tag_x, 
@@ -5253,6 +5441,154 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     setupCustomTooltip() {
         // vis.jsのデフォルトツールチップを使用するため、特別な設定は不要
         // ノードのtitle属性が自動的にツールチップとして表示される
+    }
+
+    // ミニマップ機能の初期化
+    initMinimap(containerId) {
+        const mainContainer = document.getElementById(containerId);
+        if (!mainContainer) {
+            console.warn("⚠️ Minimap target container not found:", containerId);
+            return;
+        }
+
+        // 既にミニマップが存在すれば再生成しない
+        if (document.getElementById('minimap-container')) return;
+
+        // 1. ミニマップ用DOM要素を生成してアタッチ
+        const minimapContainer = document.createElement('div');
+        minimapContainer.id = 'minimap-container';
+        
+        const minimapNetworkDiv = document.createElement('div');
+        minimapNetworkDiv.id = 'myProcessnetwork-minimap';
+        
+        const indicator = document.createElement('div');
+        indicator.id = 'minimap-indicator';
+        
+        minimapContainer.appendChild(minimapNetworkDiv);
+        minimapContainer.appendChild(indicator);
+        mainContainer.appendChild(minimapContainer);
+
+        // 2. ミニマップ用 vis.Network を初期化 (同一 DataSet を共有)
+        const minimapOptions = {
+            physics: false,
+            interaction: {
+                dragView: false,
+                zoomView: false,
+                dragNodes: false,
+                hover: false,
+                selectConnectedEdges: false
+            },
+            nodes: {
+                font: { size: 0 }, // ミニマップ上のノードテキストを非表示にする
+                shadow: false
+            },
+            edges: {
+                shadow: false
+            }
+        };
+        
+        this.minimapNetwork = new vis.Network(minimapNetworkDiv, {
+            nodes: this.nodes,
+            edges: this.edges
+        }, minimapOptions);
+
+        // 3. メイン画面の描画更新および移動イベントに合わせて視野枠を同期
+        const syncMinimap = () => {
+            this.updateMinimapView();
+        };
+
+        this.ownNetwork.on('afterDrawing', syncMinimap);
+        this.ownNetwork.on('zoom', syncMinimap);
+        this.ownNetwork.on('dragEnd', syncMinimap);
+        this.ownNetwork.on('animationFinished', syncMinimap);
+
+        // 4. 視野枠のドラッグ制御をセットアップ
+        this.setupMinimapDrag(indicator);
+        
+        // 初回表示の同期
+        setTimeout(() => this.updateMinimapView(), 300);
+    }
+
+    // 視野枠の同期
+    updateMinimapView() {
+        if (!this.minimapNetwork) return;
+
+        const mainContainer = this.ownNetwork.body.container;
+        const mainWidth = mainContainer.clientWidth;
+        const mainHeight = mainContainer.clientHeight;
+        const indicator = document.getElementById('minimap-indicator');
+        if (!indicator) return;
+
+        // 1. メイン画面の現在の表示視野（論理座標）を取得
+        const topLeft = this.ownNetwork.DOMtoCanvas({ x: 0, y: 0 });
+        const bottomRight = this.ownNetwork.DOMtoCanvas({ x: mainWidth, y: mainHeight });
+
+        // 2. ミニマップ側のカメラをノード全体に自動フィット
+        this.minimapNetwork.fit({ animation: false });
+
+        // 3. 視野の論理座標をミニマップ上の DOM 座標に変換
+        const minimapTopLeft = this.minimapNetwork.canvasToDOM(topLeft);
+        const minimapBottomRight = this.minimapNetwork.canvasToDOM(bottomRight);
+
+        // 4. ミニマップの寸法に基づいてインジケーターサイズを調整・制限
+        const minimapContainer = document.getElementById('minimap-container');
+        const mapWidth = minimapContainer.clientWidth;
+        const mapHeight = minimapContainer.clientHeight;
+
+        const left = Math.max(0, Math.min(mapWidth, minimapTopLeft.x));
+        const top = Math.max(0, Math.min(mapHeight, minimapTopLeft.y));
+        const width = Math.min(mapWidth - left, Math.max(5, minimapBottomRight.x - minimapTopLeft.x));
+        const height = Math.min(mapHeight - top, Math.max(5, minimapBottomRight.y - minimapTopLeft.y));
+
+        indicator.style.left = `${left}px`;
+        indicator.style.top = `${top}px`;
+        indicator.style.width = `${width}px`;
+        indicator.style.height = `${height}px`;
+        indicator.style.display = 'block';
+    }
+
+    // 視野枠のドラッグイベント制御
+    setupMinimapDrag(indicator) {
+        let isDragging = false;
+
+        indicator.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            indicator.setPointerCapture(e.pointerId);
+            e.stopPropagation();
+            e.preventDefault();
+        });
+
+        indicator.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+
+            const rect = document.getElementById('minimap-container').getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // ミニマップ上のマウス位置の論理座標を取得
+            const canvasPos = this.minimapNetwork.DOMtoCanvas({ x: mouseX, y: mouseY });
+
+            // メイン画面の表示中心を、その論理座標に移動
+            this.ownNetwork.moveTo({
+                position: canvasPos,
+                animation: false
+            });
+            
+            e.stopPropagation();
+            e.preventDefault();
+        });
+
+        const stopDrag = (e) => {
+            if (isDragging) {
+                isDragging = false;
+                try {
+                    indicator.releasePointerCapture(e.pointerId);
+                } catch(err) {}
+            }
+        };
+
+        indicator.addEventListener('pointerup', stopDrag);
+        indicator.addEventListener('pointercancel', stopDrag);
     }
 
 }
@@ -5489,17 +5825,49 @@ class RecordThinkingProcess{
  */
 let process_mode;
 let trigger_list;
-const getProcessMapDataFromDB = (callback) => {
+
+/**
+ * jsMindツリーから指定ノードの全子孫node_idを再帰的に収集する
+ * @param {string} nodeId - 起点ノードのID
+ * @returns {string[]} - 起点ノード自身を含む全子孫のnode_id配列
+ */
+const collectDescendantNodeIds = (nodeId) => {
+    const ids = [nodeId];
+    try {
+        if (typeof _jm !== 'undefined' && _jm.mind) {
+            const node = _jm.mind.get_node(nodeId);
+            if (node && node.children && node.children.length > 0) {
+                const traverse = (n) => {
+                    for (const child of n.children) {
+                        ids.push(child.id);
+                        if (child.children && child.children.length > 0) {
+                            traverse(child);
+                        }
+                    }
+                };
+                traverse(node);
+            }
+        }
+    } catch (e) {
+        console.warn('collectDescendantNodeIds: ツリー探索でエラー:', e);
+    }
+    console.log('📌 収集された子孫ノードID:', ids);
+    return ids;
+};
+const getProcessMapDataFromDB = (callback, targetNodeId) => {
     //選択されているノードIDとconcept_id
     let selected_node_id;
     let selected_concept_id;
-    if(process_mode == "all"){
-        selected_node_id = _jm.get_selected_node().id;
+    if (targetNodeId) {
+        selected_node_id = targetNodeId;
         selected_concept_id = Get_NodeInfo(selected_node_id, "concept_id");
+    } else if(process_mode == "all"){
+        selected_node_id = _jm.get_selected_node() ? _jm.get_selected_node().id : null;
+        selected_concept_id = selected_node_id ? Get_NodeInfo(selected_node_id, "concept_id") : null;
     }else{
         const conceptDiplay = document.getElementById("conceptdisplay");
-        selected_node_id = conceptDiplay.getAttribute('nodeid');
-        selected_concept_id = conceptDiplay.getAttribute('conceptid');;
+        selected_node_id = conceptDiplay ? conceptDiplay.getAttribute('nodeid') : null;
+        selected_concept_id = conceptDiplay ? conceptDiplay.getAttribute('conceptid') : null;
     }
     choose_trigger_xmlLoad().then(conceptIds => {
         return new Promise((resolve, reject) => {
@@ -5511,7 +5879,8 @@ const getProcessMapDataFromDB = (callback) => {
                         process_mode: process_mode,
                         selected_node_id: selected_node_id,
                         selected_concept_id: selected_concept_id,
-                        concept_ids: conceptIds
+                        concept_ids: conceptIds,
+                        descendant_node_ids: selected_node_id ? collectDescendantNodeIds(selected_node_id) : []
                     },
                 }).success((r) => {
                     trigger_list = JSON.parse(r);
@@ -5751,7 +6120,7 @@ const getPassDataFromDB = (selected_date) => {
                         console.log("過去データ表示モードを有効化しました");
                             try {
                                 // ビュー切替に合わせて操作系ボタンを視覚的に無効化
-                                $('#process_addNode, #process_startEditEdge, #process_removeNode, #process_removeEdge, #process_undo, #process_redo').addClass('disabled').prop('disabled', true);
+                                $('#process_startEditEdge, #process_removeNode, #process_undo, #process_redo').addClass('disabled').prop('disabled', true);
                             } catch (e) {
                                 /* ignore */
                             }
@@ -5989,10 +6358,11 @@ const makeTriggerInList = (id, activity_type, concept_label, content, timestamp,
 }
 
 // 思考過程表出化マップを表示
-const displayTriggerData = (mode, display_target_area_id) => {
+const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetProcessInstance) => {
+    const processInstance = targetProcessInstance || defaultThinkingProcess;
     // 現在データ表示時は過去データフラグを解除
-    if (typeof defaultThinkingProcess !== 'undefined') {
-        defaultThinkingProcess.isViewingPastData = false;
+    if (typeof processInstance !== 'undefined' && processInstance) {
+        processInstance.isViewingPastData = false;
         console.log("現在データ表示により過去データモードを無効化");
         
         // 過去データ表示の視覚的要素をリセット
@@ -6014,27 +6384,85 @@ const displayTriggerData = (mode, display_target_area_id) => {
         let selected_node_id;
         let selected_concept_id;
         // 初回読み込み時に何の認知活動かを表示する
-        if(mode=="all"){
-            selected_node_id = _jm.get_selected_node().id;
-            var jmnode = document.getElementsByTagName("jmnode");
-            for(var i=0; i<jmnode.length; i++){
-                if(selected_node_id == jmnode[i].getAttribute("nodeid")){
-                    selected_concept_id = jmnode[i].getAttribute("concept_id");
+        if (targetNodeId) {
+            selected_node_id = targetNodeId;
+            selected_concept_id = Get_NodeInfo(selected_node_id, "concept_id");
+            if (conceptdisplay_area.length) {
+                const conceptDisplayEl = document.getElementById('conceptdisplay');
+                if (conceptDisplayEl) {
+                    conceptDisplayEl.setAttribute('nodeId', selected_node_id);
+                    conceptDisplayEl.setAttribute('conceptId', selected_concept_id);
                 }
             }
-            document.getElementById('conceptdisplay').setAttribute('nodeId', selected_node_id);
-            document.getElementById('conceptdisplay').setAttribute('conceptId', selected_concept_id);
+        } else if(mode=="all"){
+            selected_node_id = _jm.get_selected_node() ? _jm.get_selected_node().id : null;
+            if (selected_node_id) {
+                var jmnode = document.getElementsByTagName("jmnode");
+                for(var i=0; i<jmnode.length; i++){
+                    if(selected_node_id == jmnode[i].getAttribute("nodeid")){
+                        selected_concept_id = jmnode[i].getAttribute("concept_id");
+                    }
+                }
+                const conceptDisplayEl = document.getElementById('conceptdisplay');
+                if (conceptDisplayEl) {
+                    conceptDisplayEl.setAttribute('nodeId', selected_node_id);
+                    conceptDisplayEl.setAttribute('conceptId', selected_concept_id);
+                }
+            }
         }else{
             const conceptDisplay = document.getElementById('conceptdisplay');
-            selected_node_id = conceptDisplay.getAttribute('nodeid');
-            selected_concept_id =conceptDisplay.getAttribute('conceptid');
+            selected_node_id = conceptDisplay ? conceptDisplay.getAttribute('nodeid') : null;
+            selected_concept_id = conceptDisplay ? conceptDisplay.getAttribute('conceptid') : null;
         }
+
+        // --- 追加: プロセスと同期したハイライト処理 ---
+        if (typeof _jm !== 'undefined' && _jm && _jm.mind && _jm.mind.nodes) {
+            // まず全てのリセット
+            var jmnodes = document.getElementsByTagName("jmnode");
+            for(var i=0; i<jmnodes.length; i++){
+                jmnodes[i].classList.remove("is-process-active");
+            }
+            for (var nid in _jm.mind.nodes) {
+                _jm.mind.nodes[nid].is_process_active_edge = false;
+            }
+
+            if (selected_node_id) {
+                let targetNode = _jm.get_node(selected_node_id);
+                if (targetNode) {
+                    let el = document.querySelector(`jmnode[nodeid="${selected_node_id}"]`);
+                    if(el) el.classList.add("is-process-active");
+                    
+                    if (targetNode.children) {
+                        for (let i = 0; i < targetNode.children.length; i++) {
+                            let child = targetNode.children[i];
+                            let childEl = document.querySelector(`jmnode[nodeid="${child.id}"]`);
+                            if(childEl) childEl.classList.add("is-process-active");
+                            child.is_process_active_edge = true;
+                        }
+                    }
+                }
+                if (_jm.view && _jm.view.show_lines) {
+                    _jm.view.show_lines(); // Canvas再描画
+                }
+            }
+        }
+        // ------------------------------------------
 
         getProcessMapDataFromDB ((trigger_list_info) => {
             //concept_labelを表示
             const concept_label = trigger_list_info['selected_concept'];
             conceptdisplay_area.html(concept_label);
             let j = 0;
+
+            // X座標のオフセット計算
+            let offsetX = 0;
+            if (targetNodeId && processInstance) {
+                const allNodes = processInstance.nodes.get();
+                if (allNodes.length > 0) {
+                    const maxX = allNodes.reduce((max, node) => Math.max(max, node.x || 0), 0);
+                    offsetX = maxX + 600; // 600ピクセル右にずらす
+                }
+            }
 
             // versionノードは最新のもの1つだけ表示する
             if (Array.isArray(trigger_list_info.node_versions) && trigger_list_info.node_versions.length > 0) {
@@ -6067,9 +6495,11 @@ const displayTriggerData = (mode, display_target_area_id) => {
                     selectedContent = trigger_list_info.onode[0].content || '';
                 }
                 const textForVersion = selectedContent || v.content || '';
-                defaultThinkingProcess.addVersionNode(v.node_version_id, textForVersion, "versions", v.appeared_at, node_x, node_y);
+                const finalNodeX = node_x + offsetX;
+                const finalNodeY = node_y;
+                processInstance.addVersionNode(v.node_version_id, textForVersion, "versions", v.appeared_at, finalNodeX, finalNodeY);
                 if (from_id != "") {
-                    defaultThinkingProcess.addVersionEdge(from_id, v.node_version_id);
+                    processInstance.addVersionEdge(from_id, v.node_version_id);
                 }
                 from_id = v.node_version_id;
                 // 複数表示しないため、node_x の増加は不要
@@ -6087,18 +6517,20 @@ const displayTriggerData = (mode, display_target_area_id) => {
                 if(u){
                     let from_node = u.node_version_from;
                     let to_node = u.node_version_to;
-                    let edge_ids = defaultThinkingProcess.ownNetwork.getConnectedEdges(from_node);
+                    let edge_ids = processInstance.ownNetwork.getConnectedEdges(from_node);
                     let num = 0;
                     for(i = 0; i<edge_ids.length; i++){
-                        if(defaultThinkingProcess.edges.get(edge_ids[i]).group == "versionEdges" || defaultThinkingProcess.edges.get(edge_ids[i]).group == "trigger_from"){
+                        if(processInstance.edges.get(edge_ids[i]).group == "versionEdges" || processInstance.edges.get(edge_ids[i]).group == "trigger_from"){
                             //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
-                            if(defaultThinkingProcess.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
+                            if(processInstance.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
                                 num = i;
                             }
                         }
                     }
                     let edge_id = edge_ids[num];
-                    defaultThinkingProcess.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, u.x, u.y);
+                    const triggerX = u.x ? parseFloat(u.x) + offsetX : null;
+                    const triggerY = u.y ? parseFloat(u.y) : null;
+                    processInstance.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, triggerX, triggerY);
                 }
             });
             console.log("onodeの中身:", trigger_list_info.onode);
@@ -6106,14 +6538,16 @@ const displayTriggerData = (mode, display_target_area_id) => {
             console.log("datesの中身:", trigger_list_info.dates);
 
             trigger_list_info.onode.map((n) => {
-                defaultThinkingProcess.addReloadNode(n.object_node_id, n.content, n.object_nodes_type, n.node_x, n.node_y, n.status, n.purpose, n.evaluation_good, n.attribution, n.attribution_bad, n.application, n.estimated_time, n.evaluation_bad);
+                const reloadX = parseFloat(n.node_x) + offsetX;
+                const reloadY = parseFloat(n.node_y);
+                processInstance.addReloadNode(n.object_node_id, n.content, n.object_nodes_type, reloadX, reloadY, n.status, n.purpose, n.evaluation_good, n.attribution, n.attribution_bad, n.application, n.estimated_time, n.evaluation_bad);
             });
             trigger_list_info.pedge.map((n) => {
                 console.log("🔍 エッジデータ確認:", n);
                 // object_edge_idが正しいフィールド名
                 const edgeId = n.object_edge_id || n.process_edge_id;
                 if (edgeId) {
-                    defaultThinkingProcess.addReloadEdge(edgeId, n.edge_start, n.edge_end, n.label);
+                    processInstance.addReloadEdge(edgeId, n.edge_start, n.edge_end, n.label);
                 } else {
                     console.warn("⚠️ エッジIDが見つかりません:", n);
                 }
@@ -6177,7 +6611,7 @@ const displayTriggerData = (mode, display_target_area_id) => {
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました（最新データ選択）");
                             try {
-                                $('#process_addNode, #process_startEditEdge, #process_removeNode, #process_removeEdge').removeClass('disabled').prop('disabled', false);
+                                $('#process_startEditEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
                                 // Undo/Redoボタンの状態を更新
                                 if (undoRedoManager) {
                                     undoRedoManager.updateButtons();
@@ -6247,7 +6681,7 @@ const displayTriggerData = (mode, display_target_area_id) => {
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました");
                             try {
-                                $('#process_addNode, #process_startEditEdge, #process_removeNode, #process_removeEdge').removeClass('disabled').prop('disabled', false);
+                                $('#process_startEditEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
                                 // Undo/Redoボタンの状態を更新
                                 if (undoRedoManager) {
                                     undoRedoManager.updateButtons();
@@ -6314,7 +6748,7 @@ const displayTriggerData = (mode, display_target_area_id) => {
 
             addeventdisplayTriggerData();
             
-        });
+        }, targetNodeId);
     }
     
 }
@@ -6595,15 +7029,13 @@ function ShowRelatedProcess(mode){
     
 }
 
-function showThinkingProcessMap() {
+function showThinkingProcessMap(clickedNodeId, isShiftKey) {
     document.getElementById('feedback_area').style.display = "block";
     document.getElementById('xml_upload_area').style.display = "block";
     $('#process_network_container').css('display', 'flex');
     $('#process_network_container').css('width', 'calc(100% - 300px)');
-    $('#process_network_container').css('height', '80vh'); // 明示的に高さを設定
     $('#jsmind_container').css('width', 'calc(100% - 300px)');
     $('#jsmind_container').css('min-width', '300px');
-    $('#jsmind_container').css('height', '40%');
     $('#jsmind_container').css('float', 'left');
     $('#mind').css('width', '280px');
     $('#mind').css('height', '90%');
@@ -6621,12 +7053,17 @@ function showThinkingProcessMap() {
     // trigger_areaを非表示にする
     $('#trigger_area').css('display', 'none');
 
-    if (defaultThinkingProcess) {
-        try { defaultThinkingProcess.removeEventLister(); } catch (e) { console.warn('removeEventLister failed', e); }
-        try { sessionStorage.removeItem('currentSelectId'); } catch (e) { /* ignore */ }
+    if (isShiftKey && defaultThinkingProcess) {
+        // Shiftキー押下時は、既存のインスタンスを維持し、データを追加ロード (第3引数にclickedNodeId, 第4引数にdefaultThinkingProcessを指定)
+        displayTriggerData("all", "trigger_area_list", clickedNodeId, defaultThinkingProcess);
+    } else {
+        if (defaultThinkingProcess) {
+            try { defaultThinkingProcess.removeEventLister(); } catch (e) { console.warn('removeEventLister failed', e); }
+            try { sessionStorage.removeItem('currentSelectId'); } catch (e) { /* ignore */ }
+        }
+        defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
+        displayTriggerData("all", "trigger_area_list", clickedNodeId, defaultThinkingProcess);
     }
-    defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
-    displayTriggerData("all", "trigger_area_list");
     
     // vis.jsに明示的にリサイズを通知（複数回実行して確実にリサイズ）
     setTimeout(() => {
@@ -6666,7 +7103,7 @@ function closeThinkingProcessMap(){
     $('#process_network_container').css('display','none');
     $('#jsmind_container').css('width','calc(100% - 300px)');
     $('#jsmind_container').css('min-width', '300px');
-    $('#jsmind_container').css('height','100%');
+    $('#jsmind_container').css('height','');
     $('#jsmind_container').css('float', 'left');
     $('#mind').css('width', '280px');
     $('#mind').css('height','100%');
@@ -6704,14 +7141,7 @@ window.addEventListener('load', () => {
     document.getElementById("process_network_container").style.display="none";
     defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
     // マップ編集ボタンにイベント付与
-    $(`#process_addNode`).on("click", e => {
-        if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
-            console.log('過去データ表示中のため、ノード追加は無効化されています');
-            try { alert('過去の表示中はノード追加できません'); } catch (err) { /* ignore */ }
-            return;
-        }
-        defaultThinkingProcess.addNewNode();
-    });
+
     $(`#process_startEditEdge`).on("click", e => {
         if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
             console.log('過去データ表示中のため、エッジ追加は無効化されています');
@@ -6728,14 +7158,7 @@ window.addEventListener('load', () => {
         }
         defaultThinkingProcess.deleteNode();
     });
-    $(`#process_removeEdge`).on("click", e => {
-        if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
-            console.log('過去データ表示中のため、エッジ削除は無効化されています');
-            try { alert('過去の表示中はエッジ削除できません'); } catch (err) { /* ignore */ }
-            return;
-        }
-        defaultThinkingProcess.deleteEdge();
-    });
+
     $(`#process_ZoomIn`).on("click", e => {
         defaultThinkingProcess.zoomIn();
     });
@@ -6804,3 +7227,53 @@ window.addEventListener('load', () => {
       });
     });
 });
+
+// ドラッグ中のエッジプレビュー線（ゴムバンド矢印）を描画するヘルパー関数
+function drawEdgeDragPreview(startX, startY, endX, endY) {
+    let svg = document.getElementById('edgeDragPreview');
+    if (!svg) {
+        svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.id = 'edgeDragPreview';
+        svg.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9999;';
+        
+        // 矢印マーカー定義
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'drag-arrow');
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', '6');
+        marker.setAttribute('refY', '5');
+        marker.setAttribute('markerWidth', '6');
+        marker.setAttribute('markerHeight', '6');
+        marker.setAttribute('orient', 'auto-start-reverse');
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+        path.setAttribute('fill', '#4CAF50'); // ボタンと同じ緑色
+        
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+        document.body.appendChild(svg);
+    }
+    
+    let line = svg.querySelector('line');
+    if (!line) {
+        line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('stroke', '#4CAF50');
+        line.setAttribute('stroke-width', '3');
+        line.setAttribute('marker-end', 'url(#drag-arrow)');
+        line.setAttribute('stroke-dasharray', '5,5'); // 点線
+        svg.appendChild(line);
+    }
+    
+    line.setAttribute('x1', startX);
+    line.setAttribute('y1', startY);
+    line.setAttribute('x2', endX);
+    line.setAttribute('y2', endY);
+}
+
+function removeEdgeDragPreview() {
+    const svg = document.getElementById('edgeDragPreview');
+    if (svg) svg.remove();
+}

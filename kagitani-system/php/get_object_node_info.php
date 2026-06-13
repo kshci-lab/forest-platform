@@ -159,7 +159,7 @@ if ($rows) {
             }
         }
 
-        $sql_edges = "SELECT object_edge_id, edge_start, edge_end, appeared_at FROM object_edges_histories WHERE edge_start IN ($inClause) AND edge_end IN ($inClause) $histDateClause ORDER BY object_edge_id, appeared_at DESC";
+        $sql_edges = "SELECT object_edge_id, edge_start, edge_end FROM object_edges WHERE edge_start IN ($inClause) AND edge_end IN ($inClause) AND deleted = 0 ORDER BY object_edge_id";
         $result_edges = @$mysqli->query($sql_edges);
         $edges = [];
         if ($result_edges) {

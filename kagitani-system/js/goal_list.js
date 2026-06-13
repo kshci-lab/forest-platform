@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     fetchWeeklyGoalsFromDB();
     // 小目標
-    var addWeeklyBtn = document.getElementById('addWeeklyGoalBtn');
+    var addWeeklyBtn = document.getElementById('addCycleBtn');
     var weeklyStartInput = document.getElementById('weeklyGoalStart');
     var weeklyEndInput = document.getElementById('weeklyGoalEnd');
     var weeklyListDiv = document.getElementById('weeklyGoalsList');
@@ -203,7 +203,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 小目標: クリックで日付入力モーダルを表示して登録するように変更
     if (addWeeklyBtn) {
-        addWeeklyBtn.onclick = function() {
+        addWeeklyBtn.onclick = function(e) {
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
             // モーダル生成
             var modal = document.createElement('div');
             modal.style.position = 'fixed';
@@ -219,64 +223,131 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var modalContent = document.createElement('div');
             modalContent.style.background = '#fff';
-            modalContent.style.padding = '24px';
-            modalContent.style.borderRadius = '10px';
-            modalContent.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)';
-            modalContent.style.minWidth = '320px';
+            modalContent.style.padding = '32px';
+            modalContent.style.borderRadius = '12px';
+            modalContent.style.boxShadow = '0 10px 30px rgba(0,0,0,0.08)';
+            modalContent.style.border = '1px solid #e2e8f0';
+            modalContent.style.minWidth = '360px';
             modalContent.style.maxWidth = '90vw';
+            modalContent.style.color = '#2d3748';
 
             var title = document.createElement('h3');
-            title.textContent = t('期間を設定してください') || '小目標を追加';
+            title.textContent = '🧭 次のMTまでの期間を設定してください';
             title.style.marginTop = '0';
+            title.style.marginBottom = '24px';
+            title.style.fontSize = '18px';
+            title.style.fontWeight = '600';
+            title.style.color = '#1a202c';
             modalContent.appendChild(title);
 
-            var startLabel = document.createElement('label');
-            startLabel.textContent = t('startLabel');
-            startLabel.className = 'weekly-modal-label';
-            startLabel.style.display = 'block';
-            startLabel.style.marginTop = '8px';
+            var presetWrap = document.createElement('div');
+            presetWrap.style.display = 'flex';
+            presetWrap.style.gap = '8px';
+            presetWrap.style.marginBottom = '12px';
+
+            function createPresetBtn(text, onClick) {
+                var btn = document.createElement('button');
+                btn.textContent = text;
+                btn.style.background = '#edf2f7';
+                btn.style.color = '#4a5568';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '6px';
+                btn.style.padding = '6px 12px';
+                btn.style.fontSize = '13px';
+                btn.style.cursor = 'pointer';
+                btn.style.transition = 'background 0.2s';
+                btn.onmouseenter = function() { btn.style.background = '#e2e8f0'; };
+                btn.onmouseleave = function() { btn.style.background = '#edf2f7'; };
+                btn.onclick = onClick;
+                return btn;
+            }
+
             var startInput = document.createElement('input');
             startInput.type = 'date';
-            startInput.style.width = '100%';
-            startInput.style.marginTop = '6px';
+            startInput.style.border = 'none';
+            startInput.style.background = 'transparent';
+            startInput.style.color = '#2d3748';
+            startInput.style.fontWeight = '500';
+            startInput.style.outline = 'none';
+            startInput.style.flex = '1';
 
-            var endLabel = document.createElement('label');
-            endLabel.textContent = t('endLabel');
-            endLabel.className = 'weekly-modal-label';
-            endLabel.style.display = 'block';
-            endLabel.style.marginTop = '12px';
             var endInput = document.createElement('input');
             endInput.type = 'date';
-            endInput.style.width = '100%';
-            endInput.style.marginTop = '6px';
+            endInput.style.border = 'none';
+            endInput.style.background = 'transparent';
+            endInput.style.color = '#2d3748';
+            endInput.style.fontWeight = '500';
+            endInput.style.outline = 'none';
+            endInput.style.flex = '1';
 
-            modalContent.appendChild(startLabel);
-            modalContent.appendChild(startInput);
-            modalContent.appendChild(endLabel);
-            modalContent.appendChild(endInput);
+            var btnOneWeekLater = createPresetBtn('[ 1週間後 ]', function() {
+                var today = new Date();
+                var nextWeek = new Date(today);
+                nextWeek.setDate(today.getDate() + 7);
+
+                var offsetMs = today.getTimezoneOffset() * 60 * 1000;
+                var localToday = new Date(today.getTime() - offsetMs);
+                var localNextWeek = new Date(nextWeek.getTime() - offsetMs);
+
+                startInput.value = localToday.toISOString().split('T')[0];
+                endInput.value = localNextWeek.toISOString().split('T')[0];
+            });
+
+            presetWrap.appendChild(btnOneWeekLater);
+            modalContent.appendChild(presetWrap);
+
+            var dateWrap = document.createElement('div');
+            dateWrap.style.display = 'flex';
+            dateWrap.style.alignItems = 'center';
+            dateWrap.style.background = '#eafbe7';
+            dateWrap.style.border = '1px solid #c6f6d5';
+            dateWrap.style.borderRadius = '8px';
+            dateWrap.style.padding = '8px 12px';
+            dateWrap.style.gap = '12px';
+            dateWrap.style.marginBottom = '24px';
+
+            var separator = document.createElement('span');
+            separator.textContent = '〜';
+            separator.style.color = '#718096';
+
+            dateWrap.appendChild(startInput);
+            dateWrap.appendChild(separator);
+            dateWrap.appendChild(endInput);
+            modalContent.appendChild(dateWrap);
 
             var btnWrap = document.createElement('div');
-            btnWrap.style.marginTop = '16px';
-            btnWrap.style.textAlign = 'right';
-
-            var saveBtn = document.createElement('button');
-            saveBtn.textContent = t('save');
-            saveBtn.style.padding = '8px 16px';
-            saveBtn.style.background = '#28a745';
-            saveBtn.style.color = '#fff';
-            saveBtn.style.border = 'none';
-            saveBtn.style.borderRadius = '6px';
-            saveBtn.style.cursor = 'pointer';
+            btnWrap.style.display = 'flex';
+            btnWrap.style.justifyContent = 'flex-end';
+            btnWrap.style.gap = '12px';
 
             var cancelBtn = document.createElement('button');
-            cancelBtn.textContent = t('close') || '閉じる';
-            cancelBtn.style.marginRight = '8px';
-            cancelBtn.style.padding = '8px 12px';
-            cancelBtn.style.background = '#aaa';
-            cancelBtn.style.color = '#fff';
+            cancelBtn.textContent = 'キャンセル';
+            cancelBtn.style.padding = '10px 16px';
+            cancelBtn.style.background = '#edf2f7';
+            cancelBtn.style.color = '#718096';
             cancelBtn.style.border = 'none';
-            cancelBtn.style.borderRadius = '6px';
+            cancelBtn.style.borderRadius = '8px';
             cancelBtn.style.cursor = 'pointer';
+            cancelBtn.style.fontWeight = '600';
+            cancelBtn.style.transition = 'background 0.2s';
+            cancelBtn.onmouseenter = function() { cancelBtn.style.background = '#e2e8f0'; };
+            cancelBtn.onmouseleave = function() { cancelBtn.style.background = '#edf2f7'; };
+
+            var saveBtn = document.createElement('button');
+            saveBtn.textContent = 'この期間でサイクルを開始';
+            saveBtn.style.padding = '10px 20px';
+            saveBtn.style.background = '#48bb78';
+            saveBtn.style.color = '#fff';
+            saveBtn.style.border = 'none';
+            saveBtn.style.borderRadius = '8px';
+            saveBtn.style.cursor = 'pointer';
+            saveBtn.style.fontWeight = '600';
+            saveBtn.style.boxShadow = '0 2px 8px rgba(72,187,120,0.3)';
+            saveBtn.style.transition = 'background 0.2s, transform 0.1s';
+            saveBtn.onmouseenter = function() { saveBtn.style.background = '#38a169'; };
+            saveBtn.onmouseleave = function() { saveBtn.style.background = '#48bb78'; };
+            saveBtn.onmousedown = function() { saveBtn.style.transform = 'scale(0.98)'; };
+            saveBtn.onmouseup = function() { saveBtn.style.transform = 'scale(1)'; };
 
             btnWrap.appendChild(cancelBtn);
             btnWrap.appendChild(saveBtn);
@@ -364,10 +435,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         var html = '';
+        var currentYear = null;
         goals.forEach(function(goal, idx) {
             // 編集ボタンのツールチップ（ローカライズ）
             var editBtnTitle = (getCurrentLang() === 'ja') ? '日付を編集できます' : 'You can edit dates';
-            var jmnodeStyle = 'display:inline-block;margin:4px 6px 4px 0;padding:10px;background-color:#bee2f9;color:#333;border-radius:12px;box-shadow:1px 1px 1px #666;font:12px/1.125 Verdana,Arial,Helvetica,sans-serif;border:1.5px solid #7ec3e6;';
             var nodeHtml = '';
             if (goal.contents && goal.contents.length) {
                 nodeHtml = goal.contents.map(function(contentItem, cidx) {
@@ -380,30 +451,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!contentText) contentText = t('unlinked');
                     // data 属性を付与して後でイベントバインドしやすくする
                     var nodeIdAttr = (contentItem && typeof contentItem === 'object' && contentItem.node_id) ? contentItem.node_id : '';
-                    return '<div class="jmnode" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" data-node-id="' + nodeIdAttr + '" style="' + jmnodeStyle + '">' +
+                    return '<div class="jmnode question-item" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" data-node-id="' + nodeIdAttr + '" title="SRL整理マップを開けます">' +
+                        '<div style="display:flex; align-items:center; gap:6px;">' +
                         '<span>' + contentText + '</span>' +
-                        '<button onclick="deleteGoalNode(' + idx + ',' + cidx + ')" class="goal-delete-btn" title="削除">' +
-                        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>' +
+                        '</div>' +
+                        '<button onclick="deleteGoalNode(' + idx + ',' + cidx + ')" class="goal-delete-btn" title="削除" style="background:transparent;border:none;cursor:pointer;padding:0;">' +
+                        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><path d="M4 8h8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>' +
                         '</button>' +
                         '</div>';
                 }).join('');
             } else {
-                nodeHtml = '<div class="jmnode" style="' + jmnodeStyle + 'color:#888;">' + t('unlinked') + '</div>';
+                nodeHtml = '<div class="jmnode question-item" style="color:#888;">' + t('unlinked') + '</div>';
             }
             var startDate = new Date(goal.start || goal.start_date);
             var endDate = new Date(goal.end || goal.finish_date);
             var startStr = (startDate.getMonth()+1) + '/' + startDate.getDate();
             var endStr = (endDate.getMonth()+1) + '/' + endDate.getDate();
-            html += '<div style="background:#eafbe7;border:1.5px solid #28a745;border-radius:7px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;font-size:16px;">'
+            // 振り返りデータはホバー時に動的フェッチするためプレースホルダーをセット
+            var popoverHtml = '<div class="reflection-popover" data-loaded="false" data-loading="false">' +
+                              '<div class="popover-status-empty">読み込み中...</div>' +
+                              '</div>';
+
+            var goalYear = startDate.getFullYear();
+            if (currentYear !== goalYear) {
+                html += '<div class="year-separator">' +
+                        '<span class="year-text">' + goalYear + '</span>' +
+                        '<div class="year-line"></div>' +
+                        '</div>';
+                currentYear = goalYear;
+            }
+
+            html += '<div class="weekly-goal-card-container journal-card" data-goal-idx="' + idx + '">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-                + '<span class="weekly-goal-date-range" data-idx="' + idx + '" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
-                + '<button class="export-weekly-btn" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" style="margin-left:8px;padding:4px 10px;background:#007bff;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;"><span id="exportWeeklyGoalBtnText' + idx + '">' + t('exportReport') + '</span></button>'
+                + '<span class="weekly-goal-date-range journal-date" data-idx="' + idx + '" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
+                + '<div class="btn-reflect-container">'
+                + '<button class="export-weekly-btn btn-reflect" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" title="' + startStr + '〜' + endStr + 'の活動を振り返る"><span>📝</span></button>'
+                + popoverHtml
+                + '</div>'
                 + '</div>'
                 + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
                 + '<div style="text-align:right;margin-top:8px;">'
-                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn" title="' + t('delete') + '" id="deleteWeeklyGoalBtn' + idx + '" style="padding:4px 10px;background:#dc3545;color:#fff;border:none;border-radius:5px;font-size:13px;cursor:pointer;">'
-                + '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="8" cy="8" r="7" fill="#dc3545"/><path d="M5 8h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>'
-                + ' <span id="deleteWeeklyGoalBtnText' + idx + '">' + t('dash') + '</span></button>'
+                + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn btn-delete-cycle" title="' + t('delete') + '" id="deleteWeeklyGoalBtn' + idx + '">'
+                + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+                + '</button>'
                 + '</div>'
                 + '</div>';
         });
@@ -450,7 +540,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 優先: マインドマップ上で対応するノードを選択して、
                     // そのノードのアイコン（.node-icon-wrapper）をプログラム的にクリックする。
                     // アイコンが見つからない場合は既存のフォールバック処理を実行。
-                    (function openProcessMapForNode(nodeId) {
+                    (function openProcessMapForNode(nodeId, isShiftKey) {
                         // 保存用（process map 側で参照できるように）
                         try {
                             if (nodeId) sessionStorage.setItem('processMap_targetNodeId', nodeId);
@@ -486,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     if (iconWrapper) {
                                         // dispatch a real click event
                                         try {
-                                            iconWrapper.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                                            iconWrapper.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: isShiftKey }));
                                             return; // 成功したらここで終わり
                                         } catch (evErr) {
                                             try { iconWrapper.click(); return; } catch(e){/* fallthrough */}
@@ -507,14 +597,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         try {
                             if (typeof showThinkingProcessMap === 'function') {
-                                showThinkingProcessMap();
+                                showThinkingProcessMap(nodeId, isShiftKey);
                             } else {
                                 console.warn('showThinkingProcessMap 関数が見つかりません');
                             }
                         } catch (err) {
                             console.error('showThinkingProcessMap 呼出しエラー', err);
                         }
-                    })(nodeId);
+                    })(nodeId, e.shiftKey);
                 };
                 el._goalClickHandler = handler;
                 el.addEventListener('click', handler);
@@ -542,6 +632,88 @@ document.addEventListener('DOMContentLoaded', function() {
                     // ignore per-element errors
                 }
             });
+
+            // 追加: 期間カード全体に対する全マップ一括表示機能（日付編集などとの競合回避）
+            var cardContainers = weeklyListDiv.querySelectorAll('.weekly-goal-card-container');
+            cardContainers.forEach(function(card) {
+                card.removeEventListener('click', card._cardClickHandler);
+                var handler = function(e) {
+                    // 日付のダブルクリック編集（input含む）、削除ボタン、エクスポートボタン、個別のノードクリック時はキャンセル
+                    if (e.target.closest('.weekly-goal-date-range') || e.target.tagName.toLowerCase() === 'input' || e.target.closest('.goal-delete-btn') || e.target.closest('.export-weekly-btn') || e.target.closest('.jmnode')) {
+                        return; // イベント無視（既存の機能を妨害しない）
+                    }
+
+                    var nodesInCard = card.querySelectorAll('.jmnode');
+                    if (!nodesInCard || nodesInCard.length === 0) return;
+
+                    // mindmap の jmnode 要素から nodeid を探すヘルパ（カード用）
+                    function findMindmapNodeIdByText(targetText) {
+                        if (!targetText) return null;
+                        try {
+                            var targetJmNodes = document.getElementsByTagName('jmnode');
+                            var normTarget = targetText.replace(/\s+/g, ' ').trim().toLowerCase();
+                            for (var i = 0; i < targetJmNodes.length; i++) {
+                                var n = targetJmNodes[i];
+                                var nodeText = (n.textContent || n.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                                if (!nodeText) continue;
+                                if (nodeText === normTarget || nodeText.indexOf(normTarget) !== -1 || normTarget.indexOf(nodeText) !== -1) {
+                                    return n.getAttribute('nodeid') || n.getAttribute('id') || null;
+                                }
+                            }
+                        } catch (err) { }
+                        return null;
+                    }
+
+                    // 1つずつ処理し、最初のノードはメイン表示、2つ目以降はShiftクリック相当の並列表示として扱う
+                    nodesInCard.forEach(function(nodeEl, index) {
+                        var text = (nodeEl.querySelector('span') ? nodeEl.querySelector('span').textContent.trim() : '');
+                        var explicitNodeId = nodeEl.getAttribute('data-node-id') || '';
+                        var nodeId = explicitNodeId || findMindmapNodeIdByText(text);
+
+                        if (nodeId) {
+                            var isShiftKey = (index > 0); // 1つ目はfalse（メイン置換）、2つ目以降はtrue（並列追加）
+
+                            // 保存用（process map 側で参照できるように）
+                            try {
+                                if (nodeId) sessionStorage.setItem('processMap_targetNodeId', nodeId);
+                                sessionStorage.setItem('processMap_targetText', text);
+                            } catch (err) {
+                                window.processMap_targetNodeId = nodeId;
+                                window.processMap_targetText = text;
+                            }
+
+                            // jsMindの選択セット
+                            try {
+                                if (typeof _jm !== 'undefined' && _jm && typeof _jm.select_node === 'function' && nodeId) {
+                                    _jm.select_node(nodeId);
+                                }
+                            } catch (err) {}
+
+                            // 対応する jmnode 要素を探してアイコンクリックを発火（これが最も確実なパス）
+                            try {
+                                var jmElem = document.querySelector('jmnode[nodeid="' + nodeId + '"]') || document.querySelector('jmnode[id="' + nodeId + '"]');
+                                if (jmElem) {
+                                    var iconWrapper = jmElem.querySelector('.node-icon-wrapper');
+                                    if (iconWrapper) {
+                                        iconWrapper.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: isShiftKey }));
+                                        return; // 成功したら次へ
+                                    }
+                                }
+                            } catch (err) {}
+
+                            // フォールバック: アイコンがクリックできなければ既存の関数を直叩き
+                            try {
+                                if (typeof showThinkingProcessMap === 'function') {
+                                    showThinkingProcessMap(nodeId, isShiftKey);
+                                }
+                            } catch (err) {}
+                        }
+                    });
+                };
+                card._cardClickHandler = handler;
+                card.addEventListener('click', handler);
+            });
+
         } catch (e) {
             console.error('jmnode click bind error', e);
         }
@@ -858,10 +1030,60 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.initWeeklyReportHandlers && typeof window.initWeeklyReportHandlers === 'function') {
             try { window.initWeeklyReportHandlers(window._goalListHelpers || {}); } catch(e){ console.warn('initWeeklyReportHandlers failed', e); }
         }
+        // --- 最新カードの問いノードのアイコン枠線を強調 ---
+        try { highlightLatestGoalIcons(); } catch(e) { console.warn('highlightLatestGoalIcons failed', e); }
     }
 
+    /**
+     * weeklyGoalsListの最新カード（goals[0]）に保存されている問いノードのアイコンの枠線色を変更する
+     * 通常のアイコンは白い枠線だが、最新カードのノードはゴールドの枠線にする
+     */
+    function highlightLatestGoalIcons() {
+        try {
+            var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
+            if (!goals.length) return;
+
+            // まず全てのアイコンの枠線をデフォルト（白）にリセット
+            var allIcons = document.querySelectorAll('.node-icon-wrapper');
+            allIcons.forEach(function(icon) {
+                icon.style.border = '2px solid white';
+            });
+
+            // 最新カード（先頭 = goals[0]）の問いノードIDを収集
+            var latestGoal = goals[0];
+            var latestNodeIds = [];
+            if (latestGoal.contents && latestGoal.contents.length) {
+                latestGoal.contents.forEach(function(c) {
+                    var nid = (c && typeof c === 'object') ? c.node_id : '';
+                    if (nid) latestNodeIds.push(nid);
+                });
+            }
+
+            if (!latestNodeIds.length) return;
+
+            // 該当ノードのアイコン枠線をゴールドに変更
+            latestNodeIds.forEach(function(nodeId) {
+                var jmElem = document.querySelector('jmnode[nodeid="' + nodeId + '"]');
+                if (!jmElem) return;
+                var iconWrapper = jmElem.querySelector('.node-icon-wrapper');
+                if (iconWrapper) {
+                    iconWrapper.style.setProperty('border', '2px solid #48bb78', 'important'); // リーフグリーン
+                    iconWrapper.style.setProperty('box-shadow', '0 0 6px rgba(72, 187, 120, 0.5)', 'important');
+                }
+            });
+
+            console.log('📍 最新カードの問いノードアイコンを強調:', latestNodeIds);
+        } catch (e) {
+            console.warn('highlightLatestGoalIcons error:', e);
+        }
+    }
+    // グローバルに公開（addIconsToObjectNodes完了後にも呼び出せるように）
+    window.highlightLatestGoalIcons = highlightLatestGoalIcons;
 // 関連ノード（contents）個別削除（グローバル定義）
 window.deleteGoalNode = function(goalIdx, contentIdx) {
+    if (!window.confirm("この問いノードを目標から外しますか？")) {
+        return;
+    }
     var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
     if (goals[goalIdx] && goals[goalIdx].contents && goals[goalIdx].contents.length > contentIdx) {
         var deletedContent = goals[goalIdx].contents[contentIdx];
@@ -1177,21 +1399,14 @@ window.addWeeklyGoal = function() {
     function getCurrentLangSafe() {
         try { return (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked) ? 'en' : 'ja'; } catch(e){ return 'ja'; }
     }
-    function showGlobalTooltip(text, target) {
+    function showGlobalTooltip(html, target) {
         try {
             var existing = document.getElementById('gl_custom_tooltip');
             if (existing) existing.parentNode.removeChild(existing);
             var tip = document.createElement('div');
             tip.id = 'gl_custom_tooltip';
-            tip.textContent = text;
-            tip.style.position = 'absolute';
-            tip.style.background = 'rgba(0,0,0,0.8)';
-            tip.style.color = '#fff';
-            tip.style.padding = '6px 8px';
-            tip.style.borderRadius = '6px';
-            tip.style.fontSize = '13px';
-            tip.style.zIndex = 20000;
-            tip.style.pointerEvents = 'none';
+            tip.className = 'srl-tooltip-card';
+            tip.innerHTML = html;
             document.body.appendChild(tip);
             var rect = target.getBoundingClientRect();
             // position above if space, otherwise below
@@ -1209,30 +1424,164 @@ window.addWeeklyGoal = function() {
         try { var ex = document.getElementById('gl_custom_tooltip'); if (ex) ex.parentNode.removeChild(ex); } catch(e){}
     }
 
+    var _tooltipCache = {};
+    var _tooltipTimer = null;
+
+    function buildTooltipHtml(res) {
+        var counts = { "完了": 0, "開始": 0, "中断": 0, "計画": 0 };
+        var latestHistory = null;
+
+        if (res && Array.isArray(res.histories)) {
+            var grp = {};
+            res.histories.forEach(function(h) {
+                var oid = h.object_node_id;
+                if (!grp[oid]) grp[oid] = [];
+                grp[oid].push(h);
+
+                if (!latestHistory || new Date(h.appeared_at) > new Date(latestHistory.appeared_at)) {
+                    latestHistory = h;
+                }
+            });
+
+            if (res.data && Array.isArray(res.data)) {
+                res.data.forEach(function(node) {
+                    var hList = grp[node.object_node_id];
+                    var status = "計画";
+                    if (hList && hList.length) {
+                        hList.sort(function(a,b) { return new Date(a.appeared_at) - new Date(b.appeared_at); });
+                        hList.forEach(function(h) {
+                            var act = parseInt(h.activity, 10);
+                            if (act === 5) status = "開始";
+                            else if (act === 6) status = "中断";
+                            else if (act === 7) status = "完了";
+                        });
+                    }
+                    counts[status]++;
+                });
+            }
+        }
+
+        var upper = '⚫ 完了: ' + counts["完了"] + ' &nbsp;|&nbsp; 🟠 開始: ' + counts["開始"] + ' &nbsp;|&nbsp; 🔴 中断: ' + counts["中断"] + ' &nbsp;|&nbsp; 🟢 計画: ' + counts["計画"];
+        var lower = '';
+
+        if (latestHistory) {
+            var date = new Date(latestHistory.appeared_at);
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            var hours = date.getHours().toString().padStart(2, '0');
+            var minutes = date.getMinutes().toString().padStart(2, '0');
+            var timeStr = month + '/' + day + ' ' + hours + ':' + minutes;
+            var actStr = "を操作";
+            var act = parseInt(latestHistory.activity, 10);
+            if (act === 1) actStr = "を追加";
+            else if (act === 2) actStr = "を更新";
+            else if (act === 5) actStr = "を開始";
+            else if (act === 6) actStr = "を中断";
+            else if (act === 7) actStr = "を完了";
+
+            var content = latestHistory.content || "(名称未設定)";
+            if (content.length > 15) content = content.substring(0, 15) + '...';
+
+            lower = '🕒 最新の動き: 「' + content + '」' + actStr + ' (' + timeStr + ')';
+        } else {
+            lower = '🕒 最新の動き: まだ活動がありません';
+        }
+
+        return '<div style="font-size:12px;white-space:nowrap;margin-bottom:2px;">' + upper + '</div>' + 
+               '<hr class="srl-tooltip-divider" />' + 
+               '<div class="srl-tooltip-latest">' + lower + '</div>';
+    }
+
     // マウスオーバー/アウト（delegation）
     document.addEventListener('mouseover', function(e){
-        var node = e.target.closest && e.target.closest('.node-icon-container');
-        if (node) {
-            var text = (getCurrentLangSafe() === 'ja') ? '目標手段階層マップがあります' : 'Goal hierarchy map available';
-            showGlobalTooltip(text, node);
+        var icon = e.target.closest && e.target.closest('.node-icon-container');
+        if (icon) {
+            var nodeElem = icon.closest && (icon.closest('jmnode') || icon.closest('[nodeid]') || icon.closest('[data-nodeid]') || icon.closest('[id]'));
+            var nodeId = nodeElem ? (nodeElem.getAttribute('nodeid') || nodeElem.getAttribute('data-nodeid') || nodeElem.getAttribute('id')) : null;
+            
+            if (nodeId) {
+                var loadingHtml = '<div style="text-align:center;color:#718096;font-size:12px;">読み込み中...</div>';
+                showGlobalTooltip(loadingHtml, icon);
+
+                clearTimeout(_tooltipTimer);
+                _tooltipTimer = setTimeout(function() {
+                    if (_tooltipCache[nodeId]) {
+                        var existing = document.getElementById('gl_custom_tooltip');
+                        if (existing) showGlobalTooltip(_tooltipCache[nodeId], icon);
+                    } else {
+                        $.ajax({
+                            url: 'php/get_object_node_info.php',
+                            type: 'GET',
+                            dataType: 'json',
+                            data: { node_id: nodeId },
+                            success: function(res) {
+                                var html = buildTooltipHtml(res);
+                                _tooltipCache[nodeId] = html;
+                                var existing = document.getElementById('gl_custom_tooltip');
+                                if (existing) showGlobalTooltip(html, icon);
+                            }
+                        });
+                    }
+                }, 200);
+            } else {
+                var text = (getCurrentLangSafe() === 'ja') ? 'SRL整理マップがあります' : 'SRL Map available';
+                showGlobalTooltip('<div style="font-size:12px;">'+text+'</div>', icon);
+            }
         }
     });
+
     document.addEventListener('mouseout', function(e){
-        var node = e.target.closest && e.target.closest('.node-icon-container');
-        if (node) hideGlobalTooltip();
+        var icon = e.target.closest && e.target.closest('.node-icon-container');
+        if (icon) {
+            clearTimeout(_tooltipTimer);
+            hideGlobalTooltip();
+        }
     });
 
     // キーボードフォーカス対応
     document.addEventListener('focusin', function(e){
-        var node = e.target.closest && e.target.closest('.node-icon-container');
-        if (node) {
-            var text = (getCurrentLangSafe() === 'ja') ? '目標手段階層マップがあります' : 'Goal hierarchy map available';
-            showGlobalTooltip(text, node);
+        var icon = e.target.closest && e.target.closest('.node-icon-container');
+        if (icon) {
+            var nodeElem = icon.closest && (icon.closest('jmnode') || icon.closest('[nodeid]') || icon.closest('[data-nodeid]') || icon.closest('[id]'));
+            var nodeId = nodeElem ? (nodeElem.getAttribute('nodeid') || nodeElem.getAttribute('data-nodeid') || nodeElem.getAttribute('id')) : null;
+            
+            if (nodeId) {
+                var loadingHtml = '<div style="text-align:center;color:#718096;font-size:12px;">読み込み中...</div>';
+                showGlobalTooltip(loadingHtml, icon);
+
+                clearTimeout(_tooltipTimer);
+                _tooltipTimer = setTimeout(function() {
+                    if (_tooltipCache[nodeId]) {
+                        var existing = document.getElementById('gl_custom_tooltip');
+                        if (existing) showGlobalTooltip(_tooltipCache[nodeId], icon);
+                    } else {
+                        $.ajax({
+                            url: 'php/get_object_node_info.php',
+                            type: 'GET',
+                            dataType: 'json',
+                            data: { node_id: nodeId },
+                            success: function(res) {
+                                var html = buildTooltipHtml(res);
+                                _tooltipCache[nodeId] = html;
+                                var existing = document.getElementById('gl_custom_tooltip');
+                                if (existing) showGlobalTooltip(html, icon);
+                            }
+                        });
+                    }
+                }, 200);
+            } else {
+                var text = (getCurrentLangSafe() === 'ja') ? 'SRL整理マップがあります' : 'SRL Map available';
+                showGlobalTooltip('<div style="font-size:12px;">'+text+'</div>', icon);
+            }
         }
     });
+
     document.addEventListener('focusout', function(e){
-        var node = e.target.closest && e.target.closest('.node-icon-container');
-        if (node) hideGlobalTooltip();
+        var icon = e.target.closest && e.target.closest('.node-icon-container');
+        if (icon) {
+            clearTimeout(_tooltipTimer);
+            hideGlobalTooltip();
+        }
     });
 
     // クリックで目標手段階層マップを開く
@@ -1270,4 +1619,100 @@ window.addWeeklyGoal = function() {
             console.error('showThinkingProcessMap call failed', err);
         }
     });
+
+    // 【追加】ホバー時に内省データを動的フェッチする処理（サイドバーのポップアップ用）
+    document.addEventListener('mouseover', function(e) {
+        var container = e.target.closest('.btn-reflect-container');
+        if (!container) return;
+
+        var popover = container.querySelector('.reflection-popover');
+        if (!popover || popover.dataset.loaded === 'true' || popover.dataset.loading === 'true') return;
+
+        var btn = container.querySelector('.btn-reflect');
+        if (!btn) return;
+        
+        var goalIdx = btn.dataset.idx;
+        var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
+        var goal = goals[goalIdx];
+        
+        if (!goal || !goal.object_journal_id) {
+            popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br>📝 ボタンをクリックして、内省を始めましょう！</div>';
+            popover.dataset.loaded = 'true';
+            return;
+        }
+
+        popover.dataset.loading = 'true';
+        
+        $.ajax({
+            url: 'php/get_object_journal_reflections.php',
+            type: 'GET',
+            dataType: 'json',
+            data: { object_journal_id: goal.object_journal_id },
+            success: function(res) {
+                    if (res && res.success && res.latest_snapshot && res.latest_snapshot.reflections && res.latest_snapshot.reflections.length > 0) {
+                        var ref = res.latest_snapshot.reflections[0];
+                        
+                        var goodTxt = ref.evaluation_good ? ref.evaluation_good.trim() : '';
+                        var goodReason = ref.attribution ? ref.attribution.trim() : '';
+                        
+                        var badTxt = ref.evaluation_bad ? ref.evaluation_bad.trim() : '';
+                        var badReason = ref.attribution_bad ? ref.attribution_bad.trim() : '';
+                        
+                        var lessonTxt = '';
+                        if (ref.lessons && ref.lessons.length > 0) {
+                            lessonTxt = ref.lessons.map(function(l) { return l.lesson_learned; }).filter(Boolean).join('<br>');
+                        }
+                        
+                        if (goodTxt || goodReason || badTxt || badReason || lessonTxt) {
+                            var html = '';
+                            
+                            if (goodTxt || goodReason) {
+                                html += '<div class="popover-row journal-popup-positive">😄 ' + (goodTxt || '（記載なし）') + '</div>';
+                                if (goodReason) {
+                                    html += '<div class="popover-row journal-popup-positive-sub" style="padding-left: 20px; font-size: 0.9em; margin-top: -4px;">' + goodReason + '</div>';
+                                }
+                            }
+                            
+                            if (badTxt || badReason) {
+                                html += '<div class="popover-row journal-popup-negative">😢 ' + (badTxt || '（記載なし）') + '</div>';
+                                if (badReason) {
+                                    html += '<div class="popover-row journal-popup-negative-sub" style="padding-left: 20px; font-size: 0.9em; margin-top: -4px;">' + badReason + '</div>';
+                                }
+                            }
+                            
+                            if (lessonTxt) {
+                                html += '<div class="popover-row journal-popup-action">➔ <strong>実践するとき！</strong><br>' + lessonTxt + '</div>';
+                            }
+                            
+                            popover.innerHTML = html;
+                        } else {
+                            popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br>📝 ボタンをクリックして、内省を始めましょう！</div>';
+                        }
+                } else {
+                    popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br>📝 ボタンをクリックして、内省を始めましょう！</div>';
+                }
+                popover.dataset.loaded = 'true';
+                popover.dataset.loading = 'false';
+            },
+            error: function() {
+                popover.innerHTML = '<div class="popover-status-empty" style="color:red;">データの取得に失敗しました</div>';
+                popover.dataset.loaded = 'true';
+                popover.dataset.loading = 'false';
+            }
+        });
+    }, true);
+
+    // 【追加】ボタンクリック（モーダルを開く）時にキャッシュを破棄し、次回ホバーで最新化する
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-reflect');
+        if (btn) {
+            var container = btn.closest('.btn-reflect-container');
+            if (container) {
+                var popover = container.querySelector('.reflection-popover');
+                if (popover) {
+                    popover.dataset.loaded = 'false'; // 再フェッチを強制
+                }
+            }
+        }
+    }, true);
 })();

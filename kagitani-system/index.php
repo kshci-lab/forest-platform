@@ -51,7 +51,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
 ?>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE html>
 <!-- ここから大槻修正 -->
 <html lang="en">
     <!-- ここまで大槻修正 -->
@@ -59,7 +59,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>自己内対話活性化支援システム</title>
+        <title>自己調整学習活性化支援システム</title>
         <link type="text/css" rel="stylesheet" href="../css/jsmind.css" />
         <link rel="stylesheet" type="text/css" href="../css/item.css">
         <link rel="stylesheet" type="text/css" href="css/font.css">
@@ -255,6 +255,7 @@ try {
         <script type="text/javascript" src="../js/meeting-reflection-network.js"></script>
         <link rel="stylesheet" type="text/css" href="../css/meeting-reflection-network.css" />
         <script type="text/javascript" src="js/navigator.js"></script>
+        <script type="module" src="js/object-network-main.js"></script>
         <script type="text/javascript" src="js/object-network.js"></script>
         <link rel="stylesheet" type="text/css" href="css/object-network.css" />
         <link rel="stylesheet" type="text/css" href="css/feedbackTooltip.css" />
@@ -434,8 +435,9 @@ try {
                 <div id="language-toggle-container" style="position:fixed;top:12px;right:30px;z-index:9999;display:flex;align-items:center;gap:12px;">
                         <div class="hamburger-menu">
                             <button class="settings-button" type="button" aria-label="Settings">
-                                <svg class="settings-icon" viewBox="0 0 24 24" role="img" aria-hidden="true">
-                                    <path d="M12 8.75a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5Zm8.25 3.25a6.3 6.3 0 0 0-.1-1.1l2.03-1.58-2-3.46-2.44.86a7.54 7.54 0 0 0-1.9-1.1l-.4-2.56H10.6l-.4 2.56c-.68.27-1.32.64-1.9 1.1l-2.44-.86-2 3.46 2.03 1.58a6.3 6.3 0 0 0 0 2.2L3.86 13.7l2 3.46 2.44-.86c.58.46 1.22.83 1.9 1.1l.4 2.56h4.8l.4-2.56c.68-.27 1.32-.64 1.9-1.1l2.44.86 2-3.46-2.03-1.58c.07-.36.1-.73.1-1.1Z"/>
+                                <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                                 </svg>
                             </button>
                             <div class="dropdown-menu">
@@ -454,6 +456,7 @@ try {
                                     <input class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="シート選択画面に戻る">
                                     <input class="dropdown-item logout-btn" type="submit" name="logout" id="logout" value="ログアウト">
                                 </form>
+                                <!--
                                 <div class="dropdown-divider"></div>
                                 <div class="dropdown-section">
                                     <span class="dropdown-section-title">画面切り替え</span>
@@ -462,6 +465,7 @@ try {
                                         <button class="dropdown-tab-item" onclick="switchTab('tab04')">過去のマインドマップ</button>
                                     </div>
                                 </div>
+                                -->
                                 <div class="dropdown-divider"></div>
                                 <div class="dropdown-section">
                                     <span class="dropdown-section-title">モード選択</span>
@@ -486,7 +490,12 @@ try {
                         <button id="srlSidebarClose" class="srl-sidebar-close" type="button" aria-label="Close">×</button>
                     </div>
                     <div class="srl-sidebar-tabs">
-                        <button class="srl-tab is-active" type="button" data-tab="journal">SRLジャーナル一覧</button>
+                        <button class="srl-tab is-active" type="button" data-tab="journal">
+                            <span>SRLジャーナル一覧</span>
+                            <span id="addCycleBtn" class="btn-add-cycle" title="SRLジャーナルを追加できます">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </span>
+                        </button>
                         <button class="srl-tab" type="button" data-tab="lessons">教訓一覧</button>
                     </div>
                     <div class="srl-sidebar-body">
@@ -494,14 +503,15 @@ try {
                             <div id="srlSidebarJournal"></div>
                         </div>
                         <div class="srl-tab-panel" data-tab-panel="lessons">
-                            <div class="srl-lessons-section">
-                                <div class="srl-lessons-header" id="srlLessonsHeaderMap">🗺️ SRL整理マップから</div>
-                                <div id="srlLessonsBodyMap"></div>
+                            <div class="srl-lessons-subtabs">
+                                <button class="srl-lessons-subtab is-active" type="button" data-subtab="srl">📒 ジャーナルから</button>
+                                <button class="srl-lessons-subtab" type="button" data-subtab="map">🗺️ 整理マップから</button>
                             </div>
-                            <div class="srl-lessons-divider"></div>
-                            <div class="srl-lessons-section">
-                                <div class="srl-lessons-header" id="srlLessonsHeaderSrl">📒 SRLジャーナルから</div>
+                            <div class="srl-lessons-subpanel is-active" data-subpanel="srl">
                                 <div id="srlLessonsBodySrl"></div>
+                            </div>
+                            <div class="srl-lessons-subpanel" data-subpanel="map">
+                                <div id="srlLessonsBodyMap"></div>
                             </div>
                         </div>
                     </div>
@@ -514,7 +524,14 @@ try {
                     </div>
                     <div class="inquiry-sidebar-body">
                         <div class="inquiry_area">
-                            <button id="showQuestionsBtn" style="display: block; width: 100%; background: #007bff; color: white; border: none; border-radius: 4px; padding: 6px 0; margin-bottom: 8px; font-size: 13px; font-weight: bold; cursor: pointer;" onclick="showGeneration();"><span id="showQuestionsBtnText">問い一覧</span></button>
+                            <div class="search-container-root">
+                                <div class="search-box-wrapper">
+                                    <button id="showQuestionsBtn" title="すべての問いを表示" onclick="showGeneration();">☰</button>
+                                    <input type="text" id="questionSearchInput" class="question-search-input" placeholder="問いを絞り込む..." oninput="updateFilter(this.value, [])">
+                                </div>
+                                <div class="search-suggest-dropdown" id="searchSuggestDropdown"></div>
+                            </div>
+
                             <!-- <div id="questionsList" style="display:none; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px; padding:8px; margin-bottom:8px; max-height:120px; overflow-y:auto;"></div> -->
                             <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;"><span id="inquiryAreaTitle">【情報の表出化】</span></div>
                             <div id="testxml"></div>
@@ -524,6 +541,7 @@ try {
                             <!-- Rationality header removed to eliminate extra spacing under inquiry_area -->
                             <div id="rationality"></div>
                         </div>
+                        <div class="inquiry-list-footer-tip">適切な問いが見つからないと感じた場合は、「問いノード追加」から自分だけの問いを作ってみましょう！</div>
                     </div>
                     <div class="inquiry-sidebar-resize" role="separator" aria-orientation="vertical" aria-label="Resize inquiry sidebar"></div>
                 </aside>
@@ -590,7 +608,7 @@ try {
                 'rationalityTitle': '【合理性】',
                 'lang-label-ja': '日本語',
                 'lang-label-en': 'English',
-                'addWeeklyGoalBtn': 'SRLジャーナル作成',
+                'addWeeklyGoalBtn': '新しい活動サイクルを追加',
                 'addWeeklyGoalMenuLabel': '小目標に追加',
                 'showThinkingProcessMapBtn': 'この問いノードのSRL整理マップを作成',
                 'sheetbtn': 'シート選択画面に戻る',
@@ -618,7 +636,7 @@ try {
                 'pausedLabel': '中断',
                 'notStartedLabel': '未着手',
                 'navigatorGreetingHeader': 'こんにちは！',
-                'navigatorGreetingSub': '目標手段階層マップへようこそ',
+                'navigatorGreetingSub': 'SRL整理マップへようこそ',
                 'title_name':'自己調整学習活性化システム',
                 'weeklyGoalTooltip': '次のMTの１週間の目標',
                 'weeklyGoalStartLabel': '開始日',
@@ -784,8 +802,20 @@ try {
         <!---        タイトルメニューStart                 -->
         <div id="main_title">
             <div class="header-container">
-                <button id="srlSidebarToggle" class="srl-sidebar-toggle" type="button" aria-controls="srlSidebar" aria-expanded="false">SRL</button>
+                <button id="srlSidebarToggle" class="header-logo-btn" type="button" aria-controls="srlSidebar" aria-expanded="false" title="ジャーナル一覧を開く">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                    </svg>
+                </button>
                 <span class="title_name" id="title_name">自己調整学習活性化システム</span>
+                <a href="https://drive.google.com/file/d/1en13NYGb9HSW-zNvnoHOtXpEzaos7njQ/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="system-manual-link" title="システム手引書 (PDF) を開く">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-external-link">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                </a>
             </div>
             <!-- Hamburger menu icon -->
             <!-- <span id="hamburger_menu" style="display: inline-block; cursor: pointer; margin-right: 10px;">
@@ -845,9 +875,8 @@ try {
                         <div id="area">
 
                             <div id="jsmind_nav">
-                                <div style="text-align: left">
+                                <div style="display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap;">
                                     <!-- 【Edit】 -->
-                                    <button class="button4" id="toggleInquirySidebarBtn" type="button">問い一覧</button>
                                     <button class="button4" id="addQNodeBtn" onclick="add_Qnode();"><span id="addQNodeText">問いノード追加</span></button>
                                     <button class="button4" id="addAnodeBtn" onclick="add_Anode();"><span id="addAnodeText">答えノード追加</span></button>
                                     <button class="button4" id="addLabelBtn" onclick="add_Label('primary_label');"><span id="addLabelText">ラベル追加</span></button>
@@ -861,6 +890,10 @@ try {
                                     <!-- 【Zoom】 -->
                                     <button class="button3" id="zoomInBtn" onclick="zoomIn();"><span id="zoomInText">拡大</span></button>
                                     <button class="button3" id="zoomOutBtn" onclick="zoomOut();"><span id="zoomOutText">縮小</span></button>
+                                    <button class="button-outline-sidebar" id="toggleInquirySidebarBtn" type="button" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px;">
+                                        <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 512 512"><!-- Font Awesome Pro 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z"/></svg>
+                                        問い一覧
+                                    </button>
                                     <!-- <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
                                         マップver更新 
                                     </button> -->
@@ -1149,19 +1182,13 @@ try {
                             <!--  ここまで大槻修正　-->
 
                             <!-- 思考過程表出化マップ　By川 -->
-                            <div id="process_network_container" oncontextmenu="return false;" >
+                            <div id="process_network_container" oncontextmenu="return false;" style="display: none; position: relative;">
+                                <button class="btn-close-map" title="マップを閉じる" onclick="document.getElementById('process_network_container').style.display='none';">×</button>
                                 <div id="myProcessnetwork2">
                                     <!-- ボタンとシークバーを横並びに配置 -->
                                     <div class="control-panel">
                                         <div id="buttoncluster">
-                                            <!-- 追加グループ -->
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button green"
-                                                        id="process_addNode" title="手段追加">
-                                                    <span class="button-icon">+</span>
-                                                </button>
-                                                <span class="button-label">追加</span>
-                                            </div>
+                                            <!-- 追加グループ (削除済み) -->
                                             <div class="button-group">
                                                 <button type="button" class="circle-button blue"
                                                         id="process_startEditEdge" title="エッジ追加">
@@ -1180,14 +1207,7 @@ try {
                                                 </button>
                                                 <span class="button-label">削除</span>
                                             </div>
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button red"
-                                                        id="process_removeEdge" title="エッジ削除">
-                                                    <span class="button-icon">✂</span>
-                                                </button>
-                                                <span class="button-label">切断</span>
-                                            </div>
-                                            
+
                                             <div class="button-divider"></div>
                                             
                                             <!-- 履歴グループ -->
@@ -1635,10 +1655,8 @@ try {
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none; width: 100%; overflow: auto; box-sizing: border-box;">
                             <!-- 週次目標のボタンとリストを feedback_area の直下に配置 -->
-                            <div id="weekly_goal_controls" style="margin-bottom:12px; display:flex; flex-direction:column; gap:8px;">
-                                <form id="weeklyGoalForm" style="display:flex; gap:8px; align-items:center;">
-                                    <button type="button" id="addWeeklyGoalBtn" style="background:#28a745;color:white;border:none;border-radius:6px;padding:10px 14px;font-size:14px;font-weight:bold;cursor:pointer;"><span id="addWeeklyGoalBtnText">追加</span></button>
-                                </form>
+                            <div id="weekly_goal_controls" style="margin-bottom:0px; display:flex; flex-direction:column; gap:0px;">
+                                <form id="weeklyGoalForm" style="display:none;"></form>
                                 <div id="weeklyGoalsList" style="margin-top:0;"></div>
                             </div>
 
@@ -1649,11 +1667,6 @@ try {
                             <!-- 目標管理エリア（小・中・大目標） -->
     <div id="simple_goals_area" style="background: none; border: none; border-radius: 0; padding: 0; margin: 0;">
                                 
-                                <!-- 小目標（大きく・使いやすく） -->
-                                <div id="weekly_goal_area" style="background: #fff; border: 2px solid #28a745; border-radius: 8px; padding: 18px 18px 12px 18px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(40,167,69,0.08);">
-                                    <div class="goal-title-tooltip" style="font-weight: bold; color: #28a745; font-size: 14px; margin-bottom: 7px; position: relative; display: inline-block; cursor: pointer;"></span>
-                                    <!-- weekly goal controls moved to feedback_area root -->
-                                </div>
                                 <!-- 中・大目標（横並び・控えめ） -->
                                 <!-- <div id="midlong_goal_area" style="display: flex; gap: 18px; justify-content: flex-start;">
                                     <div style="flex:1; background: #f4f4f4; border: 1.5px solid #6f42c1; border-radius: 7px; padding: 12px; min-width: 220px;">
@@ -1740,7 +1753,7 @@ try {
             <!--tab01 fin-->
 
             <!--  tab04メニュー　　hatakeyama　　-->
-            <div id="tab04">
+            <div id="tab04" style="display: none;">
                 <div id="layout">
                     <div id="jsmind_nav2">
                         <div class ="mt_timing">
@@ -1778,7 +1791,7 @@ try {
             </div>
 
             <!-- リフレクション　yoshioka -->
-            <div id="tab03">
+            <div id="tab03" style="display: none;">
                 <div id="layout">
                     <div id="reflection_container">
                         <form id ="ref_peri" class="ref_peri" method = "post" acion="">
@@ -1800,7 +1813,7 @@ try {
             <!--リフレクション終了 yoshioka -->
 
             <!-- 履歴　yoshioka -->
-            <div id="record_tab">
+            <div id="record_tab" style="display: none;">
                 <div id="layout">
                     <div id="record_container">
                         <form id ="reco_peri" class="ref_peri" method = "post" acion="">
@@ -1827,7 +1840,7 @@ try {
 
         <!-- メインメニュー　Finish -->
 
-        <div id="macro_feedback_area">
+        <div id="macro_feedback_area" style="display: none;">
             <!-- <h3>【聴衆モデルによる助言】</h3>
                  <p>「学術的な意義が述べられているか」を主題の一つとして選択していますが，「どのような新規性がありますか？」の問いには，答える必要はありませんか？</p>
                  <textarea placeholder='回答' style='width:300px; height:100px;'></textarea>
@@ -1903,5 +1916,25 @@ try {
         <script type="text/javascript">
 
 </script>
+        <script type="text/javascript">
+        // ハンバーガーメニューの開閉ロジック
+        document.addEventListener('DOMContentLoaded', function() {
+            var settingsBtn = document.querySelector('.settings-button');
+            var hamburgerMenu = document.querySelector('.hamburger-menu');
+            
+            if (settingsBtn && hamburgerMenu) {
+                settingsBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    hamburgerMenu.classList.toggle('active');
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (!hamburgerMenu.contains(e.target)) {
+                        hamburgerMenu.classList.remove('active');
+                    }
+                });
+            }
+        });
+        </script>
     </body>
 </html>

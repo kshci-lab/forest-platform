@@ -296,17 +296,19 @@
 					
 					foreach ($lessons_array as $idx => $lesson_item) {
 						$lesson_text = isset($lesson_item['lesson']) ? trim($lesson_item['lesson']) : '';
+						$lesson_why = isset($lesson_item['why_important']) ? trim($lesson_item['why_important']) : null;
 						$lesson_opp = isset($lesson_item['opportunity']) ? $mysqli->real_escape_string(trim($lesson_item['opportunity'])) : '';
 						$lesson_db_id = isset($lesson_item['object_le_id']) ? trim($lesson_item['object_le_id']) : '';
 						
 						if ($lesson_text === '') continue;
 						
 						$lesson_text_esc = $mysqli->real_escape_string($lesson_text);
+						$why_val = ($lesson_why !== null) ? "'" . $mysqli->real_escape_string($lesson_why) . "'" : "NULL";
 						
 						// object_le_id が指定されている場合は更新、なければ既存IDを使用または新規挿入
 						if ($lesson_db_id !== '') {
 							// 既存レコードを更新
-							$update_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text_esc . "', opportunity = '" . $lesson_opp . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($lesson_db_id) . "'";
+							$update_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text_esc . "', why_important = " . $why_val . ", opportunity = '" . $lesson_opp . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($lesson_db_id) . "'";
 							$mysqli->query($update_sql);
 							if ($mysqli->error) {
 								error_log('Update lesson error: ' . $mysqli->error);
@@ -314,7 +316,7 @@
 						} elseif ($idx < count($existing_ids)) {
 							// 既存のIDがあれば更新
 							$use_id = $existing_ids[$idx];
-							$update_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text_esc . "', opportunity = '" . $lesson_opp . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($use_id) . "'";
+							$update_sql = "UPDATE `object_lesson-learneds` SET lesson_learned = '" . $lesson_text_esc . "', why_important = " . $why_val . ", opportunity = '" . $lesson_opp . "', updated_at = '" . $timestamp . "' WHERE object_le_id = '" . $mysqli->real_escape_string($use_id) . "'";
 							$mysqli->query($update_sql);
 							if ($mysqli->error) {
 								error_log('Update lesson error: ' . $mysqli->error);
@@ -322,7 +324,7 @@
 						} else {
 							// 新規挿入
 							$new_lesson_id = uniqid('lesson_', true);
-							$insert_sql = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $new_lesson_id . "','" . $mysqli->real_escape_string($object_node_id) . "','" . $lesson_text_esc . "','" . $lesson_opp . "','" . $timestamp . "','" . $timestamp . "',0)";
+							$insert_sql = "INSERT INTO `object_lesson-learneds` (`object_le_id`,`object_node_id`,`lesson_learned`,`why_important`,`opportunity`,`created_at`,`updated_at`,`deleted`) VALUES ('" . $new_lesson_id . "','" . $mysqli->real_escape_string($object_node_id) . "','" . $lesson_text_esc . "'," . $why_val . ",'" . $lesson_opp . "','" . $timestamp . "','" . $timestamp . "',0)";
 							$mysqli->query($insert_sql);
 							if ($mysqli->error) {
 								error_log('Insert lesson error: ' . $mysqli->error);

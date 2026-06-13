@@ -243,6 +243,13 @@
           card.appendChild(header);
           card.appendChild(content);
 
+          if (item.why_important && String(item.why_important).trim() !== '') {
+            const whyText = document.createElement('div');
+            whyText.style.cssText = 'font-size:11px;color:#666;margin-top:4px;line-height:1.35;font-weight:400;white-space:pre-wrap;';
+            whyText.innerHTML = '<span style="opacity:0.8;margin-right:2px;">💡</span>' + escapeHtml(item.why_important);
+            card.appendChild(whyText);
+          }
+
           // make card interactive
           card.setAttribute('role','button');
           card.setAttribute('tabindex','0');
@@ -351,6 +358,13 @@
 
           card.appendChild(header);
           card.appendChild(content);
+
+          if (item.why_important && String(item.why_important).trim() !== '') {
+            const whyText = document.createElement('div');
+            whyText.style.cssText = 'font-size:11px;color:#666;margin-top:4px;line-height:1.35;font-weight:400;white-space:pre-wrap;';
+            whyText.innerHTML = '<span style="opacity:0.8;margin-right:2px;">💡</span>' + escapeHtml(item.why_important);
+            card.appendChild(whyText);
+          }
 
           // make SRL card interactive
           card.setAttribute('role','button');

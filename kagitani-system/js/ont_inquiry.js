@@ -7,6 +7,13 @@ $(function(){
 
 });
 
+// 【追加】グローバルな状態管理
+window.inquiryData = [];
+window.filterState = {
+    textQuery: "",
+    selectedTags: []
+};
+
 // XML読み込み
 function c_xmlLoad(){
 
@@ -29,13 +36,117 @@ function c_xmlLoad(){
 function c_parse_xml(xml,status){
 
 	if(status!='success')return;
+	window.inquiryData = []; // 初期化
 	$(xml).find('W_CONCEPTS').each(function(){
 		c_disp.call(this);
 	});
+	
+	// データ生成完了後に初回描画
+	window.renderInquiries();
+	window.initSuggestDropdown();
+
 	if (typeof document !== 'undefined') {
 		document.dispatchEvent(new CustomEvent('inquiry-list-updated'));
 	}
 }
+
+// 【新規】サジェストドロップダウンの初期化
+window.initSuggestDropdown = function() {
+    var dropdown = document.getElementById('searchSuggestDropdown');
+    var input = document.getElementById('questionSearchInput');
+    if(!dropdown || !input) return;
+
+    var getKeyword = function(str) {
+        if (!str) return '';
+        var s = str;
+        var suffixes = [
+            'に落とし込めるかを考える',
+            'に落とし込む',
+            'に反していないかを考える',
+            'をする',
+            'を考える',
+            'を位置づける',
+            'を明確にする',
+            'を見定める',
+            'を振り返る',
+            'を意識する',
+            'に分解する',
+            'を設定する',
+            'を見つける',
+            'を発見する',
+            'を進める',
+            'を解決する',
+            'を行う',
+            'を想定する'
+        ];
+        suffixes.forEach(function(suf) {
+            if (s.endsWith(suf)) {
+                s = s.slice(0, -suf.length);
+            }
+        });
+        return s;
+    };
+
+    var concepts = [];
+    var blockList = ['前回のMT内容', '取り組む意義がある問題か'];
+    
+    window.inquiryData.forEach(function(item) {
+        var keyword = getKeyword(item.conceptContent);
+        if(keyword && !concepts.includes(keyword) && keyword.length <= 15 && !blockList.includes(keyword)) {
+            concepts.push(keyword);
+        }
+    });
+
+    // 重要なキーワード（以前のチップにあったもの）を先頭に移動
+    var priorityKeywords = ['論文', 'システム', '学習者', '困難性'];
+    // 逆順で unshift することで、定義した通りの順序で先頭に並ぶようにする
+    priorityKeywords.reverse().forEach(function(k) {
+        var idx = concepts.indexOf(k);
+        if (idx !== -1) {
+            concepts.splice(idx, 1);
+        }
+        concepts.unshift(k);
+    });
+
+    // 最大表示数を制限（多すぎると邪魔になるため適度に30件程度）
+    concepts = concepts.slice(0, 30);
+    
+    dropdown.innerHTML = '';
+    concepts.forEach(function(c) {
+        var item = document.createElement('div');
+        item.className = 'suggest-dropdown-item';
+        item.textContent = c;
+        item.onmousedown = function(e) {
+            e.preventDefault(); 
+            input.value = c;
+            window.updateFilter(c, []);
+            dropdown.style.display = 'none';
+        };
+        dropdown.appendChild(item);
+    });
+
+    input.addEventListener('focus', function() {
+        if(dropdown.children.length > 0) {
+            dropdown.style.display = 'block';
+        }
+    });
+    input.addEventListener('blur', function() {
+        dropdown.style.display = 'none';
+    });
+    input.addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        var hasVisible = false;
+        Array.from(dropdown.children).forEach(function(child) {
+            if(child.textContent.toLowerCase().includes(q)) {
+                child.style.display = 'block';
+                hasVisible = true;
+            } else {
+                child.style.display = 'none';
+            }
+        });
+        dropdown.style.display = hasVisible ? 'block' : 'none';
+    });
+};
 
 // HTML生成関数
 function c_disp(){
@@ -188,47 +299,34 @@ function c_disp(){
 	window.inquiryDict = inquiryDict;
 
 	for(var i=0; i<$concept_tag.length; i++){
-		if($concept_tag[i].getAttribute('instantiation') == undefined){
-			//インスタンスがない
-		}else{
+		// 属性が存在するか、あるいはnull/undefinedでないかを正しく判定する
+		if($concept_tag[i].getAttribute('instantiation') != null){
 			var $id = $concept_tag[i].id;
 			var $inquiry_content = $label[i].childNodes[0].nodeValue;
 			var $isa = $(this).find('ISA');
+			
 			for(var j=0; j<$isa.length; j++){
-				if($isa[j].getAttribute('child') == $label[i].childNodes[0].nodeValue){
+				if($isa[j].getAttribute('child') == $inquiry_content){
 					var $concept_content = $isa[j].getAttribute('parent');
 					for(var k=0; k<$label.length; k++){
 						if($label[k].childNodes[0].nodeValue == $concept_content){
 							var $concept_id = $concept_tag[k].id;
-							var targetId = 'testxml';
+							
+							var targetCategory = 'testxml'; // 【情報の表出化】
 							if($inquiry_content == 'なぜそう考えるのですか？' || $inquiry_content == '目的は何ですか？'){
-								targetId = 'intention';
-							}else if($inquiry_content == 'なぜこれらは合理的であるといえるのですか？'){
-								targetId = 'rationality';
+								targetCategory = 'intention'; // 【理由・目的】
+							} else if($inquiry_content == 'なぜこれらは合理的であるといえるのですか？'){
+								targetCategory = 'rationality'; // 【合理性】
 							}
-							var testxml = document.getElementById(targetId);
-							var ultag = document.createElement('ul');
-							ultag.className = $concept_id + ' inquiry-item';
-							ultag.setAttribute('data-inquiry', $inquiry_content);
-							ultag.setAttribute('data-concept', $concept_content);
-							ultag.state = 'hide';
-							testxml.appendChild(ultag);
-							var imgtag = document.createElement('img');
-							imgtag.src = 'image/list6.png';
-							imgtag.style.width = 15;
-							imgtag.style.height = 15;
-							ultag.appendChild(imgtag);
-							var atag = document.createElement('a');
-							atag.href = '#';
-							atag.id = $id;
-							atag.onclick = add_node;
-							// 問い文を言語で切り替え
-							if (inquiryDict[$inquiry_content]) {
-								atag.innerHTML = inquiryDict[$inquiry_content][lang];
-							} else {
-								atag.innerHTML = (lang === 'en') ? $inquiry_content : $inquiry_content;
-							}
-							ultag.appendChild(atag);
+							
+							window.inquiryData.push({
+								id: $id,
+								conceptId: $concept_id,
+								content: $inquiry_content,
+								conceptContent: $concept_content,
+								category: targetCategory,
+								tags: []
+							});
 						}
 					}
 				}
@@ -263,5 +361,111 @@ window.setInquiryLang = function(lang) {
 // index.phpを読み込むたびに関数実行
 $(function(){
 	c_xmlLoad();
-	// c_xmlLoadLogicIntention();
 });
+
+// 【新規】検索時の状態更新
+window.updateFilter = function(text, tags) {
+    console.log("--- 検索イベント発火 ---", text);
+    window.filterState.textQuery = text.toLowerCase();
+    if (tags) {
+        window.filterState.selectedTags = tags;
+    }
+    window.renderInquiries();
+};
+
+// 【新規】再描画処理
+window.renderInquiries = function() {
+    var lang = window.currentLang || 'ja';
+    var dict = window.inquiryDict || {};
+
+    var testxml = document.getElementById("testxml");
+    var intention = document.getElementById("intention");
+    var rationality = document.getElementById("rationality");
+    
+    if(testxml) testxml.innerHTML = "";
+    if(intention) {
+        var reasonHeader = dict['【理由・目的】'] ? dict['【理由・目的】'][lang] : (lang === 'en' ? '[Reason/Purpose]' : '【理由・目的】');
+        intention.innerHTML = '<div class="category-header" style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">' + reasonHeader + '</div>';
+    }
+    if(rationality) {
+        var rationalityHeader = dict['【合理性】'] ? dict['【合理性】'][lang] : (lang === 'en' ? '[Rationality]' : '【合理性】');
+        rationality.innerHTML = '<div class="category-header" style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">' + rationalityHeader + '</div>';
+    }
+
+    var filtered = window.inquiryData.filter(function(item) {
+        var translatedContent = dict[item.content] ? dict[item.content][lang] : item.content;
+        var matchText = translatedContent.toLowerCase().includes(window.filterState.textQuery);
+        if (window.filterState.textQuery.length > 0) {
+            console.log("データ比較中:", translatedContent, " vs ", window.filterState.textQuery, " -> ", matchText);
+        }
+        var matchTag = window.filterState.selectedTags.length === 0 || 
+                       window.filterState.selectedTags.some(function(tag) { return item.tags.includes(tag); });
+        
+        return matchText && matchTag;
+    });
+
+    console.log("フィルタリング結果件数:", filtered.length);
+
+    filtered.forEach(function(item) {
+        var container = document.getElementById(item.category);
+        if(!container) return;
+
+        var ultag = document.createElement('ul');
+        ultag.className = item.conceptId + ' inquiry-item';
+        ultag.setAttribute('data-inquiry', item.content);
+        ultag.setAttribute('data-concept', item.conceptContent);
+        ultag.state = 'hide';
+        container.appendChild(ultag);
+
+        var imgtag = document.createElement('img');
+        imgtag.src = 'image/list6.png';
+        imgtag.style.width = '15px';
+        imgtag.style.height = '15px';
+        ultag.appendChild(imgtag);
+
+        var atag = document.createElement('a');
+        atag.href = '#';
+        atag.id = item.id;
+        atag.onclick = window.add_node;
+        
+        if (dict[item.content]) {
+            atag.innerHTML = dict[item.content][lang];
+        } else {
+            atag.innerHTML = item.content;
+        }
+        ultag.appendChild(atag);
+    });
+
+    var areaTitle = document.getElementById('inquiryAreaTitle');
+    var areaTitleContainer = areaTitle ? areaTitle.parentNode : null;
+
+    if (filtered.length === 0) {
+        if (testxml) {
+            testxml.innerHTML = '<div style="text-align: center; color: #64748b; font-size: 12px; margin: 40px 10px; line-height: 1.6;">該当する問いが見つかりませんか？<br>左上の「問いノード追加」ボタンから、<br>自分だけの問いを作ってみましょう！</div>';
+        }
+        if (intention) intention.innerHTML = '';
+        if (rationality) rationality.innerHTML = '';
+        if (areaTitleContainer) areaTitleContainer.style.display = 'none';
+        
+        // フッターを非表示にする（結果0件の時はEmpty Stateがその役割を担うため）
+        var footerTip = document.querySelector('.inquiry-list-footer-tip');
+        if (footerTip) footerTip.style.display = 'none';
+    } else {
+        if (areaTitleContainer) areaTitleContainer.style.display = 'block';
+        
+        // フッターを表示する
+        var footerTip = document.querySelector('.inquiry-list-footer-tip');
+        if (footerTip) footerTip.style.display = 'block';
+        
+        // もしカテゴリー内に一件もヒットしていなければ、そのカテゴリーのヘッダーも隠す処理（任意）
+        ['intention', 'rationality'].forEach(function(catId) {
+            var cat = document.getElementById(catId);
+            if(cat) {
+                var items = cat.querySelectorAll('ul.inquiry-item');
+                if(items.length === 0) {
+                    cat.innerHTML = ''; // ヘッダーごと消す
+                }
+            }
+        });
+    }
+};

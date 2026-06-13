@@ -93,50 +93,7 @@
                             return;
                         }
                         var nodeIds = res.node_ids;
-                        // Debug: log node ids returned from server for tracing
-                        try { console.log('IEEEえええええjournal_report: node_ids', nodeIds); if (Array.isArray(nodeIds)) nodeIds.forEach(function (n) { console.log('journal_report: node_id', n); }); } catch (e) { console.warn('journal_report: failed to log node_ids', e); }
-
-                        // 追加処理: 取得した node_id を基に object_nodes テーブルから
-                        // startDate 〜 endDate の期間に情報を持つ object_node_id を取得してログ出力する
-                        try {
-                            if (Array.isArray(nodeIds)) {
-                                nodeIds.forEach(function(nid){
-                                    // 通常のobject_node_info取得
-                                    try {
-                                        $.ajax({
-                                            url: 'php/get_object_node_info.php',
-                                            type: 'GET',
-                                            dataType: 'json',
-                                            data: { node_id: nid, start_date: startDate, end_date: endDate, debug: 1 },
-                                            success: function(objRes) {
-                                                try {
-                                                    console.log('journal_report: object_node_info for node_id', nid, '=> object_node_ids:', objRes.object_node_ids || []);
-                                                    if (objRes.debug_rows) console.log('journal_report: debug_rows for node_id ' + nid, objRes.debug_rows);
-                                                } catch (e) { console.warn('journal_report: logging object_node_info failed', e); }
-                                            },
-                                            error: function(xhr, st, err) { console.warn('journal_report: get_object_node_info error for node_id ' + nid, st, err, xhr && xhr.responseText); }
-                                        });
-                                    } catch(e){ console.warn('journal_report: ajax for object_node_info failed', e); }
-
-                                    // テスト: node_idのみでobject_nodesを取得する簡易テスト
-                                    try {
-                                        $.ajax({
-                                            url: 'php/get_object_node_info.php',
-                                            type: 'GET',
-                                            dataType: 'json',
-                                            data: { node_id: nid, test_simple: 1 },
-                                            success: function(testRes) {
-                                                console.log('[TEST] node_idのみでobject_nodes取得:', nid, testRes);
-                                            },
-                                            error: function(xhr, st, err) { console.warn('[TEST] get_object_node_info simple error for node_id ' + nid, st, err, xhr && xhr.responseText); }
-                                        });
-                                    } catch(e){ console.warn('[TEST] ajax for object_node_info simple failed', e); }
-                                });
-                            }
-                        } catch(e) { console.warn('journal_report: object_nodes debug fetch failed', e); }
                         var promises = nodeIds.map(function (nodeId, i) {
-                            console.log('うおおおおおおおおjournal_report: fetching node info for', nodeId);
-
                             return new Promise(function (resolve) {
                                 $.ajax({
                                     //ジャーナルの手段履歴を取得している
@@ -145,32 +102,17 @@
                                     dataType: 'json',
                                     data: { node_id: nodeId, start_date: startDate, end_date: endDate },
                                     success: function (objRes) {
-                                        console.log('journal_report: get_object_node_info', { nodeId: nodeId, response: objRes });
                                         var contentArr = [];
                                         try {
                                             // Prefer histories (from object_nodes_histories) because they carry `activity`.
                                             var source = (objRes && Array.isArray(objRes.histories) && objRes.histories.length) ? objRes.histories : (objRes && Array.isArray(objRes.data) ? objRes.data : []);
                                             // mapping for activity -> prefix
-                                            var mapJa = { 1: '手段設定: ', 2: 'ラベル変更: ', 3: '理由記述: ', 4: '完了時間記述: ', 5: '手段開始: ', 6: '手段中断: ', 7: '手段終了: ', 8: '内省記述: ' };
-                                            var mapEn = { 1: 'Means set: ', 2: 'Label change: ', 3: 'Reason recorded: ', 4: 'Completion time recorded: ', 5: 'Means started: ', 6: 'Means interrupted: ', 7: 'Means finished: ', 8: 'Reflection recorded: ' };
-                                            var isJa = (getCurrentLang() === 'ja');
                                             contentArr = source.map(function (r) {
-                                                var txt = r.content || '';
-                                                try {
-                                                    var act = (typeof r.activity !== 'undefined') ? parseInt(r.activity, 10) : 0;
-                                                    var prefix = '';
-                                                    if (act && act > 0) {
-                                                        prefix = isJa ? (mapJa[act] || '') : (mapEn[act] || '');
-                                                    }
-                                                    return prefix + txt;
-                                                } catch (e) {
-                                                    return txt;
-                                                }
+                                                return r.content || '';
                                             });
-                                        // Debug: log the raw response and the built content array for this node
-                                        try { console.log('journal_report: get_object_node_info', { nodeId: nodeId, raw: objRes, contentArr: contentArr }); } catch (e) { /* ignore logging errors */ }
                                         } catch (e) { console.error('build contentArr error', e); }
-                                        resolve({ display: goalContents[i] || '', content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
+                                        var dispText = (goalContents[i] ? (typeof goalContents[i] === 'object' ? (goalContents[i].content || goalContents[i].node_id || '') : goalContents[i]) : '');
+                                        resolve({ display: dispText, content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
                                     },
                                     error: function (xhr, status, err) {
                                         console.error('journal_report: get_object_node_info error', {
@@ -186,74 +128,143 @@
                         });
 
                         Promise.all(promises).then(function(results){
-                            try { console.log('journal_report: node fetch results', results); } catch(e){}
                             var modal = document.createElement('div');
-                            modal.className = 'jr-modal-overlay';
+                            modal.className = 'jr-floating-window';
                             modal.style.position = 'fixed';
-                            modal.style.left = '0';
-                            modal.style.top = '0';
-                            modal.style.right = '0';
-                            modal.style.bottom = '0';
+                            // Center it roughly, but leave space to see the background
+                            modal.style.left = '5%';
+                            modal.style.top = '5%';
+                            modal.style.width = '60vw';
+                            modal.style.height = '85vh';
                             modal.style.zIndex = '10000';
-                            modal.style.overflow = 'auto';
-                            modal.style.background = 'rgba(0,0,0,0.4)';
+                            modal.style.background = '#fff';
+                            modal.style.borderRadius = '12px';
+                            modal.style.boxShadow = '0 10px 30px rgba(0,0,0,0.12)';
+                            modal.style.display = 'flex';
+                            modal.style.flexDirection = 'column';
+                            modal.style.overflow = 'hidden';
+                            modal.style.resize = 'both'; // Make it resizable!
+                            modal.style.minWidth = '300px'; // Prevent collapsing too much
+                            modal.style.minHeight = '200px';
                             var modalContent = document.createElement('div');
                             modalContent.className = 'jr-modal-content';
                             // guard to avoid rendering reflections twice (two separate AJAX calls below)
                             var _reflectionsRendered = false;
                             var theme = (typeof window.theme !== 'undefined') ? window.theme : { border:'#e6eaf0', text:'#233043', muted:'#7a8698', accent:'#1363df', primary:'#2b7a78' };
-                            modalContent.className = 'jr-modal-content';
+                            // override any modalContent fixed width/padding if set elsewhere, let it fill the floating window
+                            modalContent.style.flex = '1';
+                            modalContent.style.overflowY = 'auto';
+                            modalContent.style.padding = '0'; // padding will be managed by header and layout
+                            modalContent.style.margin = '0';
+                            modalContent.style.width = '100%';
+                            modalContent.style.height = '100%';
+                            modalContent.style.borderRadius = '0';
+                            modalContent.style.boxShadow = 'none';
 
-                            var title = document.createElement('h3');
-                            title.className = 'jr-title';
-                            // title.textContent = (getCurrentLang() === 'ja') ? 'Wordプレビュー' : 'Word Preview';
-                            
-                            // Header wrapper with title and download link
                             var headerWrapper = document.createElement('div');
                             headerWrapper.className = 'jr-header-wrapper';
                             headerWrapper.style.display = 'flex';
                             headerWrapper.style.justifyContent = 'space-between';
                             headerWrapper.style.alignItems = 'center';
-                            headerWrapper.style.marginBottom = '12px';
+                            headerWrapper.style.padding = '12px 24px';
+                            headerWrapper.style.background = '#f8fafc';
+                            headerWrapper.style.borderBottom = '1px solid #e2e8f0';
+                            headerWrapper.style.cursor = 'move'; // affordance for dragging
+                            headerWrapper.style.userSelect = 'none';
+
+                            // Initialize unsaved changes state
+                            window.__jr_hasUnsavedChanges = false;
+
+                            // Drag and Drop Logic
+                            var isDragging = false;
+                            var dragStartX, dragStartY, initialLeft, initialTop;
                             
-                            // Download link (styled as a link button)
-                            var dlLink = document.createElement('a');
-                            dlLink.href = '#';
-                            dlLink.className = 'jr-download-link';
-                            dlLink.innerHTML = (getCurrentLang() === 'ja') ? '⬇ Wordダウンロード' : '⬇ Download Word';
-                            dlLink.style.color = theme.accent;
-                            dlLink.style.fontSize = '14px';
-                            dlLink.style.fontWeight = '600';
-                            dlLink.style.textDecoration = 'none';
-                            dlLink.style.display = 'flex';
-                            dlLink.style.alignItems = 'center';
-                            dlLink.style.gap = '4px';
-                            dlLink.style.cursor = 'pointer';
-                            dlLink.style.transition = 'opacity 0.2s';
-                            dlLink.onmouseover = function() { dlLink.style.opacity = '0.7'; };
-                            dlLink.onmouseout = function() { dlLink.style.opacity = '1'; };
+                            headerWrapper.addEventListener('mousedown', function(e) {
+                                isDragging = true;
+                                dragStartX = e.clientX;
+                                dragStartY = e.clientY;
+                                var rect = modal.getBoundingClientRect();
+                                initialLeft = rect.left;
+                                initialTop = rect.top;
+                                document.body.style.userSelect = 'none';
+                            });
                             
-                            headerWrapper.appendChild(title);
-                            headerWrapper.appendChild(dlLink);
-                            modalContent.appendChild(headerWrapper);
+                            document.addEventListener('mousemove', function(e) {
+                                if (!isDragging) return;
+                                var dx = e.clientX - dragStartX;
+                                var dy = e.clientY - dragStartY;
+                                modal.style.left = (initialLeft + dx) + 'px';
+                                modal.style.top = (initialTop + dy) + 'px';
+                                modal.style.right = 'auto';
+                                modal.style.bottom = 'auto';
+                                modal.style.margin = '0'; // clear any margin that might interfere
+                            });
+                            
+                            document.addEventListener('mouseup', function(e) {
+                                if (isDragging) {
+                                    isDragging = false;
+                                    document.body.style.userSelect = '';
+                                }
+                            });
 
                             var periodHeading = document.createElement('h3');
                             periodHeading.className = 'jr-period-heading';
+                            periodHeading.style.margin = '0';
+                            periodHeading.style.fontSize = '16px';
                             periodHeading.textContent = (startDate || '') + '~' + (endDate || '') + ((getCurrentLang() === 'ja') ? 'に行ったこと' : ' activities');
-                            modalContent.appendChild(periodHeading);
+                            
+                            var headerRightWrap = document.createElement('div');
+                            headerRightWrap.style.display = 'flex';
+                            headerRightWrap.style.alignItems = 'center';
+                            headerRightWrap.style.marginLeft = 'auto';
+                            
+                            var historyBtn = document.createElement('button');
+                            historyBtn.type = 'button';
+                            historyBtn.className = 'jr-history-toggle';
+                            historyBtn.textContent = (getCurrentLang() === 'ja') ? '過去の記録を見る' : 'View history';
+                            historyBtn.setAttribute('aria-expanded', 'false');
+
+                            var closeIconBtn = document.createElement('button');
+                            closeIconBtn.innerHTML = '&times;';
+                            closeIconBtn.style.background = 'transparent';
+                            closeIconBtn.style.border = 'none';
+                            closeIconBtn.style.fontSize = '24px';
+                            closeIconBtn.style.color = '#a0aec0';
+                            closeIconBtn.style.cursor = 'pointer';
+                            closeIconBtn.style.marginLeft = '16px';
+                            closeIconBtn.style.padding = '0 4px';
+                            closeIconBtn.style.lineHeight = '1';
+                            closeIconBtn.style.transition = 'color 0.2s ease';
+                            closeIconBtn.addEventListener('mouseenter', function() { closeIconBtn.style.color = '#4a5568'; });
+                            closeIconBtn.addEventListener('mouseleave', function() { closeIconBtn.style.color = '#a0aec0'; });
+                            
+                            closeIconBtn.addEventListener('click', function(e) {
+                                e.stopPropagation(); // prevent dragging
+                                if (window.__jr_hasUnsavedChanges) {
+                                    if (!confirm((getCurrentLang() === 'ja') ? '変更が保存されていませんが、本当に閉じますか？' : 'You have unsaved changes. Are you sure you want to close?')) {
+                                        return;
+                                    }
+                                }
+                                document.body.removeChild(modal);
+                            });
+
+                            headerRightWrap.appendChild(historyBtn);
+                            headerRightWrap.appendChild(closeIconBtn);
+                            
+                            headerWrapper.appendChild(periodHeading);
+                            headerWrapper.appendChild(headerRightWrap);
+                            modalContent.appendChild(headerWrapper);
 
                             // Two-column layout: Activity Process (left) + Reflections (right) + Divider
                             var twoColumnLayout = document.createElement('div');
                             twoColumnLayout.className = 'jr-two-column-layout';
+                            twoColumnLayout.style.padding = '0 24px 24px 24px'; // padding for the body content
                             modalContent.appendChild(twoColumnLayout);
 
                             // Left column: Activity Process (always visible)
                             var leftColumn = document.createElement('div');
                             leftColumn.className = 'jr-left-column';
-                            var leftHeader = document.createElement('div');
-                            leftHeader.className = 'jr-column-header';
-                            leftHeader.textContent = (getCurrentLang() === 'ja') ? '活動プロセス' : 'Activity Process';
-                            leftColumn.appendChild(leftHeader);
+                            // Removed left column header
                             var activityContent = document.createElement('div');
                             activityContent.className = 'jr-activity-content';
                             leftColumn.appendChild(activityContent);
@@ -268,24 +279,10 @@
                             var rightColumn = document.createElement('div');
                             rightColumn.className = 'jr-right-column';
 
+                            // Removed right column header and moved historyBtn to headerWrapper
+
                             var reflectionCard = document.createElement('div');
                             reflectionCard.className = 'jr-reflection-card';
-
-                            var rightHeader = document.createElement('div');
-                            rightHeader.className = 'jr-reflection-header';
-                            var rightTitle = document.createElement('div');
-                            rightTitle.className = 'jr-reflection-title';
-                            rightTitle.textContent = (getCurrentLang() === 'ja') ? '内省' : 'Reflections';
-                            rightHeader.appendChild(rightTitle);
-
-                            var historyBtn = document.createElement('button');
-                            historyBtn.type = 'button';
-                            historyBtn.className = 'jr-history-toggle';
-                            historyBtn.textContent = (getCurrentLang() === 'ja') ? '過去の記録を見る' : 'View history';
-                            historyBtn.setAttribute('aria-expanded', 'false');
-                            rightHeader.appendChild(historyBtn);
-
-                            reflectionCard.appendChild(rightHeader);
 
                             var reflectionBody = document.createElement('div');
                             reflectionBody.className = 'jr-reflection-body';
@@ -293,6 +290,7 @@
                             // Tab container for multiple reflections (in right column)
                             var tabContainer = document.createElement('div');
                             tabContainer.className = 'jr-tab-container';
+                            tabContainer.appendChild(historyBtn);
                             reflectionBody.appendChild(tabContainer);
 
                             // Tab content container (in right column)
@@ -347,6 +345,69 @@
                                 return yyyy + '/' + mm + '/' + dd + ' ' + hh + ':' + mi;
                             }
 
+                            function computeDiff(oldStr, newStr) {
+                                if (!oldStr && !newStr) return { changed: false, html: '' };
+                                if (!oldStr) return { changed: true, html: '<span class="jr-diff-added">' + escapeHtml(newStr) + '</span>' };
+                                if (!newStr) return { changed: true, html: '' };
+                                if (oldStr === newStr) return { changed: false, html: escapeHtml(newStr) };
+
+                                if (oldStr.length > 400 || newStr.length > 400) {
+                                    return { changed: true, html: '<span class="jr-diff-added">' + escapeHtml(newStr) + '</span>' };
+                                }
+
+                                var matrix = [];
+                                for (var i = 0; i <= oldStr.length; i++) matrix[i] = [0];
+                                for (var j = 0; j <= newStr.length; j++) matrix[0][j] = 0;
+
+                                for (var i = 1; i <= oldStr.length; i++) {
+                                    for (var j = 1; j <= newStr.length; j++) {
+                                        if (oldStr[i - 1] === newStr[j - 1]) {
+                                            matrix[i][j] = matrix[i - 1][j - 1] + 1;
+                                        } else {
+                                            matrix[i][j] = Math.max(matrix[i - 1][j], matrix[i][j - 1]);
+                                        }
+                                    }
+                                }
+
+                                var actions = [];
+                                var i = oldStr.length, j = newStr.length;
+                                while (i > 0 && j > 0) {
+                                    if (oldStr[i - 1] === newStr[j - 1]) {
+                                        actions.push({ type: 'equal', val: oldStr[i - 1] });
+                                        i--; j--;
+                                    } else if (matrix[i - 1][j] >= matrix[i][j - 1]) {
+                                        actions.push({ type: 'removed', val: oldStr[i - 1] });
+                                        i--;
+                                    } else {
+                                        actions.push({ type: 'added', val: newStr[j - 1] });
+                                        j--;
+                                    }
+                                }
+                                while (j > 0) { actions.push({ type: 'added', val: newStr[j - 1] }); j--; }
+                                while (i > 0) { actions.push({ type: 'removed', val: oldStr[i - 1] }); i--; }
+                                
+                                actions.reverse();
+                                var html = '';
+                                var currentType = null;
+                                var currentStr = '';
+                                
+                                function flush() {
+                                    if (!currentStr) return;
+                                    if (currentType === 'added') html += '<span class="jr-diff-added">' + escapeHtml(currentStr) + '</span>';
+                                    else if (currentType === 'equal') html += escapeHtml(currentStr);
+                                    currentStr = '';
+                                }
+
+                                actions.forEach(function(a) {
+                                    if (a.type === 'removed') return;
+                                    if (a.type !== currentType) { flush(); currentType = a.type; }
+                                    currentStr += a.val;
+                                });
+                                flush();
+
+                                return { changed: true, html: html };
+                            }
+
                             function renderHistory(listEl, snapshots) {
                                 if (!listEl) return;
                                 var items = Array.isArray(snapshots) ? snapshots.slice() : [];
@@ -359,43 +420,72 @@
                                     var snapDate = formatJrDateTime(snap.update_at || snap.created_at || '');
                                     var reflections = Array.isArray(snap.reflections) ? snap.reflections : [];
                                     if (!reflections.length) return '';
+                                    var oldSnap = items[sIdx + 1];
+                                    var oldReflections = (oldSnap && Array.isArray(oldSnap.reflections)) ? oldSnap.reflections : [];
 
                                     var cards = reflections.map(function (rec, rIdx) {
-                                        var good = escapeHtml(rec.evaluation_good || '');
-                                        var goodReason = escapeHtml(rec.attribution || '');
-                                        var bad = escapeHtml(rec.evaluation_bad || '');
-                                        var badReason = escapeHtml(rec.attribution_bad || '');
+                                        var oldRec = oldReflections[rIdx] || {};
+
+                                        var goodDiff = computeDiff(oldRec.evaluation_good || '', rec.evaluation_good || '');
+                                        var goodReasonDiff = computeDiff(oldRec.attribution || '', rec.attribution || '');
+                                        var badDiff = computeDiff(oldRec.evaluation_bad || '', rec.evaluation_bad || '');
+                                        var badReasonDiff = computeDiff(oldRec.attribution_bad || '', rec.attribution_bad || '');
+
+                                        var oldLessons = Array.isArray(oldRec.lessons) ? oldRec.lessons : [];
                                         var lessons = Array.isArray(rec.lessons) ? rec.lessons : [];
-                                        var lessonsHtml = lessons.length
-                                            ? lessons.map(function (l) {
-                                                var text = escapeHtml(l.lesson_learned || l.lesson || '');
-                                                var opp = escapeHtml(l.opportunity || '');
-                                                return '<div class="jr-history-lesson-item">'
-                                                    + '<div class="jr-history-lesson-text">' + (text || '-') + '</div>'
-                                                    + (opp ? '<div class="jr-history-lesson-opportunity">' + opp + '</div>' : '')
+                                        
+                                        var lessonsHtml = '';
+                                        var lessonsChanged = false;
+                                        if (lessons.length) {
+                                            lessonsHtml = lessons.map(function (l, lIdx) {
+                                                var oldL = oldLessons[lIdx] || {};
+                                                var textDiff = computeDiff(oldL.lesson_learned || oldL.lesson || '', l.lesson_learned || l.lesson || '');
+                                                var whyDiff = computeDiff(oldL.why_important || '', l.why_important || '');
+                                                var oppDiff = computeDiff(oldL.opportunity || '', l.opportunity || '');
+                                                
+                                                var changed = textDiff.changed || whyDiff.changed || oppDiff.changed;
+                                                if (changed) lessonsChanged = true;
+                                                var cls = changed ? 'jr-history-lesson-item jr-history-changed' : 'jr-history-lesson-item jr-history-unchanged';
+                                                
+                                                return '<div class="' + cls + '">'
+                                                    + '<div class="jr-history-lesson-text">' + (textDiff.html || '-') + '</div>'
+                                                    + (l.why_important ? '<div class="jr-history-lesson-why">' + whyDiff.html + '</div>' : '')
+                                                    + (l.opportunity ? '<div class="jr-history-lesson-opportunity">' + oppDiff.html + '</div>' : '')
                                                     + '</div>';
-                                            }).join('')
-                                            : '<div class="jr-history-empty">教訓はありません。</div>';
+                                            }).join('');
+                                        } else {
+                                            lessonsHtml = '<div class="jr-history-empty">教訓はありません。</div>';
+                                        }
+
+                                        var goodChanged = goodDiff.changed || goodReasonDiff.changed;
+                                        var goodCls = goodChanged ? 'jr-history-section jr-history-changed' : 'jr-history-section jr-history-unchanged';
+                                        
+                                        var badChanged = badDiff.changed || badReasonDiff.changed;
+                                        var badCls = badChanged ? 'jr-history-section jr-history-changed' : 'jr-history-section jr-history-unchanged';
+
+                                        var lessonsCls = lessonsChanged ? 'jr-history-section jr-history-changed' : 'jr-history-section jr-history-unchanged';
+                                        // If there are no lessons and it didn't change (e.g. from 0 to 0), it's unchanged. If it went from 1 to 0, oldLessons > lessons so we should mark as changed.
+                                        if (oldLessons.length > lessons.length) lessonsCls = 'jr-history-section jr-history-changed';
 
                                         var title = (getCurrentLang() === 'ja') ? ('内省 #' + (rIdx + 1)) : ('Reflection #' + (rIdx + 1));
                                         return '<details class="jr-history-card" ' + ((sIdx === 0 && rIdx === 0) ? 'open' : '') + '>'
                                             + '<summary class="jr-history-summary">' + title + '</summary>'
                                             + '<div class="jr-history-body">'
-                                            + '<div class="jr-history-section">'
+                                            + '<div class="' + lessonsCls + '">'
                                             + '<div class="jr-history-section-title"><span class="jr-history-icon">💡</span>教訓</div>'
                                             + '<div class="jr-history-lesson-list">' + lessonsHtml + '</div>'
                                             + '</div>'
-                                            + '<div class="jr-history-section">'
+                                            + '<div class="' + goodCls + '">'
                                             + '<div class="jr-history-section-title good"><span class="jr-history-icon">😊</span>うまくいった点</div>'
-                                            + '<div class="jr-history-section-content">' + (good || '-') + '</div>'
+                                            + '<div class="jr-history-section-content">' + (goodDiff.html || '-') + '</div>'
                                             + '<div class="jr-history-section-title good"><span class="jr-history-icon">✅</span>理由</div>'
-                                            + '<div class="jr-history-section-content">' + (goodReason || '-') + '</div>'
+                                            + '<div class="jr-history-section-content">' + (goodReasonDiff.html || '-') + '</div>'
                                             + '</div>'
-                                            + '<div class="jr-history-section">'
+                                            + '<div class="' + badCls + '">'
                                             + '<div class="jr-history-section-title bad"><span class="jr-history-icon">😔</span>うまくいかなかった点</div>'
-                                            + '<div class="jr-history-section-content">' + (bad || '-') + '</div>'
+                                            + '<div class="jr-history-section-content">' + (badDiff.html || '-') + '</div>'
                                             + '<div class="jr-history-section-title bad"><span class="jr-history-icon">🧭</span>理由</div>'
-                                            + '<div class="jr-history-section-content">' + (badReason || '-') + '</div>'
+                                            + '<div class="jr-history-section-content">' + (badReasonDiff.html || '-') + '</div>'
                                             + '</div>'
                                             + '</div>'
                                             + '</details>';
@@ -600,22 +690,26 @@
                                 _tabContents.forEach(function(c, i) {
                                     if (i === index) {
                                         c.classList.add('jr-tab-content-active');
+                                        setTimeout(function() {
+                                            c.querySelectorAll('textarea').forEach(function(ta) {
+                                                ta.style.height = 'auto';
+                                                ta.style.height = ta.scrollHeight + 'px';
+                                            });
+                                        }, 10);
                                     } else {
                                         c.classList.remove('jr-tab-content-active');
                                     }
                                 });
-                                // Update tab labels to show (Active) on current tab
+                                // Update tab labels
                                 updateTabLabels();
                             }
 
                             function updateTabLabels() {
                                 _tabs.forEach(function(tab, i) {
-                                    var isActive = tab.classList.contains('jr-tab-active');
                                     var label;
                                     // All tabs are reflection tabs now (no Activity Process tab)
                                     // i=0 -> 内省 #1, i=1 -> 内省 #2, etc.
                                     label = (getCurrentLang() === 'ja') ? ('内省 #' + (i + 1)) : ('Reflection #' + (i + 1));
-                                    if (isActive) label += ' (Active)';
                                     // Update the label span, not the whole tab (to preserve delete button)
                                     var labelSpan = tab.querySelector('.jr-tab-label');
                                     if (labelSpan) {
@@ -685,6 +779,12 @@
                                     contents.forEach(function(c, i) {
                                         if (i === index) {
                                             c.classList.add('jr-lesson-tab-content-active');
+                                            setTimeout(function() {
+                                                c.querySelectorAll('textarea').forEach(function(ta) {
+                                                    ta.style.height = 'auto';
+                                                    ta.style.height = ta.scrollHeight + 'px';
+                                                });
+                                            }, 10);
                                         } else {
                                             c.classList.remove('jr-lesson-tab-content-active');
                                         }
@@ -695,9 +795,7 @@
                                 function updateLessonLabelsLocal() {
                                     var tabs = getLessonTabs();
                                     tabs.forEach(function(tab, i) {
-                                        var isActive = tab.classList.contains('jr-lesson-tab-active');
                                         var label = (getCurrentLang() === 'ja') ? ('教訓 #' + (i + 1)) : ('Lesson #' + (i + 1));
-                                        if (isActive) label += ' (Active)';
                                         var labelSpan = tab.querySelector('.jr-lesson-tab-label');
                                         if (labelSpan) labelSpan.textContent = label;
                                     });
@@ -983,13 +1081,8 @@
                             // SUCCESS card (includes good attribution inside)
                             var successDiv = document.createElement('div');
                             successDiv.className = 'jr-success-div';
-                            // Card header with emoji
-                            var successHeader = document.createElement('div');
-                            successHeader.className = 'jr-card-header';
-                            successHeader.textContent = (getCurrentLang() === 'ja') ? 'うまくいった点' : 'What went well';
-                            successDiv.appendChild(successHeader);
                             var successLabel = document.createElement('label');
-                            successLabel.textContent = (getCurrentLang() === 'ja') ? 'うまくいった点はありますか？' : 'What went well?';
+                            successLabel.textContent = (getCurrentLang() === 'ja') ? '😊 うまくいった点はありますか？' : '😊 What went well?';
                             successLabel.className = 'jr-label';
                             var successTa = document.createElement('textarea');
                             successTa.id = 'wr_successPoints';
@@ -1013,13 +1106,8 @@
                             // FAILURE card (includes bad attribution inside)
                             var failureDiv = document.createElement('div');
                             failureDiv.className = 'jr-failure-div';
-                            // Card header with emoji
-                            var failureHeader = document.createElement('div');
-                            failureHeader.className = 'jr-card-header';
-                            failureHeader.textContent = (getCurrentLang() === 'ja') ? 'うまくいかなかった点' : 'What did not go well';
-                            failureDiv.appendChild(failureHeader);
                             var failureLabel = document.createElement('label');
-                            failureLabel.textContent = (getCurrentLang() === 'ja') ? 'うまくいかなかった点はありますか？' : 'What did not go well?';
+                            failureLabel.textContent = (getCurrentLang() === 'ja') ? '😔 うまくいかなかった点はありますか？' : '😔 What did not go well?';
                             failureLabel.className = 'jr-label';
                             var failureTa = document.createElement('textarea');
                             failureTa.id = 'wr_failurePoints';
@@ -1129,7 +1217,6 @@
                                 _lessonTabs.forEach(function(tab, i) {
                                     var isActive = tab.classList.contains('jr-lesson-tab-active');
                                     var label = (getCurrentLang() === 'ja') ? ('教訓 #' + (i + 1)) : ('Lesson #' + (i + 1));
-                                    if (isActive) label += ' (Active)';
                                     var labelSpan = tab.querySelector('.jr-lesson-tab-label');
                                     if (labelSpan) {
                                         labelSpan.textContent = label;
@@ -1137,7 +1224,7 @@
                                 });
                             }
                             
-                            function createLessonTabContent(focusVal, whenVal, dbId) {
+                            function createLessonTabContent(focusVal, whyVal, whenVal, dbId) {
                                 var content = document.createElement('div');
                                 content.className = 'jr-lesson-tab-content';
                                 content.dataset.lessonTabIndex = _lessonTabContents.length;
@@ -1154,6 +1241,18 @@
                                 if (focusVal) taTop.value = focusVal;
                                 content.appendChild(labelTop);
                                 content.appendChild(taTop);
+                                
+                                // Why question
+                                var labelWhy = document.createElement('label');
+                                labelWhy.textContent = (getCurrentLang() === 'ja') ? 'なぜその教訓が大切だと考えますか？' : 'Why do you think this lesson is important?';
+                                labelWhy.className = 'jr-label';
+                                var taWhy = document.createElement('textarea');
+                                taWhy.rows = 2;
+                                taWhy.placeholder = (getCurrentLang() === 'ja') ? '（例）この教訓を意識することで、次に類似した課題に直面した際の失敗を防げるため。' : '(e.g.) Being aware of this lesson will prevent failures when facing similar challenges.';
+                                taWhy.className = 'jr-textarea wr-lesson-why';
+                                if (whyVal) taWhy.value = whyVal;
+                                content.appendChild(labelWhy);
+                                content.appendChild(taWhy);
                                 
                                 // When question
                                 var labelBottom = document.createElement('label');
@@ -1172,11 +1271,11 @@
                                 return content;
                             }
                             
-                            function addNewLessonTab(focusVal, whenVal, dbId) {
+                            function addNewLessonTab(focusVal, whyVal, whenVal, dbId) {
                                 var tabNum = _lessonTabs.length + 1;
                                 var label = (getCurrentLang() === 'ja') ? ('教訓 #' + tabNum) : ('Lesson #' + tabNum);
                                 createLessonTab(label, false);
-                                createLessonTabContent(focusVal || '', whenVal || '', dbId);
+                                createLessonTabContent(focusVal || '', whyVal || '', whenVal || '', dbId);
                                 _lessonTabIndex++;
                                 updateLessonTabLabels();
                                 activateLessonTab(_lessonTabs.length - 1);
@@ -1242,7 +1341,7 @@
                             
                             // Wire the "+" lesson tab button
                             addLessonTabBtn.addEventListener('click', function() {
-                                addNewLessonTab('', '');
+                                addNewLessonTab('', '', '');
                             });
                             
                             // Create the first lesson tab
@@ -1259,16 +1358,13 @@
 
                             // Always fetch canonical reflection row independently so debug output appears
                             try {
-                                console.log('journal_report: fetching canonical reflection for', objectJournalId);
                                 $.ajax({
                                     url: './php/get_object_journal_reflections.php',
                                     type: 'GET',
                                     dataType: 'json',
                                     data: { object_journal_id: objectJournalId, debug: 1 },
                                     success: function (rres) {
-                                        console.log('journal_report: reflection (always) response', rres);
-                                        if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (first fetch) - skipping'); return; }
-                                        if (rres && Array.isArray(rres.reflections)) console.log('journal_report: reflections array', rres.reflections);
+                                        if (_reflectionsRendered) { return; }
                                         try {
                                             var latest = null;
                                             if (rres && rres.latest_snapshot && Array.isArray(rres.latest_snapshot.reflections)) {
@@ -1406,8 +1502,10 @@
                                         var firstTabContent = lessonTabContentContainer.querySelector('.jr-lesson-tab-content');
                                         if (firstTabContent && lf[0]) {
                                             var focusEl = firstTabContent.querySelector('.wr-lesson-focus');
+                                            var whyEl = firstTabContent.querySelector('.wr-lesson-why');
                                             var whenEl = firstTabContent.querySelector('.wr-lesson-when');
                                             if (focusEl) focusEl.value = lf[0].lesson_learned || '';
+                                            if (whyEl) whyEl.value = lf[0].why_important || '';
                                             if (whenEl) whenEl.value = lf[0].opportunity || '';
                                             if (lf[0]['object_journal_lesson-learned_id']) firstTabContent.dataset.objectLeId = lf[0]['object_journal_lesson-learned_id'];
                                         }
@@ -1453,6 +1551,16 @@
                                                 content.appendChild(labelTop);
                                                 content.appendChild(taTop);
                                                 
+                                                var labelWhy = document.createElement('label');
+                                                labelWhy.textContent = (getCurrentLang() === 'ja') ? 'なぜその教訓が大切だと考えますか？' : 'Why do you think this lesson is important?';
+                                                labelWhy.className = 'jr-label';
+                                                var taWhy = document.createElement('textarea');
+                                                taWhy.rows = 2;
+                                                taWhy.className = 'jr-textarea wr-lesson-why';
+                                                taWhy.value = l.why_important || '';
+                                                content.appendChild(labelWhy);
+                                                content.appendChild(taWhy);
+                                                
                                                 var labelBottom = document.createElement('label');
                                                 labelBottom.textContent = (getCurrentLang() === 'ja') ? 'その教訓は次にどのような時に活かせそうですか？' : 'When could this lesson be applied next?';
                                                 labelBottom.className = 'jr-label';
@@ -1471,8 +1579,10 @@
                                         var firstTabContent = lessonTabContentContainer.querySelector('.jr-lesson-tab-content');
                                         if (firstTabContent) {
                                             var focusEl = firstTabContent.querySelector('.wr-lesson-focus');
+                                            var whyEl = firstTabContent.querySelector('.wr-lesson-why');
                                             var whenEl = firstTabContent.querySelector('.wr-lesson-when');
                                             if (focusEl) focusEl.value = '';
+                                            if (whyEl) whyEl.value = '';
                                             if (whenEl) whenEl.value = '';
                                         }
                                     }
@@ -1576,9 +1686,7 @@
                                                         dataType: 'json',
                                                         data: { object_journal_id: objectJournalId, debug: 1 },
                                                         success: function (rres) {
-                                                            console.log('get_object_journal_reflections response', rres);
-                                                            if (_reflectionsRendered) { console.log('journal_report: reflections already rendered (second fetch) - skipping'); return; }
-                                                            if (rres && Array.isArray(rres.reflections)) console.log('get_object_journal_reflections reflections', rres.reflections);
+                                                            if (_reflectionsRendered) { return; }
                                                                 try {
                                                                     var latest = null;
                                                                     if (rres && rres.latest_snapshot && Array.isArray(rres.latest_snapshot.reflections)) {
@@ -1615,6 +1723,13 @@
                                                                         if (rf) { populateWrapWithReflection(infoWrap, rf); _reflectionsRendered = true; }
                                                                     }
                                                                 } catch (e) { console.warn('apply reflection prefill failed', e); }
+                                                                // Resize all textareas after population
+                                                                setTimeout(function() {
+                                                                    modalContent.querySelectorAll('textarea').forEach(function(ta) {
+                                                                        ta.style.height = 'auto';
+                                                                        ta.style.height = ta.scrollHeight + 'px';
+                                                                    });
+                                                                }, 100);
                                                         },
                                                         error: function () { /* ignore reflection fetch errors silently */ }
                                                     });
@@ -1647,7 +1762,7 @@
                                 heading.style.fontWeight = 'bold';
                                 heading.style.fontSize = '17px';
                                 heading.style.margin = '0 0 8px 0';
-                                heading.textContent = (getCurrentLang() === 'ja') ? ('思考した問いノード：' + (item.display || '')) : ('Question node: ' + (item.display || ''));
+                                heading.textContent = (item.display || '');
                                 itemWrap.appendChild(heading);
 
                                 // タイムライン本体
@@ -1747,22 +1862,36 @@
                                     // Fill any unanalyzed nodes with level 0
                                     Object.keys(objGroups).forEach(function (n) { if (typeof levels[n] === 'undefined') levels[n] = 0; });
 
-                                    // For each object_node_id group, create a table and within it group by content
-                                    objOrder.forEach(function (oid) {
+                                    // Tree hierarchy restructuring
+                                    var treeNodes = {};
+                                    var rootsList = [];
+                                    
+                                    objOrder.forEach(function(oid) {
+                                        treeNodes[oid] = { oid: oid, children: [] };
+                                    });
+
+                                    // Build hierarchy mapping based on item.node_parents
+                                    objOrder.forEach(function(oid) {
+                                        var parentsArr = item.node_parents && item.node_parents[oid] ? item.node_parents[oid] : [];
+                                        var parentFound = false;
+                                        for (var pi = 0; pi < parentsArr.length; pi++) {
+                                            var p = parentsArr[pi];
+                                            if (treeNodes[p]) {
+                                                treeNodes[p].children.push(treeNodes[oid]);
+                                                parentFound = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!parentFound) {
+                                            rootsList.push(treeNodes[oid]);
+                                        }
+                                    });
+
+                                    function renderTreeNode(node, container, isLastChild, isRoot, depth) {
+                                        if (typeof depth === 'undefined') depth = 0;
+                                        var oid = node.oid;
                                         var grp = objGroups[oid];
-                                        // (No object_node_id caption — display only representative content heading)
 
-                                        // Group this object's histories by content (preserve appearance order)
-                                        var contentGroups = {};
-                                        var contentOrder = [];
-                                        grp.forEach(function (h) {
-                                            var key = (h.content || '').toString();
-                                            if (typeof contentGroups[key] === 'undefined') { contentGroups[key] = []; contentOrder.push(key); }
-                                            contentGroups[key].push(h);
-                                        });
-
-                                        // Instead of creating a heading per distinct content, show only one representative content
-                                        // per object_node_id (use the latest history's content), then list all histories for that object below.
                                         var repContent = '';
                                         if (grp && grp.length) {
                                             var last = grp[grp.length - 1];
@@ -1771,47 +1900,84 @@
                                             repContent = (item.display || '');
                                         }
                                         var contentHeading = repContent && repContent.toString().trim() ? repContent.toString() : ((getCurrentLang() === 'ja') ? '(内容なし)' : '(no content)');
-                                        var labelPrefix = (getCurrentLang() === 'ja') ? '計画した手段：' : 'Planned means: ';
-                                        var level = levels[oid] || 0;
-                                        // If has parent within groups, show a parent label above
-                                        if (level > 0) {
-                                            var parentsArr = item.node_parents && item.node_parents[oid] ? item.node_parents[oid] : [];
-                                            var displayParent = null;
-                                            for (var pi = 0; pi < parentsArr.length; pi++) {
-                                                var p = parentsArr[pi];
-                                                if (repByOid[p]) { displayParent = repByOid[p]; break; }
-                                            }
-                                            if (displayParent) {
-                                                var pdiv = document.createElement('div');
-                                                pdiv.textContent = (getCurrentLang() === 'ja' ? '親: ' : 'Parent: ') + displayParent;
-                                                pdiv.style.fontSize = '12px';
-                                                pdiv.style.color = '#666';
-                                                pdiv.style.margin = '4px 0';
-                                                pdiv.style.paddingLeft = (level * 14) + 'px';
-                                                itemWrap.appendChild(pdiv);
+
+                                        var nodeWrap = document.createElement('div');
+                                        nodeWrap.className = 'method-item';
+                                        if (depth === 0) nodeWrap.classList.add('is-parent');
+                                        else if (depth === 1) nodeWrap.classList.add('is-child');
+                                        else nodeWrap.classList.add('is-grandchild');
+                                        nodeWrap.style.position = 'relative';
+
+                                        if (!isRoot) {
+                                            var branchLine = document.createElement('div');
+                                            branchLine.className = 'jr-tree-line';
+                                            // Extend line upwards
+                                            // Depending on sibling spacing, the height might need adjustment, but CSS handles it
+                                            nodeWrap.appendChild(branchLine);
+                                            
+                                            // If last child, we mask the continuous vertical line that comes from the parent container
+                                            if (isLastChild) {
+                                                var mask = document.createElement('div');
+                                                mask.style.position = 'absolute';
+                                                mask.style.left = '-16px';
+                                                mask.style.top = '24px'; /* exactly below the border-bottom */
+                                                mask.style.bottom = '-50px'; /* extend to hide parent line below this item */
+                                                mask.style.width = '4px';
+                                                mask.style.backgroundColor = '#fff';
+                                                mask.style.zIndex = '1';
+                                                nodeWrap.appendChild(mask);
                                             }
                                         }
 
+                                        var nodeContentWrap = document.createElement('div'); // to hold content and details
+                                        
                                         var ch = document.createElement('div');
+                                        ch.className = 'method-content';
                                         ch.style.display = 'flex';
-                                        ch.style.alignItems = 'center';
+                                        ch.style.alignItems = 'flex-start';
                                         ch.style.justifyContent = 'space-between';
                                         ch.style.cursor = 'pointer';
-                                        ch.style.margin = '6px 0 6px 0';
-                                        ch.style.paddingLeft = (level * 14) + 'px';
-                                        ch.style.transition = 'background 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease';
-                                        ch.style.borderRadius = '6px';
+                                        ch.style.padding = '8px 12px';
+                                        ch.style.transition = 'background 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease';
+                                        ch.style.borderRadius = '8px';
+
+                                        var chTextWrap = document.createElement('div');
+                                        chTextWrap.style.display = 'flex';
+                                        chTextWrap.style.alignItems = 'flex-start'; // align to top line
+                                        chTextWrap.style.flex = '1';
+                                        chTextWrap.style.lineHeight = '1.5';
 
                                         var chText = document.createElement('div');
-                                        chText.textContent = labelPrefix + contentHeading;
+                                        chText.textContent = '• ' + contentHeading; // Added dot
                                         chText.style.fontWeight = '600';
-                                        chText.style.flex = '1';
                                         chText.style.color = theme.text;
-                                        ch.appendChild(chText);
+                                        chText.style.flex = '1'; // ensure text takes available space
+                                        chTextWrap.appendChild(chText);
+
+                                        // ステータス判定
+                                        var currentStatus = "計画";
+                                        var statusClass = "jr-status-plan";
+                                        if (grp && grp.length) {
+                                            grp.forEach(function(h) {
+                                                var act = parseInt(h.activity, 10);
+                                                if (act === 5) { currentStatus = "開始"; statusClass = "jr-status-start"; }
+                                                else if (act === 6) { currentStatus = "中断"; statusClass = "jr-status-pause"; }
+                                                else if (act === 7) { currentStatus = "完了"; statusClass = "jr-status-done"; }
+                                            });
+                                        }
+
+                                        var statusChip = document.createElement('span');
+                                        statusChip.className = "jr-status-chip " + statusClass;
+                                        statusChip.textContent = currentStatus;
+                                        statusChip.style.marginTop = '2px'; // align with text top line
+                                        chTextWrap.appendChild(statusChip);
+
+                                        ch.appendChild(chTextWrap);
 
                                         var chIcon = document.createElement('div');
                                         chIcon.textContent = '\u25B6'; // triangle arrow ▶
                                         chIcon.style.marginLeft = '12px';
+                                        chIcon.style.marginTop = '3px'; // align with top line
                                         chIcon.style.fontWeight = '700';
                                         chIcon.style.color = theme.muted;
                                         chIcon.style.transition = 'transform 0.25s ease, color 0.15s ease';
@@ -1820,8 +1986,8 @@
 
                                         // Hover and focus affordances to indicate clickability
                                         ch.addEventListener('mouseenter', function () {
-                                            ch.style.background = 'rgba(43,122,120,0.06)';
-                                            ch.style.boxShadow = '0 6px 14px rgba(35,48,67,0.06)';
+                                            ch.style.background = '#f8fafc'; // very light gray
+                                            ch.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
                                             ch.style.transform = 'translateY(-1px)';
                                             chIcon.style.color = theme.primary;
                                         });
@@ -1850,6 +2016,7 @@
                                         var detailsDiv = document.createElement('div');
                                         detailsDiv.style.display = 'none';
                                         detailsDiv.style.marginTop = '8px';
+                                        detailsDiv.style.paddingLeft = '24px'; // A: 活動プロセス全体のインデントを追加
                                         detailsDiv.style.overflow = 'hidden';
                                         detailsDiv.style.maxHeight = '0px';
                                         detailsDiv.style.opacity = '0';
@@ -1859,10 +2026,12 @@
                                         if (grp && grp.length) {
                                             var timelineWrap = document.createElement('div');
                                             timelineWrap.className = 'jr-timeline-list';
+                                            
+                                            var lastDateStr = '';
                                             grp.forEach(function(h, idx) {
                                                 var act = (typeof h.activity !== 'undefined') ? parseInt(h.activity, 10) : 0;
                                                 var label = (getCurrentLang() === 'ja') ? (mapJa[act] || '') : '';
-                                                var icon = mapIcon[act] || '●';
+                                                
                                                 var detail = '';
                                                 if (act === 1 || act === 2) {
                                                     detail = h.content || '';
@@ -1880,33 +2049,51 @@
                                                 }
                                                 var row = document.createElement('div');
                                                 row.className = 'jr-timeline-row' + (idx === grp.length-1 ? ' last' : '');
+                                                
                                                 // アイコン＋縦線
                                                 var iconWrap = document.createElement('div');
                                                 iconWrap.className = 'jr-timeline-icon-wrap';
                                                 var iconDiv = document.createElement('div');
-                                                iconDiv.className = 'jr-timeline-icon';
-                                                iconDiv.textContent = icon;
+                                                iconDiv.className = 'jr-timeline-dot'; // C: ミニマルなドットアイコンへ変更
                                                 iconWrap.appendChild(iconDiv);
                                                 row.appendChild(iconWrap);
-                                                // ラベル・内容
+                                                
+                                                // ラベル・内容 (C: 横並び配置)
                                                 var textDiv = document.createElement('div');
                                                 textDiv.className = 'jr-timeline-text';
+                                                
                                                 var labelDiv = document.createElement('div');
                                                 labelDiv.className = 'jr-timeline-label';
                                                 labelDiv.textContent = label;
                                                 textDiv.appendChild(labelDiv);
+                                                
                                                 if (detail) {
                                                     var detailDiv = document.createElement('div');
                                                     detailDiv.className = 'jr-timeline-detail';
-                                                    detailDiv.textContent = '内容：' + detail;
+                                                    detailDiv.textContent = detail; // 「内容：」という固定プレフィックスを削除しスマートに
                                                     textDiv.appendChild(detailDiv);
                                                 }
                                                 row.appendChild(textDiv);
-                                                // 日時
+                                                
+                                                // 日時 (D: タイムスタンプの配置と日付省略)
                                                 var timeDiv = document.createElement('div');
                                                 timeDiv.className = 'jr-timeline-time';
-                                                timeDiv.textContent = h.appeared_at || '';
+                                                
+                                                var timeStr = h.appeared_at || '';
+                                                if (timeStr.length >= 16) {
+                                                    var datePart = timeStr.substring(0, 10); // YYYY-MM-DD
+                                                    var timePart = timeStr.substring(11, 16); // HH:MM
+                                                    if (datePart === lastDateStr) {
+                                                        timeStr = timePart; // 同じ日の場合は時刻のみ
+                                                    } else {
+                                                        var md = datePart.substring(5).replace('-', '/'); // MM/DD
+                                                        timeStr = md + ' ' + timePart; // 違う日は日付付き
+                                                        lastDateStr = datePart;
+                                                    }
+                                                }
+                                                timeDiv.textContent = timeStr;
                                                 row.appendChild(timeDiv);
+                                                
                                                 timelineWrap.appendChild(row);
                                             });
                                             detailsDiv.appendChild(timelineWrap);
@@ -1951,260 +2138,50 @@
                                             }
                                         });
 
-                                        itemWrap.appendChild(ch);
-                                        itemWrap.appendChild(detailsDiv);
+                                        nodeContentWrap.appendChild(ch);
+                                        nodeContentWrap.appendChild(detailsDiv);
+                                        nodeWrap.appendChild(nodeContentWrap);
+                                        
+                                        // Render children inside an indented container with continuous left border
+                                        if (node.children.length > 0) {
+                                            var childrenWrap = document.createElement('div');
+                                            childrenWrap.className = 'method-children';
+                                            childrenWrap.style.paddingLeft = '20px';
+                                            childrenWrap.style.borderLeft = '1px solid #cbd5e0';
+                                            node.children.forEach(function(childNode, idx) {
+                                                renderTreeNode(childNode, childrenWrap, idx === node.children.length - 1, false, depth + 1);
+                                            });
+                                            nodeWrap.appendChild(childrenWrap);
+                                        }
+                                        
+                                        container.appendChild(nodeWrap);
+                                    }
+
+                                    // Render all roots
+                                    rootsList.forEach(function(rootNode) {
+                                        renderTreeNode(rootNode, itemWrap, false, true, 0);
                                     });
                                 } else if (item.content && item.content.length) {
-                                    // No histories; render each item.content as a heading with an empty row
+                                    // No histories; render each item.content as a simple list, no large blocks
+                                    var fallbackWrap = document.createElement('div');
+                                    fallbackWrap.style.paddingLeft = '14px';
+                                    fallbackWrap.style.color = '#4a5568';
                                     item.content.forEach(function (contentEntry) {
                                         var contentHeading = contentEntry && contentEntry.toString().trim() ? contentEntry.toString() : ((getCurrentLang() === 'ja') ? '(内容なし)' : '(no content)');
                                         var sh = document.createElement('div');
-                                        sh.textContent = contentHeading;
-                                        sh.style.fontWeight = '600';
-                                        sh.style.margin = '8px 0 6px 0';
-                                        itemWrap.appendChild(sh);
-                                        var emTbl = document.createElement('table');
-                                        var emTbody = document.createElement('tbody');
-                                        emTbody.appendChild(formatRow('', '', ''));
-                                        emTbl.appendChild(emTbody);
-                                        itemWrap.appendChild(emTbl);
+                                        sh.textContent = '・ ' + contentHeading;
+                                        sh.style.margin = '4px 0';
+                                        fallbackWrap.appendChild(sh);
                                     });
+                                    itemWrap.appendChild(fallbackWrap);
                                 } else {
-                                    // historiesもcontentもない場合、タイムライン風divで「該当データなし」表示
-                                    var noDataDiv = document.createElement('div');
-                                    noDataDiv.style.color = '#888';
-                                    noDataDiv.style.fontSize = '1em';
-                                    noDataDiv.style.margin = '12px 0';
-                                    noDataDiv.textContent = (getCurrentLang() === 'ja') ? '(該当データなし)' : '(no data)';
-                                    itemWrap.appendChild(noDataDiv);
+                                    // historiesもcontentもない場合、不要な項目としてカード自体を非表示にする
+                                    itemWrap.style.display = 'none';
                                 }
                                 // Add to left column (Activity Process) - always visible
                                 activityContent.appendChild(itemWrap);
                             });
 
-                            // Wire download link click event
-                            dlLink.onclick = function (e) {
-                                e.preventDefault();
-                                // read editable fields (split evaluation + lessons)
-                                var successPoints = (document.getElementById('wr_successPoints') ? document.getElementById('wr_successPoints').value : '').trim();
-                                var failurePoints = (document.getElementById('wr_failurePoints') ? document.getElementById('wr_failurePoints').value : '').trim();
-                                var cr = (document.getElementById('wr_attribution_good') ? document.getElementById('wr_attribution_good').value : '').trim();
-                                var focus = (document.getElementById('wr_lesson_focus') ? document.getElementById('wr_lesson_focus').value : '').trim();
-                                var when = (document.getElementById('wr_lesson_when') ? document.getElementById('wr_lesson_when').value : '').trim();
-                                var mainLesson = focus;
-                                if (when) mainLesson = mainLesson ? mainLesson + '\n\n' + when : when;
-                                // gather extras
-                                var extras = [];
-                                try {
-                                    var addWrappers = document.querySelectorAll('.wr-additional-lesson-wrap');
-                                    if (addWrappers && addWrappers.length) {
-                                        addWrappers.forEach(function (w) {
-                                            try {
-                                                var f = w.querySelector('.wr-additional-lesson-focus');
-                                                var when = w.querySelector('.wr-additional-lesson-when');
-                                                var fv = (f && f.value) ? f.value.trim() : '';
-                                                var wv = (when && when.value) ? when.value.trim() : '';
-                                                var combined = fv;
-                                                if (wv) combined = combined ? (combined + '\n\n' + wv) : wv;
-                                                if (combined) extras.push(combined);
-                                            } catch (e) { }
-                                        });
-                                    }
-                                } catch (e) { }
-                                var combinedLessons = mainLesson || '';
-                                if (extras.length) {
-                                    if (combinedLessons) combinedLessons = combinedLessons + '\n\n' + extras.join('\n\n');
-                                    else combinedLessons = extras.join('\n\n');
-                                }
-
-                                function escapeHtml(str) {
-                                    if (!str && str !== 0) return '';
-                                    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/\'/g, '&#39;');
-                                }
-
-                                function nl2br_escaped(s) {
-                                    return escapeHtml(s).replace(/\r\n|\n|\r/g, '<br>');
-                                }
-
-                                var html = '<html><head><meta charset="utf-8"><title>Weekly Goal Report</title></head><body>';
-                                html += '<h2>' + escapeHtml((getCurrentLang() === 'ja') ? ('週次レポート (' + (startDate || '') + ' ~ ' + (endDate || '') + ')') : ('Weekly Goal Report (' + (startDate || '') + ' ~ ' + (endDate || '') + ')')) + '</h2>';
-                                // include evaluation split and lessons
-                                if (successPoints) {
-                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? 'うまくいった点' : 'What went well') + '</h3>';
-                                    html += '<p>' + nl2br_escaped(successPoints) + '</p>';
-                                }
-                                if (failurePoints) {
-                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? 'うまくいかなかった点' : 'What did not go well') + '</h3>';
-                                    html += '<p>' + nl2br_escaped(failurePoints) + '</p>';
-                                }
-                                if (cr && cr.trim()) {
-                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '完了理由 (attribution)' : 'Completion reason') + '</h3>';
-                                    html += '<p>' + nl2br_escaped(cr) + '</p>';
-                                }
-                                if (combinedLessons && combinedLessons.trim()) {
-                                    html += '<h3>' + escapeHtml((getCurrentLang() === 'ja') ? '学び・教訓 (application)' : 'Challenges & Learnings') + '</h3>';
-                                    html += '<p>' + nl2br_escaped(combinedLessons) + '</p>';
-                                }
-
-                                results.forEach(function (item) {
-                                    html += '<h3>' + escapeHtml(item.display || '') + '</h3>';
-                                    // group histories by their raw content and render each content as a heading
-                                    var mapJa = { 1: '手段設定', 2: 'ラベル変更', 3: '理由記述', 4: '完了時間記述', 5: '手段開始', 6: '手段中断', 7: '手段終了', 8: '内省記述' };
-                                    var mapEn = { 1: 'Means set', 2: 'Label change', 3: 'Reason recorded', 4: 'Completion time recorded', 5: 'Means started', 6: 'Means interrupted', 7: 'Means finished', 8: 'Reflection recorded' };
-
-                                    if (item.histories && item.histories.length) {
-                                        // Group histories by object_node_id then by content, and render each group as a heading + table
-                                        var objGroups = {};
-                                        item.histories.forEach(function (h) {
-                                            var oid = h.object_node_id || '';
-                                            if (typeof objGroups[oid] === 'undefined') { objGroups[oid] = []; }
-                                            objGroups[oid].push(h);
-                                        });
-
-                                        // Determine object order: prefer server-provided ordered_object_node_ids
-                                        var objOrder = [];
-                                        if (item.ordered_object_node_ids && Array.isArray(item.ordered_object_node_ids) && item.ordered_object_node_ids.length) {
-                                            objOrder = item.ordered_object_node_ids.filter(function (id) { return typeof objGroups[id] !== 'undefined'; });
-                                            Object.keys(objGroups).forEach(function (k) { if (objOrder.indexOf(k) === -1) objOrder.push(k); });
-                                        } else {
-                                            Object.keys(objGroups).forEach(function (k) { objOrder.push(k); });
-                                        }
-
-                                        objOrder.forEach(function (oid) {
-                                            // omit object_node_id caption in export
-                                            // group by content
-                                            var contentGroups = {};
-                                            var contentOrder = [];
-                                            objGroups[oid].forEach(function (h) {
-                                                var key = (h.content || '').toString();
-                                                if (typeof contentGroups[key] === 'undefined') { contentGroups[key] = []; contentOrder.push(key); }
-                                                contentGroups[key].push(h);
-                                            });
-
-                                            // Show only one representative content per object_node_id (use latest history's content), then list all histories
-                                            var repKey = '';
-                                            if (objGroups[oid] && objGroups[oid].length) {
-                                                var lastH = objGroups[oid][objGroups[oid].length - 1];
-                                                repKey = (lastH && typeof lastH.content !== 'undefined') ? lastH.content : (item.display || '');
-                                            } else {
-                                                repKey = (item.display || '');
-                                            }
-                                            var contentHeading = repKey && repKey.toString().trim() ? repKey.toString() : ((getCurrentLang() === 'ja') ? '(内容なし)' : '(no content)');
-                                            var labelPrefix = (getCurrentLang() === 'ja') ? '計画した手段：' : 'Planned means: ';
-
-                                            // Build repByOid and levels for export (similar to modal)
-                                            // repByOid
-                                            var repByOidExport = {};
-                                            Object.keys(objGroups).forEach(function (k) {
-                                                var g = objGroups[k];
-                                                var rep = '';
-                                                if (g && g.length) {
-                                                    var last = g[g.length - 1];
-                                                    rep = (last && typeof last.content !== 'undefined') ? last.content : (item.display || '');
-                                                } else {
-                                                    rep = item.display || '';
-                                                }
-                                                repByOidExport[k] = rep;
-                                            });
-
-                                            var nodeParentsExp = item.node_parents || {};
-                                            var nodeChildrenExp = item.node_children || {};
-                                            var levelsExp = {};
-                                            var rootsExp = [];
-                                            Object.keys(objGroups).forEach(function (n) {
-                                                var parents = nodeParentsExp[n] || [];
-                                                var hasParent = false;
-                                                for (var pi = 0; pi < parents.length; pi++) {
-                                                    if (typeof objGroups[parents[pi]] !== 'undefined') { hasParent = true; break; }
-                                                }
-                                                if (!hasParent) { rootsExp.push(n); levelsExp[n] = 0; }
-                                            });
-                                            var qexp = rootsExp.slice();
-                                            while (qexp.length) {
-                                                var ccur = qexp.shift();
-                                                var children = nodeChildrenExp[ccur] || [];
-                                                children.forEach(function (ch) {
-                                                    if (typeof objGroups[ch] === 'undefined') return;
-                                                    var parentLevels = [];
-                                                    var plist = nodeParentsExp[ch] || [];
-                                                    for (var pidx = 0; pidx < plist.length; pidx++) { var pp = plist[pidx]; if (typeof levelsExp[pp] !== 'undefined') parentLevels.push(levelsExp[pp]); }
-                                                    var newL = parentLevels.length ? (Math.min.apply(null, parentLevels) + 1) : (levelsExp[ccur] + 1);
-                                                    if (typeof levelsExp[ch] === 'undefined' || newL < levelsExp[ch]) { levelsExp[ch] = newL; qexp.push(ch); }
-                                                });
-                                            }
-                                            Object.keys(objGroups).forEach(function (n) { if (typeof levelsExp[n] === 'undefined') levelsExp[n] = 0; });
-
-                                            var indent = levelsExp[oid] || 0;
-                                            var indentHtml = new Array(indent + 1).join('&nbsp;&nbsp;&nbsp;&nbsp;');
-                                            // parent label if exists
-                                            if (indent > 0) {
-                                                var parentsArr = item.node_parents && item.node_parents[oid] ? item.node_parents[oid] : [];
-                                                var displayParent = null;
-                                                for (var pi2 = 0; pi2 < parentsArr.length; pi2++) { var p2 = parentsArr[pi2]; if (repByOidExport[p2]) { displayParent = repByOidExport[p2]; break; } }
-                                                if (displayParent) {
-                                                    html += '<div style="color:#666;font-size:12px;margin-bottom:4px;">' + escapeHtml((getCurrentLang() === 'ja') ? '親: ' : 'Parent: ') + nl2br_escaped(displayParent) + '</div>';
-                                                }
-                                            }
-
-                                            html += '<h5>' + indentHtml + nl2br_escaped(labelPrefix + contentHeading) + '</h5>';
-                                            html += '<table style="width:100%;border-collapse:collapse"><tbody>';
-                                            // iterate all histories under this object (objGroups[oid]) and render rows
-                                            objGroups[oid].forEach(function (h) {
-                                                var prefix = '';
-                                                var detail = '';
-                                                try {
-                                                    var act = (typeof h.activity !== 'undefined') ? parseInt(h.activity, 10) : 0;
-                                                    if (act && act > 0) prefix = (getCurrentLang() === 'ja') ? (mapJa[act] || '') : (mapEn[act] || '');
-                                                    if (act === 1 || act === 2) {
-                                                        detail = h.content || '';
-                                                    } else if (act === 3) {
-                                                        detail = h.purpose || '';
-                                                    } else if (act === 4) {
-                                                        detail = h.estimated_time || '';
-                                                    } else if (act === 8) {
-                                                        var parts = [];
-                                                        if (h.evaluation_good) parts.push(h.evaluation_good);
-                                                        if (h.evaluation_bad) parts.push(h.evaluation_bad);
-                                                        if (h.attribution) parts.push(h.attribution);
-                                                        if (h.application) parts.push(h.application);
-                                                        detail = parts.join(' / ');
-                                                    } else {
-                                                        detail = '';
-                                                    }
-                                                } catch (e) { detail = ''; }
-                                                var timeText = h.appeared_at || '';
-                                                var midHtml = prefix || '';
-                                                var detailHtml = detail || '';
-                                                html += '<tr>' +
-                                                    '<td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top;width:160px">' + nl2br_escaped(timeText) + '</td>' +
-                                                    '<td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top;width:220px">' + nl2br_escaped(midHtml) + '</td>' +
-                                                    '<td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top">' + nl2br_escaped(detailHtml) + '</td>' +
-                                                    '</tr>';
-                                            });
-                                            html += '</tbody></table>';
-                                        });
-                                    } else if (item.content && item.content.length) {
-                                        item.content.forEach(function (contentEntry) {
-                                            var contentHeading = contentEntry && contentEntry.toString().trim() ? contentEntry.toString() : ((getCurrentLang() === 'ja') ? '(内容なし)' : '(no content)');
-                                            html += '<h4>' + nl2br_escaped(contentHeading) + '</h4>';
-                                            html += '<table style="width:100%"><tbody><tr><td>' + escapeHtml((getCurrentLang() === 'ja') ? '(該当データなし)' : '(no data)') + '</td></tr></tbody></table>';
-                                        });
-                                    } else {
-                                        html += '<table style="width:100%"><tbody><tr><td>' + escapeHtml((getCurrentLang() === 'ja') ? '(該当データなし)' : '(no data)') + '</td></tr></tbody></table>';
-                                    }
-                                });
-                                html += '</body></html>';
-                                var blob = new Blob([html], { type: 'application/msword' });
-                                var url = URL.createObjectURL(blob);
-                                var a = document.createElement('a');
-                                a.href = url;
-                                a.download = 'weekly_goal_report_' + (startDate || '') + '-' + (endDate || '') + '.doc';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                                document.body.removeChild(modal);
-                            };
 
                             // Ensure the textarea block (`infoWrap`) is placed correctly.
                             // Note: infoWrap is now inside tabContentContainer, no need to move it.
@@ -2237,10 +2214,12 @@
                                                 lessonTabContents.forEach(function (tc) {
                                                     try {
                                                         var focusEl = tc.querySelector('.wr-lesson-focus');
+                                                        var whyEl = tc.querySelector('.wr-lesson-why');
                                                         var whenEl = tc.querySelector('.wr-lesson-when');
                                                         var fv = (focusEl && focusEl.value) ? focusEl.value.trim() : '';
+                                                        var whyV = (whyEl && whyEl.value) ? whyEl.value.trim() : '';
                                                         var wv = (whenEl && whenEl.value) ? whenEl.value.trim() : '';
-                                                        if (fv || wv) lessonsArr.push({ lesson: fv, opportunity: wv });
+                                                        if (fv || whyV || wv) lessonsArr.push({ lesson: fv, why_important: whyV, opportunity: wv });
                                                     } catch (e) { }
                                                 });
                                             }
@@ -2280,7 +2259,14 @@
                                         },
                                         success: function (res) {
                                             if (res && res.success) {
-                                                alert((getCurrentLang() === 'ja') ? '保存しました' : 'Saved');
+                                                window.__jr_hasUnsavedChanges = false;
+                                                var sb = modal.querySelector('.jr-save-btn');
+                                                if (sb) {
+                                                    sb.textContent = (getCurrentLang() === 'ja') ? '保存済み' : 'Saved';
+                                                    sb.style.background = '#edf2f7';
+                                                    sb.style.color = '#a0aec0';
+                                                    sb.disabled = true;
+                                                }
                                             } else {
                                                 console.warn('snapshot save failed', res);
                                                 alert((getCurrentLang() === 'ja') ? '保存に失敗しました' : 'Save failed');
@@ -2320,43 +2306,47 @@
                             var saveBtnV = document.createElement('button');
                             saveBtnV.type = 'button';
                             saveBtnV.className = 'jr-save-btn';
-                            saveBtnV.textContent = (getCurrentLang() === 'ja') ? '保存' : 'Save';
-                            saveBtnV.style.display = 'inline-block';
-                            saveBtnV.style.marginTop = '12px';
-                            saveBtnV.style.padding = '6px 16px';
-                            saveBtnV.style.background = theme.primary;
-                            saveBtnV.style.color = '#fff';
+                            saveBtnV.textContent = (getCurrentLang() === 'ja') ? '保存済み' : 'Saved';
+                            saveBtnV.style.display = 'block';
+                            saveBtnV.style.marginTop = '24px';
+                            saveBtnV.style.width = '100%'; // Full width to align with inputs beautifully
+                            saveBtnV.style.padding = '12px 16px';
+                            saveBtnV.style.background = '#edf2f7'; // Initial State A: disabled gray
+                            saveBtnV.style.color = '#a0aec0';
                             saveBtnV.style.border = 'none';
-                            saveBtnV.style.borderRadius = '6px';
+                            saveBtnV.style.borderRadius = '8px';
+                            saveBtnV.style.fontWeight = 'bold';
+                            saveBtnV.style.fontSize = '14px';
                             saveBtnV.style.cursor = 'pointer';
+                            saveBtnV.style.transition = 'background 0.2s ease, color 0.2s ease';
+                            saveBtnV.disabled = true;
 
                             infoWrap.appendChild(saveBtnV); // Append to the wrapper
+
+                            // Global input listener to switch save button to State B
+                            modalContent.addEventListener('input', function(e) {
+                                if (e.target.tagName.toLowerCase() === 'textarea') {
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                }
+                                if (e.target.tagName.toLowerCase() === 'textarea' || e.target.tagName.toLowerCase() === 'input') {
+                                    window.__jr_hasUnsavedChanges = true;
+                                    var sb = modalContent.querySelector('.jr-save-btn');
+                                    if (sb && sb.disabled) {
+                                        sb.textContent = (getCurrentLang() === 'ja') ? '変更を保存する' : 'Save Changes';
+                                        sb.style.background = '#2c7a7b';
+                                        sb.style.color = '#ffffff';
+                                        sb.disabled = false;
+                                    }
+                                }
+                            });
 
                             // Bind the save button for this initial wrapper
                             saveBtnV.addEventListener('click', function () {
                                 saveWrapper(infoWrap);
                             });
-                            var closeBtn = document.createElement('button');
-                            closeBtn.textContent = (getCurrentLang() === 'ja') ? '閉じる' : 'Close';
-                            closeBtn.style.marginLeft = '8px';
-                            closeBtn.style.padding = '8px 24px';
-                            closeBtn.style.background = '#d0d6da';
-                            closeBtn.style.color = '#233043';
-                            closeBtn.style.border = 'none';
-                            closeBtn.style.borderRadius = '8px';
-                            closeBtn.style.fontSize = '15px';
-                            closeBtn.style.cursor = 'pointer';
-                            closeBtn.style.boxShadow = 'none';
-                            closeBtn.onclick = function () { document.body.removeChild(modal); };
-                            modalContent.appendChild(closeBtn);
-                            closeBtn.addEventListener('mouseenter', function () {
-                                closeBtn.style.filter = 'brightness(0.98)';
-                                closeBtn.style.transform = 'translateY(-1px)';
-                            });
-                            closeBtn.addEventListener('mouseleave', function () {
-                                closeBtn.style.filter = '';
-                                closeBtn.style.transform = '';
-                            });
+
+                            // Remove old closeBtn here completely
 
                             modal.appendChild(modalContent);
                             document.body.appendChild(modal);

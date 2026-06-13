@@ -68,12 +68,12 @@ try {
                 }
 
                 if ($latest_reflection_id !== '' && $has_reflection_id) {
-                    $sql = "SELECT object_le_id, object_node_id, lesson_learned, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND reflection_id = :reflection_id AND deleted = 0 ORDER BY created_at ASC";
+                    $sql = "SELECT object_le_id, object_node_id, lesson_learned, why_important, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND reflection_id = :reflection_id AND deleted = 0 ORDER BY created_at ASC";
                     $stmt = $pdo->prepare($sql);
                     $stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
                     $stmt->bindValue(':reflection_id', $latest_reflection_id, PDO::PARAM_STR);
                 } else {
-                    $sql = "SELECT object_le_id, object_node_id, lesson_learned, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND deleted = 0 ORDER BY created_at ASC";
+                    $sql = "SELECT object_le_id, object_node_id, lesson_learned, why_important, opportunity, created_at, updated_at FROM {$tbl} WHERE object_node_id = :object_node_id AND deleted = 0 ORDER BY created_at ASC";
                     $stmt = $pdo->prepare($sql);
                     $stmt->bindValue(':object_node_id', $object_node_id, PDO::PARAM_STR);
                 }
@@ -139,7 +139,7 @@ try {
             }
 
             // 問いノード（topic-tag）の情報も取得するためにサブクエリを追加
-            $sql = "SELECT ol.object_le_id, ol.object_node_id, ol.lesson_learned, ol.opportunity, ol.created_at, ol.updated_at, 
+            $sql = "SELECT ol.object_le_id, ol.object_node_id, ol.lesson_learned, ol.why_important, ol.opportunity, ol.created_at, ol.updated_at,
                     o.content AS node_content, o.node_id,
                     (SELECT t.content FROM object_nodes t WHERE t.node_id = o.node_id AND t.object_nodes_type = 'topic-tag' AND t.deleted = 0 LIMIT 1) AS topic_tag_content
                     FROM {$tbl} ol
@@ -158,6 +158,7 @@ try {
             $norm = array_map(function($r){
                 $r['application'] = isset($r['lesson_learned']) ? $r['lesson_learned'] : '';
                 $r['opportunity'] = isset($r['opportunity']) ? $r['opportunity'] : '';
+                $r['why_important'] = isset($r['why_important']) ? $r['why_important'] : null;
                 $r['source_node_content'] = isset($r['node_content']) ? $r['node_content'] : '';
                 $r['topic_tag_content'] = isset($r['topic_tag_content']) ? $r['topic_tag_content'] : '';
                 return $r;

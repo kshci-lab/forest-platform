@@ -32,7 +32,7 @@ if ($lesson_tbl_res && $lesson_tbl_res->num_rows > 0) {
 
 if ($lesson_table_exists && $lesson_has_reflection_id) {
         $sql = "SELECT r.reflection_id, r.object_node_id, r.evaluation_good, r.attribution, r.evaluation_bad, r.attribution_bad, r.created_at,
-                   l.object_le_id, l.lesson_learned, l.opportunity, l.created_at AS lesson_created_at
+                   l.object_le_id, l.lesson_learned, l.why_important, l.opportunity, l.created_at AS lesson_created_at
             FROM object_reflection_records r
             LEFT JOIN `object_lesson-learneds` l ON r.reflection_id = l.reflection_id AND l.deleted = 0
             WHERE r.object_node_id = ?
@@ -82,6 +82,7 @@ if ($res) {
             $records[$index[$rid]]['lessons'][] = [
                 'object_le_id' => $row['object_le_id'],
                 'lesson_learned' => $row['lesson_learned'],
+                'why_important' => isset($row['why_important']) ? $row['why_important'] : null,
                 'opportunity' => $row['opportunity'],
                 'created_at' => $row['lesson_created_at']
             ];

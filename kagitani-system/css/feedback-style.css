@@ -103,3 +103,693 @@
   .fl-card--wide{ width: 100%; min-width: auto }
   .fl-column-wrap{ flex-direction:column }
 }
+
+/* Timeline and Status Chip */
+.jr-status-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-left: 12px;
+  display: inline-block;
+  white-space: nowrap;
+}
+.jr-status-plan { background-color: #edf2f7; color: #4a5568; }
+.jr-status-start { background-color: #ebf8ff; color: #2b6cb0; }
+.jr-status-pause { background-color: #fff5f5; color: #9b2c2c; }
+.jr-status-done { background-color: #e6fffa; color: #234e52; }
+
+.jr-timeline-list {
+  padding-left: 16px;
+  border-left: 1.5px solid #e2e8f0;
+  margin-left: 8px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+.jr-timeline-row {
+  position: relative;
+  display: flex;
+  align-items: center; /* ドットとテキストを中央揃え */
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #4a5568;
+}
+.jr-timeline-row.last {
+  margin-bottom: 0;
+}
+.jr-timeline-icon-wrap {
+  position: absolute;
+  left: -16.75px; /* left edge is 16px away from inner border edge + 0.75px half border width */
+  top: 50%;
+  transform: translate(-50%, -50%); /* ツリーラインと寸分の狂いなく中心を合わせる */
+  background: #fff; /* to cover the line behind the dot */
+  padding: 6px 0; /* マスキング領域を広めに */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.jr-timeline-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #cbd5e0;
+}
+.jr-timeline-text {
+  flex: 1;
+  padding-left: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px; /* ラベルと内容の間隔 */
+}
+.jr-timeline-label {
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+}
+.jr-timeline-detail {
+  font-size: 13px;
+  color: #718096;
+}
+.jr-timeline-time {
+  font-size: 12px;
+  color: #cbd5e0; /* タイムスタンプをごく薄いグレーに */
+  white-space: nowrap;
+  margin-left: 12px;
+}
+
+/* Tree Hierarchy for Means List */
+.method-item {
+  position: relative;
+  margin-bottom: 8px; /* Proper vertical spacing */
+}
+.jr-tree-line {
+  position: absolute;
+  top: -16px; /* extend upwards to connect with parent or previous sibling */
+  width: 16px;
+  height: 40px; /* enough to go down to the center of the current item */
+  border-left: 1px solid #cbd5e0; /* light gray, very thin */
+  border-bottom: 1px solid #cbd5e0;
+  border-bottom-left-radius: 4px; /* subtle curve */
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Tooltip Custom Classes */
+.srl-tooltip-card {
+  background: rgba(255, 255, 255, 0.96); /* 不透明に近い洗練された白 */
+  border: 1px solid #e2e8f0;            /* 極細の優しいグレー枠 */
+  border-radius: 8px;                   /* 上品な角丸 */
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); /* 柔らかく浮かび上がらせる影 */
+  color: #2d3748;                       /* メイン文字は上品なダークグレー */
+  font-size: 13px;
+  line-height: 1.5;
+  min-width: 280px;
+  pointer-events: none;
+  z-index: 20000;
+  position: absolute;
+}
+
+.srl-tooltip-divider {
+  border: 0;
+  border-top: 1px solid #edf2f7;        /* 目立たない薄い区切り線 */
+  margin: 8px 0;
+}
+
+.srl-tooltip-latest {
+  color: #718096;                       /* 最新ログは一段薄いグレー細字で */
+  font-size: 12px;
+}
+
+/* ジャーナル一覧の見出しとプラスボタンを包むヘッダー領域 */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 見出しを左、プラスボタンを右端に綺麗に分ける */
+  width: 100%;
+  padding-right: 8px;
+}
+
+/* 修正するプラスボタンのスタイル */
+.btn-add-cycle {
+  background: transparent !important;   /* 緑色の背景を完全に消す（透明にする） */
+  border: none !important;               /* 無駄な太い枠線を消す */
+  color: #718096 !important;             /* プラス記号の色を上品なグレーにする */
+  font-size: 20px;                       /* 押しやすい適切な大きさに */
+  line-height: 1;
+  width: 32px;                           /* ボタンの領域を正方形に固定 */
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;                    /* ホバー時に丸く光らせるための設定 */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+  position: absolute !important;
+  right: 6px !important;  /* タブの右端から上品な余白を空けて固定 */
+  top: 50% !important;
+  transform: translateY(-50%) !important; /* 縦方向のド真ん中揃え */
+}
+
+/* マウスホバー時のエフェクト（北欧ミニマル） */
+.btn-add-cycle:hover {
+  background-color: #edf2f7 !important; /* 薄いニュアンスグレーの丸い座布団が浮かぶ */
+  color: #2c7a7b !important;             /* プラスの文字色がシステム標準の緑に優しく変化 */
+}
+
+/* タブ全体を包む親コンテナ */
+.srl-sidebar-tabs {
+  display: flex;
+  width: 100%;           /* サイドバーの横幅いっぱいに広げる */
+  box-sizing: border-box;
+}
+
+/* 2つのタブ要素共通のスタイル */
+.srl-tab {
+  flex: 1 !important;    /* 優先的に1:1の均等幅（等分）にする */
+  width: 50% !important; /* 確実に半分ずつにするための明示指定 */
+  box-sizing: border-box;
+}
+
+/* 左側の「SRLジャーナル一覧」タブ内部のレイアウト（プラスボタンの右寄せ設定） */
+.srl-tab[data-tab="journal"] {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 文字をタブの完全に中央に配置 */
+  position: relative;     /* プラスボタンを右端に絶対配置するための基準 */
+}
+
+/* ジャーナル履歴 差分表示用スタイル */
+.jr-history-unchanged {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+.jr-history-unchanged:hover {
+  opacity: 1.0;
+}
+
+.jr-history-changed {
+  opacity: 1.0;
+  border-left: 3px solid #48bb78;
+  padding-left: 8px; /* 左線のぶんだけ余白を取る */
+  margin-left: -11px; /* 既存のレイアウトを崩さないようにネガティブマージン */
+}
+
+.jr-history-lesson-item.jr-history-changed {
+  margin-left: -3px; /* lesson-item はマージン調整が少し異なる */
+  padding-left: 8px;
+}
+
+.jr-diff-added {
+  background-color: #e6fffa;
+  color: #234e52;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* 「振り返る」ボタン ゴーストスタイル */
+.btn-reflect {
+  background: transparent !important;
+  border: 1px solid #2c7a7b !important;
+  color: #2c7a7b !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+/* マウスホバー時のインタラクション（ご褒美感の演出） */
+.btn-reflect:hover {
+  background-color: #eafbe7 !important;
+  box-shadow: 0 4px 12px rgba(44, 122, 123, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+/* ボタンが押されたとき（クリックした瞬間）のフィードバック */
+.btn-reflect:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(44, 122, 123, 0.1) !important;
+}
+
+/* 📝ボタンを基準にするため relative を指定 */
+.btn-reflect-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* ポップアップ本体のベース */
+.reflection-popover {
+  display: none;                         /* 初期状態は非表示 */
+  position: absolute;
+  top: 120%;                             /* ボタンの少し下に配置 */
+  right: 0;
+  width: 280px;                          /* サイドバーに収まるスマートな横幅 */
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+  z-index: 100;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #2d3748;
+}
+
+/* 📝ボタンにホバーしたらポップアップをふわっと表示 */
+.btn-reflect-container:hover .reflection-popover {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+/* ポップアップ内部のリッチテキスト装飾 */
+.popover-row {
+  margin-bottom: 10px;
+}
+.popover-row:last-child {
+  margin-bottom: 0;
+}
+
+/* ポップアップ内の一貫性を整えるCSS設計 */
+.journal-popup-positive,
+.journal-popup-emoticon-happy {
+  color: #2f855a !important; /* 実直な深い緑 */
+  font-weight: 600;
+}
+.journal-popup-positive-sub {
+  color: #48bb78 !important; /* 理由用の少し優しい緑 */
+}
+
+.journal-popup-negative,
+.journal-popup-emoticon-sad {
+  color: #c05621 !important; /* 落ち着いたトーンのオレンジ */
+  font-weight: 600;
+}
+.journal-popup-negative-sub {
+  color: #f6ad55 !important; /* 理由用の少し優しいオレンジ */
+}
+
+.journal-popup-action {
+  color: #2d3748 !important; /* 適用部分は締まるチャコール */
+}
+.popover-status-empty {
+  color: #718096;
+  text-align: center;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ジャーナルカードの年区切り（Nordic Minimalism） */
+.year-separator {
+  display: flex;
+  align-items: center;
+  margin: 16px 0 12px;
+}
+.year-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #a0aec0;
+  letter-spacing: 0.05em;
+  margin-right: 12px;
+}
+.year-line {
+  flex: 1;
+  height: 1px;
+  background-color: #e2e8f0;
+}
+
+/* 新しいジャーナルカードのベース */
+.journal-card {
+  background-color: #eafbe7 !important; /* 元の薄緑色を維持 */
+  border: none !important;               /* 線を消して影にする */
+  border-radius: 16px !important;       /* 黄金比の角丸 */
+  padding: 20px !important;              /* 余白を広げて呼吸させる */
+  box-shadow: 0 6px 24px rgba(44, 122, 123, 0.06) !important;
+  margin-bottom: 20px !important;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+.journal-card:hover {
+  background: #d9f7d4 !important;
+}
+
+/* 問いノード（リストアイテム）単体のインタラクション */
+.question-item {
+  background-color: #bee2f9 !important;
+  border: 1.5px solid #7ec3e6 !important;
+  color: #333 !important;
+  border-radius: 8px !important;        /* カードより一回りシャープな角丸 */
+  margin-bottom: 12px !important;       /* アイテム間の美しい隙間 */
+  padding: 12px 16px !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+.question-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* 問いノードにホバーした時だけ単体で美しく浮き上がらせる */
+.question-item:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* 3. 日付タイポグラフィ */
+.journal-date {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  letter-spacing: 0.03em !important;
+  color: #2d3748 !important;
+}
+
+/* 4. フラット化した右下のサイクル削除ボタン */
+.btn-delete-cycle {
+  background: transparent !important;   /* 背景を完全に抜く */
+  border: none !important;               /* 枠線も消す */
+  color: #a0aec0 !important;             /* 上品なライトグレーの文字色 */
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: absolute !important;
+  bottom: 12px !important;
+  right: 16px !important;                          /* カードの右下にピタッと整列 */
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+/* ホバー時だけ、削除ボタンであることが優しく伝わるように */
+.btn-delete-cycle:hover {
+  color: #e53e3e !important;             /* 文字色が優しく赤色に変化 */
+  background: transparent !important;
+}
+.btn-delete-cycle svg path {
+  transition: stroke 0.2s ease;
+  stroke: #a0aec0;
+}
+.btn-delete-cycle:hover svg path {
+  stroke: #e53e3e !important;
+}
+
+/* マップを閉じるボタン */
+.btn-close-map {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  z-index: 9999 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #a0aec0 !important;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-close-map:hover {
+  background-color: #edf2f7 !important;
+  color: #4a5568 !important;
+}
+
+/* 問い一覧の検索窓 */
+.question-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.question-search-input:focus {
+  border-color: #3182ce; /* フォーカス時の青線 */
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+/* 検索ボックスとボタンのラッパー */
+.search-box-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+/* リセットされた問い一覧ボタン */
+#showQuestionsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  flex-shrink: 0;
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  margin-bottom: 12px;
+}
+
+#showQuestionsBtn:hover {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+
+/* サジェスト用ルート（相対配置） */
+.search-container-root {
+  position: relative;
+  width: 100%;
+}
+
+/* サジェストドロップダウン */
+.search-suggest-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+
+/* ドロップダウンのアイテム */
+.suggest-dropdown-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.suggest-dropdown-item:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* ========================================================
+   ホバー連動型「答えノード追加（＋）」ボタン
+   ======================================================== */
+
+/* jmnode は元々 position: absolute; なので relative 指定は不要（レイアウト崩れの原因になるため削除） */
+/* jsMindのデフォルトでは jmnode が overflow: hidden; になっているため、外側に配置するボタンが隠れてしまいます。これを解除します。 */
+jmnode.is-question-node, .jm-node.is-question-node {
+  overflow: visible !important;
+}
+
+/* 答えノード追加用プラスボタン（問いノードホバー時のみ出現） */
+.btn-add-answer-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  right: -26px; /* ノードの右側外方に少し飛び出して配置 */
+  transform: translateY(-50%);
+  
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  
+  /* メニューの「答えノード追加」と調和する上品なオレンジ */
+  background-color: #ffa502 !important; 
+  color: #ffffff !important;
+  border: none;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  
+  /* 初期状態は透明 */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+  z-index: 100;
+}
+
+/* 問いノードにホバーした際、＋ボタンをふわっと表示 */
+jmnode.is-question-node:hover .btn-add-answer-inline {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ＋ボタン自体にホバーした時の微細なフィードバック */
+.btn-add-answer-inline:hover {
+  background-color: #ff7f50 !important; /* 少し濃く */
+  transform: translateY(-50%) scale(1.1); /* ほんの少しパフッと大きく */
+}
+
+/* ========================================================
+   左上ロゴボタンのクリーンアップ (旧SRLボタン)
+   ======================================================== */
+.header-logo-btn {
+  background: transparent !important; /* 白背景を完全に消去 */
+  border: none !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  cursor: pointer;
+  
+  /* 普段は少しヘッダーになじませる */
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+/* ホバー時にだけ優しく灯る */
+.header-logo-btn:hover {
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) !important;
+}
+
+/* ========================================================
+   マップ上のステータスマーク（肩のアイコン）カラーシステム
+   ======================================================== */
+/* 計画 (Planning) : 緑 */
+.node-status-mark.status-planning {
+  background-color: #48bb78 !important; 
+  border-color: #38a169 !important;
+}
+
+/* 開始 (Started) : オレンジ */
+.node-status-mark.status-started {
+  background-color: #ed8936 !important; 
+  border-color: #dd6b20 !important;
+}
+
+/* 完了 (Completed) : 灰色 */
+.node-status-mark.status-completed {
+  background-color: #718096 !important; 
+  border-color: #4a5568 !important;
+}
+
+/* 中断 (Suspended) : 赤 */
+.node-status-mark.status-suspended {
+  background-color: #e53e3e !important; 
+  border-color: #c53030 !important;
+}
+
+/* ホバー判定領域を右側に拡張し、プラスボタンへ移動する際のホバー切れを防ぐ */
+jmnode.is-question-node::after, .jm-node.is-question-node::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -30px;
+  width: 30px;
+  height: 100%;
+  background: transparent;
+  pointer-events: auto;
+}
+
+/* 振り返りがあるノードの基本スタイル */
+.jm-node.has-reflection {
+  border-left: 4px solid #db8181 !important; /* 左端に静かに入れるインサイト・ライン */
+  padding-left: 10px !important;            /* ラインが入ったぶん、文字との隙間を調整 */
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* 内包するマイクロゴーストアイコン（📝）の初期状態 */
+.jm-node .reflection-micromark {
+  display: inline-block;
+  margin-left: 6px;
+  opacity: 0;
+  transform: translateX(-2px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  font-size: 12px;
+}
+
+/* ノードにホバーした時だけの美しいインタラクション */
+.jm-node.has-reflection:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important; /* ほんのり浮き上がらせる */
+}
+
+/* ホバー時に 📝 アイコンをふわっと出現させる */
+.jm-node.has-reflection:hover .reflection-micromark {
+  opacity: 0.7;
+  transform: translateX(0);
+}
+
+/* 問いノードのドラッグ＆ドロップ用スタイル */
+.journal-card .question-item-element {
+  cursor: grab !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.journal-card .question-item-element.dragging {
+  cursor: grabbing !important;
+  opacity: 0.6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* リスト最下部のヒントテキスト */
+.inquiry-list-footer-tip {
+  text-align: center;
+  color: #94a3b8 !important; /* 目立たない薄いグレー */
+  font-size: 11px;
+  padding: 20px 10px;
+  border-top: 1px dashed #e2e8f0; /* 上品な区切り点線 */
+  margin-top: 16px;
+}

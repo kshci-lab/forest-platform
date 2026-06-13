@@ -91,7 +91,7 @@ if(isset($_POST["record"])){
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>自己内対話活性化支援システム</title>
+		<title>自己調整学習活性化支援システム</title>
 		<link rel="stylesheet" type="text/css" href="../css/item.css">
 		<link rel="stylesheet" type="text/css" href="../css/font.css">
 		<link rel="stylesheet" type="text/css" href="../css/jquery.cleditor.css">

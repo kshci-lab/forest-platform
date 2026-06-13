@@ -7,7 +7,7 @@
   border: 1px solid #e6dfd6;
   border-radius: 14px;
   box-shadow: 0 12px 30px rgba(46, 38, 28, 0.18);
-  padding: 14px;
+  padding: 6px;
   box-sizing: border-box;
   /* allow user to resize both width and height */
   resize: both;
@@ -42,7 +42,7 @@
 
   .feedback-layout {
     display: flex;
-    gap: 16px;
+    gap: 8px;
     align-items: stretch;
     flex-direction: row;
     /* layout will size according to the tooltip container */
@@ -54,7 +54,7 @@
     flex: 1 1 auto;
     min-width: 320px;
     overflow-y: auto;
-    padding: 12px 16px 16px;
+    padding: 6px 8px 8px;
   }
 
   .feedback-drawer {
@@ -254,14 +254,14 @@
 
   .feedback-cards {
     display: flex;
-    gap: 16px;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
   .feedback-card {
     flex: 1 1 260px;
-    border-radius: 16px;
-    padding: 14px 16px;
+    border-radius: 12px;
+    padding: 6px 10px;
     background: #f1f3ed;
     border: 1px solid rgba(0,0,0,0.03);
     box-shadow: 0 8px 18px rgba(66, 56, 44, 0.06);
@@ -282,7 +282,7 @@
     align-items: center;
     flex-wrap: nowrap;
     gap: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
   .feedback-card-icon {
@@ -297,7 +297,7 @@
     font-weight: 600;
     letter-spacing: 0.02em;
     color: #5e5a54;
-    margin: 10px 0 6px;
+    margin: 4px 0 2px;
   }
 
   .feedback-card-title .feedback-micro-label {
@@ -314,10 +314,10 @@
   }
 
   .lesson-panel {
-    margin-top: 16px;
+    margin-top: 8px;
     background: #f1f4f3;
-    border-radius: 16px;
-    padding: 14px 16px 16px;
+    border-radius: 12px;
+    padding: 6px 10px 8px;
     border: 1px solid rgba(0,0,0,0.03);
   }
 
@@ -325,7 +325,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
     font-weight: 700;
     color: #2a241c;
   }
@@ -350,9 +350,9 @@
   }
 
   .lesson-tab {
-    padding: 8px 12px;
+    padding: 2px 6px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 10px;
     font-weight: 600;
     color: #6b645a;
     border-bottom: 2px solid transparent;
@@ -364,8 +364,8 @@
   }
 
   .lesson-tab-add {
-    padding: 6px 10px;
-    font-size: 16px;
+    padding: 0 6px;
+    font-size: 12px;
     font-weight: 700;
     color: #7a7166;
     background: transparent;
@@ -376,11 +376,11 @@
   .lesson-tab-content-container {
     background: rgba(255,255,255,0.75);
     border-radius: 12px;
-    padding: 10px 12px;
+    padding: 4px 8px;
   }
 
   .feedback-actions {
-    margin-top: 16px;
+    margin-top: 8px;
     display: flex;
     justify-content: flex-start;
     position: relative;
@@ -395,7 +395,7 @@
   #feedbackTooltipHeader {
     background-color: #f2ece4;
     border-bottom: 1px solid #e1d9cf;
-    padding: 10px 12px;
+    padding: 4px 8px;
     font-weight: 700;
     cursor: move;            
     border-top-left-radius: 12px;

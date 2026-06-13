@@ -70,7 +70,7 @@ try {
     $stmt->close();
 
     if (!empty($lessons)) {
-        $lessonStmt = $mysqli->prepare("INSERT INTO `object_lesson-learneds` (object_le_id, object_node_id, reflection_id, lesson_learned, opportunity, created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, 0)");
+        $lessonStmt = $mysqli->prepare("INSERT INTO `object_lesson-learneds` (object_le_id, object_node_id, reflection_id, lesson_learned, why_important, opportunity, created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)");
         if (!$lessonStmt) {
             throw new Exception('prepare lesson failed: ' . $mysqli->error);
         }
@@ -81,19 +81,21 @@ try {
 
             if (is_array($item)) {
                 $lesson_text = trim($item['lesson'] ?? $item['lesson_learned'] ?? '');
+                $why_important = isset($item['why_important']) ? trim($item['why_important']) : null;
                 $opportunity = trim($item['opportunity'] ?? '');
                 $object_le_id = trim($item['object_le_id'] ?? '');
             } else {
                 $lesson_text = trim((string)$item);
+                $why_important = null;
             }
 
-            if ($lesson_text === '' && $opportunity === '') continue;
+            if ($lesson_text === '' && $opportunity === '' && ($why_important === null || $why_important === '')) continue;
 
             if ($object_le_id === '') {
                 $object_le_id = uniqid('lesson_', true);
             }
 
-            $lessonStmt->bind_param('sssssss', $object_le_id, $object_node_id, $reflection_id, $lesson_text, $opportunity, $created_at, $created_at);
+            $lessonStmt->bind_param('ssssssss', $object_le_id, $object_node_id, $reflection_id, $lesson_text, $why_important, $opportunity, $created_at, $created_at);
             $lessonStmt->execute();
             if ($lessonStmt->error) {
                 throw new Exception('insert lesson failed: ' . $lessonStmt->error);

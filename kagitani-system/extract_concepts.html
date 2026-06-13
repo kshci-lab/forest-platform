@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="js/jquery-1.12.4.min.js"></script>
+<script>
+$(function(){
+	$.ajax({
+		url:'js/hozo.xml',
+		type:'get',
+		dataType:'xml',
+		success: function(xml) {
+            var concepts = [];
+            $(xml).find('W_CONCEPTS CONCEPT').each(function(){
+                if(this.getAttribute('instantiation') != null) {
+                    var $id = this.id;
+                    var label = $(xml).find('LABEL').filter(function(){ return this.parentNode == $(xml).find('CONCEPT[id="'+$id+'"]')[0]; });
+                    // ... this is too slow. Let's just use grep to see what parent= values have child= values ending in ?
+                }
+            });
+        }
+	});
+});
+</script>

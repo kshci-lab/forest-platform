@@ -138,7 +138,7 @@ function macro_disp(){
 
 		// jsmind_containerの高さを計算する関数
 		function getFullHeight() {
-			return window.innerHeight - 85; // ヘッダー分を引いた高さ
+			return window.innerHeight - 73; // ヘッダー(35px) + jsmind_nav(38px)分を引いた高さ
 		}
 
 		// process_network_containerの表示状態を監視してリサイズハンドルを表示/非表示
@@ -157,8 +157,10 @@ function macro_disp(){
 						if (!hasBeenResized) {
 							const totalHeight = getFullHeight();
 							const halfHeight = Math.floor((totalHeight - 8) / 2); // 8はリサイズハンドルの高さ
-							jsmindContainer.style.height = halfHeight + 'px';
+							jsmindContainer.style.height = '';
+							jsmindContainer.style.flex = '1 1 0%';
 							processContainer.style.height = halfHeight + 'px';
+							processContainer.style.flex = '0 0 ' + halfHeight + 'px';
 						}
 						
 						// jsMindを再描画
@@ -169,7 +171,10 @@ function macro_disp(){
 						// SRL整理マップが非表示になったら、マインドマップを画面いっぱいに
 						resizeHandle.style.display = 'none';
 						hasBeenResized = false; // リセット
-						jsmindContainer.style.height = getFullHeight() + 'px';
+						jsmindContainer.style.height = '';
+						jsmindContainer.style.flex = '';
+						processContainer.style.height = '';
+						processContainer.style.flex = '';
 						
 						// jsMindを再描画
 						if (typeof _jm !== 'undefined' && _jm) {
@@ -187,11 +192,17 @@ function macro_disp(){
 			resizeHandle.style.display = 'block';
 			const totalHeight = getFullHeight();
 			const halfHeight = Math.floor((totalHeight - 8) / 2);
-			jsmindContainer.style.height = halfHeight + 'px';
+			jsmindContainer.style.height = '';
+			jsmindContainer.style.flex = '1 1 0%';
 			processContainer.style.height = halfHeight + 'px';
+			processContainer.style.flex = '0 0 ' + halfHeight + 'px';
 		} else {
 			resizeHandle.style.display = 'none';
-			// デフォルトは画面いっぱい（CSSで設定済み）
+			// デフォルトは画面いっぱい
+			jsmindContainer.style.height = '';
+			jsmindContainer.style.flex = '';
+			processContainer.style.height = '';
+			processContainer.style.flex = '';
 		}
 
 		resizeHandle.addEventListener('mousedown', function(e) {
@@ -213,12 +224,17 @@ function macro_disp(){
 			if (!isResizing) return;
 			
 			const deltaY = e.clientY - startY;
-			const newJsmindHeight = Math.max(150, startJsmindHeight + deltaY);
-			const newProcessHeight = Math.max(150, startProcessHeight - deltaY);
+			const totalHeight = getFullHeight();
+			const minHeight = 150;
+			const maxProcessHeight = totalHeight - 8 - minHeight;
 			
-			// 両方の高さを設定
-			jsmindContainer.style.height = newJsmindHeight + 'px';
+			const newProcessHeight = Math.max(minHeight, Math.min(maxProcessHeight, startProcessHeight - deltaY));
+			
+			processContainer.style.flex = '0 0 ' + newProcessHeight + 'px';
 			processContainer.style.height = newProcessHeight + 'px';
+			
+			jsmindContainer.style.flex = '1 1 0%';
+			jsmindContainer.style.height = '';
 			
 			// vis.jsのネットワークをリサイズに対応させる
 			if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess.ownNetwork) {
@@ -273,16 +289,23 @@ function macro_disp(){
 			e.preventDefault();
 			const touch = e.touches[0];
 			const deltaY = touch.clientY - startY;
-			const newJsmindHeight = Math.max(150, startJsmindHeight + deltaY);
-			const newProcessHeight = Math.max(150, startProcessHeight - deltaY);
+			const totalHeight = getFullHeight();
+			const minHeight = 150;
+			const maxProcessHeight = totalHeight - 8 - minHeight;
 			
-			jsmindContainer.style.height = newJsmindHeight + 'px';
+			const newProcessHeight = Math.max(minHeight, Math.min(maxProcessHeight, startProcessHeight - deltaY));
+			
+			processContainer.style.flex = '0 0 ' + newProcessHeight + 'px';
 			processContainer.style.height = newProcessHeight + 'px';
+			
+			jsmindContainer.style.flex = '1 1 0%';
+			jsmindContainer.style.height = '';
 		}
 
 		function onTouchEnd(e) {
 			if (!isResizing) return;
 			isResizing = false;
+			hasBeenResized = true;
 			
 			document.removeEventListener('touchmove', onTouchMove);
 			document.removeEventListener('touchend', onTouchEnd);

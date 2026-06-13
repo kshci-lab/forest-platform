@@ -44,7 +44,7 @@ try {
                 $lessons = array();
                 if ($lessonTableExists) {
                     try {
-                        $lrSql = "SELECT `object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `created_at`, `updated_at`, `deleted` FROM `object_journal_lesson-learneds` WHERE `object_journal_reflection_id` = ? ORDER BY `created_at` ASC";
+                        $lrSql = "SELECT `object_journal_lesson-learned_id`, `object_journal_reflection_id`, `lesson_learned`, `opportunity`, `why_important`, `created_at`, `updated_at`, `deleted` FROM `object_journal_lesson-learneds` WHERE `object_journal_reflection_id` = ? ORDER BY `created_at` ASC";
                         if ($lrStmt = $mysqli->prepare($lrSql)) {
                             $rid = $row['object_journal_reflection_id'];
                             $lrStmt->bind_param('s', $rid);

@@ -28,21 +28,6 @@
 
 // アイコンを作成する共通関数
 function createNodeIcon(nodeElement, status = 'todo') {
-    console.log('createNodeIcon called with status:', status); // デバッグ用ログ追加
-    
-    // より厳密なステータス判定
-    const normalizedStatus = (status || '').toString().trim().toLowerCase();
-    console.log('正規化されたステータス:', JSON.stringify(normalizedStatus));
-    
-    // inProgressかどうかを判定
-    const isInProgress = normalizedStatus === 'inprogress' || status === 'inProgress';
-    
-    if (isInProgress) {
-        console.log('🏃 inProgressを検出 - 走るアイコンを作成します');
-    } else {
-        console.log('🧭 その他のステータス - コンパスアイコンを作成します:', status);
-    }
-    
     // アイコンコンテナの作成
     const iconContainer = document.createElement('div');
     iconContainer.className = 'node-icon-container';
@@ -54,48 +39,41 @@ function createNodeIcon(nodeElement, status = 'todo') {
     iconContainer.style.zIndex = '1000';
     iconContainer.style.pointerEvents = 'none'; // クリック無効化でノード選択を邪魔しない
 
-    // 手段階層マップアイコンを作成
+    // 整理マップアイコンを作成
     const iconWrapper = document.createElement('div');
-    iconWrapper.className = isInProgress ? 'node-icon-wrapper running-icon' : 'node-icon-wrapper compass-icon';
+    iconWrapper.className = 'node-icon-wrapper compass-icon';
     iconWrapper.style.position = 'relative';
     iconWrapper.style.width = '28px';
     iconWrapper.style.height = '28px';
     iconWrapper.style.borderRadius = '50%';
     
-    // ステータスに応じて背景色とアイコンを変更
-    let backgroundColor, iconSrc, title, altText;
+    // 統一デザイン: ミニマルコンパス（白背景＋極細黒線）
+    const title = 'SRL整理マップを開く (Shift + クリックで複数表示)';
+    const altText = 'SRL整理マップ';
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#222222" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <polygon points="17,7 10.5,10.5 7,17 13.5,13.5" />
+    </svg>`;
     
-    if (isInProgress) {
-        backgroundColor = '#FF9800'; // オレンジ色
-        iconSrc = 'https://img.icons8.com/fluency/48/running--v1.png';
-        title = '作業中の手段ノードがあります';
-        altText = '作業中';
-    } else {
-        backgroundColor = '#4CAF50'; // 緑色
-        iconSrc = 'https://img.icons8.com/fluency/48/compass--v1.png';
-        title = '目標手段階層マップがあります';
-        altText = '手段階層マップあり';
-    }
-    
-    iconWrapper.style.backgroundColor = backgroundColor;
+    iconWrapper.style.backgroundColor = '#ffffff'; // デフォルトは白
     iconWrapper.style.display = 'flex';
     iconWrapper.style.alignItems = 'center';
     iconWrapper.style.justifyContent = 'center';
-    iconWrapper.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+    iconWrapper.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
     iconWrapper.style.transition = 'all 0.3s ease';
     iconWrapper.style.cursor = 'pointer';
     iconWrapper.style.pointerEvents = 'auto';
-    iconWrapper.style.border = '2px solid white';
+    iconWrapper.style.border = '1px solid #e0e0e0';
     iconWrapper.title = title;
     
-    // アイコン画像の作成
-    const icon = document.createElement('img');
-    icon.src = iconSrc;
-    icon.alt = altText;
-    icon.style.width = '18px';
-    icon.style.height = '18px';
-    icon.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))';
-    icon.style.pointerEvents = 'none';
+    // SVGアイコンの挿入
+    const iconSpan = document.createElement('span');
+    iconSpan.innerHTML = svgContent;
+    iconSpan.style.display = 'flex';
+    iconSpan.style.alignItems = 'center';
+    iconSpan.style.justifyContent = 'center';
+    iconSpan.style.pointerEvents = 'none';
+
 
     // ホバー効果
     iconWrapper.addEventListener('mouseenter', () => {
@@ -166,13 +144,14 @@ function createNodeIcon(nodeElement, status = 'todo') {
 
         // 目標手段階層マップを開く
         if (typeof showThinkingProcessMap === 'function') {
-            showThinkingProcessMap();
+            const clickedNodeId = nodeElement.getAttribute('nodeid') || nodeElement.getAttribute('id');
+            showThinkingProcessMap(clickedNodeId, e.shiftKey);
         } else {
             console.error('showThinkingProcessMap関数が見つかりません');
         }
     });
 
-    iconWrapper.appendChild(icon);
+    iconWrapper.appendChild(iconSpan);
     iconContainer.appendChild(iconWrapper);
 
     // CSSアニメーションを追加
@@ -234,34 +213,12 @@ function addIconsToObjectNodes() {
                     console.log('取得したデータの詳細:', data.data); // デバッグ用ログ追加
                     data.data.forEach(function(nodeData) {
                         const nodeId = nodeData.node_id;
-                        const rawStatus = nodeData.status;
-                        const status = rawStatus || 'todo'; // statusがない場合はtodoをデフォルト
-                        console.log(`ノード ${nodeId} の生ステータス: "${rawStatus}" (長さ: ${rawStatus ? rawStatus.length : 'null'}) -> 処理ステータス: "${status}"`);
-                        
-                        // 厳密な比較をテスト
-                        console.log(`"${rawStatus}" === "inProgress": ${rawStatus === 'inProgress'}`);
-                        console.log(`"${status}" === "inProgress": ${status === 'inProgress'}`);
-                        
                         const nodeElement = document.querySelector(`jmnode[nodeid="${nodeId}"]`);
                         
                         if (nodeElement) {
-                            // inProgressの場合は、既存のアイコンがあっても削除して走るマークに置き換える
-                            const normalizedStatus = (status || '').toString().trim().toLowerCase();
-                            const isInProgress = normalizedStatus === 'inprogress' || status === 'inProgress';
-                            
-                            if (isInProgress) {
-                                // 既存のアイコンを削除（inProgress優先）
-                                const existingIcon = nodeElement.querySelector('.node-icon-container');
-                                if (existingIcon) {
-                                    existingIcon.remove();
-                                    console.log(`ノード ${nodeId} の既存アイコンを削除してinProgressに置き換え`);
-                                }
-                                createNodeIcon(nodeElement, status);
-                                console.log(`ノード ${nodeId} に走るマークのアイコンを追加しました（inProgress優先）`);
-                            } else if (!nodeElement.querySelector('.node-icon-container')) {
-                                // inProgressでない場合は、アイコンがない場合のみコンパスアイコンを追加
-                                createNodeIcon(nodeElement, status);
-                                console.log(`ノード ${nodeId} にコンパスアイコンを追加しました（ステータス: ${status}）`);
+                            if (!nodeElement.querySelector('.node-icon-container')) {
+                                createNodeIcon(nodeElement);
+                                console.log(`ノード ${nodeId} にコンパスアイコンを追加しました`);
                             } else {
                                 console.log(`ノード ${nodeId} には既にアイコンが存在します`);
                             }
@@ -270,6 +227,10 @@ function addIconsToObjectNodes() {
                         }
                     });
                     console.log(`${data.data.length}個のノードにアイコンを追加しました`);
+                    // 最新カードの問いノードのアイコン枠線を強調
+                    if (typeof window.highlightLatestGoalIcons === 'function') {
+                        try { window.highlightLatestGoalIcons(); } catch(e) {}
+                    }
                 } else if (data.status === 'error') {
                     console.error('サーバーエラー:', data);
                 }
@@ -3040,6 +3001,43 @@ var jm = jsMind.show(options, mind);
             d.style.visibility='hidden';
             this._reset_node_custom_style(d, node.data);
 
+            // 【新規】問いノード判定と「答えノード追加（＋）」ボタンの動的付与
+            var isQuestion = false;
+            if (node.data && node.data['background-color']) {
+                var bg = node.data['background-color'].toLowerCase();
+                // 青系背景色であれば問いノードとみなす
+                if (bg === '#bce2e8' || bg === '#b3d4ff' || bg === '#90caf9' || bg === '#a0c4ff') isQuestion = true;
+                if (bg.length === 7 && bg.startsWith('#')) {
+                    var r = parseInt(bg.substr(1, 2), 16);
+                    var b = parseInt(bg.substr(5, 2), 16);
+                    if (b > r + 10) isQuestion = true;
+                }
+            }
+            if (node.topic && (node.topic.endsWith('？') || node.topic.endsWith('?'))) isQuestion = true;
+
+            if (isQuestion) {
+                d.className += (d.className ? ' ' : '') + 'is-question-node';
+                var btn = $c('button');
+                btn.className = 'btn-add-answer-inline';
+                btn.title = '答えを追加';
+                $t(btn, '+');
+                btn.onmousedown = function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                };
+                btn.onclick = function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (window._jm) {
+                        window._jm.select_node(node.id);
+                        if (typeof window.add_Anode === 'function') {
+                            window.add_Anode();
+                        }
+                    }
+                };
+                d.appendChild(btn);
+            }
+
             parent_node.appendChild(d);
             view_data.element = d;
         },
@@ -3438,14 +3436,19 @@ var jm = jsMind.show(options, mind);
                 if(('visible' in node._data.layout) && !node._data.layout.visible){continue;}
                 pin = this.layout.get_node_point_in(node);
                 pout = this.layout.get_node_point_out(node.parent);
-                this.draw_line(pout,pin,_offset,canvas_ctx);
+                this.draw_line(pout,pin,_offset,canvas_ctx,node);
             }
         },
 
-        draw_line:function(pin,pout,offset,canvas_ctx){
+        draw_line:function(pin,pout,offset,canvas_ctx,node){
             var ctx = canvas_ctx || this.canvas_ctx;
-            ctx.strokeStyle = this.opts.line_color;
-            ctx.lineWidth = this.opts.line_width;
+            if (node && node.is_process_active_edge) {
+                ctx.strokeStyle = '#ed8936';
+                ctx.lineWidth = 2.5;
+            } else {
+                ctx.strokeStyle = this.opts.line_color;
+                ctx.lineWidth = this.opts.line_width;
+            }
             ctx.lineCap = 'round';
 
             jm.util.canvas.bezierto(

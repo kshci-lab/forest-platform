@@ -133,15 +133,16 @@
 }
 .jr-modal-content{
   background: #ffffff;
-  padding: 36px 28px;
+  padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid #e8f3f1;
-  box-shadow: 0 8px 30px rgba(35,48,67,0.12);
+  border: none;
+  box-shadow: none;
   width: 95vw;
   max-width: 1400px;
   min-width: 560px;
-  max-height: 85vh;
-  overflow-y: auto;
+  height: 90vh;
+  max-height: 90vh;
+  overflow-y: hidden; /* Prevent modal content itself from scrolling, we scroll the inner columns */
   font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', 'Meiryo', "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 15px;
   line-height: 1.5;
@@ -150,8 +151,12 @@
 /* Two-column layout: Activity Process (left) + Reflections (right) */
 .jr-two-column-layout {
   display: flex;
-  gap: 24px;
-  margin-top: 16px;
+  gap: 10px;
+  margin-top: 12px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  padding-right: 12px; /* Safety padding for right edge */
 }
 .jr-left-column {
   flex: 0 0 33.3333%;
@@ -165,6 +170,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 .jr-column-header {
   font-size: 15px;
@@ -189,7 +195,8 @@
 .jr-activity-content {
   flex: 1;
   overflow-y: auto;
-  max-height: 60vh;
+  max-height: none;
+  min-height: 0;
   padding-right: 8px;
 }
 .jr-activity-content::-webkit-scrollbar {
@@ -202,7 +209,8 @@
 .jr-reflection-content {
   flex: 1;
   overflow-y: auto;
-  max-height: 60vh;
+  max-height: none;
+  min-height: 0;
 }
 .jr-reflection-content::-webkit-scrollbar {
   width: 6px;
@@ -219,13 +227,19 @@
   border-radius:14px;
   box-shadow:0 8px 24px rgba(35,48,67,0.08);
   overflow:hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  width: 100%;
 }
 .jr-reflection-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  padding:12px 14px;
+  gap:6px;
+  padding:6px 10px;
   background:#f2ece4;
   border-bottom:1px solid #e1d9cf;
   font-weight:700;
@@ -235,7 +249,13 @@
   color:#2b2722;
 }
 .jr-reflection-body{
-  padding:12px 14px 6px 14px;
+  padding:6px 10px 4px 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  width: 100%;
 }
 .jr-history-toggle{
   background:#f7f7f7;
@@ -319,61 +339,65 @@
 .jr-period-heading{ margin:0 0 12px 0; font-size:15px; font-weight:600; color:#233043 }
 /* Info wrap: card container */
 .jr-info-wrap{
-  display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:12px;
-  background:#f8f4ef;
-  border:1px solid #e6dfd6;
-  border-radius:14px;
-  padding:14px 16px;
-  box-shadow:0 12px 30px rgba(46,38,28,0.12);
+  display:grid; grid-template-columns:1fr; gap:4px; margin-bottom:4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  box-sizing: border-box;
+  width: 100%;
 }
-.jr-info-header{ font-size:15px; color:#2a241c; margin-bottom:8px; font-weight:700 }
+.jr-info-header{ font-size:15px; color:#2a241c; margin-bottom:4px; font-weight:700 }
 
 /* Evaluation wrapper: side-by-side cards */
-.jr-eval-wrap{ display:flex; gap:16px; flex-wrap:wrap }
+.jr-eval-wrap{ display:flex; gap:8px; flex-wrap:wrap }
 
 /* Success (green) card - left border accent */
 .jr-success-div{
   flex:1; min-width:240px; position:relative;
-  background:#eef6f1; border-radius:16px; padding:14px 16px;
+  background:#eef6f1; border-radius:10px; padding:6px 8px;
   border:1px solid rgba(0,0,0,0.03);
-  box-shadow:0 8px 18px rgba(66,56,44,0.06);
+  box-shadow:0 4px 12px rgba(66,56,44,0.04);
+  box-sizing: border-box;
 }
 .jr-success-div .jr-card-header{
-  display:flex; align-items:center; gap:6px;
-  font-size:0.95em; margin-bottom:8px; color:#2a241c; font-weight:700;
-  padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.03);
+  display:flex; align-items:center; gap:4px;
+  font-size:12px; margin-bottom:4px; color:#2a241c; font-weight:700;
+  padding-bottom:4px; border-bottom:1px solid rgba(0,0,0,0.03);
 }
 .jr-success-div .jr-card-header::before{ content:'😊'; font-size:18px; }
 .jr-success-div .jr-card-header::before{
   content:'😊'; font-size:1.1em;
 }
 .jr-success-div .jr-label{
-  font-size:0.95em; margin-bottom:8px; color:#333; font-weight:600;
+  font-size:12px; margin-bottom:4px; color:#333; font-weight:600;
 }
 
 /* Failure (red/orange) card - left border accent */
 .jr-failure-div{
   flex:1; min-width:240px; position:relative;
-  background:#fbefee; border-radius:16px; padding:14px 16px;
+  background:#fbefee; border-radius:10px; padding:6px 8px;
   border:1px solid rgba(0,0,0,0.03);
-  box-shadow:0 8px 18px rgba(66,56,44,0.06);
+  box-shadow:0 4px 12px rgba(66,56,44,0.04);
+  box-sizing: border-box;
 }
 .jr-failure-div .jr-card-header{
-  display:flex; align-items:center; gap:6px;
-  font-size:0.95em; margin-bottom:8px; color:#2a241c; font-weight:700;
-  padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.03);
+  display:flex; align-items:center; gap:4px;
+  font-size:12px; margin-bottom:4px; color:#2a241c; font-weight:700;
+  padding-bottom:4px; border-bottom:1px solid rgba(0,0,0,0.03);
 }
 .jr-failure-div .jr-card-header::before{ content:'😔'; font-size:18px; }
 .jr-failure-div .jr-card-header::before{
   content:'😔'; font-size:1.1em;
 }
 .jr-failure-div .jr-label{
-  font-size:0.95em; margin-bottom:8px; color:#333; font-weight:600;
+  font-size:12px; margin-bottom:4px; color:#333; font-weight:600;
 }
 
 /* Attribution (completion-reason) section */
 .jr-completion-div{
-  display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;
+  display:flex; gap:8px; flex-wrap:wrap; margin-top:2px;
 }
 .jr-completion-div > label,
 .jr-completion-div > textarea{ flex:1; min-width:260px; }
@@ -381,12 +405,12 @@
 /* Attribution good field styling (inside success card color scheme) */
 .jr-completion-div .jr-label:first-of-type,
 .jr-completion-div label[for*="good"]{
-  display:block; font-size:0.85em; color:#166535; margin-bottom:6px; font-weight:700;
+  display:block; font-size:12px; color:#166535; margin-bottom:2px; font-weight:700;
 }
 /* Attribution bad field styling */
 .jr-completion-div .jr-label:nth-of-type(2),
 .jr-completion-div label[for*="bad"]{
-  display:block; font-size:0.85em; color:#8a3f2a; margin-bottom:6px; font-weight:700;
+  display:block; font-size:12px; color:#8a3f2a; margin-bottom:2px; font-weight:700;
 }
 
 .jr-label{
@@ -395,14 +419,14 @@
   font-weight:600;
   letter-spacing:0.02em;
   color:#5e5a54;
-  margin:10px 0 6px;
+  margin:4px 0 2px;
 }
 
 /* Textarea base */
 .jr-textarea{
-  width:100%; box-sizing:border-box; padding:10px 12px;
-  border-radius:10px; border:1px solid rgba(0,0,0,0.05); background:rgba(255,255,255,0.9);
-  color:#333; resize:vertical; font-size:16px; line-height:1.5; min-height:56px;
+  width:100%; box-sizing:border-box; padding:6px 10px;
+  border-radius:8px; border:1px solid rgba(0,0,0,0.05); background:rgba(255,255,255,0.9);
+  color:#333; resize:none !important; overflow-y:hidden !important; font-size:14px; line-height:1.4; min-height:40px;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -412,16 +436,16 @@
 
 /* Lesson (application) section */
 .jr-lesson-div{
-  background:#f1f4f3; padding:14px 16px 16px; border-radius:16px;
-  color:#333; border:1px solid rgba(0,0,0,0.03); margin-top:16px;
+  background:#f1f4f3; padding:4px 8px 6px; border-radius:10px;
+  color:#333; border:1px solid rgba(0,0,0,0.03); margin-top:4px;
 }
 .jr-lesson-div .jr-label{ color:#5e5a54; }
 .jr-lesson-div .jr-textarea{
-  background:rgba(255,255,255,0.9); border-radius:10px; padding:8px 10px; border:1px solid rgba(0,0,0,0.05);
+  background:rgba(255,255,255,0.9); border-radius:8px; padding:6px 8px; border:1px solid rgba(0,0,0,0.05);
 }
 .jr-lesson-div .wr-lesson-when,
 .jr-lesson-div .jr-textarea-small{
-  background:rgba(255,255,255,0.9); margin-top:6px; border:1px solid rgba(0,0,0,0.05);
+  background:rgba(255,255,255,0.9); margin-top:4px; border:1px solid rgba(0,0,0,0.05);
 }
 
 .jr-additional-container{ margin-top:8px; background:#ffffff; border-radius:10px; padding:8px; border:1px solid #eee5d7; }
@@ -436,10 +460,10 @@
 
 /* Attribution label colors (inside each card) */
 .jr-label-attr-good{
-  display:block; font-size:12px; color:#5e5a54; margin-top:10px; margin-bottom:6px; font-weight:600; letter-spacing:0.02em;
+  display:block; font-size:12px; color:#5e5a54; margin-top:4px; margin-bottom:2px; font-weight:600; letter-spacing:0.02em;
 }
 .jr-label-attr-bad{
-  display:block; font-size:12px; color:#5e5a54; margin-top:10px; margin-bottom:6px; font-weight:600; letter-spacing:0.02em;
+  display:block; font-size:12px; color:#5e5a54; margin-top:4px; margin-bottom:2px; font-weight:600; letter-spacing:0.02em;
 }
 .jr-add-reflection-btn{ background:#e1d4c2; color:#4a3f34; border:1px solid #d2c2ae; padding:10px 18px; border-radius:999px; cursor:pointer; font-weight:600; box-shadow:none; }
 .jr-add-reflection-btn:hover{ background:#d7c8b6; border-color:#c6b6a2; }
@@ -548,16 +572,16 @@
 .jr-tab-container {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   border-bottom: 1px solid #d9d3c8;
-  margin-bottom: 12px;
-  padding-bottom: 4px;
+  margin-bottom: 6px;
+  padding-bottom: 2px;
   overflow-x: auto;
 }
 .jr-tab {
-  padding: 8px 12px;
+  padding: 2px 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 600;
   color: #6b645a;
   background: transparent;
@@ -598,7 +622,7 @@
 .jr-tab {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
 }
 .jr-tab-label {
   flex: 1;
@@ -653,19 +677,19 @@
 .jr-lesson-tab-container {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   border-bottom: 1px solid #d9d3c8;
-  margin-bottom: 12px;
-  padding-bottom: 4px;
+  margin-bottom: 6px;
+  padding-bottom: 2px;
   overflow-x: auto;
 }
 .jr-lesson-tab {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 2px;
+  padding: 2px 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 600;
   color: #6b645a;
   background: transparent;
@@ -708,9 +732,9 @@
   color: #c62828;
 }
 .jr-lesson-tab-add {
-  padding: 6px 10px;
+  padding: 0px 6px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 700;
   color: #7a7166;
   background: transparent;
@@ -723,8 +747,8 @@
 .jr-lesson-tab-content-container{
   background: rgba(255,255,255,0.75);
   border-radius: 12px;
-  padding: 10px 12px;
-  margin-top: 10px;
+  padding: 4px 8px;
+  margin-top: 4px;
 }
 .jr-lesson-tab-content {
   display: none;

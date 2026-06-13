@@ -56,6 +56,14 @@
     }
   }
 
+  // 【新規】他スクリプトから自動展開できるようにグローバル公開
+  window.openInquirySidebar = function() {
+    setOpen(true);
+  };
+  window.closeInquirySidebar = function() {
+    setOpen(false);
+  };
+
   function bindHandlers() {
     var toggle = qs('#toggleInquirySidebarBtn');
     var closeBtn = qs('#inquirySidebarClose');

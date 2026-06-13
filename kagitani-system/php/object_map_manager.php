@@ -46,6 +46,20 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     }
     
 
+    // 子孫ノードIDリストの構築（JSから渡された場合はIN句で使用）
+    $descendantNodeIds = [];
+    if (isset($_POST['descendant_node_ids']) && is_array($_POST['descendant_node_ids'])) {
+        $descendantNodeIds = array_map(function($id) use ($mysqli) {
+            return "'" . $mysqli->real_escape_string($id) . "'";
+        }, $_POST['descendant_node_ids']);
+    }
+    // 子孫リストが空の場合は selected_node_id のみを対象にする（後方互換性）
+    if (empty($descendantNodeIds) && $selected_node_id) {
+        $descendantNodeIds = ["'" . $mysqli->real_escape_string($selected_node_id) . "'"];
+    }
+    $nodeIdInClause = implode(',', $descendantNodeIds);
+    error_log("子孫ノードID IN句: " . $nodeIdInClause);
+
     $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
     $xml_data = simplexml_load_file('../js/hozo.xml'); //法造データ取り出し
@@ -101,7 +115,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         else $selectParts[] = "'' AS application";
         $selectParts[] = 'estimated_time';
 
-        $sqlObjectNode = 'SELECT ' . implode(', ', $selectParts) . " FROM object_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0";
+        $sqlObjectNode = 'SELECT ' . implode(', ', $selectParts) . " FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0";
         $result_object_node = $mysqli->query($sqlObjectNode);
     $object_node = [];
     while ($row = $result_object_node->fetch_assoc()) {
@@ -113,8 +127,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         * 目標手段階層マップのエッジデータの取得
         */
     $result_processmap_edge = $mysqli->query("SELECT object_edge_id, edge_start, edge_end, label FROM object_edges
-        WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0) 
-           OR edge_end IN (SELECT object_node_id FROM object_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)) 
+        WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0) 
+           OR edge_end IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0)) 
         AND deleted = 0");
     
     if (!$result_processmap_edge) {
@@ -124,8 +138,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             'pedge' => [],
             'pedge_error' => $mysqli->error,
             'pedge_query' => "SELECT object_edge_id, edge_start, edge_end, label FROM object_edges
-                WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0) 
-                   OR edge_end IN (SELECT object_node_id FROM object_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)) 
+                WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0) 
+                   OR edge_end IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0)) 
                 AND deleted = 0"
         ]);
     } else {
@@ -143,7 +157,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         SELECT DISTINCT DATE(onh.appeared_at) AS appeared_date
         FROM object_nodes_histories onh
         INNER JOIN object_nodes o_nodes ON onh.object_node_id = o_nodes.object_node_id
-        WHERE o_nodes.node_id = '".$mysqli->real_escape_string($selected_node_id)."'
+        WHERE o_nodes.node_id IN (".$nodeIdInClause.")
         AND o_nodes.deleted = 0
         AND onh.appeared_at IS NOT NULL
         ORDER BY appeared_date ASC

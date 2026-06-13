@@ -86,6 +86,21 @@
     }
   }
 
+  function activateSubtab(subtabName) {
+    var subtabs = qsa('.srl-lessons-subtab');
+    var subpanels = qsa('.srl-lessons-subpanel');
+
+    subtabs.forEach(function(tab) {
+      var isActive = tab.getAttribute('data-subtab') === subtabName;
+      tab.classList.toggle('is-active', isActive);
+    });
+
+    subpanels.forEach(function(panel) {
+      var isActive = panel.getAttribute('data-subpanel') === subtabName;
+      panel.classList.toggle('is-active', isActive);
+    });
+  }
+
   function moveFeedbackArea() {
     var feedbackArea = qs('#feedback_area');
     var holder = qs('#srlSidebarJournal');
@@ -136,6 +151,12 @@
     qsa('.srl-tab').forEach(function(tab) {
       tab.addEventListener('click', function() {
         activateTab(tab.getAttribute('data-tab'));
+      });
+    });
+
+    qsa('.srl-lessons-subtab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        activateSubtab(tab.getAttribute('data-subtab'));
       });
     });
 

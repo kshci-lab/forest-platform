@@ -173,12 +173,14 @@ try {
             if (!is_array($lesson)) continue;
             $lessonText = trim($lesson['lesson'] ?? ($lesson['lesson_learned'] ?? ''));
             $opportunity = trim($lesson['opportunity'] ?? '');
-            if ($lessonText === '' && $opportunity === '') continue;
+            $whyImportant = trim($lesson['why_important'] ?? '');
+            if ($lessonText === '' && $opportunity === '' && $whyImportant === '') continue;
 
             $lessonData = [
                 'object_journal_lesson-learned_id' => uuid_v4(),
                 'object_journal_reflection_id' => $object_journal_reflection_id,
                 'lesson_learned' => $lessonText,
+                'why_important' => $whyImportant,
                 'opportunity' => $opportunity,
                 'created_at' => $now,
                 'updated_at' => $now,
