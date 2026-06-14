@@ -1374,6 +1374,33 @@ try {
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div id="modal-add-action" class="modal-add-action modal-add-action-v4" style="display:none; position:fixed; z-index:10000; width:450px;">
+                                        <button type="button" id="unified-action-cancel" class="modal-close-v4-btn" title="キャンセル">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                            </svg>
+                                        </button>
+
+                                        <div class="sentence-block-v5" style="margin-bottom: 20px;">
+                                            <label id="action-name-label" for="action-name">
+                                                「<span id="parent-node-text"></span>」を実行するためにどのような手段を行いますか？
+                                            </label>
+                                            <textarea id="action-name" placeholder="※実行可能なレベルへと細分化してみましょう&#10;例：ーーーー" rows="1" autofocus></textarea>
+                                        </div>
+
+                                        <div class="sentence-block-v5" style="margin-bottom: 16px;">
+                                            <label for="action-reason">なぜその手段を行うことが良いと考えましたか？</label>
+                                            <textarea id="action-reason" placeholder="※目的を明確にしましょう（記述は任意です）&#10;例：新規性を明確にするため" rows="2" style="width: 100%; padding: 10px 14px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; box-sizing: border-box;"></textarea>
+                                        </div>
+
+                                        <!-- ボタン部分 -->
+                                        <div class="modal-actions-v4">
+                                            <button type="button" id="unified-action-submit" class="btn-submit modal-add-action-v3-submit-btn">手段追加</button>
+                                        </div>
+                                    </div>
+
                                     <div id="t_Process_timeselect" style="display:none; position:absolute; z-index:1000; background:white; border:3px solid #2e8b57; padding:10px; width:300px; box-sizing:border-box; border-radius:6px;">
                                         <label for="t_Process_timetext">完了予定:</label><br>
                                         <select id="t_Process_timetext" style="width: 200px;">

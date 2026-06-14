@@ -1915,19 +1915,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 
                 console.log('既存の理由:', reasonText);
                 
-                // 理由入力ダイアログを表示
-                this.show_reason_input();
-                
-                // ダイアログの textarea に既存値をセット
-                setTimeout(() => {
-                    try { 
-                        const textarea = document.getElementById('t_Process_reasontext');
-                        if (textarea) {
-                            textarea.value = reasonText || '';
-                            textarea.focus();
-                        }
-                    } catch (e) { /* ignore */ }
-                }, 50);
+                // モーダルを編集モードで表示（理由枠にフォーカス）
+                this.openActionModal('edit', targetNodeId, 'reason', reasonText);
             }
             return; // エッジのダブルクリック処理後は終了
         }
@@ -2102,13 +2091,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     return;
                 }
 
-                // ユーザーに新しいラベルを尋ね、それをノードの中身に設定
-                const currentLabel = (nodeObj.label || '').split('\n').join('');
-                const newLabel = prompt('新しいラベルを入力してください:', currentLabel);
-                // 編集したラベルを反映
-                if (newLabel !== null) {
-                    this.editNode(clickedNodeId, newLabel);
-                }
+                // ユーザーに新しいラベルを尋ねる代わりにモーダルを編集モードで起動
+                this.openActionModal('edit', clickedNodeId, 'name');
             }
         }
     }
@@ -3400,9 +3384,12 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
         tooltip.classList.add('fl-card','fl-card--wide');
         tooltip.innerHTML = `
-    <div id="feedbackTooltipHeader" class="fl-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <div style="font-weight:700;">${t('headerTitle')}</div>
-        <button type="button" id="btnReflectionHistory" class="fp-btn fp-btn-secondary" aria-controls="reflectionHistoryPanel" aria-expanded="false" style="background:#f7f7f7; border:1px solid rgba(34,34,34,0.08); color:#333; padding:6px 10px; font-size:12px; border-radius:6px; cursor:pointer;">${t('historyBtn')}</button>
+    <button type="button" id="btnCancelFeedback" class="modal-close-v4-btn" title="閉じる" style="position: absolute; top: 12px; right: 12px; background: none; border: none; cursor: pointer; z-index: 10;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <div id="feedbackTooltipHeader" class="fl-header reflection-header-row" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; padding-right: 24px;">
+        <div class="reflection-main-title" style="font-weight:700; font-size:16px;">${t('headerTitle')}</div>
+        <button type="button" id="btnReflectionHistory" class="btn-view-past-logs" aria-controls="reflectionHistoryPanel" aria-expanded="false">${t('historyBtn')}</button>
     </div>
     <div class="fl-body">
         <div class="feedback-layout">
@@ -3447,9 +3434,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 </div>
             </div>
 
-            <div class="feedback-actions">
-                <button type="button" id="btnCancelFeedback" class="fp-btn fp-btn-secondary feedback-action-btn">${t('cancelBtn')}</button>
-                <button type="button" id="btnSaveFeedback" class="fp-btn fp-btn-primary feedback-action-btn">${t('saveBtn')}</button>
+            <div class="reflection-footer-status" style="margin-top: 24px; width: 100%;">
+                <button type="button" class="save-status-text" id="node-reflection-save-status" disabled>保存済み</button>
             </div>
         </form>
         </div>
@@ -3494,7 +3480,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         };
 
         // 保存ボタンのイベントリスナーを設定
-        this.setupTooltipSaveButton(tooltip);
+        this.setupTooltipAutoSave(tooltip);
         this.setupTooltipDrag(tooltip);
         
         // 教訓タブ機能の設定
@@ -4044,15 +4030,31 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         });
     }
     
-    setupTooltipSaveButton(tooltip) {
-        const saveButton = document.getElementById("btnSaveFeedback");
+    setupTooltipAutoSave(tooltip) {
         const cancelButton = document.getElementById("btnCancelFeedback");
         if (cancelButton) {
             cancelButton.addEventListener("click", () => {
                 try { tooltip.style.display = "none"; } catch (e) { console.warn('failed to close tooltip on cancel', e); }
             });
         }
-        saveButton.addEventListener("click", () => {
+        
+        
+        const saveStatusBtn = document.getElementById("node-reflection-save-status");
+        if (saveStatusBtn) {
+            saveStatusBtn.addEventListener("click", () => {
+                if (saveStatusBtn.disabled) return;
+                executeSave();
+            });
+        }
+        
+        const executeSave = () => {
+            if (saveStatusBtn) {
+                saveStatusBtn.textContent = "保存中...";
+                saveStatusBtn.disabled = true;
+                saveStatusBtn.classList.remove("has-changes");
+                saveStatusBtn.classList.add("saving");
+            }
+
             // Undo/Redo: 古いステータスを保存（保存ボタン押下時に取得）
             const oldNodeForUndo = this.nodes.get(this.selectId);
             const oldStatusForUndo = oldNodeForUndo ? oldNodeForUndo.status : 'todo';
@@ -4243,11 +4245,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     }
 
                     console.log(`ノード ${this.selectId} のタイトルを更新しました。`);
-                    tooltip.style.display = "none"; // 保存後に吹き出しを閉じる
+                    if (saveStatusBtn) {
+                        saveStatusBtn.textContent = "保存済み";
+                        saveStatusBtn.classList.remove("saving");
+                    }
                 },
                 error: (error) => {
                     console.error("記録保存中にエラーが発生しました:", error);
-                    alert("記録の保存に失敗しました。");
+                    if (saveStatusBtn) {
+                        saveStatusBtn.textContent = "保存失敗";
+                        saveStatusBtn.classList.remove("saving");
+                        saveStatusBtn.disabled = false;
+                        saveStatusBtn.classList.add("has-changes");
+                    }
                 }
             });
 
@@ -4273,10 +4283,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             console.log(`ノード ${this.selectId} の作業完了だよ！！`);
             // ステータスを completed に更新
             defaultRecordThinkingProcess.update_Node("status", this.selectId, "completed", 7);
-        
+        }; // executeSave end
 
+        // 全てのテキストエリアにinputイベントをバインドしてボタンをアクティブ化
+        const textareas = tooltip.querySelectorAll('.feedback-textarea, .lesson-focus, .lesson-why, .lesson-when');
+        textareas.forEach(ta => {
+            ta.addEventListener('input', () => {
+                if (saveStatusBtn && saveStatusBtn.disabled) {
+                    saveStatusBtn.textContent = "変更を保存する";
+                    saveStatusBtn.classList.add("has-changes");
+                    saveStatusBtn.disabled = false;
+                }
             });
-
+        });
     }
     
     setupTooltipDrag(tooltip) {
@@ -4537,7 +4556,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             } else {
                 // 通常クリック時は新規ノード自動生成
                 if (!this.isViewingPastData) {
-                    this.addChildNode(nodeId);
+                    this.openActionModal('add', nodeId, 'name');
                 }
             }
             
@@ -5115,46 +5134,245 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }, 100);
     }
 
-    // 子ノードを追加
-    addChildNode(parentNodeId) {
-        const parentNode = this.nodes.get(parentNodeId);
-        if (!parentNode) return;
+    // モーダル一元管理（追加・編集）
+    openActionModal(mode, targetNodeId, focusTarget = 'name', providedReason = null) {
+        const modal = document.getElementById('modal-add-action');
+        const parentTextSpan = document.getElementById('parent-node-text');
+        const inputName = document.getElementById('action-name');
+        const inputReason = document.getElementById('action-reason');
+        const btnSubmit = document.getElementById('unified-action-submit');
+        const btnCancel = document.getElementById('unified-action-cancel');
 
-        // 親ノードの下の位置を計算
-        const parentBoundingBox = this.ownNetwork.getBoundingBox(parentNodeId);
-        const newNodeX = parentNode.x;
-        const newNodeY = parentBoundingBox.bottom + 80;
+        if (!modal) {
+            console.error('モーダル要素が見つかりません');
+            return;
+        }
 
-        // 新しいノードのラベルを取得
-        const newLabel = prompt('新しい手段の名前を入力してください:', '新しい手段');
-        if (!newLabel || newLabel.trim() === '') return;
+        let parentNode = null;
+        let editNode = null;
+        let initialReason = providedReason || '';
 
-        // 新しいノードを追加
-        const newNodeId = this.generateUniqueNumberText();
-        this.addNode(newNodeId, newLabel.trim(), "step", newNodeX, newNodeY);
-
-        // 親ノードから子ノードへのエッジを作成
-        this.addNewEdge(parentNodeId, newNodeId);
-
-        console.log(`親ノード ${parentNodeId} の下に新しいノード ${newNodeId} を追加しました`);
-
-        // 新しいノードの理由記述ダイアログを表示
-        setTimeout(() => {
-            this.selectId = newNodeId;
-            // BoxDisplayの位置を新しいノードの近くに設定
-            const newNodeBoundingBox = this.ownNetwork.getBoundingBox(newNodeId);
-            if (newNodeBoundingBox) {
-                const nodeScreenPos = this.ownNetwork.canvasToDOM({
-                    x: newNodeX,
-                    y: newNodeBoundingBox.bottom
-                });
-                const networkCanvas = document.getElementById("myProcessnetwork2");
-                const canvasRect = networkCanvas.getBoundingClientRect();
-                this.BoxDisplay.x = canvasRect.left + nodeScreenPos.x;
-                this.BoxDisplay.y = canvasRect.top + nodeScreenPos.y + 20;
+        if (mode === 'add') {
+            parentNode = this.nodes.get(targetNodeId);
+            if (!parentNode) return;
+            btnSubmit.textContent = '手段追加';
+        } else if (mode === 'edit') {
+            editNode = this.nodes.get(targetNodeId);
+            if (!editNode) return;
+            
+            btnSubmit.textContent = '更新';
+            
+            // 親ノードを探す
+            const edges = this.edges.get();
+            const parentEdge = edges.find(edge => edge.to === targetNodeId);
+            if (parentEdge && parentEdge.from) {
+                parentNode = this.nodes.get(parentEdge.from);
+            } else {
+                parentNode = editNode; // フォールバック
             }
-            this.show_reason_input();
-        }, 100);
+            
+            // 既存の理由を取得 (providedReason がない場合)
+            if (!initialReason) {
+                const rIdx = this.ReasonConnectNodeId.indexOf(targetNodeId);
+                if (rIdx !== -1 && this.ReasonContent[rIdx]) {
+                    initialReason = this.ReasonContent[rIdx];
+                } else if (editNode.purpose && editNode.purpose.trim() !== '') {
+                    initialReason = editNode.purpose;
+                }
+            }
+        }
+
+        // 親ノードのテキストをセット（label または topic）
+        const parentLabel = (parentNode && (parentNode.label || parentNode.topic)) ? (parentNode.label || parentNode.topic) : '親ノード';
+        
+        // 親ノードがルート（最上位）か判定する（親へ向かうエッジがない場合ルートとみなす）
+        const allEdges = this.edges.get();
+        const isRootNode = parentNode ? !allEdges.some(edge => edge.to === parentNode.id) : false;
+        
+        const labelElement = document.getElementById('action-name-label');
+        if (labelElement) {
+            if (isRootNode) {
+                labelElement.innerHTML = `「<span id="parent-node-text">${parentLabel}</span>」を明らかにするためにどのような手段を行いますか？`;
+            } else {
+                labelElement.innerHTML = `「<span id="parent-node-text">${parentLabel}</span>」を実行するためにどのような手段を行いますか？`;
+            }
+        } else if (parentTextSpan) {
+            parentTextSpan.textContent = parentLabel; // フォールバック
+        }
+
+        // 高さを自動調整する共通関数
+        const autoResizeTextarea = (textarea) => {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        };
+
+        // リアルタイム自動伸縮のバインド
+        [inputName, inputReason].forEach(textarea => {
+            textarea.oninput = function() {
+                autoResizeTextarea(this);
+            };
+        });
+
+        // 入力をセット
+        if (mode === 'add') {
+            inputName.value = '';
+            inputReason.value = '';
+        } else if (mode === 'edit') {
+            inputName.value = editNode.label || editNode.topic || '';
+            inputReason.value = initialReason || '';
+        }
+
+        // 高さも初期化
+        inputName.style.height = 'auto';
+        inputReason.style.height = 'auto';
+
+        // 画面中央に配置
+        modal.style.display = 'block';
+        modal.style.top = '50%';
+        modal.style.left = '50%';
+        modal.style.transform = 'translate(-50%, -50%)';
+
+        // 表示された後じゃないとscrollHeightが正しく取れないので少し待ってからフィット・フォーカスさせる
+        setTimeout(() => {
+            autoResizeTextarea(inputName);
+            autoResizeTextarea(inputReason);
+            if (focusTarget === 'name') {
+                inputName.focus();
+            } else if (focusTarget === 'reason') {
+                inputReason.focus();
+            }
+        }, 50);
+
+        // イベントリスナーを張り替える（重複登録防止）
+        const newBtnSubmit = btnSubmit.cloneNode(true);
+        const newBtnCancel = btnCancel.cloneNode(true);
+        btnSubmit.parentNode.replaceChild(newBtnSubmit, btnSubmit);
+        btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+
+        // キーボード（Enter）によるフォーカスリレー
+        inputName.onkeydown = (e) => {
+            if (e.isComposing) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                inputReason.focus();
+            }
+        };
+
+        inputReason.onkeydown = (e) => {
+            if (e.isComposing) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                newBtnSubmit.click();
+            }
+        };
+
+        newBtnSubmit.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                newBtnSubmit.click();
+            }
+        };
+
+        newBtnCancel.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        newBtnSubmit.addEventListener('click', () => {
+            const newLabel = inputName.value.trim();
+            const reasonText = inputReason.value.trim();
+
+            if (!newLabel) {
+                alert('行う活動（手段）を入力してください');
+                inputName.focus();
+                return;
+            }
+
+            modal.style.display = 'none';
+
+            if (mode === 'add') {
+                // 新規追加ロジック
+                const parentBoundingBox = this.ownNetwork.getBoundingBox(targetNodeId);
+                const newNodeX = parentNode.x;
+                const newNodeY = parentBoundingBox.bottom + 80;
+
+                const newNodeId = this.generateUniqueNumberText();
+                this.addNode(newNodeId, newLabel, "step", newNodeX, newNodeY);
+                this.addNewEdge(targetNodeId, newNodeId);
+
+                console.log(`親ノード ${targetNodeId} の下に新しいノード ${newNodeId} を追加しました`);
+
+                if (reasonText) {
+                    this.selectId = newNodeId;
+                    const reasonNodeId = `reason-${newNodeId}`;
+
+                    this.ReasonConnectNodeId.push(newNodeId);
+                    this.ReasonNodeId.push(reasonNodeId);
+                    this.ReasonContent.push(reasonText);
+
+                    if (typeof defaultRecordThinkingProcess !== 'undefined') {
+                        defaultRecordThinkingProcess.record_reason(newNodeId, reasonNodeId, reasonText);
+                    }
+                    
+                    this.updateEdgesToNodeWithReason(newNodeId, reasonText);
+                    
+                    if (typeof undoRedoManager !== 'undefined') {
+                        let targetEdgeId = null;
+                        const connectedEdges = this.ownNetwork.getConnectedEdges(newNodeId);
+                        connectedEdges.forEach(edgeId => {
+                            const edgeData = this.edges.get(edgeId);
+                            if (edgeData && edgeData.to === newNodeId) {
+                                targetEdgeId = edgeId;
+                            }
+                        });
+                        
+                        undoRedoManager.recordAction({
+                            type: 'EDIT_REASON',
+                            nodeId: newNodeId,
+                            edgeId: targetEdgeId,
+                            oldReason: '',
+                            newReason: reasonText
+                        });
+                    }
+                }
+            } else if (mode === 'edit') {
+                // 既存編集ロジック
+                // ラベルの更新
+                this.editNode(targetNodeId, newLabel);
+                
+                // 理由の更新
+                if (reasonText) {
+                    const rIdx = this.ReasonConnectNodeId.indexOf(targetNodeId);
+                    if (rIdx !== -1) {
+                        this.ReasonContent[rIdx] = reasonText;
+                        const reasonNodeId = this.ReasonNodeId[rIdx];
+                        if (typeof defaultRecordThinkingProcess !== 'undefined') {
+                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, reasonText);
+                        }
+                    } else {
+                        // 新規で理由を追加
+                        const reasonNodeId = `reason-${targetNodeId}`;
+                        this.ReasonConnectNodeId.push(targetNodeId);
+                        this.ReasonNodeId.push(reasonNodeId);
+                        this.ReasonContent.push(reasonText);
+                        if (typeof defaultRecordThinkingProcess !== 'undefined') {
+                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, reasonText);
+                        }
+                    }
+                    this.updateEdgesToNodeWithReason(targetNodeId, reasonText);
+                } else {
+                    // 理由が空になった場合の処理（必要に応じて）
+                    const rIdx = this.ReasonConnectNodeId.indexOf(targetNodeId);
+                    if (rIdx !== -1) {
+                        this.ReasonContent[rIdx] = '';
+                        const reasonNodeId = this.ReasonNodeId[rIdx];
+                        if (typeof defaultRecordThinkingProcess !== 'undefined') {
+                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, '');
+                        }
+                    }
+                    this.updateEdgesToNodeWithReason(targetNodeId, '');
+                }
+            }
+        });
     }
 
     addNewEdge(E_start, E_end){
@@ -7277,3 +7495,55 @@ function removeEdgeDragPreview() {
     const svg = document.getElementById('edgeDragPreview');
     if (svg) svg.remove();
 }
+
+// モーダルドラッグ＆ドロップ移動機能
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('modal-add-action');
+    if (!modal) return;
+
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    function isDraggableElement(target) {
+        const tagName = target.tagName.toLowerCase();
+        return tagName !== 'textarea' && tagName !== 'input' && tagName !== 'button' && tagName !== 'a' && !target.closest('.modal-close-v4-btn');
+    }
+
+    modal.addEventListener('mousedown', function(e) {
+        if (!isDraggableElement(e.target)) return;
+        
+        isDragging = true;
+        modal.classList.add('is-dragging');
+        
+        const rect = modal.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        modal.style.transform = 'none';
+        modal.style.left = initialLeft + 'px';
+        modal.style.top = initialTop + 'px';
+        modal.style.margin = '0';
+        
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        modal.style.left = (initialLeft + dx) + 'px';
+        modal.style.top = (initialTop + dy) + 'px';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            modal.classList.remove('is-dragging');
+        }
+    });
+});

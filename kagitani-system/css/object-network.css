@@ -1417,3 +1417,253 @@ display: none;
     box-sizing: border-box;
     display: none; /* 初期状態は非表示 */
 }
+/* 統合モーダルの美しい佇まい */
+.modal-add-action {
+  box-sizing: border-box !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  overflow: hidden;
+}
+
+/* フォーム要素のタイトな引き締め */
+.modal-add-action label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.modal-add-action input,
+.modal-add-action textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  background: #f8fafc;
+}
+
+
+/* インライン編集中のノードのフォーカスエフェクト */
+.map-inline-input:focus {
+  outline: none !important;
+  border: 1px solid #004d40 !important;
+  box-shadow: 0 0 0 3px rgba(0, 77, 64, 0.1) !important;
+  background: #ffffff !important;
+}
+
+/* ノード直下に添えられる、静かな理由入力エリア */
+.map-inline-reason-box {
+  width: 100%;
+  max-width: 200px;
+  border: 1px dashed #cbd5e1 !important;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.9);
+  margin-top: 4px;
+  resize: none;
+}
+
+
+/* 編集中のノード自体の佇まい */
+.jsmind-inner .node-editing-step2 {
+  background-color: #ffffff !important;
+  border: 1px solid #004d40 !important;
+  box-shadow: 0 0 0 3px rgba(0, 77, 64, 0.1) !important;
+}
+
+/* ノード内部の理由入力行（2行目）の洗練 */
+.node-inline-reason-input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed #e2e8f0; /* 活動名との境界を実直な点線で表現 */
+  font-size: 11px !important;
+  color: #64748b !important; /* 主役の活動名より一回り薄いニュアンスカラー */
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  background: transparent;
+  resize: none;
+}
+
+.node-inline-reason-input:focus {
+  outline: none !important;
+  color: #334155 !important;
+}
+
+
+/* ガイド文（親ノード）の佇まい */
+.modal-context-target {
+  font-size: 14px;
+  font-weight: 600;
+  color: #004d40; /* システムの深いグリーン */
+  background: #f1f5f9;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+/* 文章のつながりを感じさせるラッパー */
+.input-sentence-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.sentence-suffix {
+  font-size: 13px;
+  color: #64748b;
+  padding-bottom: 8px; /* 入力枠のラインと視線を揃える */
+  white-space: nowrap;
+}
+
+
+/* Submit button focus state */
+.modal-add-action-v3-submit-btn:focus {
+  outline: 2px solid #34d399;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.4);
+}
+
+
+/* モーダル全体のコンテナ：上部に上品な余白を確保 */
+.modal-add-action-v4 {
+  padding: 32px 24px 24px 24px !important;
+  box-sizing: border-box;
+  background: #ffffff !important;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* 入力ブロック：横幅100%で広々と使えるように */
+.sentence-block-v4 {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.sentence-block-v4 input[type="text"],
+.sentence-block-v4 textarea {
+  width: 100% !important; /* 横幅いっぱいに拡張 */
+  box-sizing: border-box;
+}
+
+/* 決定ボタン（手段追加）の佇まい */
+.modal-actions-v4 .btn-submit {
+  background-color: #004d40 !important; /* システムの深いグリーンをここに灯す */
+  color: #ffffff !important;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+.modal-actions-v4 .btn-submit:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0, 77, 64, 0.2) !important; /* 完了・決定時のフォーカス残光 */
+}
+
+
+/* 右上キャンセルボタンの絶対配置 */
+.modal-close-v4-btn {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important; /* 普段は極めて静かなグレー */
+  padding: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+/* ホバー時に実直に反応する演出 */
+.modal-close-v4-btn:hover {
+  color: #475569 !important; /* 少し濃くなって「押せる」ことを示す */
+  transform: scale(1.05);
+}
+
+/* 右下ボタンエリアの最適化（右寄せ） */
+.modal-actions-v4 {
+  display: flex;
+  justify-content: flex-end !important; /* 手段追加ボタンを右端にバシッと寄せる */
+  margin-top: 12px;
+}
+
+
+/* 親ノードのテキストサイズを引き算 */
+.context-target-node {
+  font-size: 11px !important; /* 目立ちすぎないサイズに縮小 */
+  color: #475569 !important;
+  background-color: #f8fafc !important;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+/* 新しい手段入力用textareaの美化 */
+#action-name {
+  width: 100% !important;
+  box-sizing: border-box;
+  padding: 14px 18px !important;
+  font-size: 15px !important; /* 文字は大きく主役のまま */
+  font-weight: 600;
+  color: #1e293b;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  resize: none !important;
+  overflow-y: hidden !important;
+  min-height: 52px;
+}
+
+
+/* ラベルの美化 */
+.sentence-block-v5 label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+/* プレースホルダー（薄文字）の上品なスタイリング */
+.sentence-block-v5 textarea::placeholder {
+  color: #94a3b8 !important; /* 優しく馴染む薄いグレー */
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* モーダル全体：掴める場所はデフォルトで grab カーソルにする */
+.modal-add-action-v4 {
+  cursor: grab !important;
+}
+
+/* ただし入力欄やボタンの上では通常のカーソルに戻す（重要） */
+.modal-add-action-v4 textarea,
+.modal-add-action-v4 input,
+.modal-add-action-v4 button {
+  cursor: auto !important;
+}
+
+/* 今まさに掴んで動かしている最中のスタイル */
+.modal-add-action-v4.is-dragging {
+  cursor: grabbing !important; /* グッと掴んだ手のひら */
+  opacity: 0.95;               /* 後ろのマップがほんの少し透けて見やすくなる */
+  box-shadow: 0 20px 35px rgba(0, 77, 64, 0.12) !important; /* 影を深くして、キャンバスから「浮いた」ことを表現 */
+  transition: none !important; /* ドラッグ中の追従遅延をなくす */
+}
+

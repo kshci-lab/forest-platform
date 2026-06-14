@@ -457,3 +457,110 @@
     background-color: #f4efe7;
   }
   
+/* タイトル行のレイアウト */
+.reflection-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* 「過去の記録を見る」ボタン：北欧ミニマルな白ボタン */
+.btn-view-past-logs {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-view-past-logs:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+/* 最下部：手動ボタンを廃止した「保存済み」ステータスバー */
+.reflection-footer-status {
+  margin-top: 24px;
+  width: 100%;
+}
+.save-status-text {
+  width: 100%;
+  text-align: center;
+  background-color: #e2e8f0; /* ジャーナルと同じ静かで落ち着いたトーン */
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: none;
+}
+.save-status-text:disabled {
+  cursor: default;
+}
+.save-status-text:not(:disabled) {
+  cursor: pointer;
+}
+/* 保存中... の時は少しトーンを優しく変化させるなどの演出 */
+.save-status-text.saving {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* 変更があり、保存可能な状態のスタイル */
+.save-status-text.has-changes {
+  background-color: #2c7a7b;
+  color: #ffffff;
+}
+/* メインコンテンツを横並びにするラッパー */
+.reflection-main-content-wrapper {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  align-items: flex-start;
+  overflow: hidden; /* パネル展開時のハミ出し防止 */
+}
+
+/* 中央のフォーム領域は可変（隙間を埋める） */
+.current-reflection-form-panel {
+  flex: 1;
+  min-width: 0; /* Flexboxの子要素縮小バグ防止 */
+}
+
+/* 新設：右側過去の記録サイドパネルの佇まい */
+.past-records-sidebar {
+  width: 300px; /* すっきりと収まる固定幅 */
+  flex-shrink: 0;
+  background-color: #f8fafc !important; /* 清潔感のある、ごく薄いグレーベージュ */
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  display: none; /* 初期状態は綺麗に引き算（非表示） */
+  max-height: 550px;
+  overflow-y: auto; /* ログが多い時はパネル内スクロール */
+}
+
+/* ボタンON時に付与する表示用クラス */
+.past-records-sidebar.is-active {
+  display: block !important;
+  animation: slideInRight 0.2s ease-out; /* 右からの心地いい出現エフェクト */
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.sidebar-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #cbd5e1;
+}

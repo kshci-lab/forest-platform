@@ -3001,42 +3001,7 @@ var jm = jsMind.show(options, mind);
             d.style.visibility='hidden';
             this._reset_node_custom_style(d, node.data);
 
-            // 【新規】問いノード判定と「答えノード追加（＋）」ボタンの動的付与
-            var isQuestion = false;
-            if (node.data && node.data['background-color']) {
-                var bg = node.data['background-color'].toLowerCase();
-                // 青系背景色であれば問いノードとみなす
-                if (bg === '#bce2e8' || bg === '#b3d4ff' || bg === '#90caf9' || bg === '#a0c4ff') isQuestion = true;
-                if (bg.length === 7 && bg.startsWith('#')) {
-                    var r = parseInt(bg.substr(1, 2), 16);
-                    var b = parseInt(bg.substr(5, 2), 16);
-                    if (b > r + 10) isQuestion = true;
-                }
-            }
-            if (node.topic && (node.topic.endsWith('？') || node.topic.endsWith('?'))) isQuestion = true;
 
-            if (isQuestion) {
-                d.className += (d.className ? ' ' : '') + 'is-question-node';
-                var btn = $c('button');
-                btn.className = 'btn-add-answer-inline';
-                btn.title = '答えを追加';
-                $t(btn, '+');
-                btn.onmousedown = function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                };
-                btn.onclick = function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    if (window._jm) {
-                        window._jm.select_node(node.id);
-                        if (typeof window.add_Anode === 'function') {
-                            window.add_Anode();
-                        }
-                    }
-                };
-                d.appendChild(btn);
-            }
 
             parent_node.appendChild(d);
             view_data.element = d;

@@ -45,7 +45,7 @@ function open_empty(){
 
 open_empty();
 
-// 【新規】ノードに対する各種動的処理（右側パネル展開 ＆ プラスボタン付与）
+// 【新規】ノードに対する各種動的処理（右側パネル展開）
 if (typeof _jm !== 'undefined' && _jm) {
     _jm.add_event_listener(function(type, data) {
         // ③ ノードクリック時に右側パネル（問い一覧）を自動展開
@@ -58,41 +58,6 @@ if (typeof _jm !== 'undefined' && _jm) {
                     var btn = document.getElementById('showQuestionsBtn');
                     if (btn) btn.click();
                 }
-            }
-        }
-        
-        // ② 新規ノード追加時にプラスボタンを動的に挿入
-        if (type === jsMind.event_type.edit) {
-            if (data.evt === 'add_node' || data.evt === 'update_node') {
-                setTimeout(function() {
-                    var nodeid = data.node;
-                    if (!nodeid && data.data && data.data.length > 1) {
-                        nodeid = data.data[1]; // add_node の args は [parent_node.id, nodeid, topic, data]
-                    }
-                    if (nodeid) {
-                        var jmnode = document.querySelector('jmnode[nodeid="' + nodeid + '"]');
-                        if (jmnode) {
-                            var isQuestion = jmnode.getAttribute('type') === 'toi' || jmnode.classList.contains('is-question-node');
-                            if (isQuestion && !jmnode.querySelector('.btn-add-answer-inline')) {
-                                jmnode.classList.add('is-question-node');
-                                var btn = document.createElement('button');
-                                btn.className = 'btn-add-answer-inline';
-                                btn.innerHTML = '＋';
-                                btn.title = '答えを追加';
-                                btn.onclick = function(e) {
-                                    e.stopPropagation();
-                                    if (typeof _jm !== 'undefined') _jm.select_node(nodeid);
-                                    if (typeof NewContent_Append === 'function') {
-                                        NewContent_Append('答え');
-                                    } else {
-                                        console.warn('NewContent_Append is not defined');
-                                    }
-                                };
-                                jmnode.appendChild(btn);
-                            }
-                        }
-                    }
-                }, 100);
             }
         }
     });
