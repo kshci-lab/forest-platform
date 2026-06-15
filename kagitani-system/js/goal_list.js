@@ -1376,15 +1376,19 @@ window.addWeeklyGoal = function() {
     }
     // PHPへAJAXリクエスト送信
     console.log('[goal_list] sending AJAX to update_latest_goal_node.php with node_id=', selected_node_id);
+    var postData = { node_id: selected_node_id };
+    if (window.latest_inserted_journal_id) {
+        postData.object_journal_id = window.latest_inserted_journal_id;
+    }
     $.ajax({
         url: 'php/update_latest_goal_node.php',
         type: 'POST',
-        data: { node_id: selected_node_id },
+        data: postData,
         success: function(response) {
             console.log('[goal_list] 最新の小目標にnode_idを保存しました:', response);
             // DB反映後に再取得
-            if (typeof fetchWeeklyGoalsFromDB === 'function') {
-                try { fetchWeeklyGoalsFromDB(); } catch(e){ console.warn('[goal_list] fetchWeeklyGoalsFromDB failed', e); }
+            if (window._goalListHelpers && typeof window._goalListHelpers.fetchWeeklyGoalsFromDB === 'function') {
+                try { window._goalListHelpers.fetchWeeklyGoalsFromDB(); } catch(e){ console.warn('[goal_list] fetchWeeklyGoalsFromDB failed', e); }
             }
         },
         error: function(xhr, status, error) {

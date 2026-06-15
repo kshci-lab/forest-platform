@@ -490,8 +490,8 @@
 .save-status-text {
   width: 100%;
   text-align: center;
-  background-color: #e2e8f0; /* ジャーナルと同じ静かで落ち着いたトーン */
-  color: #475569;
+  background-color: #f4efe7; /* ジャーナルの保存済み状態と完全一致 */
+  color: #a09d98;
   font-size: 13px;
   font-weight: 600;
   padding: 12px 0;
@@ -563,4 +563,63 @@
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 2px solid #cbd5e1;
+}
+
+/* 初回完了ボタンの洗練スタイリング */
+.btn-finish-reflection {
+  width: 100% !important;
+  background-color: #0d47a1 !important; /* またはForestのプライマリカラー（ディープグリーン等） */
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 0;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.15);
+  transition: all 0.2s ease;
+}
+
+.btn-finish-reflection:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ヘッダー行全体：両端に綺麗に振り分ける */
+.reflection-header-row {
+  display: flex !important;
+  justify-content: space-between !important; /* タイトルは左、グループは右 */
+  align-items: center !important;
+  width: 100% !important;
+  margin-bottom: 20px;
+}
+
+/* 右側ボタンふたつを綺麗に整列させるコンテナ */
+.header-actions-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important; /* ボタン同士の衝突を完全に防ぐ美しい余白 */
+}
+
+/* 閉じるボタン：絶対配置の呪いを解き、デザインを維持 */
+.modal-close-v4-btn {
+  position: static !important; /* absoluteを解除して横並びのフローに乗せる */
+  top: auto !important;
+  right: auto !important;
+  
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important; /* 普段は静かなグレー */
+  padding: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+/* ホバー時の実直なリアクション */
+.modal-close-v4-btn:hover {
+  color: #475569 !important;
+  transform: scale(1.05);
 }

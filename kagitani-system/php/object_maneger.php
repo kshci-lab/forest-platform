@@ -87,12 +87,12 @@
 			$selected_node_id = $_POST["selected_node_id"];
 			
 			// デバッグ：テーブル構造を確認
-			$table_info = $mysqli->query("DESCRIBE object_edges_histories");
+			$table_info = $mysqli->query("DESCRIBE object_edge_histories");
 			$columns = [];
 			while ($row = $table_info->fetch_assoc()) {
 				$columns[] = $row;
 			}
-			error_log("object_edges_histories table structure: " . json_encode($columns));
+			error_log("object_edge_histories table structure: " . json_encode($columns));
 			
 			// object_edgesテーブルにエッジを保存
 			$edge_sql = "INSERT INTO object_edges (object_edge_id, edge_start, edge_end, label, created_at, updated_at, deleted)
@@ -108,9 +108,9 @@
 				exit;
 			}
 			
-			// object_edges_historiesテーブルにエッジの履歴を保存
-			$edge_h_sql = "INSERT INTO object_edges_histories 
-			               (object_edges_history_id, object_edge_id, edge_start, edge_end, label, appeared_at, disappeared_at)
+			// object_edge_historiesテーブルにエッジの履歴を保存
+			$edge_h_sql = "INSERT INTO object_edge_histories 
+			               (object_edge_history_id, object_edge_id, edge_start, edge_end, label, appeared_at, disappeared_at)
 			               VALUES ('$edge_h_id', '$edge_id', '$edge_start', '$edge_end', '$label', '$timestamp', NULL)";
 			
 			// デバッグ用：実行前にSQL文とパラメータを出力
@@ -152,26 +152,74 @@
 			}
 			exit;
 		}else if($record_thing === 'reason'){
-			// 理由（purpose）の記録: 主ノード(object_nodes.object_node_id)に対して purpose を保存し、履歴にも残す
-			$node_id = $_POST['node_id'];
+			// 理由の記録: エッジが特定できる場合（source_idが存在する）はエッジのlabelを更新し、そうでない場合は旧仕様の通りノードのpurposeを更新する
+			$node_id = $_POST['node_id']; // target_id
+			$source_id = isset($_POST['source_node_id']) ? $_POST['source_node_id'] : '';
 			$reason_node_id = isset($_POST['reason_node_id']) ? $_POST['reason_node_id'] : '';
 			$reason_text = isset($_POST['reason_text']) ? $_POST['reason_text'] : '';
 
 			// safety: trim
 			$reason_text = trim($reason_text);
 			if ($reason_text === '') {
+				// 空文字の場合は一旦処理を抜ける（既存仕様維持）
 				echo json_encode(["success"=>false, "error"=>"empty reason_text"]);
 				exit;
 			}
 
-			// object_nodes テーブルに purpose カラムがある場合は更新
-			$col_check_purpose = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes' AND COLUMN_NAME = 'purpose'");
-			if ($col_check_purpose && $col_check_purpose->fetch_assoc()) {
-				$update_sql = "UPDATE object_nodes SET purpose = '" . $mysqli->real_escape_string($reason_text) . "', updated_at = '$timestamp' WHERE object_node_id = '" . $mysqli->real_escape_string($node_id) . "'";
-				$mysqli->query($update_sql);
-				if ($mysqli->error) {
-					echo json_encode(["success"=>false, "error"=>"failed update purpose: " . $mysqli->error]);
-					exit;
+			if ($source_id !== '') {
+				$esc_source = $mysqli->real_escape_string($source_id);
+				$esc_target = $mysqli->real_escape_string($node_id);
+				$esc_label = $mysqli->real_escape_string($reason_text);
+
+				// エッジIDを取得してトランザクション的な履歴更新を行う
+				$edge_res = $mysqli->query("SELECT object_edge_id FROM object_edges WHERE edge_start = '$esc_source' AND edge_end = '$esc_target' AND deleted = 0");
+				if ($edge_res && $edge_row = $edge_res->fetch_assoc()) {
+					$edge_id = $edge_row['object_edge_id'];
+					
+					// 1. 既存のobject_edgesをアップデート
+					$update_sql = "UPDATE object_edges SET label = '$esc_label', updated_at = '$timestamp' WHERE object_edge_id = '$edge_id'";
+					$mysqli->query($update_sql);
+					if ($mysqli->error) {
+						echo json_encode(["success"=>false, "error"=>"failed update edge label: " . $mysqli->error]);
+						exit;
+					}
+					
+					// 2. 現在の履歴を取得し、もし空欄('')であれば無駄な履歴を増やさずに直接上書きする
+					$history_res = $mysqli->query("SELECT object_edge_history_id, label FROM object_edge_histories WHERE object_edge_id = '$edge_id' AND disappeared_at IS NULL");
+					if ($history_res && $history_row = $history_res->fetch_assoc()) {
+						if ($history_row['label'] === '') {
+							$h_id = $history_row['object_edge_history_id'];
+							$mysqli->query("UPDATE object_edge_histories SET label = '$esc_label' WHERE object_edge_history_id = '$h_id'");
+						} else {
+							// 過去のラベルが存在する場合は、現在時刻でクローズして新世代をINSERT
+							$h_id = $history_row['object_edge_history_id'];
+							$mysqli->query("UPDATE object_edge_histories SET disappeared_at = '$timestamp' WHERE object_edge_history_id = '$h_id'");
+							
+							$new_history_id = uniqid('edghst_', true);
+							$insert_history_sql = "INSERT INTO object_edge_histories 
+								(object_edge_history_id, object_edge_id, edge_start, edge_end, label, appeared_at, disappeared_at) 
+								VALUES ('$new_history_id', '$edge_id', '$esc_source', '$esc_target', '$esc_label', '$timestamp', NULL)";
+							$mysqli->query($insert_history_sql);
+						}
+					} else {
+						// 履歴が全くない異常系の場合はINSERT
+						$new_history_id = uniqid('edghst_', true);
+						$insert_history_sql = "INSERT INTO object_edge_histories 
+							(object_edge_history_id, object_edge_id, edge_start, edge_end, label, appeared_at, disappeared_at) 
+							VALUES ('$new_history_id', '$edge_id', '$esc_source', '$esc_target', '$esc_label', '$timestamp', NULL)";
+						$mysqli->query($insert_history_sql);
+					}
+				}
+			} else {
+				// フォールバック（旧仕様通りノードのpurposeを更新）
+				$col_check_purpose = $mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'object_nodes' AND COLUMN_NAME = 'purpose'");
+				if ($col_check_purpose && $col_check_purpose->fetch_assoc()) {
+					$update_sql = "UPDATE object_nodes SET purpose = '" . $mysqli->real_escape_string($reason_text) . "', updated_at = '$timestamp' WHERE object_node_id = '" . $mysqli->real_escape_string($node_id) . "'";
+					$mysqli->query($update_sql);
+					if ($mysqli->error) {
+						echo json_encode(["success"=>false, "error"=>"failed update purpose: " . $mysqli->error]);
+						exit;
+					}
 				}
 			}
 
@@ -998,15 +1046,19 @@
 			$edge_id = $_POST['edge_id'];
 			
 			// 削除前に既存のエッジ履歴のdisappeared_atを更新
-			if($edge_id !== ""){
-				$update_edge_history_sql = "UPDATE object_edges_histories 
+			// 削除対象のエッジ条件に合わせて、生存中（disappeared_at IS NULL）の履歴を一括クローズする
+			if($edge_start === ""){
+				$mysqli->query("UPDATE object_edge_histories h JOIN object_edges e ON h.object_edge_id = e.object_edge_id 
+					SET h.disappeared_at = '$timestamp' 
+					WHERE e.edge_end = '$edge_end' AND h.disappeared_at IS NULL AND e.deleted = 0");
+			} else if($edge_end === ""){
+				$mysqli->query("UPDATE object_edge_histories h JOIN object_edges e ON h.object_edge_id = e.object_edge_id 
+					SET h.disappeared_at = '$timestamp' 
+					WHERE e.edge_start = '$edge_start' AND h.disappeared_at IS NULL AND e.deleted = 0");
+			} else {
+				$mysqli->query("UPDATE object_edge_histories 
 					SET disappeared_at = '$timestamp' 
-					WHERE object_edge_id = '$edge_id' AND disappeared_at IS NULL";
-				$mysqli->query($update_edge_history_sql);
-				
-				if ($mysqli->error) {
-					echo "Error updating edge history disappeared_at: " . $mysqli->error;
-				}
+					WHERE object_edge_id = '$edge_id' AND disappeared_at IS NULL");
 			}
 			
 			// エッジを削除（deletedフラグを立てる）

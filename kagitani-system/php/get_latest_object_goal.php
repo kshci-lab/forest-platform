@@ -34,10 +34,10 @@ try {
     // object_journal_nodes → node_latest経由でcontentを取得
     $sql = "
         SELECT 
-            g.object_journal_id,
+            CAST(g.object_journal_id AS CHAR) AS object_journal_id,
             g.start_date,
             g.finish_date,
-            ojn.node_id,
+            CAST(ojn.node_id AS CHAR) AS node_id,
             nl.content AS content
         FROM object_journals g
         LEFT JOIN object_journal_nodes ojn

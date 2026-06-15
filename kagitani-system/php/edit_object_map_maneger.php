@@ -30,6 +30,11 @@
 			$edge_end = $_POST["edge_end"];              //エッジ終了
 			$mysqli->query("INSERT INTO object_edges (object_edge_id, edge_start, edge_end, label, created_at, updated_at, deleted)
 			                VALUES ('$edge_id', '$edge_start', '$edge_end', '', '$timestamp', '$timestamp', 0)");
+			
+			// 新規作成時の履歴を保存
+			$new_history_id = uniqid('edghst_', true);
+			$mysqli->query("INSERT INTO object_edge_histories (object_edge_history_id, object_edge_id, edge_start, edge_end, label, appeared_at, disappeared_at)
+			                VALUES ('$new_history_id', '$edge_id', '$edge_start', '$edge_end', '', '$timestamp', NULL)"); error_log("History Insert Error: " . $mysqli->error);
 		}else if($record_thing === 'trigger'){
 			
 			$mysqli->query("INSERT INTO triggers (trigger_id, activity_id, node_version_from, node_version_to, activity_time, activity_type, content, add_time, x, y, deleted)

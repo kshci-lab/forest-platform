@@ -13,11 +13,25 @@ if ($node_id === '') {
     exit;
 }
 
+$object_journal_id = isset($_POST['object_journal_id']) ? $_POST['object_journal_id'] : '';
+
 // 最新の小目標を取得
-$sql = "SELECT object_journal_id FROM object_journals WHERE `delete`=0 ORDER BY update_at DESC LIMIT 1";
-$result = $mysqli->query($sql);
-if ($result && $row = $result->fetch_assoc()) {
-    $latest_goal_id = $row['object_journal_id'];
+if ($object_journal_id !== '') {
+    $latest_goal_id = $object_journal_id;
+    $should_insert = true;
+} else {
+    $sql = "SELECT object_journal_id FROM object_journals WHERE `delete`=0 ORDER BY update_at DESC LIMIT 1";
+    $result = $mysqli->query($sql);
+    if ($result && $row = $result->fetch_assoc()) {
+        $latest_goal_id = $row['object_journal_id'];
+        $should_insert = true;
+    } else {
+        $should_insert = false;
+        echo '小目標が見つかりません';
+    }
+}
+
+if ($should_insert) {
     // object_journal_nodesに保存（IDをuniqidで生成）
     $object_journal_node_id = uniqid('goalnode_', true);
     // New schema: include deleted, create_at, update_at

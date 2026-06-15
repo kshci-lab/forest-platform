@@ -1433,13 +1433,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         defaultThinkingProcess.nodes.add(newNode);
 
-        // 理由がある場合、エッジを実線に変更（理由タグノードは追加しない）
-        if (purpose && purpose.trim() !== '') {
-            setTimeout(() => {
-                // 理由があるノードへのエッジを実線に変更（理由テキストも渡す）
-                defaultThinkingProcess.updateEdgesToNodeWithReason(node_id, purpose);
-            }, 100);
-        }
+        // 古いロジック（ノードのpurposeで全エッジを上書きする）を削除。
+        // 代わりにaddReloadEdge側で個別のエッジの理由（label）に基づき実線化・ツールチップ設定を行う。
 
         // 完了予定がある場合、緑色の時間タグを追加（ノードの左下）
         if (estimated_time && estimated_time.trim() !== '') {
@@ -1740,9 +1735,18 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         // ノードの存在チェック
-        const fromNode = this.nodes.get(edge_start);
-        const toNode = this.nodes.get(edge_end);
-        
+        let fromNode = this.nodes.get(edge_start);
+        if (!fromNode) {
+            fromNode = this.nodes.get('topic-tag_' + edge_start) || this.nodes.get('versions_' + edge_start);
+            if (fromNode) edge_start = fromNode.id;
+        }
+
+        let toNode = this.nodes.get(edge_end);
+        if (!toNode) {
+            toNode = this.nodes.get('topic-tag_' + edge_end) || this.nodes.get('versions_' + edge_end);
+            if (toNode) edge_end = toNode.id;
+        }
+
         if (!fromNode) {
             console.error(`❌ 参照元ノード ${edge_start} が存在しません。エッジ ${edge_id} を追加できません。`);
             return;
@@ -1775,16 +1779,21 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             }
         };
         
-        // ラベルが存在する場合は追加
+        // 古い仕様（object_nodes.purpose）からの情報引き継ぎ（フォールバック）
+        // エッジ自身のラベルが空の場合でも、接続先ノードが過去の理由データを持っていればそれを代用する
+        if (!edge_label || edge_label.trim() === '') {
+            const targetNode = this.nodes.get(String(edge_end));
+            if (targetNode && targetNode.purpose && targetNode.purpose.trim() !== '') {
+                edge_label = targetNode.purpose;
+            }
+        }
+
+        // ラベル（理由）が存在する場合は実線化・ツールチップ追加のみ行う（線の上に文字は出さない）
         if (edge_label && edge_label.trim() !== '') {
-            edgeData.label = edge_label;
-            edgeData.font = {
-                size: 12,
-                color: '#333333',
-                background: 'rgba(255, 255, 255, 0.8)',
-                strokeWidth: 1,
-                strokeColor: '#ffffff'
-            };
+            edgeData.title = '💡 理由: ' + edge_label; // ツールチップを追加
+            edgeData.dashes = false; // 実線に変更
+            edgeData.width = 3; // 理由があるエッジは太く目立たせる
+            
             // 内部管理オブジェクトにも保存
             this.EdgeLabels[edge_id] = edge_label;
         }
@@ -1825,8 +1834,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         //ノードのラベルの編集
         const node = this.nodes.get(node_id);
         if (node) { // IDに相当するノードがある場合の中身を編集
+            // 改行文字をすべて除去してから処理する
+            if (node_content) {
+                node_content = node_content.replace(/\r?\n|\r/g, '');
+            }
+            
             // Undo/Redo: 古いラベルを保存
-            const oldLabel = node.label ? node.label.replace(/\n/g, '') : '';
+            const oldLabel = node.label ? node.label.replace(/\r?\n|\r/g, '') : '';
             
             let result_label = '';
             for (let i = 0; i < node_content.length; i += 10) {
@@ -2698,8 +2712,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             // エッジを更新
             this.updateEdgesToNodeWithReason(this.selectId, reasonText);
             
-            // DBに保存
-            defaultRecordThinkingProcess.update_Node("purpose", this.selectId, reasonText, "");
+            // DBに保存（ノードではなく、該当する全てのエッジに対して記録する）
+            const connectedEdges = this.ownNetwork.getConnectedEdges(this.selectId);
+            connectedEdges.forEach(edgeId => {
+                const edgeData = this.edges.get(edgeId);
+                if (edgeData && String(edgeData.to) === String(this.selectId)) {
+                    defaultRecordThinkingProcess.record_reason(this.selectId, `reason-${this.selectId}`, reasonText, edgeData.from);
+                }
+            });
             
             // Undo/Redo: 理由編集を記録
             if (undoRedoManager && oldReason !== reasonText) {
@@ -2751,8 +2771,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.ReasonNodeId.push(reasonNodeId);
         this.ReasonContent.push(reasonText);
 
-        // 理由をDBに保存
-        defaultRecordThinkingProcess.record_reason(this.selectId, reasonNodeId, reasonText);
+        // 理由をDBに保存（全てのエッジに対して記録する）
+        const connectedEdges = this.ownNetwork.getConnectedEdges(this.selectId);
+        connectedEdges.forEach(edgeId => {
+            const edgeData = this.edges.get(edgeId);
+            if (edgeData && String(edgeData.to) === String(this.selectId)) {
+                defaultRecordThinkingProcess.record_reason(this.selectId, reasonNodeId, reasonText, edgeData.from);
+            }
+        });
         console.log('理由を記録しました:', reasonNodeId, reasonText);
         
         // 理由が記述されたノードへのエッジを実線に変更（理由テキストも渡す）
@@ -2795,7 +2821,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     // 理由が記述されたノードへのエッジを実線に変更し、ホバー時に理由を表示する
-    updateEdgesToNodeWithReason(nodeId, reasonText = null) {
+    updateEdgesToNodeWithReason(nodeId, reasonText = null, sourceNodeId = null) {
         try {
             const nodeIdStr = String(nodeId);
 
@@ -2809,7 +2835,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             
             // 型差（number/string）やネットワーク状態差に強くするため、全エッジから to 一致を拾う
             const allEdges = this.edges.get();
-            const targetEdges = allEdges.filter(e => String(e.to) === nodeIdStr);
+            let targetEdges = allEdges.filter(e => String(e.to) === nodeIdStr);
+            
+            // sourceNodeIdが指定されている場合は、該当する特定のエッジ1本だけに絞り込む（複合キー特定）
+            if (sourceNodeId) {
+                targetEdges = targetEdges.filter(e => String(e.from) === String(sourceNodeId));
+            }
+
             if (!targetEdges || targetEdges.length === 0) {
                 console.log('ノードに接続されているエッジがありません:', nodeId);
                 return;
@@ -3220,10 +3252,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             }
         }
         // フィードバックの吹き出しを表示
-        this.showFeedbackTooltip();
+        this.showFeedbackTooltip('initial-complete');
     }
     
-    showFeedbackTooltip() {
+    showFeedbackTooltip(mode = 'edit') {
         const tooltip = document.getElementById("feedbackTooltip");
         if (!tooltip) {
             console.error("フィードバック用ツールチップの要素が見つかりませんでした。");
@@ -3262,7 +3294,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 lessonWhenLabel: 'その教訓はどのような時に活かせそうですか？',
                 lessonWhenPlaceholder: '例: 次回の準備開始時',
                 cancelBtn: 'キャンセル',
-                saveBtn: '内省記録を終える',
+                saveBtn: '振り返りを終える',
                 historyPanelLabel: '過去の記録',
                 historyTitle: '過去の記録',
                 lessonDeleteConfirm: 'この教訓を削除しますか？',
@@ -3384,12 +3416,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
         tooltip.classList.add('fl-card','fl-card--wide');
         tooltip.innerHTML = `
-    <button type="button" id="btnCancelFeedback" class="modal-close-v4-btn" title="閉じる" style="position: absolute; top: 12px; right: 12px; background: none; border: none; cursor: pointer; z-index: 10;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-    <div id="feedbackTooltipHeader" class="fl-header reflection-header-row" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; padding-right: 24px;">
+    <div id="feedbackTooltipHeader" class="fl-header reflection-header-row">
         <div class="reflection-main-title" style="font-weight:700; font-size:16px;">${t('headerTitle')}</div>
-        <button type="button" id="btnReflectionHistory" class="btn-view-past-logs" aria-controls="reflectionHistoryPanel" aria-expanded="false">${t('historyBtn')}</button>
+        <div class="header-actions-group">
+            <button type="button" id="btnReflectionHistory" class="btn-view-past-logs" aria-controls="reflectionHistoryPanel" aria-expanded="false">${t('historyBtn')}</button>
+            <button type="button" id="btnCancelFeedback" class="modal-close-v4-btn" title="閉じる">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
     </div>
     <div class="fl-body">
         <div class="feedback-layout">
@@ -3435,7 +3469,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             </div>
 
             <div class="reflection-footer-status" style="margin-top: 24px; width: 100%;">
-                <button type="button" class="save-status-text" id="node-reflection-save-status" disabled>保存済み</button>
+                ${mode === 'initial-complete'
+                    ? `<button type="button" class="btn-finish-reflection" id="btn-finish-reflection">${t('saveBtn')}</button>`
+                    : `<button type="button" class="save-status-text" id="node-reflection-save-status" disabled>保存済み</button>`
+                }
             </div>
         </form>
         </div>
@@ -3480,7 +3517,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         };
 
         // 保存ボタンのイベントリスナーを設定
-        this.setupTooltipAutoSave(tooltip);
+        this.setupTooltipAutoSave(tooltip, mode);
         this.setupTooltipDrag(tooltip);
         
         // 教訓タブ機能の設定
@@ -4047,12 +4084,24 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             });
         }
         
+        const finishBtn = document.getElementById("btn-finish-reflection");
+        if (finishBtn) {
+            finishBtn.addEventListener("click", () => {
+                executeSave();
+                try { tooltip.style.display = "none"; } catch (e) { console.warn('failed to close tooltip', e); }
+            });
+        }
+        
         const executeSave = () => {
             if (saveStatusBtn) {
                 saveStatusBtn.textContent = "保存中...";
                 saveStatusBtn.disabled = true;
                 saveStatusBtn.classList.remove("has-changes");
                 saveStatusBtn.classList.add("saving");
+            }
+            if (finishBtn) {
+                finishBtn.textContent = "保存中...";
+                finishBtn.disabled = true;
             }
 
             // Undo/Redo: 古いステータスを保存（保存ボタン押下時に取得）
@@ -4249,6 +4298,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         saveStatusBtn.textContent = "保存済み";
                         saveStatusBtn.classList.remove("saving");
                     }
+                    if (finishBtn) {
+                        finishBtn.textContent = "振り返りを終える";
+                        finishBtn.disabled = false;
+                    }
                 },
                 error: (error) => {
                     console.error("記録保存中にエラーが発生しました:", error);
@@ -4257,6 +4310,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         saveStatusBtn.classList.remove("saving");
                         saveStatusBtn.disabled = false;
                         saveStatusBtn.classList.add("has-changes");
+                    }
+                    if (finishBtn) {
+                        finishBtn.textContent = "保存失敗";
+                        finishBtn.disabled = false;
                     }
                 }
             });
@@ -4535,21 +4592,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                             this.selectId = dropNodeId;
                             try { sessionStorage.setItem('currentSelectId', dropNodeId); } catch(e) {}
                             
-                            // BoxDisplayの位置をドロップ先ノードの近くに設定
-                            const dropNodeBoundingBox = this.ownNetwork.getBoundingBox(dropNodeId);
-                            if (dropNodeBoundingBox) {
-                                const node = this.nodes.get(dropNodeId);
-                                const nodeX = node ? node.x : 0;
-                                const nodeScreenPos = this.ownNetwork.canvasToDOM({
-                                    x: nodeX,
-                                    y: dropNodeBoundingBox.bottom
-                                });
-                                const networkCanvas = document.getElementById("myProcessnetwork2");
-                                const canvasRect = networkCanvas.getBoundingClientRect();
-                                this.BoxDisplay.x = canvasRect.left + nodeScreenPos.x;
-                                this.BoxDisplay.y = canvasRect.top + nodeScreenPos.y + 20;
-                            }
-                            this.show_reason_input();
+                            // 結線時の新しい一画面モーダル「接続モード（connect）」起動
+                            this.openActionModal({
+                                mode: 'connect',
+                                parentNode: this.nodes.get(nodeId),
+                                childNode: this.nodes.get(dropNodeId),
+                                focusTarget: 'reason'
+                            });
                         }, 100);
                     }
                 }
@@ -5134,8 +5183,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }, 100);
     }
 
-    // モーダル一元管理（追加・編集）
-    openActionModal(mode, targetNodeId, focusTarget = 'name', providedReason = null) {
+    // モーダル一元管理（追加・編集・接続）
+    openActionModal(modeOrConfig, targetNodeId, focusTarget = 'name', providedReason = null) {
+        let config;
+        if (typeof modeOrConfig === 'object' && modeOrConfig !== null) {
+            config = modeOrConfig;
+        } else {
+            config = { mode: modeOrConfig, targetNodeId, focusTarget, providedReason };
+        }
+        
+        const mode = config.mode;
+        const fTarget = config.focusTarget || 'name';
+        const pReason = config.providedReason || null;
+        
         const modal = document.getElementById('modal-add-action');
         const parentTextSpan = document.getElementById('parent-node-text');
         const inputName = document.getElementById('action-name');
@@ -5150,21 +5210,27 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         let parentNode = null;
         let editNode = null;
-        let initialReason = providedReason || '';
+        let initialReason = pReason || '';
 
-        if (mode === 'add') {
-            parentNode = this.nodes.get(targetNodeId);
+        if (mode === 'connect') {
+            parentNode = config.parentNode;
+            editNode = config.childNode;
+            if (!parentNode || !editNode) return;
+            btnSubmit.textContent = '手段追加';
+            initialReason = ''; // 接続時は理由を空からスタート
+        } else if (mode === 'add') {
+            parentNode = this.nodes.get(config.targetNodeId);
             if (!parentNode) return;
             btnSubmit.textContent = '手段追加';
         } else if (mode === 'edit') {
-            editNode = this.nodes.get(targetNodeId);
+            editNode = this.nodes.get(config.targetNodeId);
             if (!editNode) return;
             
             btnSubmit.textContent = '更新';
             
             // 親ノードを探す
             const edges = this.edges.get();
-            const parentEdge = edges.find(edge => edge.to === targetNodeId);
+            const parentEdge = edges.find(edge => edge.to === config.targetNodeId);
             if (parentEdge && parentEdge.from) {
                 parentNode = this.nodes.get(parentEdge.from);
             } else {
@@ -5173,7 +5239,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             
             // 既存の理由を取得 (providedReason がない場合)
             if (!initialReason) {
-                const rIdx = this.ReasonConnectNodeId.indexOf(targetNodeId);
+                const rIdx = this.ReasonConnectNodeId.indexOf(config.targetNodeId);
                 if (rIdx !== -1 && this.ReasonContent[rIdx]) {
                     initialReason = this.ReasonContent[rIdx];
                 } else if (editNode.purpose && editNode.purpose.trim() !== '') {
@@ -5218,8 +5284,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             inputName.value = '';
             inputReason.value = '';
         } else if (mode === 'edit') {
-            inputName.value = editNode.label || editNode.topic || '';
+            const rawLabel = editNode.label || editNode.topic || '';
+            inputName.value = rawLabel.replace(/\r?\n|\r/g, '');
             inputReason.value = initialReason || '';
+        } else if (mode === 'connect') {
+            const rawLabel = editNode.label || editNode.topic || '';
+            inputName.value = rawLabel.replace(/\r?\n|\r/g, '');
+            inputReason.value = '';
         }
 
         // 高さも初期化
@@ -5310,10 +5381,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     this.ReasonContent.push(reasonText);
 
                     if (typeof defaultRecordThinkingProcess !== 'undefined') {
-                        defaultRecordThinkingProcess.record_reason(newNodeId, reasonNodeId, reasonText);
+                        defaultRecordThinkingProcess.record_reason(newNodeId, reasonNodeId, reasonText, parentNode ? parentNode.id : null);
                     }
                     
-                    this.updateEdgesToNodeWithReason(newNodeId, reasonText);
+                    this.updateEdgesToNodeWithReason(newNodeId, reasonText, parentNode ? parentNode.id : null);
                     
                     if (typeof undoRedoManager !== 'undefined') {
                         let targetEdgeId = null;
@@ -5334,10 +5405,48 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         });
                     }
                 }
+            } else if (mode === 'connect') {
+                // エッジはすでに接続済み。ラベルや理由の更新のみ行う。
+                if (newLabel !== (editNode.label || editNode.topic)) {
+                    this.editNode(editNode.id, newLabel);
+                }
+                if (reasonText) {
+                    const rIdx = this.ReasonConnectNodeId.indexOf(editNode.id);
+                    if (rIdx !== -1) {
+                        this.ReasonContent[rIdx] = reasonText;
+                        const reasonNodeId = this.ReasonNodeId[rIdx];
+                        if (typeof defaultRecordThinkingProcess !== 'undefined') {
+                            defaultRecordThinkingProcess.record_reason(editNode.id, reasonNodeId, reasonText, parentNode ? parentNode.id : null);
+                        }
+                    } else {
+                        const reasonNodeId = `reason-${editNode.id}`;
+                        this.ReasonConnectNodeId.push(editNode.id);
+                        this.ReasonNodeId.push(reasonNodeId);
+                        this.ReasonContent.push(reasonText);
+                        if (typeof defaultRecordThinkingProcess !== 'undefined') {
+                            defaultRecordThinkingProcess.record_reason(editNode.id, reasonNodeId, reasonText, parentNode ? parentNode.id : null);
+                        }
+                    }
+                    this.updateEdgesToNodeWithReason(editNode.id, reasonText, parentNode ? parentNode.id : null);
+                }
             } else if (mode === 'edit') {
                 // 既存編集ロジック
                 // ラベルの更新
                 this.editNode(targetNodeId, newLabel);
+                
+                // 親ノードIDを取得する
+                let actualParentNodeId = null;
+                if (parentNode) {
+                    actualParentNodeId = parentNode.id;
+                } else {
+                    const connectedEdges = this.ownNetwork.getConnectedEdges(targetNodeId);
+                    connectedEdges.forEach(edgeId => {
+                        const edgeData = this.edges.get(edgeId);
+                        if (edgeData && String(edgeData.to) === String(targetNodeId)) {
+                            actualParentNodeId = edgeData.from;
+                        }
+                    });
+                }
                 
                 // 理由の更新
                 if (reasonText) {
@@ -5346,7 +5455,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         this.ReasonContent[rIdx] = reasonText;
                         const reasonNodeId = this.ReasonNodeId[rIdx];
                         if (typeof defaultRecordThinkingProcess !== 'undefined') {
-                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, reasonText);
+                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, reasonText, actualParentNodeId);
                         }
                     } else {
                         // 新規で理由を追加
@@ -5355,10 +5464,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         this.ReasonNodeId.push(reasonNodeId);
                         this.ReasonContent.push(reasonText);
                         if (typeof defaultRecordThinkingProcess !== 'undefined') {
-                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, reasonText);
+                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, reasonText, actualParentNodeId);
                         }
                     }
-                    this.updateEdgesToNodeWithReason(targetNodeId, reasonText);
+                    this.updateEdgesToNodeWithReason(targetNodeId, reasonText, actualParentNodeId);
                 } else {
                     // 理由が空になった場合の処理（必要に応じて）
                     const rIdx = this.ReasonConnectNodeId.indexOf(targetNodeId);
@@ -5366,10 +5475,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         this.ReasonContent[rIdx] = '';
                         const reasonNodeId = this.ReasonNodeId[rIdx];
                         if (typeof defaultRecordThinkingProcess !== 'undefined') {
-                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, '');
+                            defaultRecordThinkingProcess.record_reason(targetNodeId, reasonNodeId, '', actualParentNodeId);
                         }
                     }
-                    this.updateEdgesToNodeWithReason(targetNodeId, '');
+                    this.updateEdgesToNodeWithReason(targetNodeId, '', actualParentNodeId);
                 }
             }
         });
@@ -5966,13 +6075,20 @@ class RecordThinkingProcess{
     }
 
     // 理由の記録
-    record_reason (node_id, reason_node_id, reason_text){
+    record_reason (node_id, reason_node_id, reason_text, source_node_id = null){
+        // DBのIDと一致させるため、プレフィックスを取り除く
+        if (source_node_id && typeof source_node_id === 'string') {
+            if (source_node_id.startsWith('topic-tag_')) source_node_id = source_node_id.replace('topic-tag_', '');
+            if (source_node_id.startsWith('versions_')) source_node_id = source_node_id.replace('versions_', '');
+        }
+
         $.ajax({
             url: "php/object_maneger.php",
             type: "POST",
             data: {node_id : node_id,
                 reason_node_id : reason_node_id,
                 reason_text : reason_text,
+                source_node_id : source_node_id,
                 purpose : 'record',
                 record_thing : 'reason'},
         });
@@ -6689,19 +6805,16 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                 let selectedContent = '';
                 try {
                     // まずマインドマップの現在選択ノード（jmnode）のテキストを取得して優先使用
-                    if (typeof _jm !== 'undefined' && _jm.get_selected_node) {
-                        const sel = _jm.get_selected_node();
-                        if (sel && sel.id) {
-                            const jmnodeEl = document.querySelector(`jmnode[nodeid="${sel.id}"]`);
-                            if (jmnodeEl) {
-                                // jmnode の子要素にアイコン等があるため、最初のテキストノードを取り出す
-                                const firstTextNode = Array.from(jmnodeEl.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim() !== '');
-                                if (firstTextNode) {
-                                    selectedContent = firstTextNode.nodeValue.trim();
-                                } else {
-                                    // fallback: 全てのテキストを結合してトリム
-                                    selectedContent = jmnodeEl.textContent.replace(/\s+/g, ' ').trim();
-                                }
+                    if (selected_node_id) {
+                        const jmnodeEl = document.querySelector(`jmnode[nodeid="${selected_node_id}"]`);
+                        if (jmnodeEl) {
+                            // jmnode の子要素にアイコン等があるため、最初のテキストノードを取り出す
+                            const firstTextNode = Array.from(jmnodeEl.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim() !== '');
+                            if (firstTextNode) {
+                                selectedContent = firstTextNode.nodeValue.trim();
+                            } else {
+                                // fallback: 全てのテキストを結合してトリム
+                                selectedContent = jmnodeEl.textContent.replace(/\s+/g, ' ').trim();
                             }
                         }
                     }
@@ -6754,6 +6867,106 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
             console.log("onodeの中身:", trigger_list_info.onode);
             console.log("pedgeの中身:", trigger_list_info.pedge);
             console.log("datesの中身:", trigger_list_info.dates);
+
+            // --- バージョン更新に伴うエッジ切断の防止 ---
+            let rootVersionId = null;
+            let rootAliases = new Set();
+            if (Array.isArray(trigger_list_info.node_versions) && trigger_list_info.node_versions.length > 0) {
+                const v = trigger_list_info.node_versions[trigger_list_info.node_versions.length - 1];
+                rootVersionId = String(v.node_version_id);
+                
+                if (selected_node_id) rootAliases.add(String(selected_node_id));
+                trigger_list_info.node_versions.forEach(version => {
+                    rootAliases.add(String(version.node_version_id));
+                });
+                
+                if (trigger_list_info.pedge) {
+                    trigger_list_info.pedge.forEach(edge => {
+                        if (rootAliases.has(String(edge.edge_start))) edge.edge_start = rootVersionId;
+                        if (rootAliases.has(String(edge.edge_end))) edge.edge_end = rootVersionId;
+                    });
+                }
+            }
+            
+            // --- 孤立ノードのフィルタリング（ルートからの到達可能性による完全なポジティブ抽出） ---
+            const pedges = trigger_list_info.pedge || [];
+            
+            // 1. ルートノードの特定（探索の起点）
+            const rootNodeIds = [];
+            let hasExplicitRoot = false;
+            if (Array.isArray(trigger_list_info.onode)) {
+                trigger_list_info.onode.forEach(n => {
+                    if (n.object_nodes_type === 'topic-tag' || n.object_nodes_type === 'root' || n.isroot) {
+                        rootNodeIds.push(String(n.object_node_id)); // 確実に文字列として扱う
+                        hasExplicitRoot = true;
+                    }
+                });
+            }
+            
+            // --- 最新の問いノード（バージョンID）を確実に探索の起点に追加 ---
+            if (typeof rootVersionId !== 'undefined' && rootVersionId) {
+                if (!rootNodeIds.includes(String(rootVersionId))) {
+                    rootNodeIds.push(String(rootVersionId));
+                    hasExplicitRoot = true;
+                }
+            }
+
+            // ★ネットワーク上に既に保持されている topic-tag や versions ノードの「本来のID」もルートとして拾い上げる
+            if (typeof processInstance !== 'undefined' && processInstance.nodes) {
+                const existingNodes = processInstance.nodes.get();
+                existingNodes.forEach(n => {
+                    if (n.group === 'topic-tag' || n.group === 'versions') {
+                        let rawId = String(n.id);
+                        if (rawId.startsWith('topic-tag_')) rawId = rawId.replace('topic-tag_', '');
+                        if (rawId.startsWith('versions_')) rawId = rawId.replace('versions_', '');
+                        if (!rootNodeIds.includes(rawId)) {
+                            rootNodeIds.push(rawId);
+                            hasExplicitRoot = true;
+                        }
+                    }
+                });
+            }
+            
+            // 2. エッジから単方向の隣接リスト（グラフ）を構築
+            const adjList = {};
+            const nodesWithEdges = new Set();
+            pedges.forEach(edge => {
+                const start = String(edge.edge_start);
+                const end = String(edge.edge_end);
+                if (start && end && start !== 'undefined' && end !== 'undefined') {
+                    if (!adjList[start]) adjList[start] = [];
+                    if (!adjList[end]) adjList[end] = [];
+                    adjList[start].push(end); // 逆引きを削除し、大元からの純粋な派生ツリーのみを辿る
+                    nodesWithEdges.add(start);
+                    nodesWithEdges.add(end);
+                }
+            });
+            
+            // 明示的なルートが見つからないマップ（SRL整理マップ等）の場合の安全なフォールバック
+            if (!hasExplicitRoot) {
+                // エッジを持っているノードはとりあえず全て起点とみなし、完全に線がないノードだけを除外する
+                nodesWithEdges.forEach(id => rootNodeIds.push(id));
+            }
+            
+            // 3. BFS（幅優先探索）でルートから辿れるノードIDをすべて網羅
+            const reachableNodeIds = new Set(rootNodeIds);
+            const queue = [...rootNodeIds];
+            
+            while (queue.length > 0) {
+                const currentId = queue.shift();
+                const neighbors = adjList[currentId] || [];
+                for (const neighborId of neighbors) {
+                    if (!reachableNodeIds.has(neighborId)) {
+                        reachableNodeIds.add(neighborId);
+                        queue.push(neighborId);
+                    }
+                }
+            }
+
+            if (Array.isArray(trigger_list_info.onode)) {
+                // 4. ルートから辿れる（繋がっている）ノードだけを実直に残す
+                trigger_list_info.onode = trigger_list_info.onode.filter(n => reachableNodeIds.has(String(n.object_node_id)));
+            }
 
             trigger_list_info.onode.map((n) => {
                 const reloadX = parseFloat(n.node_x) + offsetX;
@@ -7248,6 +7461,21 @@ function ShowRelatedProcess(mode){
 }
 
 function showThinkingProcessMap(clickedNodeId, isShiftKey) {
+    // 整理マップが作成（または開かれた）瞬間に、jsMind側のノードへ即座にコンパスアイコンを付与する
+    if (clickedNodeId) {
+        try {
+            const nodeElement = document.querySelector(`jmnode[nodeid="${clickedNodeId}"]`);
+            if (nodeElement) {
+                const existingIcon = nodeElement.querySelector('.compass-icon');
+                if (!existingIcon && typeof createNodeIcon === 'function') {
+                    createNodeIcon(nodeElement);
+                }
+            }
+        } catch (e) {
+            console.warn('コンパスアイコンの即時付与に失敗しました:', e);
+        }
+    }
+
     document.getElementById('feedback_area').style.display = "block";
     document.getElementById('xml_upload_area').style.display = "block";
     $('#process_network_container').css('display', 'flex');

@@ -128,7 +128,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         */
     $result_processmap_edge = $mysqli->query("SELECT object_edge_id, edge_start, edge_end, label FROM object_edges
         WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0) 
-           OR edge_end IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0)) 
+           OR edge_start IN (".$nodeIdInClause.")
+           OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id IN (".$nodeIdInClause.")))
         AND deleted = 0");
     
     if (!$result_processmap_edge) {
@@ -139,7 +140,8 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             'pedge_error' => $mysqli->error,
             'pedge_query' => "SELECT object_edge_id, edge_start, edge_end, label FROM object_edges
                 WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0) 
-                   OR edge_end IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0)) 
+                   OR edge_start IN (".$nodeIdInClause.")
+                   OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id IN (".$nodeIdInClause.")))
                 AND deleted = 0"
         ]);
     } else {
@@ -509,7 +511,9 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             FROM 
                 object_edges
             WHERE 
-                (edge_start IN ($ids_list) OR edge_end IN ($ids_list))
+                (edge_start IN ($ids_list) 
+                 OR edge_start IN (".$nodeIdInClause.")
+                 OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id IN (".$nodeIdInClause.")))
                 AND deleted = 0
         ";
         error_log("SQL edges: $sql_edges");
