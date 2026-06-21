@@ -318,31 +318,38 @@ body #main_title {
 	height: 100%;
 	width: 100%;
 	box-sizing: border-box;
+	position: relative;
 }
 
 #jsmind_nav {
 	width: 100%;
 	min-width: 0;
-	height: 38px;
+	height: auto;
 	display: flex;
-	align-items: center;
-	padding: 0 10px;
+	align-items: flex-start; /* flex-startにして上寄せにする */
+	padding: 10px 10px 0 10px; /* 上部に少し余白を */
 	gap: 6px;
 	font-size: 12px;
-	background-color: #f8fafc;
-	border-bottom: 1px solid #e2e8f0;
-	border-top: none;
-	border-left: none;
-	border-right: none;
+	background-color: transparent;
+	border: none;
 	margin: 0;
 	box-sizing: border-box;
 	overflow-x: auto;
-	overflow-y: hidden;
+	overflow-y: visible;
 	float: none;
 	flex-shrink: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 10;
+	pointer-events: none;
 }
 
-#jsmind_nav button,
+#jsmind_nav > * {
+	pointer-events: auto;
+}
+
+#jsmind_nav button:not(.toolbar-btn),
 #jsmind_nav .button3,
 #jsmind_nav .button4 {
 	margin: 0 !important;
@@ -952,7 +959,7 @@ h3 {
 	box-shadow: 8px 0 20px rgba(16,24,40,0.12);
 	transform: translateX(-100%);
 	transition: transform 0.28s ease;
-	z-index: 9997;
+	z-index: 9999;
 	display: flex;
 	flex-direction: column;
 }
@@ -1050,6 +1057,12 @@ h3 {
 	gap: 16px;
 	margin-bottom: 12px;
 	border-bottom: 1px solid rgba(16,24,40,0.08);
+	position: sticky;
+	top: -12px;
+	padding-top: 12px;
+	margin-top: -12px;
+	background: #f8fafc;
+	z-index: 100;
 }
 .srl-lessons-subtab {
 	padding: 6px 4px;
@@ -1904,74 +1917,7 @@ select[name="mttime_list"] {
 	background-color: #ffa500;
 }
 
-/* Make question/answer buttons fit their text and avoid wrapping inside the button */
-#addQNodeBtn, #addAnodeBtn {
-	min-width: 0; /* allow button to shrink to text width */
-	padding: 6px 12px;
-	white-space: nowrap; /* prevent text wrapping inside button */
-	display: inline-flex; /* size to content */
-	width: auto;
-}
 
-/* Inner span: prevent wrapping and let button width follow text */
-#addQNodeBtn span, #addAnodeBtn span {
-	display: inline-block;
-	white-space: nowrap;
-}
-
-/* Screenshot button: force auto width and no-wrap (override inline width if present) */
-#screenshotBtn {
-	width: auto !important;
-	min-width: 0;
-	padding: 6px 10px;
-	white-space: nowrap;
-	display: inline-flex;
-}
-
-#screenshotBtn span {
-	display: inline-block;
-	white-space: nowrap;
-}
-
-/* Make the "答えノード追加" button use the same color as jmnode[type="answer"] */
-#addAnodeBtn {
-	background: #f39c12 !important; /* jmnode[type=answer] の背景色 */
-	color: #000 !important;
-	border-color: #d97b0f !important;
-}
-#addAnodeBtn:hover {
-	background: #d68910 !important;
-}
-
-/* Make the "ラベル追加" button use a deep green color */
-#addLabelBtn {
-	background: #006400 !important; /* 深緑 */
-	color: #fff !important;
-	border-color: #005000 !important;
-}
-#addLabelBtn:hover {
-	background: #005500 !important;
-}
-
-/* Make the node-remove button clearly red (for deletion) */
-#removeNodeBtn {
-	background: #e74c3c !important;
-	color: #fff !important;
-	border-color: #c0392b !important;
-}
-#removeNodeBtn:hover {
-	background: #c0392b !important;
-}
-
-/* Make zoom in/out buttons gray */
-#zoomInBtn, #zoomOutBtn {
-	background: #6c757d !important; /* bootstrap secondary gray */
-	color: #fff !important;
-	border-color: #5a6268 !important;
-}
-#zoomInBtn:hover, #zoomOutBtn:hover {
-	background: #5a6268 !important;
-}
 
 .button5 {
 	background-color: #999;
@@ -2555,7 +2501,7 @@ select[name="mttime_list"] {
 	box-shadow: -8px 0 20px rgba(16,24,40,0.12);
 	transform: translateX(100%);
 	transition: transform 0.28s ease;
-	z-index: 9997;
+	z-index: 9999;
 	display: flex;
 	flex-direction: column;
 }
@@ -2628,6 +2574,6 @@ select[name="mttime_list"] {
 
 /* ハイライト対象の「問い」と「答え」ノード共通のスタイル */
 jmnode.is-process-active, .jm-node.is-process-active {
-  border: 2px solid #ed8936 !important;
-  box-shadow: 0 0 8px rgba(237, 137, 54, 0.3) !important; /* ほんのりとした残光 */
+  border: 2px solid #0ea5e9 !important;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2), 0 4px 12px rgba(0,0,0,0.1) !important;
 }

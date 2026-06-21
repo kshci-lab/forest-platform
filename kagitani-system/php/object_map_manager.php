@@ -118,48 +118,87 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         $sqlObjectNode = 'SELECT ' . implode(', ', $selectParts) . " FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0";
         $result_object_node = $mysqli->query($sqlObjectNode);
     $object_node = [];
+    $node_map = []; // object_node_id をキーにして取得済みか判定
     while ($row = $result_object_node->fetch_assoc()) {
-        array_push($object_node, $row);
+        $object_node[] = $row;
+        $node_map[$row['object_node_id']] = true;
     }
-    $return_data = array_merge($return_data, ['onode' => $object_node]);
 
     /*
-        * 目標手段階層マップのエッジデータの取得
-        */
-    $result_processmap_edge = $mysqli->query("SELECT object_edge_id, edge_start, edge_end, label FROM object_edges
-        WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0) 
-           OR edge_start IN (".$nodeIdInClause.")
-           OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id IN (".$nodeIdInClause.")))
-        AND deleted = 0");
+     * 目標手段階層マップのエッジデータの取得
+     */
+    $base_nodes_sql = "SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0";
+    $base_versions_sql = "SELECT node_version_id FROM node_versions WHERE node_id IN (".$nodeIdInClause.")";
+    
+    // エッジの始点または終点が、現在のマップに属しているノード群（object_nodes または node_versions、およびマップノード自体）であるエッジを取得
+    $edge_condition = "
+        (edge_start IN ($base_nodes_sql) 
+      OR edge_start IN (".$nodeIdInClause.")
+      OR edge_start IN ($base_versions_sql)
+      OR edge_end IN ($base_nodes_sql)
+      OR edge_end IN (".$nodeIdInClause.")
+      OR edge_end IN ($base_versions_sql))
+    ";
+    
+    $edge_query = "SELECT object_edge_id, edge_start, edge_end, label FROM object_edges WHERE $edge_condition AND deleted = 0";
+    $result_processmap_edge = $mysqli->query($edge_query);
     
     if (!$result_processmap_edge) {
-        // クエリエラーを出力
         error_log("SQLエラー: " . $mysqli->error);
         $return_data = array_merge($return_data, [
             'pedge' => [],
             'pedge_error' => $mysqli->error,
-            'pedge_query' => "SELECT object_edge_id, edge_start, edge_end, label FROM object_edges
-                WHERE (edge_start IN (SELECT object_node_id FROM object_nodes WHERE node_id IN (".$nodeIdInClause.") AND deleted = 0) 
-                   OR edge_start IN (".$nodeIdInClause.")
-                   OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id IN (".$nodeIdInClause.")))
-                AND deleted = 0"
+            'pedge_query' => $edge_query
         ]);
     } else {
         $processmap_edge = [];
+        $missing_node_ids = [];
         while ($row = $result_processmap_edge->fetch_assoc()) {
             $processmap_edge[] = $row;
+            
+            // 接続先/元ノードが未取得ならIDを記録
+            if (!isset($node_map[$row['edge_start']])) {
+                $missing_node_ids[] = "'" . $mysqli->real_escape_string($row['edge_start']) . "'";
+            }
+            if (!isset($node_map[$row['edge_end']])) {
+                $missing_node_ids[] = "'" . $mysqli->real_escape_string($row['edge_end']) . "'";
+            }
         }
         $return_data = array_merge($return_data, ['pedge' => $processmap_edge]);
+        
+        // 追加取得（1ホップ先の共有ノードなど）
+        if (!empty($missing_node_ids)) {
+            $missingIdsStr = implode(',', array_unique($missing_node_ids));
+            $sqlMissingNode = 'SELECT ' . implode(', ', $selectParts) . " FROM object_nodes WHERE object_node_id IN ($missingIdsStr) AND deleted = 0";
+            $result_missing = $mysqli->query($sqlMissingNode);
+            if ($result_missing) {
+                while ($row = $result_missing->fetch_assoc()) {
+                    if (!isset($node_map[$row['object_node_id']])) {
+                        $object_node[] = $row;
+                        $node_map[$row['object_node_id']] = true;
+                    }
+                }
+            }
+        }
     }
+    
+    $return_data = array_merge($return_data, ['onode' => $object_node]);
 
     /*
     * 目標手段階層マップの日付データの取得（選択されたノードに紐づくobject_nodesから関連するobject_nodes_historiesの日付を取得）
     */
+    $escaped_node_keys = array_map(function($id) use ($mysqli) { return "'" . $mysqli->real_escape_string($id) . "'"; }, array_keys($node_map));
+    $allNodeIdsStr = implode(',', $escaped_node_keys);
+    $date_condition = "o_nodes.node_id IN (".$nodeIdInClause.")";
+    if (!empty($allNodeIdsStr)) {
+        $date_condition = "($date_condition OR o_nodes.object_node_id IN ($allNodeIdsStr))";
+    }
+
     $date_sql = "
         SELECT DISTINCT DATE(onh.appeared_at) AS appeared_date
         FROM object_nodes_histories onh
         INNER JOIN object_nodes o_nodes ON onh.object_node_id = o_nodes.object_node_id
-        WHERE o_nodes.node_id IN (".$nodeIdInClause.")
+        WHERE $date_condition
         AND o_nodes.deleted = 0
         AND onh.appeared_at IS NOT NULL
         ORDER BY appeared_date ASC

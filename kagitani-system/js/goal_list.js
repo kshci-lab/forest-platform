@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentYear = goalYear;
             }
 
-            html += '<div class="weekly-goal-card-container journal-card" data-goal-idx="' + idx + '">'
+            html += '<div class="weekly-goal-card-container journal-card" data-goal-idx="' + idx + '" title="クリックすると、ここに含まれるすべての問いのSRL整理マップを同時に開くことができます">'
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
                 + '<span class="weekly-goal-date-range journal-date" data-idx="' + idx + '" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
                 + '<div class="btn-reflect-container">'

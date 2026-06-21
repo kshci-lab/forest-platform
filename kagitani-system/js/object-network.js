@@ -522,7 +522,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     values.shadowSize = 18;
                     values.shadowX = 4;
                     values.shadowY = 4;
-                }
+                },
+                label: false // ホバー時にフォントが太文字になって四角のサイズが変わるバグを防止
             },
             scaling: { min: 10, max: 30 }
         },
@@ -624,8 +625,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             this.ownNetwork.on('dragStart', this.dragstart.bind(this));
             this.ownNetwork.on('dragEnd', this.dragend.bind(this));
             this.ownNetwork.on('doubleClick', this.doubleclick.bind(this));
-            this.ownNetwork.on("oncontext", this.onContext.bind(this));
+            // disable oncontext
+            // this.ownNetwork.on("oncontext", this.onContext.bind(this));
             this.ownNetwork.on('select', this.selectdelete.bind(this));
+            this.ownNetwork.on('selectNode', this.onNodeSelectedForToolbar.bind(this));
+            this.ownNetwork.on('deselectNode', this.onNodeDeselectedForToolbar.bind(this));
+            this.ownNetwork.on('dragging', this.onNodeDraggingForToolbar.bind(this));
+            this.ownNetwork.on('zoom', this.onNodeDraggingForToolbar.bind(this));
             
             // マウス移動による拡張ホバー検出
             this.ownNetwork.on("hoverNode", (params) => {
@@ -868,9 +874,12 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //オントロジーノードを選択不可に
     selectdelete(params) {
-        if (this.nodes.get(params.nodes[0]).shape == "ellipse") {
-            // 選択を解除
-            this.ownNetwork.setSelection({ nodes: [] });
+        if (params.nodes && params.nodes.length > 0) {
+            const node = this.nodes.get(params.nodes[0]);
+            if (node && node.shape == "ellipse") {
+                // 選択を解除
+                this.ownNetwork.setSelection({ nodes: [] });
+            }
         }
     }
 
@@ -986,12 +995,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     enableEditEdge() {
         // エッジを編集するときは，ノードの動きを止める
         const button = document.getElementById("process_startEditEdge");
-        const buttonText = button.querySelector(".button-text");
-        if (buttonText) {
-            buttonText.textContent = "エッジ追加終了";
-        } else {
-            // フォールバック: value属性も設定（古いHTMLの場合）
-            button.value = "エッジ追加終了";
+        if (button) {
+            const buttonText = button.querySelector(".button-text");
+            if (buttonText) {
+                buttonText.textContent = "エッジ追加終了";
+            } else {
+                // フォールバック: value属性も設定（古いHTMLの場合）
+                button.value = "エッジ追加終了";
+            }
+            button.title = "エッジ追加終了";
         }
         button.title = "エッジ追加終了";
         
@@ -1003,12 +1015,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     //エッジ編集できない場合の処理
     disableEditEdge() {
         const button = document.getElementById("process_startEditEdge");
-        const buttonText = button.querySelector(".button-text");
-        if (buttonText) {
-            buttonText.textContent = "エッジ追加";
-        } else {
-            // フォールバック: value属性も設定（古いHTMLの場合）
-            button.value = "エッジ追加";
+        if (button) {
+            const buttonText = button.querySelector(".button-text");
+            if (buttonText) {
+                buttonText.textContent = "エッジ追加";
+            } else {
+                // フォールバック: value属性も設定（古いHTMLの場合）
+                button.value = "エッジ追加";
+            }
+            button.title = "エッジ追加";
         }
         button.title = "エッジ追加";
         
@@ -1068,15 +1083,119 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             this.networkClick(params);
         });
 
-        // 右クリックイベントを追加
-        network.on("oncontext", (params) => {
-            this.onContext(params);
+        // 衝突回避ロジックを自動実行
+        network.on("afterDrawing", (ctx) => {
+            if (this._needsCollisionResolution) {
+                this._needsCollisionResolution = false;
+                this.resolveCollisions();
+            }
         });
 
+        // 初回ロード時に一回避ける
+        this._needsCollisionResolution = true;
         return network;
 
         // this.setCanvasOptions(load);
         // return network;
+    }
+
+    /*
+     * ノードの衝突解決ロジック
+     */
+    resolveCollisions() {
+        if (!this.nodes || !this.ownNetwork) return;
+        
+        const nodesData = this.nodes.get();
+        if (nodesData.length === 0) return;
+        
+        let collisionFound = true;
+        let iter = 0;
+        const maxIter = 50;
+        const safetyMargin = 30; // ノード間を開ける最低マージン
+        let updates = [];
+        
+        let posMap = {};
+        nodesData.forEach(n => {
+            posMap[n.id] = { x: n.x || 0, y: n.y || 0 };
+        });
+        
+        while (collisionFound && iter < maxIter) {
+            collisionFound = false;
+            iter++;
+            
+            for (let i = 0; i < nodesData.length; i++) {
+                for (let j = i + 1; j < nodesData.length; j++) {
+                    const n1 = nodesData[i];
+                    const n2 = nodesData[j];
+                    
+                    let bb1 = this.ownNetwork.getBoundingBox(n1.id);
+                    let bb2 = this.ownNetwork.getBoundingBox(n2.id);
+                    if (!bb1) bb1 = { left: (n1.x || 0) - 100, right: (n1.x || 0) + 100, top: (n1.y || 0) - 20, bottom: (n1.y || 0) + 20 };
+                    if (!bb2) bb2 = { left: (n2.x || 0) - 100, right: (n2.x || 0) + 100, top: (n2.y || 0) - 20, bottom: (n2.y || 0) + 20 };
+                    
+                    // 現在のオフセットを加算
+                    const dx1 = posMap[n1.id].x - (n1.x || 0);
+                    const dy1 = posMap[n1.id].y - (n1.y || 0);
+                    const dx2 = posMap[n2.id].x - (n2.x || 0);
+                    const dy2 = posMap[n2.id].y - (n2.y || 0);
+                    
+                    const left1 = bb1.left + dx1 - safetyMargin/2;
+                    const right1 = bb1.right + dx1 + safetyMargin/2;
+                    const top1 = bb1.top + dy1 - safetyMargin/2;
+                    const bottom1 = bb1.bottom + dy1 + safetyMargin/2;
+                    
+                    const left2 = bb2.left + dx2 - safetyMargin/2;
+                    const right2 = bb2.right + dx2 + safetyMargin/2;
+                    const top2 = bb2.top + dy2 - safetyMargin/2;
+                    const bottom2 = bb2.bottom + dy2 + safetyMargin/2;
+                    
+                    if (left1 < right2 && right1 > left2 && top1 < bottom2 && bottom1 > top2) {
+                        collisionFound = true;
+                        
+                        const cx1 = (left1 + right1)/2;
+                        const cy1 = (top1 + bottom1)/2;
+                        const cx2 = (left2 + right2)/2;
+                        const cy2 = (top2 + bottom2)/2;
+                        
+                        let diffX = cx1 - cx2;
+                        let diffY = cy1 - cy2;
+                        if (diffX === 0 && diffY === 0) {
+                            diffX = Math.random() - 0.5;
+                            diffY = Math.random() - 0.5;
+                        }
+                        
+                        if (Math.abs(diffX) > Math.abs(diffY)) {
+                            // 水平方向に押し出す
+                            const overlapX = ((right1 - left1)/2 + (right2 - left2)/2) - Math.abs(diffX);
+                            const push = (overlapX + 2) / 2 * (diffX > 0 ? 1 : -1);
+                            posMap[n1.id].x += push;
+                            posMap[n2.id].x -= push;
+                        } else {
+                            // 垂直方向に押し出す
+                            const overlapY = ((bottom1 - top1)/2 + (bottom2 - top2)/2) - Math.abs(diffY);
+                            const push = (overlapY + 2) / 2 * (diffY > 0 ? 1 : -1);
+                            posMap[n1.id].y += push;
+                            posMap[n2.id].y -= push;
+                        }
+                    }
+                }
+            }
+        }
+        
+        nodesData.forEach(n => {
+            if (Math.abs(posMap[n.id].x - (n.x || 0)) > 0.1 || Math.abs(posMap[n.id].y - (n.y || 0)) > 0.1) {
+                updates.push({ 
+                    id: n.id, 
+                    x: posMap[n.id].x, 
+                    y: posMap[n.id].y,
+                    color: n.color // 座標更新時に色がリセットされるのを防ぐため、元の色を維持する
+                });
+            }
+        });
+        
+        if (updates.length > 0) {
+            this.nodes.update(updates);
+        }
     }
 
     /*
@@ -1093,10 +1212,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // 問いノード（topic-tag）の場合の色設定
         if (node_type === "topic-tag") {
-            node_color = '#7eb6e6'; // 青色
-            border_color = '#48bb78'; // 緑色の枠線
-            border_width = 3;       // 太い枠線
-            text_color = '#333';    // 暗い文字色
+            node_color = '#0f172a'; // 濃いブルー（Target/Goal）
+            border_color = '#38bdf8'; // スカイブルーの枠線
+            border_width = 2;       // 枠線
+            text_color = '#ffffff'; // 白文字
             position_fixed = true;  // 固定位置
         }
 
@@ -1174,6 +1293,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         this.nodes.add(newNode);
+        this._needsCollisionResolution = true;
         const boundingBox = this.ownNetwork.getBoundingBox(node_id);
         node_y += Math.floor(((boundingBox.bottom)-(boundingBox.top))/2);
         this.nodes.update({
@@ -1297,11 +1417,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // 問いノード（topic-tag）の場合の色設定
         if (node_type === "topic-tag") {
-            node_color = '#7eb6e6'; // 青色
-            border_color = '#48bb78'; // 緑色の枠線
-            border_width = 3;       // 太い枠線
+            node_color = '#0f172a'; // 濃いブルー（Target/Goal）
+            border_color = '#38bdf8'; // スカイブルーの枠線
+            border_width = 2;       // 枠線
             border_width_selected = 4;
-            text_color = '#333';    // 暗い文字色
+            text_color = '#ffffff'; // 白文字
             position_fixed = true;  // 固定位置
         }
 
@@ -1683,7 +1803,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             update_edge.to = trigger_id;
             update_edge.group = "trigger_from";
             update_edge.smooth = true;
-            defaultThinkingProcess.edges.update(update_edge);
+            this.edges.update(update_edge);
         }
 
         //　trigger_toの設定
@@ -1696,7 +1816,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             smooth: true,
             fixed: true,
         };
-        defaultThinkingProcess.edges.add(newEdge);
+        this.edges.add(newEdge);
 
         //triggerとなるノードを追加
         const newNode = {
@@ -1710,13 +1830,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             fixed: false,
             x: node_x, y: node_y,
         };
-        defaultThinkingProcess.nodes.add(newNode);
+        this.nodes.add(newNode);
+        this._needsCollisionResolution = true;
 
         if(flag == "New"){
             defaultRecordThinkingProcess.record_trigger(trigger_id, activity_id, from_node, to_node, t_time, t_type, t_label, node_x, node_y);
         }
 
-        return defaultThinkingProcess.edges, defaultThinkingProcess.nodes;
+        return this.edges, this.nodes;
     }
 
     addReloadEdge(edge_id, edge_start, edge_end, edge_label) {
@@ -2293,123 +2414,81 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
     }
 
-    // 右クリック時
-    onContext(params) {
-        // 過去データ表示時は右クリック操作を無効化
-        if (this.isViewingPastData) {
-            console.log('過去データ表示中のため、右クリック操作が無効化されています');
-            return;
-        }
+    onNodeSelectedForToolbar(params) {
+        console.log("onNodeSelectedForToolbar Fired!", params);
+        if (this.isViewingPastData) return;
         
-        this.nodeConnectEnabled = false;
-
         if (params.nodes.length == 1) {
+            const selectId = params.nodes[0];
+            this.selectId = selectId;
+            sessionStorage.setItem('currentSelectId', selectId);
+            
+            const nodeObj = this.nodes.get(selectId);
+            console.log("Selected nodeObj:", nodeObj);
+            if (!nodeObj) return;
+            
+            const nodeGroup = nodeObj.group;
+            // 一番上のノード（versions, versionsBro）や各種タグにはツールバーを表示しない
+            if(nodeGroup === "reflection-tag" || nodeGroup === "time-tag" || nodeGroup === "ontology-tag" || nodeGroup === "goal-tag" || nodeGroup === "versions" || nodeGroup === "versionsBro") {
+                console.log("Ignored nodeGroup:", nodeGroup);
+                return; // don't show toolbar for tags or version nodes
+            }
+            
             const NetworkMenu = document.getElementById('t_Process_conmenu');
-            this.selectId = params.nodes[0]; // ここで選択されたノードIDを設定
-            console.log(`右クリックされたノードID: ${this.selectId}`); // デバッグ用ログ
+            if(!NetworkMenu) return;
             
-            // セッションストレージにも保存してバックアップとする
-            sessionStorage.setItem('currentSelectId', this.selectId);
+            // Calculate DOM position
+            const nodePosition = this.ownNetwork.getPositions([selectId])[selectId];
+            const domPosition = this.ownNetwork.canvasToDOM(nodePosition);
+            const myProcessnetworkElem = document.getElementById("myProcessnetwork");
+            const mynetPosition = myProcessnetworkElem ? myProcessnetworkElem.getBoundingClientRect() : {left: 0, top: 0};
             
-            const pointerX = params.pointer.DOM.x;
-            const pointerY = params.pointer.DOM.y;
-            const mynetPosition = document.getElementById("myProcessnetwork2").getBoundingClientRect();
+            // Position above the node
+            const menuX = domPosition.x + mynetPosition.left;
+            const menuY = domPosition.y + mynetPosition.top - 40; // 40px above node center
             
-            // 画面端での位置調整
-            const menuWidth = 320;
-            const menuHeight = 280;
-            let menuX = pointerX + mynetPosition.left + 20;
-            let menuY = pointerY + mynetPosition.top + 20;
+            NetworkMenu.style.left = menuX + 'px';
+            NetworkMenu.style.top = menuY + 'px';
+            NetworkMenu.style.display = 'block';
             
-            // 右端チェック
-            if (menuX + menuWidth > window.innerWidth) {
-                menuX = pointerX + mynetPosition.left - menuWidth - 20;
-            }
-            
-            // 下端チェック
-            if (menuY + menuHeight > window.innerHeight) {
-                menuY = pointerY + mynetPosition.top - menuHeight - 20;
-            }
-            
-            this.BoxDisplay.x = menuX;
-            this.BoxDisplay.y = menuY;
-            
-            NetworkMenu.style.left = this.BoxDisplay.x + 'px';
-            NetworkMenu.style.top = this.BoxDisplay.y + 'px';
-            NetworkMenu.style.display = "block";
-            
-            // アクセシビリティ：最初のメニュー項目にフォーカス
+            // Allow CSS transition to trigger by adding visible class after display block
             setTimeout(() => {
-                const firstMenuItem = NetworkMenu.querySelector('.context-menu-link');
-                if (firstMenuItem) {
-                    firstMenuItem.focus();
-                }
+                NetworkMenu.classList.add('visible');
             }, 10);
             
-            // キーボードナビゲーションの設定
-            this.setupContextMenuKeyboardNavigation(NetworkMenu);
-            
-            if(this.OntologyConnectNodeId.indexOf(this.selectId) !== -1){
-                document.getElementById("process_conmenu3").style.display = "block";
+            // 中断ボタンは常に表示
+            const pauseBtn = document.getElementById("object_conmenu3");
+            if (pauseBtn) {
+                pauseBtn.style.display = "inline-flex";
             }
-            
-            // ESCキーでメニューを閉じる
-            const closeMenuOnEsc = (e) => {
-                if (e.key === 'Escape') {
-                    NetworkMenu.style.display = 'none';
-                    document.removeEventListener('keydown', closeMenuOnEsc);
-                }
-            };
-            document.addEventListener('keydown', closeMenuOnEsc);
-            
-            // メニュー外クリックで閉じる
-            const closeMenuOnOutsideClick = (e) => {
-                if (!NetworkMenu.contains(e.target)) {
-                    NetworkMenu.style.display = 'none';
-                    document.removeEventListener('click', closeMenuOnOutsideClick);
-                }
-            };
-            setTimeout(() => {
-                document.addEventListener('click', closeMenuOnOutsideClick);
-            }, 10);
+        } else {
+            this.onNodeDeselectedForToolbar();
         }
     }
 
-    // キーボードナビゲーション設定
-    setupContextMenuKeyboardNavigation(menu) {
-        const menuItems = menu.querySelectorAll('.context-menu-link');
-        let currentIndex = 0;
-        
-        const handleKeyDown = (e) => {
-            switch(e.key) {
-                case 'ArrowDown':
-                    e.preventDefault();
-                    currentIndex = (currentIndex + 1) % menuItems.length;
-                    menuItems[currentIndex].focus();
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    currentIndex = currentIndex === 0 ? menuItems.length - 1 : currentIndex - 1;
-                    menuItems[currentIndex].focus();
-                    break;
-                case 'Enter':
-                case ' ':
-                    e.preventDefault();
-                    menuItems[currentIndex].click();
-                    break;
-                case 'Escape':
-                    menu.style.display = 'none';
-                    break;
+    onNodeDeselectedForToolbar(params) {
+        const NetworkMenu = document.getElementById('t_Process_conmenu');
+        if (!NetworkMenu) return;
+        NetworkMenu.classList.remove('visible');
+        setTimeout(() => {
+            if(!NetworkMenu.classList.contains('visible')) {
+                NetworkMenu.style.display = 'none';
             }
-        };
-        
-        menuItems.forEach((item, index) => {
-            item.setAttribute('tabindex', '0');
-            item.addEventListener('focus', () => {
-                currentIndex = index;
-            });
-            item.addEventListener('keydown', handleKeyDown);
-        });
+        }, 200); // match CSS transition duration
+    }
+
+    onNodeDraggingForToolbar(params) {
+        // Hide or update position while dragging/zooming
+        const NetworkMenu = document.getElementById('t_Process_conmenu');
+        if (NetworkMenu && NetworkMenu.classList.contains('visible') && this.selectId) {
+            const nodePosition = this.ownNetwork.getPositions([this.selectId])[this.selectId];
+            if(nodePosition) {
+                const domPosition = this.ownNetwork.canvasToDOM(nodePosition);
+                const mynetPosition = document.getElementById("myProcessnetwork2").getBoundingClientRect();
+                NetworkMenu.style.left = (domPosition.x + mynetPosition.left) + 'px';
+                NetworkMenu.style.top = (domPosition.y + mynetPosition.top - 40) + 'px';
+            }
+        }
     }
 
     // キーボードイベントリスナーの削除
@@ -2422,7 +2501,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //ラベルの選択（完了）
     show_select (){
-        document.getElementById('t_Process_conmenu').style.display = "none";
+        this.onNodeDeselectedForToolbar();
         
         // selectIdが設定されているかチェック
         if (!this.selectId) {
@@ -2451,14 +2530,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     ContentmenuCancel(){
-        const menu = document.getElementById('t_Process_conmenu');
-        menu.style.display = "none";
-        
-        // フェードアウトアニメーションを追加
-        menu.style.animation = 'contextMenuFadeOut 0.15s ease-in';
-        setTimeout(() => {
-            menu.style.animation = '';
-        }, 150);
+        this.onNodeDeselectedForToolbar();
         
         // セッションストレージもクリア
         sessionStorage.removeItem('currentSelectId');
@@ -2472,7 +2544,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //マインドマップとネットワークつなげる
     connect_network (){
-        document.getElementById('t_Process_conmenu').style.display = "none";
+        this.onNodeDeselectedForToolbar();
         this.nodeConnectEnabled = true;
     }
 
@@ -2509,7 +2581,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         if (tProcessLabelselect) tProcessLabelselect.style.display = "none";
         
         // 右クリックメニューを非表示にする
-        document.getElementById('t_Process_conmenu').style.display = "none";
+        this.onNodeDeselectedForToolbar();
         
         // selectIdが設定されているかチェック
         if (!this.selectId) {
@@ -2888,7 +2960,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //完了予定を記述する機能
     show_time_input (){
-        document.getElementById('t_Process_conmenu').style.display = "none";
+        this.onNodeDeselectedForToolbar();
         
         // selectIdが設定されているかチェック
         if (!this.selectId) {
@@ -2998,6 +3070,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         
         // 完了予定タグをネットワークに追加
         this.nodes.add(timeTag);
+        this._needsCollisionResolution = true;
         
         // 完了予定の関連付けを記録
         this.TimeConnectNodeId.push(this.selectId);
@@ -3024,7 +3097,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     Recruit_Idea (){
-        document.getElementById('t_Process_conmenu').style.display = "none";
+        this.onNodeDeselectedForToolbar();
         
         // selectIdが設定されているかチェック
         if (!this.selectId) {
@@ -3110,8 +3183,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     //手段開始ボタン
     step_start() {
-        const menu = document.getElementById('t_Process_conmenu');
-        if (menu) menu.style.display = "none";
+        this.onNodeDeselectedForToolbar();
 
 
         if (!this.selectId) {
@@ -3175,8 +3247,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     // 手段中断ボタン
     step_paused() {
-        const menu = document.getElementById('t_Process_conmenu');
-        if (menu) menu.style.display = "none";
+        this.onNodeDeselectedForToolbar();
 
         console.log(`step_paused() を呼び出しました。選択中のノードID: ${this.selectId}`);
         if (!this.selectId) {
@@ -3235,8 +3306,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     // 手段完了ボタン
     step_end() {
-        const menu = document.getElementById('t_Process_conmenu');
-        if (menu) menu.style.display = "none";
+        this.onNodeDeselectedForToolbar();
     
         console.log(`step_end() を呼び出しました。選択中のノードID: ${this.selectId}`);
         if (!this.selectId) {
@@ -4289,6 +4359,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                 }
                             };
                             this.nodes.add(reflectionTag);
+                            this._needsCollisionResolution = true;
                             console.log('新しい内省タグを追加しました:', reflectionTagId);
                         }
                     }
@@ -5307,9 +5378,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         setTimeout(() => {
             autoResizeTextarea(inputName);
             autoResizeTextarea(inputReason);
-            if (focusTarget === 'name') {
+            if (fTarget === 'name') {
                 inputName.focus();
-            } else if (focusTarget === 'reason') {
+            } else if (fTarget === 'reason') {
                 inputReason.focus();
             }
         }, 50);
@@ -6454,7 +6525,7 @@ const getPassDataFromDB = (selected_date) => {
                         console.log("過去データ表示モードを有効化しました");
                             try {
                                 // ビュー切替に合わせて操作系ボタンを視覚的に無効化
-                                $('#process_startEditEdge, #process_removeNode, #process_undo, #process_redo').addClass('disabled').prop('disabled', true);
+                                $('#process_removeEdge, #process_removeNode, #process_undo, #process_redo').addClass('disabled').prop('disabled', true);
                             } catch (e) {
                                 /* ignore */
                             }
@@ -6793,8 +6864,40 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
             if (targetNodeId && processInstance) {
                 const allNodes = processInstance.nodes.get();
                 if (allNodes.length > 0) {
-                    const maxX = allNodes.reduce((max, node) => Math.max(max, node.x || 0), 0);
-                    offsetX = maxX + 600; // 600ピクセル右にずらす
+                    let maxRight = -Infinity;
+                    allNodes.forEach(node => {
+                        const bb = processInstance.ownNetwork.getBoundingBox(node.id);
+                        if (bb && bb.right !== undefined) {
+                            if (bb.right > maxRight) maxRight = bb.right;
+                        } else if (node.x !== undefined) {
+                            if (node.x > maxRight) maxRight = node.x + 150;
+                        }
+                    });
+                    if (maxRight === -Infinity) maxRight = 0;
+
+                    let newMinX = Infinity;
+                    if (Array.isArray(trigger_list_info.node_versions) && trigger_list_info.node_versions.length > 0) {
+                        if (node_x < newMinX) newMinX = node_x;
+                    }
+                    if (Array.isArray(trigger_list_info.trigger)) {
+                        trigger_list_info.trigger.forEach(u => {
+                            if (u && u.x !== undefined && u.x !== null) {
+                                let tx = parseFloat(u.x);
+                                if (!isNaN(tx) && tx < newMinX) newMinX = tx;
+                            }
+                        });
+                    }
+                    if (Array.isArray(trigger_list_info.onode)) {
+                        trigger_list_info.onode.forEach(n => {
+                            if (n && n.node_x !== undefined && n.node_x !== null) {
+                                let rx = parseFloat(n.node_x);
+                                if (!isNaN(rx) && rx < newMinX) newMinX = rx;
+                            }
+                        });
+                    }
+                    if (newMinX === Infinity) newMinX = 0;
+
+                    offsetX = maxRight + 60 - newMinX; // 60ピクセル右にずらす
                 }
             }
 
@@ -7042,7 +7145,7 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました（最新データ選択）");
                             try {
-                                $('#process_startEditEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
+                                $('#process_removeEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
                                 // Undo/Redoボタンの状態を更新
                                 if (undoRedoManager) {
                                     undoRedoManager.updateButtons();
@@ -7112,7 +7215,7 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                             defaultThinkingProcess.isViewingPastData = false;
                             console.log("過去データ表示モードを無効化しました");
                             try {
-                                $('#process_startEditEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
+                                $('#process_removeEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
                                 // Undo/Redoボタンの状態を更新
                                 if (undoRedoManager) {
                                     undoRedoManager.updateButtons();
@@ -7588,13 +7691,13 @@ window.addEventListener('load', () => {
     defaultThinkingProcess = new ThinkingProcess("myProcessnetwork", "load");
     // マップ編集ボタンにイベント付与
 
-    $(`#process_startEditEdge`).on("click", e => {
+    $(`#process_removeEdge`).on("click", e => {
         if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
-            console.log('過去データ表示中のため、エッジ追加は無効化されています');
-            try { alert('過去の表示中はエッジ追加できません'); } catch (err) { /* ignore */ }
+            console.log('過去データ表示中のため、エッジ削除は無効化されています');
+            try { alert('過去の表示中はエッジ削除できません'); } catch (err) { /* ignore */ }
             return;
         }
-        defaultThinkingProcess.SelectEditEdge();
+        defaultThinkingProcess.deleteEdge();
     });
     $(`#process_removeNode`).on("click", e => {
         if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {

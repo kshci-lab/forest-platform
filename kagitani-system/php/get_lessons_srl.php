@@ -82,6 +82,7 @@ try {
 				WHERE (ll2.`deleted` IS NULL OR ll2.`deleted` = 0)
 				  AND ll2.`map_id` = :map_id
 				  AND ojr2.`journal_history_id` IS NOT NULL
+				  AND ojr2.`object_journal_id` = oj.`object_journal_id`
 				ORDER BY COALESCE(ojr2.`update_at`, ojr2.`created_at`) DESC
 				LIMIT 1
 			  )
@@ -111,6 +112,7 @@ try {
 				LEFT JOIN `object_journal_reflections` ojr2 ON ll2.`object_journal_reflection_id` = ojr2.`object_journal_reflection_id`
 				WHERE (ll2.`deleted` IS NULL OR ll2.`deleted` = 0)
 				  AND ojr2.`journal_history_id` IS NOT NULL
+				  AND ojr2.`object_journal_id` = oj.`object_journal_id`
 				ORDER BY COALESCE(ojr2.`update_at`, ojr2.`created_at`) DESC
 				LIMIT 1
 			  )

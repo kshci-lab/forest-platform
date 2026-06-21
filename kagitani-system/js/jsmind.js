@@ -43,27 +43,28 @@ function createNodeIcon(nodeElement, status = 'todo') {
     const iconWrapper = document.createElement('div');
     iconWrapper.className = 'node-icon-wrapper compass-icon';
     iconWrapper.style.position = 'relative';
-    iconWrapper.style.width = '28px';
-    iconWrapper.style.height = '28px';
+    iconWrapper.style.width = '26px';
+    iconWrapper.style.height = '26px';
     iconWrapper.style.borderRadius = '50%';
     
-    // 統一デザイン: ミニマルコンパス（白背景＋極細黒線）
+    // 控えめで主張しすぎないデザイン（通常時はグレー/白系、ホバー時にブルー）
     const title = 'SRL整理マップを開く (Shift + クリックで複数表示)';
     const altText = 'SRL整理マップ';
-    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#222222" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="9" />
-        <polygon points="17,7 10.5,10.5 7,17 13.5,13.5" />
+        <polygon points="16.5,7.5 10.5,10.5 7.5,16.5 13.5,13.5" />
     </svg>`;
     
-    iconWrapper.style.backgroundColor = '#ffffff'; // デフォルトは白
+    iconWrapper.style.background = '#ffffff';
+    iconWrapper.style.color = '#5A9BD5'; // Blue color to match the theme
     iconWrapper.style.display = 'flex';
     iconWrapper.style.alignItems = 'center';
     iconWrapper.style.justifyContent = 'center';
-    iconWrapper.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-    iconWrapper.style.transition = 'all 0.3s ease';
+    iconWrapper.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)'; // Deeper, more modern shadow
+    iconWrapper.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
     iconWrapper.style.cursor = 'pointer';
     iconWrapper.style.pointerEvents = 'auto';
-    iconWrapper.style.border = '1px solid #e0e0e0';
+    iconWrapper.style.border = 'none'; // Remove border for cleaner look
     iconWrapper.title = title;
     
     // SVGアイコンの挿入
@@ -74,18 +75,19 @@ function createNodeIcon(nodeElement, status = 'todo') {
     iconSpan.style.justifyContent = 'center';
     iconSpan.style.pointerEvents = 'none';
 
-
-    // ホバー効果
+    // ホバー効果（ホバー時だけ少し目立つように）
     iconWrapper.addEventListener('mouseenter', () => {
         iconWrapper.style.transform = 'scale(1.15) translateY(-2px)';
-        iconWrapper.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
-        iconWrapper.style.filter = 'brightness(1.1)';
+        iconWrapper.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1)';
+        iconWrapper.style.color = '#5A9BD5';
+        iconWrapper.style.background = '#ffffff';
     });
     
     iconWrapper.addEventListener('mouseleave', () => {
         iconWrapper.style.transform = 'scale(1) translateY(0)';
-        iconWrapper.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
-        iconWrapper.style.filter = 'brightness(1)';
+        iconWrapper.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)';
+        iconWrapper.style.color = '#5A9BD5';
+        iconWrapper.style.background = '#ffffff';
     });
 
     // クリック効果
@@ -98,49 +100,9 @@ function createNodeIcon(nodeElement, status = 'todo') {
 
         console.log('手段階層マップあり がクリックされました');
 
-        // ハイライト処理: クリックされたノードに濃い枠線を付ける
-        try {
-            var targetNode = nodeElement;
-            if (!targetNode && iconWrapper.closest) {
-                targetNode = iconWrapper.closest('jmnode');
-            }
-            if (targetNode) {
-                // remove previous highlight (restore only border)
-                if (window.__jm_last_highlighted && window.__jm_last_highlighted !== targetNode) {
-                    try {
-                        window.__jm_last_highlighted.style.border = window.__jm_last_highlighted.__old_border || '';
-                        // restore previous container border if any
-                        if (window.__jm_last_highlighted_container) {
-                            window.__jm_last_highlighted_container.style.border = window.__jm_last_highlighted_container.__old_border || '';
-                            window.__jm_last_highlighted_container = null;
-                        }
-                    } catch (e) {
-                        console.warn('前のハイライト復元でエラー:', e);
-                    }
-                }
-                // store old border for node
-                targetNode.__old_border = targetNode.style.border || '';
-
-                // apply highlight: only an orange border on node
-                targetNode.style.border = '3px solid #d97706'; // 濃いオレンジの枠線
-                window.__jm_last_highlighted = targetNode;
-
-                // also apply same orange border to the process network container
-                try {
-                    var proc = document.getElementById('myProcessnetwork') || document.getElementById('myProcessnetwork2');
-                    if (proc) {
-                        // save old container border if not already saved
-                        if (!proc.__old_border) proc.__old_border = proc.style.border || '';
-                        proc.style.border = '3px solid #d97706';
-                        window.__jm_last_highlighted_container = proc;
-                    }
-                } catch (e) {
-                    console.warn('コンテナのハイライト設定でエラー:', e);
-                }
-            }
-        } catch (hlErr) {
-            console.warn('ハイライト処理でエラー:', hlErr);
-        }
+        // ハイライト処理はCSSクラス (.is-process-active) と
+        // コンテナ側のスタイル設定で一元管理されるようになったため、
+        // ここでのインラインスタイルによるオレンジ色の枠線追加は廃止しました。
 
         // 目標手段階層マップを開く
         if (typeof showThinkingProcessMap === 'function') {
@@ -3408,7 +3370,7 @@ var jm = jsMind.show(options, mind);
         draw_line:function(pin,pout,offset,canvas_ctx,node){
             var ctx = canvas_ctx || this.canvas_ctx;
             if (node && node.is_process_active_edge) {
-                ctx.strokeStyle = '#ed8936';
+                ctx.strokeStyle = '#0ea5e9';
                 ctx.lineWidth = 2.5;
             } else {
                 ctx.strokeStyle = this.opts.line_color;
@@ -3464,6 +3426,16 @@ var jm = jsMind.show(options, mind);
         },
 
         handler : function(e){
+            // テキスト入力中の場合はショートカットキーを無効化（スペースキーなどが効かなくなるバグを防止）
+            var activeElement = document.activeElement;
+            if (activeElement && (
+                activeElement.tagName === 'INPUT' || 
+                activeElement.tagName === 'TEXTAREA' || 
+                activeElement.isContentEditable
+            )) {
+                return true;
+            }
+
             if(this.jm.view.is_editing()){return;}
             var evt = e || event;
             if(!this.opts.enable){return true;}

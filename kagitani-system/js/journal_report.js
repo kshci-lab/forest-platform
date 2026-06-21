@@ -112,7 +112,7 @@
                                             });
                                         } catch (e) { console.error('build contentArr error', e); }
                                         var dispText = (goalContents[i] ? (typeof goalContents[i] === 'object' ? (goalContents[i].content || goalContents[i].node_id || '') : goalContents[i]) : '');
-                                        resolve({ display: dispText, content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
+                                        resolve({ display: dispText, answer_content: objRes.answer_content || '', content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
                                     },
                                     error: function (xhr, status, err) {
                                         console.error('journal_report: get_object_node_info error', {
@@ -134,8 +134,8 @@
                             // Center it roughly, but leave space to see the background
                             modal.style.left = '5%';
                             modal.style.top = '5%';
-                            modal.style.width = '60vw';
-                            modal.style.height = '85vh';
+                            modal.style.width = '90vw';
+                            modal.style.height = '90vh';
                             modal.style.zIndex = '10000';
                             modal.style.background = '#fff';
                             modal.style.borderRadius = '12px';
@@ -1750,20 +1750,39 @@
                                 var itemWrap = document.createElement('div');
                                 itemWrap.style.border = '1px solid ' + theme.border;
                                 itemWrap.style.borderRadius = '8px';
-                                itemWrap.style.padding = '12px 14px';
-                                itemWrap.style.margin = '12px 0';
+                                itemWrap.style.margin = '16px 0';
                                 itemWrap.style.background = '#fff';
-                                // limit each item box height to keep modal compact
-                                itemWrap.style.maxHeight = '360px';
-                                itemWrap.style.overflowY = 'auto';
+                                itemWrap.style.overflow = 'hidden';
+                                itemWrap.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';
 
-                                // タイトル
+                                // タイトル (Question Header)
                                 var heading = document.createElement('div');
                                 heading.style.fontWeight = 'bold';
-                                heading.style.fontSize = '17px';
-                                heading.style.margin = '0 0 8px 0';
-                                heading.textContent = (item.display || '');
+                                heading.style.fontSize = '14px'; // 16px -> 14px (More compact)
+                                heading.style.padding = '10px 12px'; // 12px 14px -> 10px 12px
+                                heading.style.background = '#f1f5f9'; // light blue/gray
+                                heading.style.borderBottom = '1px solid ' + theme.border;
+                                heading.style.color = '#0f172a';
+                                heading.textContent = '🎯 ' + (item.display || '');
                                 itemWrap.appendChild(heading);
+
+                                if (item.answer_content) {
+                                    var answerDiv = document.createElement('div');
+                                    answerDiv.textContent = '💡 ' + item.answer_content;
+                                    answerDiv.style.fontSize = '13px';
+                                    answerDiv.style.color = '#334155';
+                                    answerDiv.style.padding = '8px 12px';
+                                    answerDiv.style.background = '#f8fafc';
+                                    answerDiv.style.borderBottom = '1px solid ' + theme.border;
+                                    itemWrap.appendChild(answerDiv);
+                                }
+
+                                // コンテンツエリア (Means body)
+                                var bodyWrap = document.createElement('div');
+                                bodyWrap.style.padding = '10px 12px'; // 14px 16px -> 10px 12px
+                                bodyWrap.style.maxHeight = '360px';
+                                bodyWrap.style.overflowY = 'auto';
+                                itemWrap.appendChild(bodyWrap);
 
                                 // タイムライン本体
                                 var timeline = document.createElement('div');
@@ -1907,6 +1926,7 @@
                                         else if (depth === 1) nodeWrap.classList.add('is-child');
                                         else nodeWrap.classList.add('is-grandchild');
                                         nodeWrap.style.position = 'relative';
+                                        nodeWrap.style.marginLeft = (depth * 24) + 'px';
 
                                         if (!isRoot) {
                                             var branchLine = document.createElement('div');
@@ -1937,22 +1957,48 @@
                                         ch.style.alignItems = 'flex-start';
                                         ch.style.justifyContent = 'space-between';
                                         ch.style.cursor = 'pointer';
-                                        ch.style.padding = '8px 12px';
+                                        ch.style.padding = '8px 12px'; // 12px 14px -> 8px 12px
+                                        ch.style.background = '#ffffff';
+                                        ch.style.border = '1px solid #e2e8f0';
+                                        ch.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                                        ch.style.marginBottom = '6px'; // 8px -> 6px
                                         ch.style.transition = 'background 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease';
                                         ch.style.borderRadius = '8px';
 
                                         var chTextWrap = document.createElement('div');
                                         chTextWrap.style.display = 'flex';
-                                        chTextWrap.style.alignItems = 'flex-start'; // align to top line
+                                        chTextWrap.style.flexDirection = 'column'; // Stack vertically
                                         chTextWrap.style.flex = '1';
                                         chTextWrap.style.lineHeight = '1.5';
 
+                                        // Extract purpose from the latest history
+                                        var lastHistory = (grp && grp.length) ? grp[grp.length - 1] : null;
+                                        var purposeText = (lastHistory && lastHistory.purpose) ? lastHistory.purpose.trim() : '';
+                                        
+                                        if (purposeText) {
+                                            var chPurpose = document.createElement('div');
+                                            chPurpose.textContent = purposeText; // No "理由：" prefix
+                                            chPurpose.style.fontSize = '11px'; // 12px -> 11px
+                                            chPurpose.style.color = '#64748b';
+                                            chPurpose.style.marginBottom = '4px'; // 6px -> 4px
+                                            chPurpose.style.paddingLeft = '8px'; 
+                                            chPurpose.style.borderLeft = '3px solid #cbd5e1';
+                                            chPurpose.style.marginLeft = '4px';
+                                            chTextWrap.appendChild(chPurpose);
+                                        }
+
+                                        var chMainRow = document.createElement('div');
+                                        chMainRow.style.display = 'flex';
+                                        chMainRow.style.alignItems = 'flex-start';
+                                        chMainRow.style.width = '100%';
+
                                         var chText = document.createElement('div');
-                                        chText.textContent = '• ' + contentHeading; // Added dot
+                                        chText.textContent = contentHeading; // Removed bullet dot for cleaner card look
                                         chText.style.fontWeight = '600';
-                                        chText.style.color = theme.text;
+                                        chText.style.fontSize = '13px'; // Add font size constraint
+                                        chText.style.color = '#1e293b';
                                         chText.style.flex = '1'; // ensure text takes available space
-                                        chTextWrap.appendChild(chText);
+                                        chMainRow.appendChild(chText);
 
                                         // ステータス判定
                                         var currentStatus = "計画";
@@ -1970,18 +2016,20 @@
                                         statusChip.className = "jr-status-chip " + statusClass;
                                         statusChip.textContent = currentStatus;
                                         statusChip.style.marginTop = '2px'; // align with text top line
-                                        chTextWrap.appendChild(statusChip);
+                                        chMainRow.appendChild(statusChip);
 
+                                        chTextWrap.appendChild(chMainRow);
                                         ch.appendChild(chTextWrap);
 
                                         var chIcon = document.createElement('div');
-                                        chIcon.textContent = '\u25B6'; // triangle arrow ▶
-                                        chIcon.style.marginLeft = '12px';
-                                        chIcon.style.marginTop = '3px'; // align with top line
-                                        chIcon.style.fontWeight = '700';
-                                        chIcon.style.color = theme.muted;
-                                        chIcon.style.transition = 'transform 0.25s ease, color 0.15s ease';
-                                        chIcon.style.transform = 'rotate(0deg)';
+                                        chIcon.textContent = '▼';
+                                        chIcon.style.marginLeft = '8px';
+                                        chIcon.style.marginTop = '2px';
+                                        chIcon.style.fontSize = '12px';
+                                        chIcon.style.fontWeight = 'bold';
+                                        chIcon.style.whiteSpace = 'nowrap';
+                                        chIcon.style.color = '#64748b';
+                                        chIcon.style.transition = 'color 0.15s ease';
                                         ch.appendChild(chIcon);
 
                                         // Hover and focus affordances to indicate clickability
@@ -2106,14 +2154,14 @@
                                             var sh = detailsDiv.scrollHeight || (innerTbl ? innerTbl.scrollHeight + 20 : 300);
                                             detailsDiv.style.maxHeight = sh + 'px';
                                             detailsDiv.style.opacity = '1';
-                                            chIcon.style.transform = 'rotate(90deg)';
-                                            chIcon.style.color = theme.primary;
+                                            chIcon.textContent = '▲';
+                                            chIcon.style.color = '#3b82f6'; // Change color when open
                                         };
                                         var closeDetails = function () {
                                             detailsDiv.style.maxHeight = '0px';
                                             detailsDiv.style.opacity = '0';
-                                            chIcon.style.transform = 'rotate(0deg)';
-                                            chIcon.style.color = theme.muted;
+                                            chIcon.textContent = '▼';
+                                            chIcon.style.color = '#64748b';
                                         };
                                         ch.addEventListener('click', function () {
                                             if (detailsDiv.style.display === 'none' || detailsDiv.style.maxHeight === '0px') {
@@ -2144,10 +2192,34 @@
                                         
                                         // Render children inside an indented container with continuous left border
                                         if (node.children.length > 0) {
+                                            var toggleBtn = document.createElement('div');
+                                            toggleBtn.textContent = '▼ 下位手段を閉じる';
+                                            toggleBtn.style.fontSize = '11px'; // 12px -> 11px
+                                            toggleBtn.style.color = '#64748b';
+                                            toggleBtn.style.cursor = 'pointer';
+                                            toggleBtn.style.marginLeft = '4px';
+                                            toggleBtn.style.marginBottom = '4px'; // 6px -> 4px
+                                            toggleBtn.style.display = 'inline-block';
+                                            toggleBtn.style.fontWeight = 'bold';
+
                                             var childrenWrap = document.createElement('div');
                                             childrenWrap.className = 'method-children';
                                             childrenWrap.style.paddingLeft = '20px';
-                                            childrenWrap.style.borderLeft = '1px solid #cbd5e0';
+                                            childrenWrap.style.borderLeft = '2px solid #94a3b8'; // bolder blue-gray
+                                            childrenWrap.style.marginLeft = '6px'; // align with the dot
+
+                                            toggleBtn.addEventListener('click', function(e) {
+                                                if (childrenWrap.style.display === 'none') {
+                                                    childrenWrap.style.display = 'block';
+                                                    toggleBtn.textContent = '▼ 下位手段を閉じる';
+                                                } else {
+                                                    childrenWrap.style.display = 'none';
+                                                    toggleBtn.textContent = '▶ 下位手段 (' + node.children.length + '件) を開く';
+                                                }
+                                            });
+                                            
+                                            nodeWrap.appendChild(toggleBtn);
+
                                             node.children.forEach(function(childNode, idx) {
                                                 renderTreeNode(childNode, childrenWrap, idx === node.children.length - 1, false, depth + 1);
                                             });
@@ -2159,7 +2231,7 @@
 
                                     // Render all roots
                                     rootsList.forEach(function(rootNode) {
-                                        renderTreeNode(rootNode, itemWrap, false, true, 0);
+                                        renderTreeNode(rootNode, bodyWrap, false, true, 0);
                                     });
                                 } else if (item.content && item.content.length) {
                                     // No histories; render each item.content as a simple list, no large blocks
@@ -2173,10 +2245,16 @@
                                         sh.style.margin = '4px 0';
                                         fallbackWrap.appendChild(sh);
                                     });
-                                    itemWrap.appendChild(fallbackWrap);
+                                    bodyWrap.appendChild(fallbackWrap);
                                 } else {
-                                    // historiesもcontentもない場合、不要な項目としてカード自体を非表示にする
-                                    itemWrap.style.display = 'none';
+                                    // historiesもcontentもない場合でも、問いノード自体は表示し、活動がない旨を伝える
+                                    var emptyMsg = document.createElement('div');
+                                    emptyMsg.textContent = 'この期間に記録された活動プロセスはありません。';
+                                    emptyMsg.style.color = '#718096';
+                                    emptyMsg.style.fontSize = '14px';
+                                    emptyMsg.style.padding = '8px 14px';
+                                    emptyMsg.style.fontStyle = 'italic';
+                                    bodyWrap.appendChild(emptyMsg);
                                 }
                                 // Add to left column (Activity Process) - always visible
                                 activityContent.appendChild(itemWrap);

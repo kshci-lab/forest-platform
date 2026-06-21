@@ -72,7 +72,7 @@ export const UI_CONFIG = {
     DRAG_THRESHOLD: 5,            // プラスボタンからのドラッグ結線判定閾値（px）
     APPEND_MAP_OFFSET_X: 600,     // 並列ロード時のX座標追加オフセット量（px）
     DEFAULT_NODE_COLOR: '#888888',
-    NEW_NODE_OFFSET_Y: 80,        // 新規子ノード作成時のY座標オフセット
+    NEW_NODE_OFFSET_Y: 30,        // 新規子ノード作成時のY座標オフセット
     ADD_BUTTON_RADIUS: 12,        // ＋ボタンの半径 (width/2)
     Z_INDEX_PREVIEW: 9999,        // ドラッグプレビュー矢印のz-index
     Z_INDEX_ADD_BUTTON: 1000      // プラスボタンのz-index

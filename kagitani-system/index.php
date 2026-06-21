@@ -59,7 +59,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>自己調整学習活性化支援システム</title>
+        <title>自己調整学習支援システム</title>
         <link type="text/css" rel="stylesheet" href="../css/jsmind.css" />
         <link rel="stylesheet" type="text/css" href="../css/item.css">
         <link rel="stylesheet" type="text/css" href="css/font.css">
@@ -69,7 +69,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="css/smart-goals.css">
         <link rel="stylesheet" type="text/css" href="css/goal.css">
         <link rel="stylesheet" type="text/css" href="../css/button.css">
-        <link rel="stylesheet" type="text/css" href="css/feedback-style.css">
+        <link rel="stylesheet" type="text/css" href="css/feedback-style.css?v=<?=time()?>">
         <!-- <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" /> -->
         
         <style>
@@ -261,7 +261,7 @@ try {
         <link rel="stylesheet" type="text/css" href="css/feedbackTooltip.css" />
         <script type="text/javascript" src="js/timeline_slider.js"></script>
         <script type="text/javascript" src="js/goal_list.js"></script>
-        <script type="text/javascript" src="js/journal_report.js"></script>
+        <script type="text/javascript" src="js/journal_report.js?v=<?=time()+9?>"></script>
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         
@@ -431,57 +431,7 @@ try {
         </style>
     <body id="all">
         <!-- 言語切替スライダー -->
-                <!-- 教訓一覧ボタン削除 -->
-                <div id="language-toggle-container" style="position:fixed;top:12px;right:30px;z-index:9999;display:flex;align-items:center;gap:12px;">
-                        <div class="hamburger-menu">
-                            <button class="settings-button" type="button" aria-label="Settings">
-                                <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                                </svg>
-                            </button>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-item language-toggle-item">
-                                    <label style="display:flex;align-items:center;gap:8px;font-size:15px;">
-                                            <span id="lang-label-ja">日本語</span>
-                                            <label class="switch">
-                                                <input type="checkbox" id="language-toggle" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span id="lang-label-en">English</span>
-                                    </label>
-                                </div>
-                                <div class="dropdown-divider"></div>
-                                <form name="return" method="POST">
-                                    <input class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="シート選択画面に戻る">
-                                    <input class="dropdown-item logout-btn" type="submit" name="logout" id="logout" value="ログアウト">
-                                </form>
-                                <!--
-                                <div class="dropdown-divider"></div>
-                                <div class="dropdown-section">
-                                    <span class="dropdown-section-title">画面切り替え</span>
-                                    <div class="tab-navigation">
-                                        <button class="dropdown-tab-item active" onclick="switchTab('tab01')">思考整理支援システム</button>
-                                        <button class="dropdown-tab-item" onclick="switchTab('tab04')">過去のマインドマップ</button>
-                                    </div>
-                                </div>
-                                -->
-                                <div class="dropdown-divider"></div>
-                                <div class="dropdown-section">
-                                    <span class="dropdown-section-title">モード選択</span>
-                                    <form name="target_mode" action="">
-                                        <select class="dropdown-select" name="Select1">
-                                            <option>自己内対話モード</option>
-                                            <option>資料構成作成モード</option>
-                                            <option>資料作成モード</option>
-                                            <option>議論内省マップモード</option>
-                                        </select>
-                                        <input type="button" class="dropdown-button" value="実行" onclick="ModeChangeButtonClick();" />
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                </div>
+
                 <!-- SRL sidebar toggle moved into header -->
                 <div id="srlSidebarBackdrop" class="srl-sidebar-backdrop" aria-hidden="true"></div>
                 <aside id="srlSidebar" class="srl-sidebar" aria-hidden="true">
@@ -504,8 +454,8 @@ try {
                         </div>
                         <div class="srl-tab-panel" data-tab-panel="lessons">
                             <div class="srl-lessons-subtabs">
-                                <button class="srl-lessons-subtab is-active" type="button" data-subtab="srl">📒 ジャーナルから</button>
-                                <button class="srl-lessons-subtab" type="button" data-subtab="map">🗺️ 整理マップから</button>
+                                <button class="srl-lessons-subtab is-active" type="button" data-subtab="srl" title="SRLジャーナルカードから生まれた教訓">📒 ジャーナルカードから</button>
+                                <button class="srl-lessons-subtab" type="button" data-subtab="map" title="SRL整理マップの手段ノードから生まれた教訓">🗺️ 手段ノードから</button>
                             </div>
                             <div class="srl-lessons-subpanel is-active" data-subpanel="srl">
                                 <div id="srlLessonsBodySrl"></div>
@@ -526,7 +476,7 @@ try {
                         <div class="inquiry_area">
                             <div class="search-container-root">
                                 <div class="search-box-wrapper">
-                                    <button id="showQuestionsBtn" title="すべての問いを表示" onclick="showGeneration();">☰</button>
+                                    <button id="showQuestionsBtn" title="すべての問いを表示" onclick="showGeneration();">すべて</button>
                                     <input type="text" id="questionSearchInput" class="question-search-input" placeholder="問いを絞り込む..." oninput="updateFilter(this.value, [])">
                                 </div>
                                 <div class="search-suggest-dropdown" id="searchSuggestDropdown"></div>
@@ -808,7 +758,7 @@ try {
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
                     </svg>
                 </button>
-                <span class="title_name" id="title_name">自己調整学習活性化システム</span>
+                <span class="title_name" id="title_name">自己調整学習支援システム</span>
                 <a href="https://drive.google.com/file/d/1en13NYGb9HSW-zNvnoHOtXpEzaos7njQ/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="system-manual-link" title="システム手引書 (PDF) を開く">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-external-link">
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -816,6 +766,55 @@ try {
                         <line x1="10" y1="14" x2="21" y2="3"></line>
                     </svg>
                 </a>
+                
+                <div id="language-toggle-container" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                        <div class="hamburger-menu">
+                            <button class="settings-button" type="button" aria-label="Settings" title="設定">
+                                <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                            </button>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-item language-toggle-item">
+                                    <label style="display:flex;align-items:center;gap:8px;font-size:15px; color:#1e293b; font-weight:600;">
+                                            <span id="lang-label-ja">日本語</span>
+                                            <label class="switch">
+                                                <input type="checkbox" id="language-toggle" />
+                                                <span class="slider round"></span>
+                                            </label>
+                                            <span id="lang-label-en" style="color:#94a3b8; font-weight:400;">English</span>
+                                    </label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-section">
+                                    <span class="dropdown-section-title">画面切り替え</span>
+                                    <div class="tab-navigation">
+                                        <button class="dropdown-tab-item active" onclick="switchTab('tab01')">思考整理支援システム</button>
+                                        <button class="dropdown-tab-item" onclick="switchTab('tab04')">過去のマインドマップ</button>
+                                    </div>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-section">
+                                    <span class="dropdown-section-title">モード選択</span>
+                                    <form name="target_mode" action="" style="margin:0;">
+                                        <select class="dropdown-select" name="Select1">
+                                            <option>自己内対話モード</option>
+                                            <option>資料構成作成モード</option>
+                                            <option>資料作成モード</option>
+                                            <option>議論内省マップモード</option>
+                                        </select>
+                                        <input type="button" class="dropdown-button" value="実行" onclick="ModeChangeButtonClick();" />
+                                    </form>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <form name="return" method="POST" style="margin:0;">
+                                    <input class="dropdown-item" style="border:none; background:transparent; text-align:left; width:100%; cursor:pointer; font-family:inherit; font-size:inherit; padding:10px 16px;" type="submit" name="sheetbtn" id="sheetbtn" value="シート選択画面に戻る">
+                                    <input class="dropdown-item logout-btn" style="border:none; background:transparent; text-align:left; width:100%; cursor:pointer; color:#dc2626; font-family:inherit; font-size:inherit; padding:10px 16px;" type="submit" name="logout" id="logout" value="ログアウト">
+                                </form>
+                            </div>
+                        </div>
+                </div>
             </div>
             <!-- Hamburger menu icon -->
             <!-- <span id="hamburger_menu" style="display: inline-block; cursor: pointer; margin-right: 10px;">
@@ -875,25 +874,71 @@ try {
                         <div id="area">
 
                             <div id="jsmind_nav">
+                                <div class="main-map-toolbar-v3">
+                                    <div class="toolbar-group">
+                                        <button class="toolbar-btn" id="addQNodeBtn" onclick="add_Qnode();">
+                                            <div class="icon-circle bg-sync-blue">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                            </div>
+                                            <span class="toolbar-text" id="addQNodeText">問いノード追加</span>
+                                        </button>
+
+                                        <button class="toolbar-btn" id="addAnodeBtn" onclick="add_Anode();">
+                                            <div class="icon-circle bg-sync-amber">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
+                                            </div>
+                                            <span class="toolbar-text" id="addAnodeText">答えノード追加</span>
+                                        </button>
+
+                                        <button class="toolbar-btn" id="addLabelBtn" onclick="add_Label('primary_label');">
+                                            <div class="icon-circle bg-sync-green">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                                            </div>
+                                            <span class="toolbar-text" id="addLabelText">ラベル追加</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="toolbar-divider"></div>
+
+                                    <div class="toolbar-group">
+                                        <button class="toolbar-btn" id="removeNodeBtn" onclick="remove_node();">
+                                            <div class="icon-circle bg-sync-red">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                            </div>
+                                            <span class="toolbar-text" id="removeNodeText">ノードの削除</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="toolbar-divider"></div>
+
+                                    <div class="toolbar-group">
+                                        <button class="toolbar-btn" id="zoomInBtn" onclick="zoomIn();">
+                                            <div class="icon-circle bg-sync-charcoal">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                            </div>
+                                            <span class="toolbar-text" id="zoomInText">拡大</span>
+                                        </button>
+
+                                        <button class="toolbar-btn" id="zoomOutBtn" onclick="zoomOut();">
+                                            <div class="icon-circle bg-sync-charcoal">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                            </div>
+                                            <span class="toolbar-text" id="zoomOutText">縮小</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="toolbar-divider"></div>
+
+                                    <div class="toolbar-group">
+                                        <button class="toolbar-btn" id="toggleInquirySidebarBtn" type="button">
+                                            <div class="icon-circle bg-sync-slate">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="3" cy="18" r="1"/></svg>
+                                            </div>
+                                            <span class="toolbar-text">問い一覧</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div style="display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap;">
-                                    <!-- 【Edit】 -->
-                                    <button class="button4" id="addQNodeBtn" onclick="add_Qnode();"><span id="addQNodeText">問いノード追加</span></button>
-                                    <button class="button4" id="addAnodeBtn" onclick="add_Anode();"><span id="addAnodeText">答えノード追加</span></button>
-                                    <button class="button4" id="addLabelBtn" onclick="add_Label('primary_label');"><span id="addLabelText">ラベル追加</span></button>
-                                    <!-- <li><button onclick="horisage();">掘り下げる</button></li>
-                                        horisage()関数は現在存在しない-->
-                                    <button class="button4" id="removeNodeBtn" onclick="remove_node();"><span id="removeNodeText">ノードの削除</span></button>
-                                    <!--1つ前に消したノードを復元-->
-                                    <!-- <button class="button4" onclick="return_node();">
-                                        1つ前に戻る
-                                        </button> -->
-                                    <!-- 【Zoom】 -->
-                                    <button class="button3" id="zoomInBtn" onclick="zoomIn();"><span id="zoomInText">拡大</span></button>
-                                    <button class="button3" id="zoomOutBtn" onclick="zoomOut();"><span id="zoomOutText">縮小</span></button>
-                                    <button class="button-outline-sidebar" id="toggleInquirySidebarBtn" type="button" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px;">
-                                        <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 512 512"><!-- Font Awesome Pro 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z"/></svg>
-                                        問い一覧
-                                    </button>
                                     <!-- <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();RecordRelation();">
                                         マップver更新 
                                     </button> -->
@@ -1187,61 +1232,60 @@ try {
                                 <div id="myProcessnetwork2">
                                     <!-- ボタンとシークバーを横並びに配置 -->
                                     <div class="control-panel">
-                                        <div id="buttoncluster">
-                                            <!-- 追加グループ (削除済み) -->
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button blue"
-                                                        id="process_startEditEdge" title="エッジ追加">
-                                                    <span class="button-icon">↔</span>
+                                        <div id="buttoncluster" class="main-map-toolbar-v3">
+                                            <!-- エッジ削除・ノード削除グループ -->
+                                            <div class="toolbar-group">
+                                                <button class="toolbar-btn" id="process_removeEdge" title="エッジ削除">
+                                                    <div class="icon-circle bg-sync-red">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                                                    </div>
+                                                    <span class="toolbar-text">エッジ削除</span>
                                                 </button>
-                                                <span class="button-label">接続</span>
-                                            </div>
-                                            
-                                            <div class="button-divider"></div>
-                                            
-                                            <!-- 削除グループ -->
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button red"
-                                                        id="process_removeNode" title="ノード削除">
-                                                    <span class="button-icon">🗑</span>
-                                                </button>
-                                                <span class="button-label">削除</span>
-                                            </div>
 
-                                            <div class="button-divider"></div>
+                                                <button class="toolbar-btn" id="process_removeNode" title="ノード削除">
+                                                    <div class="icon-circle bg-sync-red">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                                    </div>
+                                                    <span class="toolbar-text">ノード削除</span>
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="toolbar-divider"></div>
                                             
                                             <!-- 履歴グループ -->
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button gray"
-                                                        id="process_undo" title="元に戻す (Ctrl+Z)" disabled>
-                                                    <span class="button-icon">↩</span>
+                                            <div class="toolbar-group">
+                                                <button class="toolbar-btn" id="process_undo" title="元に戻す (Ctrl+Z)" disabled>
+                                                    <div class="icon-circle bg-sync-slate">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                                                    </div>
+                                                    <span class="toolbar-text">戻す</span>
                                                 </button>
-                                                <span class="button-label">戻す</span>
-                                            </div>
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button gray"
-                                                        id="process_redo" title="やり直す (Ctrl+Y)" disabled>
-                                                    <span class="button-icon">↻</span>
+                                                
+                                                <button class="toolbar-btn" id="process_redo" title="やり直す (Ctrl+Y)" disabled>
+                                                    <div class="icon-circle bg-sync-slate">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+                                                    </div>
+                                                    <span class="toolbar-text">進む</span>
                                                 </button>
-                                                <span class="button-label">進む</span>
                                             </div>
                                             
-                                            <div class="button-divider"></div>
+                                            <div class="toolbar-divider"></div>
                                             
                                             <!-- ズームグループ -->
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button gray"
-                                                        id="process_ZoomIn" title="拡大">
-                                                    <span class="button-icon">＋</span>
+                                            <div class="toolbar-group">
+                                                <button class="toolbar-btn" id="process_ZoomIn" title="拡大">
+                                                    <div class="icon-circle bg-sync-charcoal">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                                    </div>
+                                                    <span class="toolbar-text">拡大</span>
                                                 </button>
-                                                <span class="button-label">拡大</span>
-                                            </div>
-                                            <div class="button-group">
-                                                <button type="button" class="circle-button gray"
-                                                        id="process_ZoomOut" title="縮小">
-                                                    <span class="button-icon">－</span>
+                                                
+                                                <button class="toolbar-btn" id="process_ZoomOut" title="縮小">
+                                                    <div class="icon-circle bg-sync-charcoal">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                                    </div>
+                                                    <span class="toolbar-text">縮小</span>
                                                 </button>
-                                                <span class="button-label">縮小</span>
                                             </div>
                                         </div>
                                         <!-- シークバーを隣に配置（横幅いっぱい使用） -->
@@ -1271,64 +1315,31 @@ try {
                                         <div class="reflection-lesson-content" id="reflection-lesson-content"></div>
                                     </div>
                                         
-                                    <div id="t_Process_conmenu" class="context-menu" role="menu" aria-label="進捗記録メニュー">
-                                        <div class="context-menu-header">
-                                            <span class="context-menu-title" id="processMenuTitle">進捗記録</span>
+                                    <div id="t_Process_conmenu" class="floating-status-toolbar" role="menu" aria-label="進捗記録メニュー" style="display:none; position:fixed; z-index:10000;">
+                                        <div class="status-btn-group">
+                                            <button type="button" id="object_conmenu1" class="status-btn" title="開始" aria-label="作業開始">
+                                                <svg class="status-icon play-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                                </svg>
+                                            </button>
+                                            <button type="button" id="object_conmenu3" class="status-btn" title="中断" aria-label="作業中断">
+                                                <svg class="status-icon pause-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                                    <rect x="6" y="4" width="4" height="16"></rect>
+                                                    <rect x="14" y="4" width="4" height="16"></rect>
+                                                </svg>
+                                            </button>
+                                            <button type="button" id="object_conmenu2" class="status-btn" title="完了" aria-label="作業完了">
+                                                <svg class="status-icon check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </button>
+                                            <button type="button" id="object_conmenu4" class="status-btn cancel-btn" title="キャンセル" aria-label="キャンセル" style="display:none;">
+                                                <svg class="status-icon cross-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                </svg>
+                                            </button>
                                         </div>
-                                        <ul class="context-menu-list" role="none">
-                                            <li class="context-menu-item status-action" role="none">
-                                                <a href="javascript:void(0);" id="object_conmenu1" class="context-menu-link" role="menuitem" 
-                                                   title="ノードの作業を開始状態にします" aria-label="作業開始">
-                                                    <span class="context-menu-icon" aria-hidden="true">▶️</span>
-                                                    <span class="context-menu-text" id="processMenuStart">開始</span>
-                                                </a>
-                                            </li>
-                                            <li class="context-menu-item status-action" role="none">
-                                                <a href="javascript:void(0);" id="object_conmenu2" class="context-menu-link" role="menuitem"
-                                                   title="ノードの作業を完了し、内省記録を入力します" aria-label="作業完了">
-                                                    <span class="context-menu-icon" aria-hidden="true">✅</span>
-                                                    <span class="context-menu-text" id="processMenuComplete">完了</span>
-                                                </a>
-                                            </li>
-                                            <li class="context-menu-item status-action" role="none">
-                                                <a href="javascript:void(0);" id="object_conmenu3" class="context-menu-link" role="menuitem"
-                                                   title="ノードの作業を一時中断状態にします" aria-label="作業中断">
-                                                    <span class="context-menu-icon" aria-hidden="true">⏸️</span>
-                                                    <span class="context-menu-text" id="processMenuPause">中断</span>
-                                                </a>
-                                            </li>
-                                            <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
-                                            <!-- SMART目標設定メニューを追加 -->
-                                            <!-- <li class="context-menu-item annotation-action" role="none">
-                                                <a href="javascript:void(0);" id="process_conmenu5" class="context-menu-link" role="menuitem"
-                                                   title="このノードの理由を記述します" aria-label="理由を記述">
-                                                    <span class="context-menu-icon" aria-hidden="true">📝</span>
-                                                    <span class="context-menu-text" id="processMenuReason">理由を記述</span>
-                                                </a>
-                                            </li> -->
-                                            <!-- <li class="context-menu-item smart-goal-action" role="none">
-                                                <a href="javascript:void(0);" id="process_conmenu_smartgoal" class="context-menu-link" role="menuitem"
-                                                   title="SMART目標を設定します" aria-label="SMART目標設定">
-                                                    <span class="context-menu-icon" aria-hidden="true">🎯</span>
-                                                    <span class="context-menu-text">SMART目標設定</span>
-                                                </a>
-                                            </li> -->
-                                            <li class="context-menu-item annotation-action" role="none">
-                                                <!-- <a href="javascript:void(0);" id="process_conmenu6" class="context-menu-link" role="menuitem"
-                                                   title="このノードの完了予定日時を設定します" aria-label="完了予定設定">
-                                                    <span class="context-menu-icon" aria-hidden="true">⏰</span>
-                                                    <span class="context-menu-text" id="processMenuDeadline">完了予定を設定</span>
-                                                </a> -->
-                                            </li>
-                                            <li class="context-menu-separator" role="separator" aria-hidden="true"></li>
-                                            <li class="context-menu-item cancel-action" role="none">
-                                                <a href="javascript:void(0);" id="process_conmenu4" class="context-menu-link" role="menuitem"
-                                                   title="メニューを閉じます (ESCキーでも可能)" aria-label="キャンセル">
-                                                    <span class="context-menu-icon" aria-hidden="true">❌</span>
-                                                    <span class="context-menu-text" id="processMenuCancel">キャンセル</span>
-                                                </a>
-                                            </li>
-                                        </ul>
                                     </div>
                                     <div id="feedbackTooltip" style="position:absolute; display:none; z-index:1000;"></div>
                                     <div id="labelselect">
@@ -1375,24 +1386,19 @@ try {
                                         </div>
                                     </div>
 
-                                    <div id="modal-add-action" class="modal-add-action modal-add-action-v4" style="display:none; position:fixed; z-index:10000; width:450px;">
-                                        <button type="button" id="unified-action-cancel" class="modal-close-v4-btn" title="キャンセル">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                                            </svg>
-                                        </button>
+                                    <div id="modal-add-action" class="modal-add-action modal-add-action-v4" style="display:none; position:fixed; z-index:10000; width:600px;">
+                                        <button type="button" id="unified-action-cancel" class="btn-close-map" title="キャンセル">×</button>
 
                                         <div class="sentence-block-v5" style="margin-bottom: 20px;">
                                             <label id="action-name-label" for="action-name">
                                                 「<span id="parent-node-text"></span>」を実行するためにどのような手段を行いますか？
                                             </label>
-                                            <textarea id="action-name" placeholder="※実行可能なレベルへと細分化してみましょう&#10;例：ーーーー" rows="1" autofocus></textarea>
+                                            <textarea id="action-name" placeholder="「今日から着手できる」くらい具体的な行動に落とし込んでみましょう。&#10;例：関連論文〇〇を読み、現在の課題をノートに箇条書きでまとめる&#10;例：テスト用のスクリプトを作成し、APIからデータが取れるか検証する" rows="3" autofocus></textarea>
                                         </div>
 
                                         <div class="sentence-block-v5" style="margin-bottom: 16px;">
-                                            <label for="action-reason">なぜその手段を行うことが良いと考えましたか？</label>
-                                            <textarea id="action-reason" placeholder="※目的を明確にしましょう（記述は任意です）&#10;例：新規性を明確にするため" rows="2" style="width: 100%; padding: 10px 14px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; box-sizing: border-box;"></textarea>
+                                            <label for="action-reason">なぜその手段を行うことが良いと考えましたか？（任意）</label>
+                                            <textarea id="action-reason" placeholder="その行動によって「何がわかるか」「なぜ今それが必要か」を言語化してみましょう。&#10;例：既存研究との差分（新規性）を明確にしないと、次の設計に進めないため&#10;例：まずは最小限の実装で動作確認し、後戻りのリスクを減らすため" rows="4" style="width: 100%; padding: 10px 14px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; box-sizing: border-box;"></textarea>
                                         </div>
 
                                         <!-- ボタン部分 -->

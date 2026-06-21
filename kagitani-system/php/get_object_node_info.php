@@ -112,129 +112,146 @@ while ($row = $result->fetch_assoc()) {
     $rows[] = $row;
 }
 
-if ($rows) {
-    $objectNodeIds = array_map(function($row){ return $row['object_node_id']; }, $rows);
-    $orderedObjectNodeIds = $objectNodeIds;
-    $histories = [];
-    $objectNodeHistoryIds = [];
-    $adj = [];
-    $indeg = [];
-    $lessons = [];
+    $answer_content = '';
+    $sql_answer = "SELECT content FROM node_latest WHERE parent_id = '" . $escaped_node_id . "' AND type = 'answer' LIMIT 1";
+    $result_ans = @$mysqli->query($sql_answer);
+    if ($result_ans && $ans_row = $result_ans->fetch_assoc()) {
+        $answer_content = $ans_row['content'];
+    }
 
-    if (!empty($objectNodeIds)) {
-        $escapedIds = array_map(function($id) use ($mysqli) { return $mysqli->real_escape_string($id); }, $objectNodeIds);
-        $inClause = "'" . implode("','", $escapedIds) . "'";
-        
-        // 履歴取得
-        $histDateClause = '';
-        if ($start_date !== '' && $end_date !== '') {
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
-                $h_start = $start_date . ' 00:00:00';
-                $h_next = date('Y-m-d', strtotime($end_date . ' +1 day'));
-                $histDateClause = " AND appeared_at >= '$h_start' AND appeared_at < '$h_next'";
-            } else {
-                $histDateClause = " AND appeared_at >= '$start_date' AND appeared_at <= '$end_date'";
-            }
-        }
+    if ($rows) {
+        $objectNodeIds = array_map(function($row){ return $row['object_node_id']; }, $rows);
+        $orderedObjectNodeIds = $objectNodeIds;
+        $histories = [];
+        $objectNodeHistoryIds = [];
+        $adj = [];
+        $indeg = [];
+        $lessons = [];
 
-        $sql_hist = "SELECT * FROM `object_nodes_histories` WHERE object_node_id IN ($inClause) AND drag = 0 $histDateClause 
-                     ORDER BY (SELECT MIN(h2.appeared_at) FROM `object_nodes_histories` h2 WHERE h2.object_node_id = object_nodes_histories.object_node_id) ASC, object_node_id ASC, appeared_at ASC";
-        
-        $result_hist = @$mysqli->query($sql_hist);
-        if ($result_hist) {
-            while ($h = $result_hist->fetch_assoc()) {
-                $histories[] = $h;
-                if (isset($h['object_node_history_id'])) $objectNodeHistoryIds[] = $h['object_node_history_id'];
-            }
-        } else {
-            error_log('[get_object_node_info] histories query failed: ' . $mysqli->error . ' sql=' . $sql_hist);
-        }
-
-        // --- エッジ取得・順序制御 ---
-        $groupFirst = [];
-        foreach ($histories as $h) {
-            $oid = $h['object_node_id'];
-            if (!isset($groupFirst[$oid]) || strtotime($h['appeared_at']) < strtotime($groupFirst[$oid])) {
-                $groupFirst[$oid] = $h['appeared_at'];
-            }
-        }
-
-        $sql_edges = "SELECT object_edge_id, edge_start, edge_end FROM object_edges WHERE edge_start IN ($inClause) AND edge_end IN ($inClause) AND deleted = 0 ORDER BY object_edge_id";
-        $result_edges = @$mysqli->query($sql_edges);
-        $edges = [];
-        if ($result_edges) {
-            $seen_edge_ids = [];
-            while ($er = $result_edges->fetch_assoc()) {
-                if (!in_array($er['object_edge_id'], $seen_edge_ids)) {
-                    $edges[] = $er;
-                    $seen_edge_ids[] = $er['object_edge_id'];
+        if (!empty($objectNodeIds)) {
+            $escapedIds = array_map(function($id) use ($mysqli) { return $mysqli->real_escape_string($id); }, $objectNodeIds);
+            $inClause = "'" . implode("','", $escapedIds) . "'";
+            
+            // 履歴取得
+            $histDateClause = '';
+            if ($start_date !== '' && $end_date !== '') {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+                    $h_start = $start_date . ' 00:00:00';
+                    $h_next = date('Y-m-d', strtotime($end_date . ' +1 day'));
+                    $histDateClause = " AND appeared_at >= '$h_start' AND appeared_at < '$h_next'";
+                } else {
+                    $histDateClause = " AND appeared_at >= '$start_date' AND appeared_at <= '$end_date'";
                 }
             }
-        } else {
-            error_log('[get_object_node_info] edges query failed: ' . $mysqli->error . ' sql=' . $sql_edges);
-        }
 
-        // 隣接リスト
-        foreach ($objectNodeIds as $n) { $adj[$n] = []; $indeg[$n] = 0; }
-        foreach ($edges as $e) {
-            $s = $e['edge_start']; $t = $e['edge_end'];
-            if (isset($adj[$s]) && !in_array($t, $adj[$s])) {
-                $adj[$s][] = $t;
-                $indeg[$t] = ($indeg[$t] ?? 0) + 1;
+            $sql_hist = "SELECT * FROM `object_nodes_histories` WHERE object_node_id IN ($inClause) AND drag = 0 $histDateClause 
+                         ORDER BY (SELECT MIN(h2.appeared_at) FROM `object_nodes_histories` h2 WHERE h2.object_node_id = object_nodes_histories.object_node_id) ASC, object_node_id ASC, appeared_at ASC";
+            
+            $result_hist = @$mysqli->query($sql_hist);
+            if ($result_hist) {
+                while ($h = $result_hist->fetch_assoc()) {
+                    $histories[] = $h;
+                    if (isset($h['object_node_history_id'])) $objectNodeHistoryIds[] = $h['object_node_history_id'];
+                }
+            } else {
+                error_log('[get_object_node_info] histories query failed: ' . $mysqli->error . ' sql=' . $sql_hist);
+            }
+
+            // --- エッジ取得・順序制御 ---
+            $groupFirst = [];
+            foreach ($histories as $h) {
+                $oid = $h['object_node_id'];
+                if (!isset($groupFirst[$oid]) || strtotime($h['appeared_at']) < strtotime($groupFirst[$oid])) {
+                    $groupFirst[$oid] = $h['appeared_at'];
+                }
+            }
+
+            $sql_edges = "SELECT object_edge_id, edge_start, edge_end FROM object_edges WHERE edge_start IN ($inClause) AND edge_end IN ($inClause) AND deleted = 0 ORDER BY object_edge_id";
+            $result_edges = @$mysqli->query($sql_edges);
+            $edges = [];
+            if ($result_edges) {
+                $seen_edge_ids = [];
+                while ($er = $result_edges->fetch_assoc()) {
+                    if (!in_array($er['object_edge_id'], $seen_edge_ids)) {
+                        $edges[] = $er;
+                        $seen_edge_ids[] = $er['object_edge_id'];
+                    }
+                }
+            } else {
+                error_log('[get_object_node_info] edges query failed: ' . $mysqli->error . ' sql=' . $sql_edges);
+            }
+
+            // 隣接リスト
+            foreach ($objectNodeIds as $n) { $adj[$n] = []; $indeg[$n] = 0; }
+            foreach ($edges as $e) {
+                $s = $e['edge_start']; $t = $e['edge_end'];
+                if (isset($adj[$s]) && !in_array($t, $adj[$s])) {
+                    $adj[$s][] = $t;
+                    $indeg[$t] = ($indeg[$t] ?? 0) + 1;
+                }
+            }
+
+            // トポロジカルソート的な順序付け (簡易版)
+            $queue = [];
+            foreach ($indeg as $node => $cnt) { if ($cnt === 0) $queue[] = $node; }
+            usort($queue, function($a, $b) use ($groupFirst) {
+                return (strtotime($groupFirst[$a] ?? 'now')) - (strtotime($groupFirst[$b] ?? 'now'));
+            });
+
+            $order = [];
+            $visited = [];
+            while (!empty($queue)) {
+                $node = array_shift($queue);
+                if (isset($visited[$node])) continue;
+                $visited[$node] = true;
+                $order[] = $node;
+                foreach ($adj[$node] as $child) {
+                    if (!isset($visited[$child])) $queue[] = $child;
+                }
+            }
+            $orderedObjectNodeIds = !empty($order) ? $order : $objectNodeIds;
+
+            // --- 教訓取得 ---
+            $sql_lessons = "SELECT * FROM `object_lesson-learneds` WHERE object_node_id IN ($inClause) AND deleted = 0 ORDER BY created_at ASC";
+            $result_lessons = @$mysqli->query($sql_lessons);
+            if ($result_lessons) {
+                while ($lr = $result_lessons->fetch_assoc()) {
+                    $lessons[$lr['object_node_id']][] = $lr;
+                }
+            } else {
+                error_log('[get_object_node_info] lessons query failed: ' . $mysqli->error . ' sql=' . $sql_lessons);
             }
         }
 
-        // トポロジカルソート的な順序付け (簡易版)
-        $queue = [];
-        foreach ($indeg as $node => $cnt) { if ($cnt === 0) $queue[] = $node; }
-        usort($queue, function($a, $b) use ($groupFirst) {
-            return (strtotime($groupFirst[$a] ?? 'now')) - (strtotime($groupFirst[$b] ?? 'now'));
-        });
-
-        $order = [];
-        $visited = [];
-        while (!empty($queue)) {
-            $node = array_shift($queue);
-            if (isset($visited[$node])) continue;
-            $visited[$node] = true;
-            $order[] = $node;
-            foreach ($adj[$node] as $child) {
-                if (!isset($visited[$child])) $queue[] = $child;
-            }
+        // 親マッピング
+        $node_parents = [];
+        foreach ($objectNodeIds as $n) $node_parents[(string)$n] = [];
+        foreach ($adj as $p => $children) {
+            foreach ($children as $c) { $node_parents[(string)$c][] = (string)$p; }
         }
-        $orderedObjectNodeIds = !empty($order) ? $order : $objectNodeIds;
 
-        // --- 教訓取得 ---
-        $sql_lessons = "SELECT * FROM `object_lesson-learneds` WHERE object_node_id IN ($inClause) AND deleted = 0 ORDER BY created_at ASC";
-        $result_lessons = @$mysqli->query($sql_lessons);
-        if ($result_lessons) {
-            while ($lr = $result_lessons->fetch_assoc()) {
-                $lessons[$lr['object_node_id']][] = $lr;
-            }
-        } else {
-            error_log('[get_object_node_info] lessons query failed: ' . $mysqli->error . ' sql=' . $sql_lessons);
+        $strObjectNodeIds = array_map('strval', $objectNodeIds);
+        $strOrderedObjectNodeIds = array_map('strval', $orderedObjectNodeIds);
+
+        $node_children = [];
+        foreach ($objectNodeIds as $n) $node_children[(string)$n] = [];
+        foreach ($adj as $p => $children) {
+            foreach ($children as $c) { $node_children[(string)$p][] = (string)$c; }
         }
+
+        echo json_encode([
+            'success' => true,
+            'data' => $rows,
+            'object_node_ids' => $strObjectNodeIds,
+            'ordered_object_node_ids' => $strOrderedObjectNodeIds,
+            'object_node_history_ids' => $objectNodeHistoryIds,
+            'histories' => $histories,
+            'lessons' => $lessons,
+            'node_children' => $node_children,
+            'node_parents' => $node_parents,
+            'answer_content' => $answer_content
+        ]);
+
+    } else {
+        echo json_encode(['success' => false, 'error' => '該当データなし', 'object_node_ids' => [], 'answer_content' => $answer_content]);
     }
-
-    // 親マッピング
-    $node_parents = [];
-    foreach ($objectNodeIds as $n) $node_parents[$n] = [];
-    foreach ($adj as $p => $children) {
-        foreach ($children as $c) { $node_parents[$c][] = $p; }
-    }
-
-    echo json_encode([
-        'success' => true,
-        'data' => $rows,
-        'object_node_ids' => $objectNodeIds,
-        'ordered_object_node_ids' => $orderedObjectNodeIds,
-        'object_node_history_ids' => $objectNodeHistoryIds,
-        'histories' => $histories,
-        'lessons' => $lessons,
-        'node_children' => $adj,
-        'node_parents' => $node_parents
-    ]);
-
-} else {
-    echo json_encode(['success' => false, 'error' => '該当データなし', 'object_node_ids' => []]);
-}

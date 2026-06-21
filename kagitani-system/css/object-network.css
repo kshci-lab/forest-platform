@@ -166,17 +166,20 @@
     height: auto;
     flex: 1;
     min-height: 150px;
-    /* margin-bottom:2vh; */
-    /* border-bottom:solid 5px #B3E0D8; */
-    /* border-top removed per request */
-    background: var(--background-white);
+    background-color: #f8fafc;
+    background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+    background-size: 20px 20px;
     overflow: hidden;
     float:none;
     display: none;
-    flex-direction: row; /* 横並びレイアウト */
-    position: relative; /* control-panelの絶対位置の基準 */
+    flex-direction: column; /* ヘッダーとマップを縦に並べる */
+    position: relative;
     box-sizing: border-box;
+    border-top: 4px solid #0ea5e9;
+    box-shadow: inset 0 8px 16px rgba(0,0,0,0.03);
 }
+
+
 #myProcessnetwork {
     position: relative;
     flex: 1; /* 残りのスペースを占有 */
@@ -197,7 +200,7 @@
     min-height: 0; /* リサイズ時に潰れるのを防ぐために 0 に変更 */
     /* margin-bottom:2vh; */
     /* border-top:solid 5px #B3E0D8; */
-    background: var(--background-white);
+    background: transparent;
     overflow: hidden; /* 無駄なスクロールバーを防ぐために hidden に変更 */
     display: flex;
     flex-direction: column;
@@ -500,18 +503,15 @@ input[type="checkbox"][name="check_process"]{
     align-items: center;
     gap: 6px;
     padding: 4px 6px;
-    background: var(--background-white);
-    border-radius: 5px;
-    border: 1px solid var(--border-light);
-    box-shadow: 0 1px 3px var(--shadow-light);
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
     opacity: 0.9;
     transition: opacity 0.3s ease;
     pointer-events: auto;
     /* 横長のナビは内部で横スクロールさせることがあるので、必要ならoverflow-xは維持 */
-    position: relative;
-    z-index: 30; /* container より前面に表示 */
-    /* 下方向に少し重なるようにマージンで次要素を引き上げる */
-    margin-bottom: -40px;
+    /* style.cssの position: absolute を優先させるため relative や margin-bottom を削除 */
     /* 横スクロールを禁止し、ボタンは折り返して表示する（スクロール不可） */
     overflow-x: hidden;
     overflow-y: visible;
@@ -579,25 +579,6 @@ input[type="checkbox"][name="check_process"]{
     box-shadow: 0 4px 12px rgba(74, 144, 226, 0.12);
 }
 
-/* ボタンクラスター全体のスタイル */
-#buttoncluster {
-    display: flex;
-    gap: 8px;
-    padding: 10px 14px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    align-items: flex-start;
-    flex-wrap: nowrap;
-}
-
-/* ボタングループ（ボタン＋ラベル） */
-.button-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
 
 /* ボタンラベル */
 .button-label {
@@ -752,10 +733,11 @@ input[type="checkbox"][name="check_process"]{
     align-items: center;
     gap: 12px;
     flex: 1;
-    padding: 12px;
-    background: var(--background-light);
-    border-radius: 8px;
-    border: 1px solid var(--border-light);
+    padding: 12px 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
 }
 
 /* タイムラインスライダー */
@@ -818,10 +800,7 @@ input[type="checkbox"][name="check_process"]{
 
 /* レスポンシブデザイン対応 */
 @media (max-width: 768px) {
-    #buttoncluster {
-        gap: 8px;
-        padding: 8px;
-    }
+
     
     .process_close,
     .thinkingProcess_network_button {
@@ -839,82 +818,11 @@ input[type="checkbox"][name="check_process"]{
     }
 }
 
-/* 各ボタンの個別カラー設定 - 統一された色調 */
-.process_close {
-    background: #e74c3c !important;
-}
 
-.process_close:hover {
-    background: #c0392b !important;
-}
-
-#process_addNode {
-    background: #27ae60 !important;
-}
-
-#process_addNode:hover {
-    background: #229954 !important;
-}
-
-#process_removeNode {
-    background: #e74c3c !important; /* 統一: 赤 */
-    color: #fff !important;
-    border-color: #c0392b !important;
-}
-
-#process_removeNode:hover {
-    background: #c0392b !important; /* 統一: hover 赤 */
-}
-
-#process_startEditEdge {
-    background: #3498db !important;
-}
-
-#process_startEditEdge:hover {
-    background: #2980b9 !important;
-}
-
-#process_ZoomIn,
-#mrnb_ZoomIn {
-    /* 拡大ボタンを縮小ボタンと同じ灰色系に統一 */
-    background: #6c757d !important;
-}
-
-#process_ZoomIn:hover,
-#mrnb_ZoomIn:hover {
-    background: #5a6268 !important;
-}
-
-/* 無効化状態の見た目 */
-.thinkingProcess_network_button.disabled,
-.thinkingProcess_network_button:disabled {
-    opacity: 0.45 !important;
-    cursor: not-allowed !important;
-    filter: grayscale(40%);
-}
-
-/* 追加でボタン内のテキストも淡色にする */
-.thinkingProcess_network_button.disabled .button-text,
-.thinkingProcess_network_button:disabled .button-text {
-    color: rgba(255,255,255,0.7) !important;
-}
-
-#process_ZoomOut,
-#mrnb_ZoomOut {
-    background: #6c757d !important;
-}
-
-#process_ZoomOut:hover,
-#mrnb_ZoomOut:hover {
-    background: #5a6268 !important;
-}
 
 /* レスポンシブデザイン対応 */
 @media (max-width: 768px) {
-    #buttoncluster {
-        gap: 6px;
-        padding: 8px;
-    }
+
     
     .process_close,
     .thinkingProcess_network_button {
@@ -935,169 +843,115 @@ input[type="checkbox"][name="check_process"]{
 
 /* -------------------- conmenu類の設定 ---------------------- */
 
-/* -------------------- モダンなコンテキストメニュー ---------------------- */
-
-.context-menu {
-    min-width: 240px;
-    max-width: 280px;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    overflow: hidden;
+/* ========================================================
+   Floating Status Toolbar
+   ======================================================== */
+.floating-status-toolbar {
+    background-color: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+    padding: 6px 10px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom center;
+    /* initial state for animation */
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+    pointer-events: none; /* ignore clicks when hidden */
 }
 
-.context-menu-header {
-    background: #f8f9fa;
-    color: #333;
-    padding: 10px 12px;
-    font-weight: 500;
-    font-size: 13px;
-    text-align: center;
-    border-bottom: 1px solid #eee;
+.floating-status-toolbar.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
 }
 
-.context-menu-title {
-    display: block;
+.status-btn-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
-.context-menu-list {
-    list-style: none;
-    margin: 0;
-    padding: 4px 0;
-}
-
-.context-menu-item {
-    margin: 0;
+.status-btn {
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
 }
 
-.context-menu-link {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    color: #333;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 400;
-    transition: background-color 0.15s ease;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    width: 100%;
-    box-sizing: border-box;
+.status-btn:hover {
+    background: #f1f5f9;
+    transform: scale(1.15) translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
 }
 
-.context-menu-icon {
-    font-size: 14px;
-    margin-right: 10px;
-    width: 16px;
-    text-align: center;
+.status-icon {
+    width: 20px;
+    height: 20px;
+    color: #475569;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
-.context-menu-text {
-    flex: 1;
-    text-align: left;
+#object_conmenu1:hover .status-icon {
+    color: #2563eb; /* Blue for start */
+}
+#object_conmenu3:hover .status-icon {
+    color: #ca8a04; /* Yellow for pause */
+}
+#object_conmenu2:hover .status-icon {
+    color: #16a34a; /* Green for complete */
 }
 
-/* ステータス操作系のアイテム */
-.context-menu-item.status-action .context-menu-link:hover {
-    background: #f0f8ff;
-    color: #0066cc;
+/* ツールチップスタイル */
+.status-btn[title] {
+    position: relative;
 }
 
-/* アノテーション操作系のアイテム */
-.context-menu-item.annotation-action .context-menu-link:hover {
-    background: #fff8f0;
-    color: #cc6600;
-}
-
-/* キャンセル操作 */
-.context-menu-item.cancel-action .context-menu-link:hover {
-    background: #fff0f0;
-    color: #cc0000;
-}
-
-/* セパレーター */
-.context-menu-separator {
-    height: 1px;
-    background: #eee;
-    margin: 4px 0;
-}
-
-/* アクティブ状態のフィードバック */
-.context-menu-link:active {
-    background: #e9ecef;
-}
-
-/* アクセシビリティ改善 */
-.context-menu-link:focus {
-    outline: 2px solid #0066cc;
-    outline-offset: -2px;
-    background: #f0f8ff;
-    color: #0066cc;
-}
-
-/* キーボードナビゲーション時のみアウトラインを表示 */
-.context-menu:focus-within .context-menu-link {
-    outline: none;
-}
-
-.context-menu-link[tabindex="0"]:focus-visible {
-    outline: 2px solid #667eea;
-    outline-offset: -2px;
-}
-
-/* ツールチップスタイル（コンテキストメニュー用） */
-.context-menu-link[title]:hover::after {
+.status-btn[title]:hover::after {
     content: attr(title);
     position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 8px;
-    padding: 6px 10px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #ffffff;
+    padding: 4px 8px;
     border-radius: 6px;
     font-size: 12px;
+    font-weight: 500;
     white-space: nowrap;
-    z-index: 3000;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 10001;
+    opacity: 0;
+    animation: tooltipFadeIn 0.2s 0.2s forwards;
+}
+
+.status-btn[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(110% - 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px 5px 0 5px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
     pointer-events: none;
     opacity: 0;
-    animation: tooltipFadeIn 0.3s ease 0.5s forwards;
+    animation: tooltipFadeIn 0.2s 0.2s forwards;
 }
 
 @keyframes tooltipFadeIn {
     to { opacity: 1; }
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-    .context-menu {
-        min-width: 240px;
-        max-width: 280px;
-        border-radius: 8px;
-    }
-    
-    .context-menu-link {
-        padding: 14px 16px;
-        font-size: 16px;
-    }
-    
-    .context-menu-icon {
-        font-size: 18px;
-        margin-right: 14px;
-    }
-    
-    /* モバイルではツールチップを無効化 */
-    .context-menu-link[title]:hover::after {
-        display: none;
-    }
 }
 #t_Process_labelselect{
     width:200px;
@@ -1162,6 +1016,7 @@ display: none;
     gap: 16px;
     position: relative;
     height: 100%; /* 親要素の高さに合わせる */
+    width: 100%; /* 全幅に広げる */
     z-index: 9999; /* 全体のヘッダーを最前面に */
     overflow: visible; /* ドロップダウンメニューが見えるように */
 }
@@ -1174,38 +1029,39 @@ display: none;
 }
 
 .settings-button {
-    width: 30px;
-    height: 30px;
+    background: transparent;
+    border: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    padding: 3px;
-    border: 0;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    transition: background 0.25s ease, transform 0.25s ease;
+    padding: 0;
+    margin-left: 8px; /* matching system-manual-link */
+    opacity: 0.5;
+    color: #ffffff;
+    transition: all 0.2s ease;
 }
 
 .settings-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: rotate(15deg);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+    transform: translateY(-1px);
 }
 
 .settings-button:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.6);
-    outline-offset: 2px;
+    outline: none;
 }
 
 .settings-icon {
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
     fill: none;
-    stroke: #ffffff;
-    stroke-width: 1.6;
+    stroke: currentColor;
+    stroke-width: 2.5;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
+
 
 .title_name {
     cursor: default;
@@ -1534,11 +1390,12 @@ display: none;
 
 /* モーダル全体のコンテナ：上部に上品な余白を確保 */
 .modal-add-action-v4 {
-  padding: 32px 24px 24px 24px !important;
+  padding: 32px 28px 28px 28px !important;
   box-sizing: border-box;
   background: #ffffff !important;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08) !important;
 }
 
 /* 入力ブロック：横幅100%で広々と使えるように */
@@ -1557,41 +1414,59 @@ display: none;
 
 /* 決定ボタン（手段追加）の佇まい */
 .modal-actions-v4 .btn-submit {
-  background-color: #004d40 !important; /* システムの深いグリーンをここに灯す */
+  background-color: #5A9BD5 !important; /* ブルーに変更して統一感を出す */
   color: #ffffff !important;
   font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 12px 24px;
+  border-radius: 20px;
   border: none;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(90, 155, 213, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+.modal-actions-v4 .btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(90, 155, 213, 0.4) !important;
 }
 .modal-actions-v4 .btn-submit:focus {
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(0, 77, 64, 0.2) !important; /* 完了・決定時のフォーカス残光 */
+  box-shadow: 0 0 0 3px rgba(90, 155, 213, 0.3) !important;
 }
 
 
-/* 右上キャンセルボタンの絶対配置 */
+/* 右上キャンセルボタンの絶対配置 (外側に浮かせる赤いボタン) */
 .modal-close-v4-btn {
   position: absolute !important;
-  top: 16px !important;
-  right: 16px !important;
-  
-  background: transparent !important;
-  border: none !important;
-  color: #94a3b8 !important; /* 普段は極めて静かなグレー */
-  padding: 4px;
+  top: -12px !important;
+  right: -12px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: #e74c3c !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  padding: 0 !important;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3) !important;
+  z-index: 100;
 }
 
 /* ホバー時に実直に反応する演出 */
 .modal-close-v4-btn:hover {
-  color: #475569 !important; /* 少し濃くなって「押せる」ことを示す */
-  transform: scale(1.05);
+  background: #c0392b !important;
+  color: #ffffff !important;
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4) !important;
+}
+
+.modal-close-v4-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.5;
 }
 
 /* 右下ボタンエリアの最適化（右寄せ） */
@@ -1666,4 +1541,85 @@ display: none;
   box-shadow: 0 20px 35px rgba(0, 77, 64, 0.12) !important; /* 影を深くして、キャンバスから「浮いた」ことを表現 */
   transition: none !important; /* ドラッグ中の追従遅延をなくす */
 }
+
+/* メインマップツールバー (北欧ミニマル v3) */
+.main-map-toolbar-v3 {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border-radius: 24px;
+    padding: 6px 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.04);
+    gap: 10px;
+    margin-bottom: 8px;
+    width: fit-content;
+    box-sizing: border-box;
+    border: none;
+}
+
+.main-map-toolbar-v3 .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.main-map-toolbar-v3 .toolbar-btn {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 2px;
+    transition: transform 0.15s ease, opacity 0.2s;
+    outline: none;
+}
+
+.main-map-toolbar-v3 .toolbar-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+.main-map-toolbar-v3 .toolbar-btn:active {
+    transform: translateY(0) scale(0.96);
+}
+
+.main-map-toolbar-v3 .icon-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: box-shadow 0.2s ease;
+}
+
+.main-map-toolbar-v3 .toolbar-btn:hover .icon-circle {
+    box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+}
+
+.main-map-toolbar-v3 .toolbar-text {
+    font-size: 9px;
+    color: #666;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.main-map-toolbar-v3 .toolbar-divider {
+    width: 1px;
+    height: 30px;
+    background-color: #eaeaea;
+}
+
+/* 各アイコンのカラー定義 (彩度を抑えた上質なトーン) */
+.bg-sync-blue { background-color: #5A9BD5; }
+.bg-sync-amber { background-color: #E6A040; }
+.bg-sync-green { background-color: #6FA469; }
+.bg-sync-red { background-color: #D66155; }
+.bg-sync-charcoal { background-color: #606C76; }
+.bg-sync-slate { background-color: #7B8B9A; }
+
 

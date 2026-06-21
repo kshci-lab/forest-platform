@@ -190,14 +190,26 @@
 }
 .jr-tree-line {
   position: absolute;
-  top: -16px; /* extend upwards to connect with parent or previous sibling */
-  width: 16px;
-  height: 40px; /* enough to go down to the center of the current item */
-  border-left: 1px solid #cbd5e0; /* light gray, very thin */
-  border-bottom: 1px solid #cbd5e0;
-  border-bottom-left-radius: 4px; /* subtle curve */
+  top: -16px;
+  left: -20px;
+  width: 20px;
+  height: 40px;
+  border-left: 2px solid #94a3b8; /* bolder blue-gray */
+  border-bottom: 2px solid #94a3b8;
+  border-bottom-left-radius: 8px; /* smoother curve */
   pointer-events: none;
   z-index: 1;
+}
+
+.jr-tree-line::after {
+  content: '';
+  position: absolute;
+  right: -4px; /* center on the end of the bottom border */
+  bottom: -4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
 }
 
 /* Tooltip Custom Classes */
@@ -575,17 +587,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  padding: 0 12px;
   flex-shrink: 0;
   background-color: #f1f5f9;
   color: #64748b;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 13px;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0;
-  margin-bottom: 12px;
 }
 
 #showQuestionsBtn:hover {
@@ -595,7 +606,13 @@
 
 /* サジェスト用ルート（相対配置） */
 .search-container-root {
-  position: relative;
+  position: sticky;
+  top: -12px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  margin-top: -12px;
+  background-color: #f8fafc;
+  z-index: 100;
   width: 100%;
 }
 
@@ -686,26 +703,34 @@ jmnode.is-question-node:hover .btn-add-answer-inline {
    左上ロゴボタンのクリーンアップ (旧SRLボタン)
    ======================================================== */
 .header-logo-btn {
-  background: transparent !important; /* 白背景を完全に消去 */
+  background: #ffffff !important;
   border: none !important;
-  box-shadow: none !important;
-  color: #ffffff !important;
-  
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  cursor: pointer;
-  
-  /* 普段は少しヘッダーになじませる */
-  opacity: 0.8;
-  transition: all 0.2s ease;
+  border-radius: 50% !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  color: #475569 !important;
+  padding: 0 !important;
+  margin-right: 8px !important;
 }
 
-/* ホバー時にだけ優しく灯る */
 .header-logo-btn:hover {
-  opacity: 1 !important;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.1) !important;
+  color: #5A9BD5 !important;
+}
+
+.header-logo-btn svg {
+  transition: transform 0.3s ease, color 0.2s ease !important;
+}
+
+.header-logo-btn:hover svg {
+  transform: scale(1.1) !important;
 }
 
 /* ========================================================

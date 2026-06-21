@@ -237,7 +237,7 @@
 
 			if (in_array('purpose', $existingCols)) {
 				$insertCols[] = 'purpose';
-				$selectParts[] = 'purpose';
+				$selectParts[] = "'" . $mysqli->real_escape_string($reason_text) . "'"; // 常に書き込んだ理由を履歴のpurposeに保存する
 			}
 
 			// activity: 3 = 理由を記述
