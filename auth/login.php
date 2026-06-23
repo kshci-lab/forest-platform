@@ -12,6 +12,7 @@ try {
     $authorizationUrl = $provider->getAuthorizationUrl(array(
         'scope' => $config['scope'],
         'nonce' => $nonce,
+        'prompt' => 'login',
     ));
 
     $_SESSION['HCIMLAB_SSO_STATE'] = $provider->getState();
