@@ -1,0 +1,11 @@
+{
+  "name": "hcimlab/forest-platform",
+  "description": "Forest Platform with HCIMLab SSO integration.",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.0",
+    "ext-json": "*",
+    "firebase/php-jwt": "^7.0",
+    "league/oauth2-client": "^2.8"
+  }
+}

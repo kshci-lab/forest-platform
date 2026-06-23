@@ -7,6 +7,10 @@ session_start();
 
 // エラーメッセージの初期化
 $errorMessage = "";
+if (!empty($_SESSION['SSO_ERROR'])) {
+  $errorMessage = $_SESSION['SSO_ERROR'];
+  unset($_SESSION['SSO_ERROR']);
+}
 
 // ログインボタンが押された場合
 if (isset($_POST["login"])) {
@@ -100,10 +104,14 @@ if (isset($_POST["login"])) {
       <label for="password"></label>
       <input type="password" name="password" required="required" placeholder="Password" value="">
     </div>
-    <div class="button-panel">
+  <div class="button-panel">
       <input type="submit" id="login" class="button" name="login" value="Login"></input>
     </div>
   </form>
+  <div class="button-panel">
+    <input type="button" class="button" value="HCIMLab SSO Login" onClick="location.href='auth/login.php'">
+  </div>
+  <div><?php echo htmlspecialchars($errorMessage, ENT_QUOTES); ?></div>
   <div class="form-footer">
     <p><a href="create_account.php">Create an account</a></p>
   </div>

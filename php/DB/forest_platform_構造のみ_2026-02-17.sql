@@ -1415,9 +1415,18 @@ CREATE TABLE `trigger_candidates` (
 
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL,
+  `sso_sub` varchar(191) DEFAULT NULL,
   `name` varchar(45) NOT NULL,
   `login_time` timestamp NOT NULL DEFAULT current_timestamp(),
-  `password` varchar(999) NOT NULL
+  `password` varchar(999) NOT NULL,
+  `sso_user_id` varchar(191) DEFAULT NULL,
+  `sso_username` varchar(191) DEFAULT NULL,
+  `email` varchar(191) DEFAULT NULL,
+  `display_name` varchar(191) DEFAULT NULL,
+  `role` varchar(45) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `sso_claims_json` longtext DEFAULT NULL,
+  `sso_updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 
 -- --------------------------------------------------------
@@ -2067,7 +2076,8 @@ ALTER TABLE `triggers`
 -- テーブルのインデックス `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`user_id`);
+  ADD PRIMARY KEY (`user_id`),
+  ADD UNIQUE KEY `users_sso_sub_unique` (`sso_sub`);
 
 --
 -- ダンプしたテーブルの AUTO_INCREMENT
