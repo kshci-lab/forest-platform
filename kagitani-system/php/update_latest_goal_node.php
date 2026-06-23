@@ -15,13 +15,18 @@ if ($node_id === '') {
 
 $object_journal_id = isset($_POST['object_journal_id']) ? $_POST['object_journal_id'] : '';
 
+$map_id = isset($_POST['map_id']) ? $_POST['map_id'] : '';
+
 // 最新の小目標を取得
 if ($object_journal_id !== '') {
     $latest_goal_id = $object_journal_id;
     $should_insert = true;
-} else {
-    $sql = "SELECT object_journal_id FROM object_journals WHERE `delete`=0 ORDER BY update_at DESC LIMIT 1";
-    $result = $mysqli->query($sql);
+} else if ($map_id !== '') {
+    $sql = "SELECT object_journal_id FROM object_journals WHERE `delete`=0 AND map_id=? ORDER BY update_at DESC LIMIT 1";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param('s', $map_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
     if ($result && $row = $result->fetch_assoc()) {
         $latest_goal_id = $row['object_journal_id'];
         $should_insert = true;
@@ -29,6 +34,9 @@ if ($object_journal_id !== '') {
         $should_insert = false;
         echo '小目標が見つかりません';
     }
+} else {
+    $should_insert = false;
+    echo 'マップIDが指定されていません';
 }
 
 if ($should_insert) {

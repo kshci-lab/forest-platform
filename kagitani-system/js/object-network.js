@@ -457,35 +457,44 @@ class LegacyUndoRedoManager {
 }
 
 // ノードの色を暗くしてエッジ用の色を生成するヘルパー関数
+const _colorCache = {};
+const _tempColorEl = document.createElement('div');
+_tempColorEl.style.display = 'none';
+
 function darkenColor(color, amount = 0.3) {
-    // HEX形式の色を処理
-    let hex = color.replace('#', '');
+    if (!color) return '#333333';
+    if (typeof color !== 'string') return '#333333';
     
-    // 8桁のHEX（アルファチャンネル付き）の場合は6桁に変換
-    if (hex.length === 8) {
-        hex = hex.substring(0, 6);
+    const cacheKey = color + '_' + amount;
+    if (_colorCache[cacheKey]) return _colorCache[cacheKey];
+    
+    if (!_tempColorEl.parentNode) {
+        document.body.appendChild(_tempColorEl);
     }
     
-    // 3桁のHEXを6桁に変換
-    if (hex.length === 3) {
-        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    _tempColorEl.style.color = color;
+    const computedColor = window.getComputedStyle(_tempColorEl).color;
+    
+    const match = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    
+    let result = '#333333';
+    if (match) {
+        let r = parseInt(match[1]);
+        let g = parseInt(match[2]);
+        let b = parseInt(match[3]);
+        
+        r = Math.max(0, Math.floor(r * (1 - amount)));
+        g = Math.max(0, Math.floor(g * (1 - amount)));
+        b = Math.max(0, Math.floor(b * (1 - amount)));
+        
+        result = '#' + 
+            r.toString(16).padStart(2, '0') + 
+            g.toString(16).padStart(2, '0') + 
+            b.toString(16).padStart(2, '0');
     }
     
-    // RGB値を抽出
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    
-    // 各成分を暗くする
-    const newR = Math.max(0, Math.floor(r * (1 - amount)));
-    const newG = Math.max(0, Math.floor(g * (1 - amount)));
-    const newB = Math.max(0, Math.floor(b * (1 - amount)));
-    
-    // HEX形式に戻す
-    return '#' + 
-        newR.toString(16).padStart(2, '0') + 
-        newG.toString(16).padStart(2, '0') + 
-        newB.toString(16).padStart(2, '0');
+    _colorCache[cacheKey] = result;
+    return result;
 }
 
 // グローバルスコープに移動
@@ -628,7 +637,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             // disable oncontext
             // this.ownNetwork.on("oncontext", this.onContext.bind(this));
             this.ownNetwork.on('select', this.selectdelete.bind(this));
-            this.ownNetwork.on('selectNode', this.onNodeSelectedForToolbar.bind(this));
+            // 右クリックでコンテキストメニューを表示するよう変更
+            this.ownNetwork.on('oncontext', this.onContextMenuForToolbar.bind(this));
             this.ownNetwork.on('deselectNode', this.onNodeDeselectedForToolbar.bind(this));
             this.ownNetwork.on('dragging', this.onNodeDraggingForToolbar.bind(this));
             this.ownNetwork.on('zoom', this.onNodeDraggingForToolbar.bind(this));
@@ -1607,12 +1617,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
                 const reflectionTag = {
                     id: reflectionTagId,
-                    label: '📝',
-                    shape: 'text',
-                    font: { 
-                        size: 24,
-                        face: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
-                    },
+                    shape: 'image',
+                    image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#2b7a78" /><g transform="translate(4, 4)" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></g></svg>'),
+                    size: 14,
                     x: nodeBoundingBox.right - 4,
                     y: nodeBoundingBox.top + 4,
                     fixed: true,
@@ -2411,6 +2418,25 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     originalLabel: nodeDataForUndo.label ? nodeDataForUndo.label.replace(/\n/g, '') : ''
                 });
             }
+        }
+    }
+
+    onContextMenuForToolbar(params) {
+        // デフォルトの右クリックメニューを無効化
+        params.event.preventDefault();
+
+        if (this.isViewingPastData) return;
+
+        const nodeId = this.ownNetwork.getNodeAt(params.pointer.DOM);
+        if (nodeId) {
+            // 他の選択を解除して、右クリックされたノードを選択する
+            this.ownNetwork.selectNodes([nodeId]);
+            
+            // onNodeSelectedForToolbarと同じ形式のパラメータを渡してツールバーを表示
+            this.onNodeSelectedForToolbar({ nodes: [nodeId] });
+        } else {
+            // ノード以外の場所が右クリックされた場合は非表示にする
+            this.onNodeDeselectedForToolbar();
         }
     }
 
@@ -4316,12 +4342,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                             // 既存のタグを更新
                             this.nodes.update({
                                 id: reflectionTagId,
-                                label: '📝',
-                                shape: 'text',
-                                font: { 
-                                    size: 24,
-                                    face: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
-                                },
+                                shape: 'image',
+                                image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#2b7a78" /><g transform="translate(4, 4)" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></g></svg>'),
+                                size: 14,
                                 title: titleText || '内省データ',
                                 reflectionData: {
                                     successPoints: successPoints || '',
@@ -4337,12 +4360,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                             // 新しい内省タグを追加
                             const reflectionTag = {
                                 id: reflectionTagId,
-                                label: '📝',
-                                shape: 'text',
-                                font: { 
-                                    size: 24,
-                                    face: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
-                                },
+                                shape: 'image',
+                                image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#2b7a78" /><g transform="translate(4, 4)" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></g></svg>'),
+                                size: 14,
                                 x: nodeBoundingBox.right - 4,
                                 y: nodeBoundingBox.top + 4,
                                 fixed: true,
@@ -6285,7 +6305,7 @@ const getProcessMapDataFromDB = (callback, targetNodeId) => {
                         selected_node_id: selected_node_id,
                         selected_concept_id: selected_concept_id,
                         concept_ids: conceptIds,
-                        descendant_node_ids: selected_node_id ? collectDescendantNodeIds(selected_node_id) : []
+                        descendant_node_ids: selected_node_id ? [selected_node_id] : []
                     },
                 }).success((r) => {
                     trigger_list = JSON.parse(r);
@@ -7068,7 +7088,8 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
 
             if (Array.isArray(trigger_list_info.onode)) {
                 // 4. ルートから辿れる（繋がっている）ノードだけを実直に残す
-                trigger_list_info.onode = trigger_list_info.onode.filter(n => reachableNodeIds.has(String(n.object_node_id)));
+                // 修正：未接続の手段ノード（新規追加直後など）がリロードで消えてしまう不具合を防ぐため、フィルタリングを無効化
+                // trigger_list_info.onode = trigger_list_info.onode.filter(n => reachableNodeIds.has(String(n.object_node_id)));
             }
 
             trigger_list_info.onode.map((n) => {

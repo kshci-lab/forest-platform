@@ -119,6 +119,31 @@ while ($row = $result->fetch_assoc()) {
         $answer_content = $ans_row['content'];
     }
 
+    $answer_histories = [];
+    $histDateClauseForAnswer = '';
+    if ($start_date !== '' && $end_date !== '') {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
+            $h_start = $start_date . ' 00:00:00';
+            $h_next = date('Y-m-d', strtotime($end_date . ' +1 day'));
+            $histDateClauseForAnswer = " AND h.appeared_at >= '$h_start' AND h.appeared_at < '$h_next'";
+        } else {
+            $histDateClauseForAnswer = " AND h.appeared_at >= '$start_date' AND h.appeared_at <= '$end_date'";
+        }
+    }
+    
+    // Fetch answer histories in the date range
+    $sql_answer_hist = "SELECT h.content, h.appeared_at FROM node_histories h JOIN node_versions v ON h.node_version_id = v.node_version_id WHERE v.parent_id = '" . $escaped_node_id . "' AND v.node_type_id = 5 " . $histDateClauseForAnswer . " ORDER BY h.appeared_at ASC";
+    $result_ans_hist = @$mysqli->query($sql_answer_hist);
+    if ($result_ans_hist) {
+        $last_content = null;
+        while ($h = $result_ans_hist->fetch_assoc()) {
+            if ($h['content'] !== $last_content) {
+                $answer_histories[] = $h;
+                $last_content = $h['content'];
+            }
+        }
+    }
+
     if ($rows) {
         $objectNodeIds = array_map(function($row){ return $row['object_node_id']; }, $rows);
         $orderedObjectNodeIds = $objectNodeIds;
@@ -249,9 +274,10 @@ while ($row = $result->fetch_assoc()) {
             'lessons' => $lessons,
             'node_children' => $node_children,
             'node_parents' => $node_parents,
-            'answer_content' => $answer_content
+            'answer_content' => $answer_content,
+            'answer_histories' => $answer_histories
         ]);
 
     } else {
-        echo json_encode(['success' => false, 'error' => '該当データなし', 'object_node_ids' => [], 'answer_content' => $answer_content]);
+        echo json_encode(['success' => false, 'error' => '該当データなし', 'object_node_ids' => [], 'answer_content' => $answer_content, 'answer_histories' => $answer_histories]);
     }

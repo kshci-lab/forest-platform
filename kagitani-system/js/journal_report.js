@@ -49,7 +49,7 @@
                 var jrLink = document.createElement('link');
                 jrLink.id = 'jr-css';
                 jrLink.rel = 'stylesheet';
-                jrLink.href = './css/journal_report.css';
+                jrLink.href = './css/journal_report.css?v=' + new Date().getTime();
                 document.head.appendChild(jrLink);
             }
         } catch (e) { console.warn('journal_report: failed to inject CSS', e); }
@@ -112,7 +112,7 @@
                                             });
                                         } catch (e) { console.error('build contentArr error', e); }
                                         var dispText = (goalContents[i] ? (typeof goalContents[i] === 'object' ? (goalContents[i].content || goalContents[i].node_id || '') : goalContents[i]) : '');
-                                        resolve({ display: dispText, answer_content: objRes.answer_content || '', content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
+                                        resolve({ display: dispText, answer_content: objRes.answer_content || '', answer_histories: objRes.answer_histories || [], content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
                                     },
                                     error: function (xhr, status, err) {
                                         console.error('journal_report: get_object_node_info error', {
@@ -153,24 +153,18 @@
                             var theme = (typeof window.theme !== 'undefined') ? window.theme : { border:'#e6eaf0', text:'#233043', muted:'#7a8698', accent:'#1363df', primary:'#2b7a78' };
                             // override any modalContent fixed width/padding if set elsewhere, let it fill the floating window
                             modalContent.style.flex = '1';
-                            modalContent.style.overflowY = 'auto';
+                            modalContent.style.overflowY = 'hidden'; // Ensure it doesn't scroll globally, so columns can scroll independently
+                            modalContent.style.display = 'flex';
+                            modalContent.style.flexDirection = 'column';
                             modalContent.style.padding = '0'; // padding will be managed by header and layout
                             modalContent.style.margin = '0';
                             modalContent.style.width = '100%';
                             modalContent.style.height = '100%';
                             modalContent.style.borderRadius = '0';
                             modalContent.style.boxShadow = 'none';
+                            modalContent.style.position = 'relative';
 
-                            var headerWrapper = document.createElement('div');
-                            headerWrapper.className = 'jr-header-wrapper';
-                            headerWrapper.style.display = 'flex';
-                            headerWrapper.style.justifyContent = 'space-between';
-                            headerWrapper.style.alignItems = 'center';
-                            headerWrapper.style.padding = '12px 24px';
-                            headerWrapper.style.background = '#f8fafc';
-                            headerWrapper.style.borderBottom = '1px solid #e2e8f0';
-                            headerWrapper.style.cursor = 'move'; // affordance for dragging
-                            headerWrapper.style.userSelect = 'none';
+                            // (Removed headerWrapper as per user request)
 
                             // Initialize unsaved changes state
                             window.__jr_hasUnsavedChanges = false;
@@ -179,7 +173,13 @@
                             var isDragging = false;
                             var dragStartX, dragStartY, initialLeft, initialTop;
                             
-                            headerWrapper.addEventListener('mousedown', function(e) {
+                            modalContent.addEventListener('mousedown', function(e) {
+                                // フォーム要素、ボタン、タブ、リンク等の上でドラッグを開始しない
+                                if (e.target.closest && e.target.closest('button, input, textarea, select, a, .jr-col-divider, .srl-tab, .srl-lessons-subtab, [contenteditable]')) {
+                                    return;
+                                }
+                                // テキスト選択などを考慮して、ドラッグ対象にならないクラス等を追加で除外する場合は適宜追加
+                                
                                 isDragging = true;
                                 dragStartX = e.clientX;
                                 dragStartY = e.clientY;
@@ -207,16 +207,9 @@
                                 }
                             });
 
-                            var periodHeading = document.createElement('h3');
-                            periodHeading.className = 'jr-period-heading';
-                            periodHeading.style.margin = '0';
-                            periodHeading.style.fontSize = '16px';
-                            periodHeading.textContent = (startDate || '') + '~' + (endDate || '') + ((getCurrentLang() === 'ja') ? 'に行ったこと' : ' activities');
+                            // (Removed periodHeading from here as per user request)
                             
-                            var headerRightWrap = document.createElement('div');
-                            headerRightWrap.style.display = 'flex';
-                            headerRightWrap.style.alignItems = 'center';
-                            headerRightWrap.style.marginLeft = 'auto';
+                            // headerRightWrap is removed along with headerWrapper
                             
                             var historyBtn = document.createElement('button');
                             historyBtn.type = 'button';
@@ -226,12 +219,15 @@
 
                             var closeIconBtn = document.createElement('button');
                             closeIconBtn.innerHTML = '&times;';
+                            closeIconBtn.style.position = 'absolute';
+                            closeIconBtn.style.top = '12px';
+                            closeIconBtn.style.right = '16px';
+                            closeIconBtn.style.zIndex = '10000';
                             closeIconBtn.style.background = 'transparent';
                             closeIconBtn.style.border = 'none';
                             closeIconBtn.style.fontSize = '24px';
                             closeIconBtn.style.color = '#a0aec0';
                             closeIconBtn.style.cursor = 'pointer';
-                            closeIconBtn.style.marginLeft = '16px';
                             closeIconBtn.style.padding = '0 4px';
                             closeIconBtn.style.lineHeight = '1';
                             closeIconBtn.style.transition = 'color 0.2s ease';
@@ -248,12 +244,8 @@
                                 document.body.removeChild(modal);
                             });
 
-                            headerRightWrap.appendChild(historyBtn);
-                            headerRightWrap.appendChild(closeIconBtn);
-                            
-                            headerWrapper.appendChild(periodHeading);
-                            headerWrapper.appendChild(headerRightWrap);
-                            modalContent.appendChild(headerWrapper);
+                            // Add close button directly to modal
+                            modal.appendChild(closeIconBtn);
 
                             // Two-column layout: Activity Process (left) + Reflections (right) + Divider
                             var twoColumnLayout = document.createElement('div');
@@ -267,6 +259,22 @@
                             // Removed left column header
                             var activityContent = document.createElement('div');
                             activityContent.className = 'jr-activity-content';
+                            
+                            var startParts = startDate ? startDate.split('-').map(Number) : [];
+                            var endParts = endDate ? endDate.split('-').map(Number) : [];
+                            var dateStr = '';
+                            if (startParts.length === 3 && endParts.length === 3) {
+                                dateStr = startParts[0] + '/' + startParts[1] + '/' + startParts[2] + '〜' + endParts[1] + '/' + endParts[2];
+                            } else {
+                                dateStr = (startDate || '') + '〜' + (endDate || '');
+                            }
+                            var periodHeading = document.createElement('h3');
+                            periodHeading.className = 'jr-period-heading';
+                            periodHeading.style.margin = '0 0 16px 0';
+                            periodHeading.style.fontSize = '18px';
+                            periodHeading.textContent = dateStr + ((getCurrentLang() === 'ja') ? 'に行ったこと' : ' activities');
+                            activityContent.appendChild(periodHeading);
+                            
                             leftColumn.appendChild(activityContent);
                             twoColumnLayout.appendChild(leftColumn);
 
@@ -1757,31 +1765,109 @@
 
                                 // タイトル (Question Header)
                                 var heading = document.createElement('div');
-                                heading.style.fontWeight = 'bold';
-                                heading.style.fontSize = '14px'; // 16px -> 14px (More compact)
-                                heading.style.padding = '10px 12px'; // 12px 14px -> 10px 12px
-                                heading.style.background = '#f1f5f9'; // light blue/gray
+                                heading.style.padding = '12px 14px';
+                                heading.style.background = '#f8fafc'; // slightly lighter gray
                                 heading.style.borderBottom = '1px solid ' + theme.border;
-                                heading.style.color = '#0f172a';
-                                heading.textContent = '🎯 ' + (item.display || '');
+                                heading.style.borderLeft = '4px solid ' + theme.primary; // アクセントカラーの太い左線
+                                
+                                // ラベルバッジ (案1)
+                                var labelBadge = document.createElement('div');
+                                labelBadge.textContent = '📍 目掛けた問い';
+                                labelBadge.style.fontSize = '11px';
+                                labelBadge.style.fontWeight = 'bold';
+                                labelBadge.style.color = theme.primary;
+                                labelBadge.style.marginBottom = '6px';
+                                labelBadge.style.letterSpacing = '0.5px';
+                                
+                                // 問いテキスト (案2: Q.を強調)
+                                var qText = document.createElement('div');
+                                qText.style.fontWeight = 'bold';
+                                qText.style.fontSize = '14px';
+                                qText.style.color = '#0f172a';
+                                qText.style.lineHeight = '1.4';
+                                qText.innerHTML = '<span style="color:' + theme.primary + '; font-size: 16px; margin-right: 4px; font-weight: 900;">Q.</span>' + (item.display || '');
+
+                                heading.appendChild(labelBadge);
+                                heading.appendChild(qText);
                                 itemWrap.appendChild(heading);
 
-                                if (item.answer_content) {
-                                    var answerDiv = document.createElement('div');
-                                    answerDiv.textContent = '💡 ' + item.answer_content;
-                                    answerDiv.style.fontSize = '13px';
-                                    answerDiv.style.color = '#334155';
-                                    answerDiv.style.padding = '8px 12px';
-                                    answerDiv.style.background = '#f8fafc';
-                                    answerDiv.style.borderBottom = '1px solid ' + theme.border;
-                                    itemWrap.appendChild(answerDiv);
+                                if (item.answer_content || (item.answer_histories && item.answer_histories.length > 0)) {
+                                    var answerWrap = document.createElement('div');
+                                    answerWrap.style.padding = '8px 12px';
+                                    answerWrap.style.background = '#f8fafc';
+                                    answerWrap.style.borderBottom = '1px solid ' + theme.border;
+                                    
+                                    // 「現状の答え」ラベルを追加
+                                    var answerLabel = document.createElement('div');
+                                    var hasUpdate = (item.answer_histories && item.answer_histories.length > 1);
+                                    answerLabel.textContent = hasUpdate ? '💡 現状の答え（更新あり）' : '💡 現状の答え';
+                                    answerLabel.style.fontSize = '11px';
+                                    answerLabel.style.fontWeight = 'bold';
+                                    answerLabel.style.color = '#d97706'; // Slightly darker orange/yellow
+                                    answerLabel.style.marginBottom = '6px';
+                                    answerLabel.style.letterSpacing = '0.5px';
+                                    answerWrap.appendChild(answerLabel);
+                                    
+                                    // 期間中の変更があれば履歴を表示、なければ現在のコンテンツを表示
+                                    if (item.answer_histories && item.answer_histories.length > 0) {
+                                        item.answer_histories.forEach(function(hist, idx) {
+                                            var histRow = document.createElement('div');
+                                            histRow.style.fontSize = '13px';
+                                            histRow.style.color = '#334155';
+                                            histRow.style.display = 'flex';
+                                            histRow.style.alignItems = 'flex-start';
+                                            histRow.style.marginTop = '2px';
+                                            
+                                            // ユーザーの要望により時間情報を削除
+                                            // var timeSpan = document.createElement('span');
+                                            // timeSpan.textContent = '[' + (hist.appeared_at ? hist.appeared_at.substring(5, 16) : '') + '] ';
+                                            // timeSpan.style.color = '#94a3b8';
+                                            // timeSpan.style.marginRight = '6px';
+                                            // timeSpan.style.fontSize = '11px';
+                                            // timeSpan.style.whiteSpace = 'nowrap';
+                                            
+                                            var contentSpan = document.createElement('span');
+                                            contentSpan.textContent = hist.content;
+                                            
+                                            if (idx > 0) {
+                                                // 変更後であることを示すアイコン
+                                                var arrowSpan = document.createElement('span');
+                                                arrowSpan.textContent = '↳ ';
+                                                arrowSpan.style.color = '#cbd5e1';
+                                                arrowSpan.style.marginRight = '4px';
+                                                histRow.appendChild(arrowSpan);
+                                            }
+                                            
+                                            // histRow.appendChild(timeSpan);
+                                            histRow.appendChild(contentSpan);
+                                            answerWrap.appendChild(histRow);
+                                        });
+                                    } else if (item.answer_content) {
+                                        var answerDiv = document.createElement('div');
+                                        answerDiv.textContent = item.answer_content;
+                                        answerDiv.style.fontSize = '13px';
+                                        answerDiv.style.color = '#334155';
+                                        answerWrap.appendChild(answerDiv);
+                                    }
+                                    
+                                    itemWrap.appendChild(answerWrap);
                                 }
 
                                 // コンテンツエリア (Means body)
                                 var bodyWrap = document.createElement('div');
                                 bodyWrap.style.padding = '10px 12px'; // 14px 16px -> 10px 12px
-                                bodyWrap.style.maxHeight = '360px';
-                                bodyWrap.style.overflowY = 'auto';
+                                // ユーザーの要望により、すべて表示されるよう自動高さに（maxHeight/overflowを削除）
+                                
+                                // 「活動プロセス」ラベルを追加
+                                var processLabel = document.createElement('div');
+                                processLabel.textContent = '🏃‍♂️ 問いに対する活動プロセス';
+                                processLabel.style.fontSize = '11px';
+                                processLabel.style.fontWeight = 'bold';
+                                processLabel.style.color = '#3b82f6'; // blue color
+                                processLabel.style.marginBottom = '8px';
+                                processLabel.style.letterSpacing = '0.5px';
+                                bodyWrap.appendChild(processLabel);
+                                
                                 itemWrap.appendChild(bodyWrap);
 
                                 // タイムライン本体
@@ -2123,24 +2209,24 @@
                                                 }
                                                 row.appendChild(textDiv);
                                                 
-                                                // 日時 (D: タイムスタンプの配置と日付省略)
-                                                var timeDiv = document.createElement('div');
-                                                timeDiv.className = 'jr-timeline-time';
+                                                // 日時 (D: タイムスタンプの配置と日付省略) -> ユーザー要望により時間情報を非表示化
+                                                // var timeDiv = document.createElement('div');
+                                                // timeDiv.className = 'jr-timeline-time';
                                                 
-                                                var timeStr = h.appeared_at || '';
-                                                if (timeStr.length >= 16) {
-                                                    var datePart = timeStr.substring(0, 10); // YYYY-MM-DD
-                                                    var timePart = timeStr.substring(11, 16); // HH:MM
-                                                    if (datePart === lastDateStr) {
-                                                        timeStr = timePart; // 同じ日の場合は時刻のみ
-                                                    } else {
-                                                        var md = datePart.substring(5).replace('-', '/'); // MM/DD
-                                                        timeStr = md + ' ' + timePart; // 違う日は日付付き
-                                                        lastDateStr = datePart;
-                                                    }
-                                                }
-                                                timeDiv.textContent = timeStr;
-                                                row.appendChild(timeDiv);
+                                                // var timeStr = h.appeared_at || '';
+                                                // if (timeStr.length >= 16) {
+                                                //     var datePart = timeStr.substring(0, 10); // YYYY-MM-DD
+                                                //     var timePart = timeStr.substring(11, 16); // HH:MM
+                                                //     if (datePart === lastDateStr) {
+                                                //         timeStr = timePart; // 同じ日の場合は時刻のみ
+                                                //     } else {
+                                                //         var md = datePart.substring(5).replace('-', '/'); // MM/DD
+                                                //         timeStr = md + ' ' + timePart; // 違う日は日付付き
+                                                //         lastDateStr = datePart;
+                                                //     }
+                                                // }
+                                                // timeDiv.textContent = timeStr;
+                                                // row.appendChild(timeDiv);
                                                 
                                                 timelineWrap.appendChild(row);
                                             });
@@ -2193,8 +2279,8 @@
                                         // Render children inside an indented container with continuous left border
                                         if (node.children.length > 0) {
                                             var toggleBtn = document.createElement('div');
-                                            toggleBtn.textContent = '▼ 下位手段を閉じる';
-                                            toggleBtn.style.fontSize = '11px'; // 12px -> 11px
+                                            toggleBtn.textContent = '▼';
+                                            toggleBtn.style.fontSize = '12px'; // icon only, slightly bigger
                                             toggleBtn.style.color = '#64748b';
                                             toggleBtn.style.cursor = 'pointer';
                                             toggleBtn.style.marginLeft = '4px';
@@ -2211,10 +2297,10 @@
                                             toggleBtn.addEventListener('click', function(e) {
                                                 if (childrenWrap.style.display === 'none') {
                                                     childrenWrap.style.display = 'block';
-                                                    toggleBtn.textContent = '▼ 下位手段を閉じる';
+                                                    toggleBtn.textContent = '▼';
                                                 } else {
                                                     childrenWrap.style.display = 'none';
-                                                    toggleBtn.textContent = '▶ 下位手段 (' + node.children.length + '件) を開く';
+                                                    toggleBtn.textContent = '▶';
                                                 }
                                             });
                                             

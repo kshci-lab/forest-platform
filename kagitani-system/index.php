@@ -65,7 +65,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="css/font.css">
         <link rel="stylesheet" type="text/css" href="css/jquery.cleditor.css">
         <link rel="stylesheet" type="text/css" href="css/ui.css">
-        <link rel="stylesheet" type="text/css" href="css/style.css">
+        <link rel="stylesheet" type="text/css" href="css/style.css?v=<?=time()?>" />
         <link rel="stylesheet" type="text/css" href="css/smart-goals.css">
         <link rel="stylesheet" type="text/css" href="css/goal.css">
         <link rel="stylesheet" type="text/css" href="../css/button.css">
@@ -241,7 +241,7 @@ try {
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
-        <script type="text/javascript" src="js/jsmind.js"></script>
+        <script type="text/javascript" src="js/jsmind.js?v=<?=time()?>"></script>
         <script type="text/javascript" src="js/jsmind.draggable.js"></script>
         <script type="text/javascript" src="../js/vis-network.min.js"></script>
 
@@ -256,12 +256,12 @@ try {
         <link rel="stylesheet" type="text/css" href="../css/meeting-reflection-network.css" />
         <script type="text/javascript" src="js/navigator.js"></script>
         <script type="module" src="js/object-network-main.js"></script>
-        <script type="text/javascript" src="js/object-network.js"></script>
+        <script type="text/javascript" src="js/object-network.js?v=<?=time()+16?>"></script>
         <link rel="stylesheet" type="text/css" href="css/object-network.css" />
         <link rel="stylesheet" type="text/css" href="css/feedbackTooltip.css" />
         <script type="text/javascript" src="js/timeline_slider.js"></script>
-        <script type="text/javascript" src="js/goal_list.js"></script>
-        <script type="text/javascript" src="js/journal_report.js?v=<?=time()+9?>"></script>
+        <script type="text/javascript" src="js/goal_list.js?v=<?=time()?>"></script>
+        <script type="text/javascript" src="js/journal_report.js?v=<?=time()+22?>"></script>
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
         
@@ -386,9 +386,9 @@ try {
                 feedbackArea.style.display = 'block';
             }
             
-            // ノード数更新を開始
-            startNodeCountUpdater();
-        });
+            if (typeof startNodeCountUpdater === 'function') {
+                startNodeCountUpdater();
+            }});
         </script>
 
         <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
@@ -454,8 +454,8 @@ try {
                         </div>
                         <div class="srl-tab-panel" data-tab-panel="lessons">
                             <div class="srl-lessons-subtabs">
-                                <button class="srl-lessons-subtab is-active" type="button" data-subtab="srl" title="SRLジャーナルカードから生まれた教訓">📒 ジャーナルカードから</button>
-                                <button class="srl-lessons-subtab" type="button" data-subtab="map" title="SRL整理マップの手段ノードから生まれた教訓">🗺️ 手段ノードから</button>
+                                <button class="srl-lessons-subtab is-active" type="button" data-subtab="srl" title="SRLジャーナルカードから生まれた教訓"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg>ジャーナルカードから</button>
+                                <button class="srl-lessons-subtab" type="button" data-subtab="map" title="SRL整理マップの手段ノードから生まれた教訓"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg>手段ノードから</button>
                             </div>
                             <div class="srl-lessons-subpanel is-active" data-subpanel="srl">
                                 <div id="srlLessonsBodySrl"></div>

@@ -164,14 +164,14 @@
   padding-right: 12px; /* Safety padding for right edge */
 }
 .jr-left-column {
-  flex: 0 0 33.3333%;
-  max-width: 33.3333%;
+  flex: 0 0 50%;
+  max-width: 50%;
   display: flex;
   flex-direction: column;
 }
 .jr-right-column {
-  flex: 0 0 66.6666%;
-  max-width: 66.6666%;
+  flex: 0 0 50%;
+  max-width: 50%;
   min-width: 0;
   display: flex;
   flex-direction: column;

@@ -50,13 +50,13 @@ function createNodeIcon(nodeElement, status = 'todo') {
     // 控えめで主張しすぎないデザイン（通常時はグレー/白系、ホバー時にブルー）
     const title = 'SRL整理マップを開く (Shift + クリックで複数表示)';
     const altText = 'SRL整理マップ';
-    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9" />
-        <polygon points="16.5,7.5 10.5,10.5 7.5,16.5 13.5,13.5" />
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>`;
     
-    iconWrapper.style.background = '#ffffff';
-    iconWrapper.style.color = '#5A9BD5'; // Blue color to match the theme
+    iconWrapper.style.background = '#3b82f6'; // Blue background
+    iconWrapper.style.color = '#ffffff'; // White icon
     iconWrapper.style.display = 'flex';
     iconWrapper.style.alignItems = 'center';
     iconWrapper.style.justifyContent = 'center';
@@ -78,16 +78,12 @@ function createNodeIcon(nodeElement, status = 'todo') {
     // ホバー効果（ホバー時だけ少し目立つように）
     iconWrapper.addEventListener('mouseenter', () => {
         iconWrapper.style.transform = 'scale(1.15) translateY(-2px)';
-        iconWrapper.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1)';
-        iconWrapper.style.color = '#5A9BD5';
-        iconWrapper.style.background = '#ffffff';
+        iconWrapper.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.4), 0 4px 8px rgba(59, 130, 246, 0.3)';
     });
     
     iconWrapper.addEventListener('mouseleave', () => {
         iconWrapper.style.transform = 'scale(1) translateY(0)';
         iconWrapper.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)';
-        iconWrapper.style.color = '#5A9BD5';
-        iconWrapper.style.background = '#ffffff';
     });
 
     // クリック効果

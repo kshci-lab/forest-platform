@@ -485,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
                 + '<span class="weekly-goal-date-range journal-date" data-idx="' + idx + '" data-start="' + startStr + '" data-end="' + endStr + '">' + startStr + '〜' + endStr + '</span>'
                 + '<div class="btn-reflect-container">'
-                + '<button class="export-weekly-btn btn-reflect" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" title="' + startStr + '〜' + endStr + 'の活動を振り返る"><span>📝</span></button>'
+                + '<button class="export-weekly-btn btn-reflect" data-idx="' + idx + '" id="exportWeeklyGoalBtn' + idx + '" title="' + startStr + '〜' + endStr + 'の活動を振り返る"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg></button>'
                 + popoverHtml
                 + '</div>'
                 + '</div>'
@@ -1376,7 +1376,10 @@ window.addWeeklyGoal = function() {
     }
     // PHPへAJAXリクエスト送信
     console.log('[goal_list] sending AJAX to update_latest_goal_node.php with node_id=', selected_node_id);
-    var postData = { node_id: selected_node_id };
+    var postData = { 
+        node_id: selected_node_id,
+        map_id: (typeof window.MAPID !== 'undefined') ? window.MAPID : ''
+    };
     if (window.latest_inserted_journal_id) {
         postData.object_journal_id = window.latest_inserted_journal_id;
     }
@@ -1640,7 +1643,7 @@ window.addWeeklyGoal = function() {
         var goal = goals[goalIdx];
         
         if (!goal || !goal.object_journal_id) {
-            popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br>📝 ボタンをクリックして、内省を始めましょう！</div>';
+            popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg>ボタンをクリックして、内省を始めましょう！</div>';
             popover.dataset.loaded = 'true';
             return;
         }
@@ -1690,10 +1693,10 @@ window.addWeeklyGoal = function() {
                             
                             popover.innerHTML = html;
                         } else {
-                            popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br>📝 ボタンをクリックして、内省を始めましょう！</div>';
+                            popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg>ボタンをクリックして、内省を始めましょう！</div>';
                         }
                 } else {
-                    popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br>📝 ボタンをクリックして、内省を始めましょう！</div>';
+                    popover.innerHTML = '<div class="popover-status-empty">まだこの期間の振り返りが記述されていません。<br><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg>ボタンをクリックして、内省を始めましょう！</div>';
                 }
                 popover.dataset.loaded = 'true';
                 popover.dataset.loading = 'false';
