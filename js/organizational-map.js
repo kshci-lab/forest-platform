@@ -1291,6 +1291,23 @@ let organizational_mode;
 let organizational_group_id;
 let organizational_list;
 let organizational_current_user_id = null;
+
+function dispatchOrganizationalGroupChanged(groupId) {
+    try {
+        const detail = { group_id: groupId ? String(groupId) : '' };
+        let event;
+        if (typeof CustomEvent === 'function') {
+            event = new CustomEvent('organizationalGroupChanged', { detail: detail });
+        } else {
+            event = document.createEvent('CustomEvent');
+            event.initCustomEvent('organizationalGroupChanged', false, false, detail);
+        }
+        document.dispatchEvent(event);
+    } catch (e) {
+        console.warn('organizationalGroupChanged dispatch failed', e);
+    }
+}
+
 const getOrganizationalMapDataFromDB = (callback) => {
     console.log(organizational_group_id);
     //選択されているノードIDとconcept_id
@@ -1307,6 +1324,9 @@ const getOrganizationalMapDataFromDB = (callback) => {
                 // console.log(r);
                 organizational_list = JSON.parse(r);
                 organizational_current_user_id = organizational_list.current_user_id || null;
+                if (organizational_list.selected_group_id !== undefined && organizational_list.selected_group_id !== null) {
+                    organizational_group_id = organizational_list.selected_group_id;
+                }
                 console.log(organizational_list);
                 callback(organizational_list);
             });
@@ -1323,6 +1343,7 @@ const displayOrganizationalData = (mode, selected_group_id) => {
 
     if(mode=="all"){
         getOrganizationalMapDataFromDB ((organizational_list_info) => {
+            const effectiveSelectedGroupId = organizational_list_info.selected_group_id || selected_group_id || '';
             // group_selectのoptionを動的に生成
             const groupSelect = document.getElementById('group_select');
             if (groupSelect && organizational_list_info.groups) {
@@ -1333,7 +1354,7 @@ const displayOrganizationalData = (mode, selected_group_id) => {
                 placeholder.textContent = 'ー組織を選択ー';
                 placeholder.disabled = true;
                 // selected_group_id が渡されていなければプレースホルダを選択状態にする
-                if (!selected_group_id) {
+                if (!effectiveSelectedGroupId) {
                     placeholder.selected = true;
                 }
                 groupSelect.appendChild(placeholder);
@@ -1342,11 +1363,15 @@ const displayOrganizationalData = (mode, selected_group_id) => {
                     option.value = group.group_id;
                     option.textContent = group.name ? group.name : group.group_id;
                     // selected_group_id が指定されていればその値を選択状態にする
-                    if (selected_group_id && String(group.group_id) === String(selected_group_id)) {
+                    if (effectiveSelectedGroupId && String(group.group_id) === String(effectiveSelectedGroupId)) {
                         option.selected = true;
                     }
                     groupSelect.appendChild(option);
                 });
+                if (effectiveSelectedGroupId) {
+                    groupSelect.value = effectiveSelectedGroupId;
+                }
+                dispatchOrganizationalGroupChanged(effectiveSelectedGroupId);
             }
             let j = 0;
             // ユーザーのアイコンを表示

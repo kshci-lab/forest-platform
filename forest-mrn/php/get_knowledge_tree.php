@@ -14,6 +14,23 @@ if(!isset($mysqli) || !($mysqli instanceof mysqli)){
     exit;
 }
 @$mysqli->set_charset('utf8mb4');
+if (session_status() !== PHP_SESSION_ACTIVE) { @session_start(); }
+
+function __resolve_knowledge_tree_group_id(mysqli $mysqli): string {
+    $groupId = isset($_GET['group_id']) ? trim((string)$_GET['group_id']) : '';
+    if($groupId !== ''){ return $groupId; }
+    $userId = isset($_SESSION['USERID']) ? (string)$_SESSION['USERID'] : '';
+    if($userId === ''){ return ''; }
+    if($stmt = $mysqli->prepare("SELECT group_id FROM kgroup_user_link WHERE user_id = ? ORDER BY created_at DESC LIMIT 1")){
+        $stmt->bind_param('s', $userId);
+        if($stmt->execute()){
+            $stmt->bind_result($gid);
+            if($stmt->fetch() && $gid !== null){ $groupId = trim((string)$gid); }
+        }
+        $stmt->close();
+    }
+    return $groupId;
+}
 
 // テーブル存在チェック
 $table = 'knowledge_explorer';
@@ -29,6 +46,7 @@ if($tbl->num_rows===0){
                  "  node_id INT(11) NOT NULL AUTO_INCREMENT,\n".
                  "  parent_id INT(11) NULL DEFAULT NULL,\n".
                  "  node_title VARCHAR(255) NOT NULL,\n".
+                 "  knowledge_group_id INT(11) NULL DEFAULT NULL,\n".
                  "  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n".
                  "  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n".
                  "  PRIMARY KEY (node_id),\n".
@@ -53,6 +71,7 @@ $ensureCols = [
     ['name' => 'knowledge_fragment_id', 'sql' => "ALTER TABLE `$table` ADD COLUMN `knowledge_fragment_id` VARCHAR(255) NULL DEFAULT NULL"],
     // used for ordering root categories
     ['name' => 'sort_order', 'sql' => "ALTER TABLE `$table` ADD COLUMN `sort_order` INT(11) NULL DEFAULT NULL"],
+    ['name' => 'knowledge_group_id', 'sql' => "ALTER TABLE `$table` ADD COLUMN `knowledge_group_id` INT(11) NULL DEFAULT NULL"],
 ];
 foreach($ensureCols as $c){
     $col = $c['name'];
@@ -78,7 +97,7 @@ try{
     if($colType && (strpos($colType,'varchar') === false) && (strpos($colType,'text') === false)){
         @$mysqli->query("ALTER TABLE `$table` MODIFY COLUMN `knowledge_fragment_id` VARCHAR(255) NULL DEFAULT NULL");
     }
-}catch(_){ }
+}catch(Throwable $e){ }
 
 // カラム定義を柔軟に解決（互換のため候補名を許容）
 $colId = null;      // knowledge_node_id / node_id / id / knowledge_explorer_id
@@ -90,6 +109,7 @@ $colUpdatedBy = null; // updated_by （ユーザID）
 $colKFragId = null;   // knowledge_fragment_id（外部化IDと同一扱い）
 $colExtContentsId = null; // externalized_contents_id（外部化のPK）
 $colSort = null; // sort_order
+$colGroup = null; // knowledge_group_id
 $hasDeleted = false;
 $idIsAutoInc = false;
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
@@ -106,12 +126,21 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
         if($colKFragId===null && in_array($lf, ['knowledge_fragment_id','knowledgefragment_id','kfrag_id'])){ $colKFragId = $f; }
         if($colExtContentsId===null && in_array($lf, ['externalized_contents_id','externalizedcontent_id','externalized_id'])){ $colExtContentsId = $f; }
         if($colSort===null && in_array($lf, ['sort_order'])){ $colSort = $f; }
+        if($colGroup===null && in_array($lf, ['knowledge_group_id','group_id'])){ $colGroup = $f; }
         if($lf === 'deleted'){ $hasDeleted = true; }
         if($f === $colId && isset($c['Extra']) && stripos($c['Extra'], 'auto_increment') !== false){ $idIsAutoInc = true; }
     }
     $resCols->close();
 }
 // 少なくともタイトルが無いと表示不能
+$selectedGroupId = __resolve_knowledge_tree_group_id($mysqli);
+$groupWhere = '';
+$groupWhereAlias = '';
+if($colGroup !== null && $selectedGroupId !== ''){
+    $escapedGroupId = $mysqli->real_escape_string($selectedGroupId);
+    $groupWhere = " AND `$colGroup` = '$escapedGroupId'";
+    $groupWhereAlias = " AND ke.`$colGroup` = '$escapedGroupId'";
+}
 if($colTitle === null){
     // 最低限のフォールバック: DBスキーマが未整備でもトップレベルだけ返す
     $fallback = [
@@ -128,7 +157,7 @@ if($colParent !== null && $colTitle !== null){
     $topTitles = ['知識関連','研究方略関連','その他'];
     $existing = [];
     // 柔軟化：SQLで存在しないカラムを直接指定するとエラーになるため、SELECT * で取得し、PHP側でカラムの有無を確認する
-    $sqlTop = "SELECT * FROM $table WHERE ".($colParent ? "$colParent IS NULL" : "1=0").($hasDeleted?" AND deleted=0":"");
+    $sqlTop = "SELECT * FROM $table WHERE ".($colParent ? "$colParent IS NULL" : "1=0").($hasDeleted?" AND deleted=0":"").$groupWhere;
     if($resTop = $mysqli->query($sqlTop)){
         while($r = $resTop->fetch_assoc()){
             $titleVal = null;
@@ -166,16 +195,26 @@ if($colParent !== null && $colTitle !== null){
                 }
                 if(!$idIsAutoInc && $colId){
                     // 既に同一ID/同一ユニークキーが存在しても API が落ちないようにする
-                    $sqlIns = "INSERT IGNORE INTO $table ($colId,$colTitle".($colParent?",$colParent":"").($hasDeleted?",deleted":"").") VALUES (?,?".($colParent?",NULL":"").($hasDeleted?",0":"").")";
+                    $useGroup = ($colGroup !== null && $selectedGroupId !== '');
+                    $sqlIns = "INSERT IGNORE INTO $table ($colId,$colTitle".($colParent?",$colParent":"").($useGroup?",$colGroup":"").($hasDeleted?",deleted":"").") VALUES (?,?".($colParent?",NULL":"").($useGroup?",?":"").($hasDeleted?",0":"").")";
                     if($stmt = $mysqli->prepare($sqlIns)){
-                        $stmt->bind_param('is',$nextId,$t);
+                        if($useGroup){
+                            $stmt->bind_param('iss',$nextId,$t,$selectedGroupId);
+                        } else {
+                            $stmt->bind_param('is',$nextId,$t);
+                        }
                         $stmt->execute();
                         $stmt->close();
                     }
                 } else {
-                    $sqlIns = "INSERT IGNORE INTO $table ($colTitle".($colParent?",$colParent":"").($hasDeleted?",deleted":"").") VALUES (?".($colParent?",NULL":"").($hasDeleted?",0":"").")";
+                    $useGroup = ($colGroup !== null && $selectedGroupId !== '');
+                    $sqlIns = "INSERT IGNORE INTO $table ($colTitle".($colParent?",$colParent":"").($useGroup?",$colGroup":"").($hasDeleted?",deleted":"").") VALUES (?".($colParent?",NULL":"").($useGroup?",?":"").($hasDeleted?",0":"").")";
                     if($stmt = $mysqli->prepare($sqlIns)){
-                        $stmt->bind_param('s',$t);
+                        if($useGroup){
+                            $stmt->bind_param('ss',$t,$selectedGroupId);
+                        } else {
+                            $stmt->bind_param('s',$t);
+                        }
                         $stmt->execute();
                         $stmt->close();
                     }
@@ -189,9 +228,15 @@ if($colParent !== null && $colTitle !== null){
 $nodes = [];
 // 全行取得: SELECT * を使い、PHP側でカラム存在を判定して nodes 配列を構築
 if($colUpdatedBy){
-    $sqlAll = "SELECT ke.*, u.name AS updated_by_name FROM $table ke LEFT JOIN users u ON ke.$colUpdatedBy = u.user_id".($hasDeleted?" WHERE ke.deleted=0":"");
+    $whereAll = [];
+    if($hasDeleted){ $whereAll[] = "ke.deleted=0"; }
+    if($groupWhereAlias !== ''){ $whereAll[] = substr($groupWhereAlias, 5); }
+    $sqlAll = "SELECT ke.*, u.name AS updated_by_name FROM $table ke LEFT JOIN users u ON ke.$colUpdatedBy = u.user_id".(!empty($whereAll) ? " WHERE ".implode(" AND ", $whereAll) : "");
 } else {
-    $sqlAll = "SELECT * FROM $table".($hasDeleted?" WHERE deleted=0":"");
+    $whereAll = [];
+    if($hasDeleted){ $whereAll[] = "deleted=0"; }
+    if($groupWhere !== ''){ $whereAll[] = substr($groupWhere, 5); }
+    $sqlAll = "SELECT * FROM $table".(!empty($whereAll) ? " WHERE ".implode(" AND ", $whereAll) : "");
 }
 if($resAll = $mysqli->query($sqlAll)){
     while($row = $resAll->fetch_assoc()){
@@ -233,6 +278,10 @@ if($resAll = $mysqli->query($sqlAll)){
         if($colExtContentsId && array_key_exists($colExtContentsId,$row) && $row[$colExtContentsId] !== null){
             $extIdVal = (int)$row[$colExtContentsId];
         }
+        $groupVal = null;
+        if($colGroup && array_key_exists($colGroup,$row) && $row[$colGroup] !== null){
+            $groupVal = (int)$row[$colGroup];
+        }
         $nodes[] = [
             'node_id'=>$nid,
             'parent_id'=>$pid,
@@ -242,6 +291,7 @@ if($resAll = $mysqli->query($sqlAll)){
             'updated_by'=> $updatedById !== null ? (int)$updatedById : null,
             'updated_by_name'=> $updatedByName !== null ? $updatedByName : null,
             'sort_order'=> $sortVal !== null ? $sortVal : null,
+            'knowledge_group_id'=> $groupVal !== null ? $groupVal : null,
             'knowledge_fragment_id'=> $kfragVal !== null ? $kfragVal : null,
             'externalized_contents_id'=> $extIdVal !== null ? $extIdVal : null
         ];

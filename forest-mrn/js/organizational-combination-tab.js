@@ -223,6 +223,8 @@
       var fd = new FormData();
       fd.append('node_title', title);
       if(parentId) fd.append('parent_id', parentId);
+      var gid = getSelectedGroupId();
+      if(gid) fd.append('group_id', gid);
 
       var xhr = new XMLHttpRequest();
       xhr.open('POST', 'php/insert_knowledge_node.php', true);
@@ -323,7 +325,11 @@
     sel.__combBound = true;
     sel.addEventListener('change', function(){
       reloadFragmentsForGroup(workspace);
-      // knowledge tree is not group-scoped yet; keep as-is
+      loadKnowledgeTree();
+    }, false);
+    document.addEventListener('organizationalGroupChanged', function(){
+      reloadFragmentsForGroup(workspace);
+      loadKnowledgeTree();
     }, false);
     // Also refresh once on init so the fragment list matches the latest group selection behavior.
     reloadFragmentsForGroup(workspace);
@@ -1014,8 +1020,12 @@
     if(!el) return;
     el.textContent = '読み込み中...';
 
+    var gid = getSelectedGroupId();
+    var url = 'php/get_knowledge_tree.php';
+    if(gid) url += '?group_id=' + encodeURIComponent(gid);
+
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'php/get_knowledge_tree.php', true);
+    xhr.open('GET', url, true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
       if(xhr.status !== 200){
@@ -1379,6 +1389,8 @@
           var fdM = new FormData();
           fdM.append('node_id', String(nodeIdM));
           fdM.append('dir', String(dir));
+          var gidM = getSelectedGroupId();
+          if(gidM) fdM.append('group_id', gidM);
           xhrM.open('POST', 'php/reorder_root_nodes.php', true);
           xhrM.onreadystatechange = function(){
             if(xhrM.readyState !== 4) return;
@@ -1654,6 +1666,8 @@
       if(parent_id) fd.append('parent_id', parent_id);
       fd.append('node_title', node_title);
       if(node_comment){ fd.append('comment', node_comment); }
+      var gid = getSelectedGroupId();
+      if(gid) fd.append('group_id', gid);
       // Link to selected fragments (primary + additional) as CSV (fukushima-system behavior)
       var ids = getSelectedFragmentIds();
       if(ids.length){ fd.append('knowledge_fragment_id', ids.join(',')); }
