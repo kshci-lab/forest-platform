@@ -793,20 +793,115 @@ h3 {
 	text-align: center;
 }
 /* 問い一覧のallボタンと横の文字の設定 */
-#side_menu .toi_list {
-	font-size: 14px;
-	align: left;
-	margin-bottom: 5px;
-}
 /* 問い一覧の全体 */
 #side_menu .inquiry_area {
 	height: 47vw;
 	overflow-y: auto;
-	border:solid 5px #ccc;
+	border: solid 5px #f6c978;
 	margin-bottom: 30px;
 	font-size: 14px;
 	text-align: left;
 	resize:vertical;
+}
+.inquiry-search {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	padding: 8px 8px 7px;
+	background: #f8f9fb;
+	border-bottom: 1px solid #d8dde5;
+	box-shadow: 0 3px 10px rgba(36, 45, 58, 0.08);
+}
+.search-box-wrapper {
+	position: relative;
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+.inquiry-show-all {
+	flex: 0 0 auto;
+	height: 32px;
+	padding: 0 11px;
+	border: 1px solid #c7ced8;
+	border-radius: 4px;
+	background: #ffffff;
+	color: #3f4854;
+	font-size: 12px;
+	font-weight: bold;
+	cursor: pointer;
+	text-transform: uppercase;
+	box-shadow: 0 1px 2px rgba(36, 45, 58, 0.08);
+	transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.inquiry-show-all:hover {
+	background: #eef1f5;
+	border-color: #aeb7c3;
+	color: #202631;
+}
+.inquiry-search-input {
+	box-sizing: border-box;
+	width: 100%;
+	min-width: 0;
+	height: 32px;
+	padding: 4px 10px;
+	border: 1px solid #c7ced8;
+	border-radius: 4px;
+	font-size: 13px;
+	background: #ffffff;
+	color: #2f3742;
+	outline: none;
+	box-shadow: inset 0 1px 2px rgba(36, 45, 58, 0.06);
+	transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.inquiry-search-input::placeholder {
+	color: #9aa3af;
+}
+.inquiry-search-input:focus {
+	border-color: #8d99a8;
+	box-shadow: inset 0 1px 2px rgba(36, 45, 58, 0.06), 0 0 0 3px rgba(141, 153, 168, 0.18);
+}
+.inquiry-search-result {
+	min-height: 14px;
+	color: #68727f;
+	font-size: 11px;
+	text-align: right;
+	padding-top: 4px;
+}
+.inquiry-section-title {
+	margin: 10px 6px 7px;
+	padding: 4px 8px;
+	border: 1px solid #f2bf64;
+	border-radius: 4px;
+	background: #fff3dc;
+	color: #9a650f;
+	font-size: 12px;
+	font-weight: bold;
+	text-align: left;
+}
+.inquiry_area ul.inquiry-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	margin: 0 6px 6px;
+	padding: 6px 7px;
+	border: 1px solid #e0e4ea;
+	border-radius: 4px;
+	background: #ffffff;
+	box-shadow: 0 1px 2px rgba(36, 45, 58, 0.05);
+}
+.inquiry_area ul.inquiry-item:hover {
+	background: #f7f8fa;
+	border-color: #cdd3dc;
+}
+.inquiry_area ul.inquiry-item img {
+	flex: 0 0 auto;
+	margin-top: 2px;
+}
+.inquiry_area ul.inquiry-item a {
+	color: #2f3742;
+	line-height: 1.4;
+	text-decoration: none;
+	word-break: break-word;
 }
 /* 問い一覧 */
 #testxml{

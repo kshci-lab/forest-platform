@@ -29,9 +29,7 @@ function choose_parse_xml(xml,status){
 // HTML生成関数
 function choose_disp(){
 	const frame_dom = document.getElementsByClassName("inquiry_area");
-  	frame_dom[0].style.border = "solid 5px #9fd94f";
-	$('#mind_all').show();
-  $('#presen_all').hide();
+  	frame_dom[0].style.border = "solid 5px #f6c978";
 
 	//hozo.xmlファイルのタグを検索して変数に格納（たぶん，全てのタグが配列で格納されている），thisはhozo.xmlのことかな
 	var $concept_tag = $(this).find('CONCEPT');

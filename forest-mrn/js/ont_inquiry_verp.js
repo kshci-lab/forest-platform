@@ -182,9 +182,6 @@ function P_showGeneration(){
 	$("div#testxml").html("");
 	$("div#intention").html("");
 	$("div#rationality").html("");
-	if (window.renderInquiryAreaHeaders) {
-		window.renderInquiryAreaHeaders(window.currentLang || "ja");
-	}
 	console.log("P_showGeneration");
 	p_xmlLoad();
 
