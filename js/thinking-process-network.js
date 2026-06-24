@@ -1801,7 +1801,7 @@ function inputTriggerAreaOpen(){
 //   Trigger入力箇所を閉じる処理
 function inputTriggerAreaClose(){
     $('#trigger_display').css('height','100px');
-    $('#area_trigger_add').css('height','20px');
+    $('#area_trigger_add').css('height','auto');
     $('#trigger_add').css('height','0px');
     document.getElementById("trigger_time").remove();
     document.getElementById("trigger_activity").remove();
