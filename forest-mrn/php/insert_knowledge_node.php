@@ -15,6 +15,22 @@ if(!isset($mysqli) || !($mysqli instanceof mysqli)){
 }
 @$mysqli->set_charset('utf8mb4');
 
+function __resolve_insert_knowledge_group_id(mysqli $mysqli): string {
+    $groupId = isset($_POST['group_id']) ? trim((string)$_POST['group_id']) : '';
+    if($groupId !== ''){ return $groupId; }
+    $userId = isset($_SESSION['USERID']) ? (string)$_SESSION['USERID'] : '';
+    if($userId === ''){ return ''; }
+    if($stmt = $mysqli->prepare("SELECT group_id FROM kgroup_user_link WHERE user_id = ? ORDER BY created_at DESC LIMIT 1")){
+        $stmt->bind_param('s', $userId);
+        if($stmt->execute()){
+            $stmt->bind_result($gid);
+            if($stmt->fetch() && $gid !== null){ $groupId = trim((string)$gid); }
+        }
+        $stmt->close();
+    }
+    return $groupId;
+}
+
 $parent_label = isset($_POST['parent_label']) ? trim((string)$_POST['parent_label']) : '';
 $parent_id = null;
 if(isset($_POST['parent_id']) && $_POST['parent_id'] !== '' && $_POST['parent_id'] !== null){
@@ -58,6 +74,7 @@ $colUpdatedBy = null; // updated_by カラム存在時に使用
 $colComment = null;   // comment/memo 等
 $colKFragId = null;   // knowledge_fragment_id 等
 $colSort = null;      // sort_order (root categories)
+$colGroup = null;     // knowledge_group_id
 $hasDeleted = false;
 $kfragColType = '';
 if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
@@ -70,6 +87,7 @@ if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
         if($colComment===null && in_array($lf, ['comment','comments','note','notes','memo'])){ $colComment = $f; }
         if($colKFragId===null && in_array($lf, ['knowledge_fragment_id','knowledgefragment_id','kfrag_id'])){ $colKFragId = $f; }
         if($colSort===null && $lf === 'sort_order'){ $colSort = $f; }
+        if($colGroup===null && in_array($lf, ['knowledge_group_id','group_id'])){ $colGroup = $f; }
         if($lf === 'knowledge_fragment_id' && isset($c['Type'])){ $kfragColType = strtolower((string)$c['Type']); }
         if($lf==='deleted'){ $hasDeleted = true; }
         if($lf==='updated_by'){ $colUpdatedBy = $f; }
@@ -83,6 +101,12 @@ if($colSort === null){
         $colSort = 'sort_order';
     }
 }
+if($colGroup === null){
+    if(@$mysqli->query("ALTER TABLE $table ADD COLUMN knowledge_group_id INT(11) NULL DEFAULT NULL")){
+        $colGroup = 'knowledge_group_id';
+    }
+}
+$groupId = __resolve_insert_knowledge_group_id($mysqli);
 
 // If we are going to store CSV but the column is numeric, try to widen to VARCHAR
 if($colKFragId && $kfragId !== '' && strpos($kfragId, ',') !== false){
@@ -96,7 +120,8 @@ if($colKFragId && $kfragId !== '' && strpos($kfragId, ',') !== false){
 $parentId = null;
 if($parent_id !== null){
     // Verify parent exists (and is not deleted if the column exists)
-    $sqlP = "SELECT $colId FROM $table WHERE $colId=?".($hasDeleted?" AND deleted=0":"")." LIMIT 1";
+    $groupFilter = ($colGroup && $groupId !== '') ? " AND $colGroup='". $mysqli->real_escape_string($groupId) ."'" : "";
+    $sqlP = "SELECT $colId FROM $table WHERE $colId=?".($hasDeleted?" AND deleted=0":"").$groupFilter." LIMIT 1";
     if($stP = $mysqli->prepare($sqlP)){
         $stP->bind_param('i', $parent_id);
         $stP->execute();
@@ -109,7 +134,8 @@ if($parent_id !== null){
         exit;
     }
 } else if($parent_label!==''){
-    $sqlFind = "SELECT $colId FROM $table WHERE $colParent IS NULL AND $colTitle=?".($hasDeleted?" AND deleted=0":"")." LIMIT 1";
+    $groupFilter = ($colGroup && $groupId !== '') ? " AND $colGroup='". $mysqli->real_escape_string($groupId) ."'" : "";
+    $sqlFind = "SELECT $colId FROM $table WHERE $colParent IS NULL AND $colTitle=?".($hasDeleted?" AND deleted=0":"").$groupFilter." LIMIT 1";
     if($st = $mysqli->prepare($sqlFind)){
         $st->bind_param('s',$parent_label);
         $st->execute();
@@ -158,7 +184,8 @@ if($colKFragId && $kfragId !== ''){
 if($colSort){
     if($parentId === null){
         $nextSort = 1;
-        $sqlMax = "SELECT MAX($colSort) AS mx FROM $table WHERE $colParent IS NULL".($hasDeleted?" AND deleted=0":"");
+        $groupFilter = ($colGroup && $groupId !== '') ? " AND $colGroup='". $mysqli->real_escape_string($groupId) ."'" : "";
+        $sqlMax = "SELECT MAX($colSort) AS mx FROM $table WHERE $colParent IS NULL".($hasDeleted?" AND deleted=0":"").$groupFilter;
         if($resMx = $mysqli->query($sqlMax)){
             $rmx = $resMx->fetch_assoc();
             if($rmx && isset($rmx['mx']) && $rmx['mx'] !== null){
@@ -172,6 +199,12 @@ if($colSort){
         $types .= 'i';
         $params[] = $nextSort;
     }
+}
+if($colGroup && $groupId !== ''){
+    $colsIns[] = $colGroup;
+    $valsIns[] = '?';
+    $types .= 's';
+    $params[] = $groupId;
 }
 if($hasDeleted){
     $colsIns[] = 'deleted';

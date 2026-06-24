@@ -72,6 +72,7 @@ if (!empty($group_id_latest)) {
     }
 }
 $return_data['user_ids_in_latest_group'] = $user_ids_in_latest_group;
+$return_data['selected_group_id'] = $group_id_latest;
 
 
 if (!empty($user_ids_in_latest_group)) {

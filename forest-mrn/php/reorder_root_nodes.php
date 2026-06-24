@@ -15,6 +15,23 @@ if(!isset($mysqli) || !($mysqli instanceof mysqli)){
   exit;
 }
 @$mysqli->set_charset('utf8mb4');
+if (session_status() !== PHP_SESSION_ACTIVE) { @session_start(); }
+
+function __resolve_reorder_group_id(mysqli $mysqli): string {
+  $groupId = isset($_POST['group_id']) ? trim((string)$_POST['group_id']) : '';
+  if($groupId !== ''){ return $groupId; }
+  $userId = isset($_SESSION['USERID']) ? (string)$_SESSION['USERID'] : '';
+  if($userId === ''){ return ''; }
+  if($stmt = $mysqli->prepare("SELECT group_id FROM kgroup_user_link WHERE user_id = ? ORDER BY created_at DESC LIMIT 1")){
+    $stmt->bind_param('s', $userId);
+    if($stmt->execute()){
+      $stmt->bind_result($gid);
+      if($stmt->fetch() && $gid !== null){ $groupId = trim((string)$gid); }
+    }
+    $stmt->close();
+  }
+  return $groupId;
+}
 
 if($_SERVER['REQUEST_METHOD'] !== 'POST'){
   http_response_code(405);
@@ -42,6 +59,7 @@ $tbl->close();
 $colId = null;
 $colParent = null;
 $colSort = null;
+$colGroup = null;
 $hasDeleted = false;
 if($resCols = $mysqli->query("SHOW COLUMNS FROM `$table`")){
   while($c = $resCols->fetch_assoc()){
@@ -50,6 +68,7 @@ if($resCols = $mysqli->query("SHOW COLUMNS FROM `$table`")){
     if($colId === null && in_array($lf, ['knowledge_node_id','node_id','id','knowledge_explorer_id'])){ $colId = $f; }
     if($colParent === null && in_array($lf, ['parent_node_id','parent_id','parent','pid'])){ $colParent = $f; }
     if($colSort === null && $lf === 'sort_order'){ $colSort = $f; }
+    if($colGroup === null && in_array($lf, ['knowledge_group_id','group_id'])){ $colGroup = $f; }
     if($lf === 'deleted'){ $hasDeleted = true; }
   }
   $resCols->close();
@@ -65,10 +84,16 @@ if($colSort === null){
   @$mysqli->query("ALTER TABLE `$table` ADD COLUMN `sort_order` INT(11) NULL DEFAULT NULL");
   $colSort = 'sort_order';
 }
+if($colGroup === null){
+  @$mysqli->query("ALTER TABLE `$table` ADD COLUMN `knowledge_group_id` INT(11) NULL DEFAULT NULL");
+  $colGroup = 'knowledge_group_id';
+}
+$groupId = __resolve_reorder_group_id($mysqli);
+$groupFilter = ($colGroup && $groupId !== '') ? " AND `$colGroup`='". $mysqli->real_escape_string($groupId) ."'" : "";
 
 // Helper: get sort_order for a node (root only)
 $curSort = null;
-$sqlCur = "SELECT `$colSort` FROM `$table` WHERE `$colId`=? AND `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"")." LIMIT 1";
+$sqlCur = "SELECT `$colSort` FROM `$table` WHERE `$colId`=? AND `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"").$groupFilter." LIMIT 1";
 if(!$stmtC = $mysqli->prepare($sqlCur)){
   http_response_code(500);
   echo json_encode(['status'=>'error','message'=>'prepare失敗']);
@@ -83,7 +108,7 @@ if($stmtC->fetch()){
 $stmtC->close();
 if($curSort === null){
   // Initialize sort_order for all roots if missing
-  $sqlInit = "SELECT `$colId` FROM `$table` WHERE `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"")." ORDER BY `$colId` ASC";
+  $sqlInit = "SELECT `$colId` FROM `$table` WHERE `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"").$groupFilter." ORDER BY `$colId` ASC";
   if($res = $mysqli->query($sqlInit)){
     $i = 1;
     while($r = $res->fetch_assoc()){
@@ -115,9 +140,9 @@ if($curSort === null){
 
 // Find adjacent root node by sort_order
 if($dir === 'up'){
-  $sqlAdj = "SELECT `$colId`, `$colSort` FROM `$table` WHERE `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"")." AND (`$colSort` < ?) ORDER BY `$colSort` DESC, `$colId` DESC LIMIT 1";
+  $sqlAdj = "SELECT `$colId`, `$colSort` FROM `$table` WHERE `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"").$groupFilter." AND (`$colSort` < ?) ORDER BY `$colSort` DESC, `$colId` DESC LIMIT 1";
 } else {
-  $sqlAdj = "SELECT `$colId`, `$colSort` FROM `$table` WHERE `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"")." AND (`$colSort` > ?) ORDER BY `$colSort` ASC, `$colId` ASC LIMIT 1";
+  $sqlAdj = "SELECT `$colId`, `$colSort` FROM `$table` WHERE `$colParent` IS NULL".($hasDeleted?" AND deleted=0":"").$groupFilter." AND (`$colSort` > ?) ORDER BY `$colSort` ASC, `$colId` ASC LIMIT 1";
 }
 if(!$stmtA = $mysqli->prepare($sqlAdj)){
   http_response_code(500);
