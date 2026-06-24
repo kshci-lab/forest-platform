@@ -192,10 +192,9 @@
 }
 #trigger_add{
 	height:0px;
-	width: 97%;
-	margin-left: 10px;
+	width: 100%;
+	padding: 3px;
     margin-bottom: 3px;
-	background-color: #fff8ed;
 	transition: 0.3s ease;
 }
 

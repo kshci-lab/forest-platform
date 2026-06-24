@@ -287,9 +287,8 @@
 #trigger_add{
 	height:0px;
 	width: 97%;
-	margin-left: 10px;
     margin-bottom: 3px;
-	background-color: #dceadf;
+	background-color: #f8fffd;
 	transition: 0.3s ease;
 }
 #lesson_add{

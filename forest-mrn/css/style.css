@@ -1695,6 +1695,45 @@ body.lang-en #zoom-out-button {
 	background-color: #ff8c00;
 }
 
+.button0,
+.button1,
+.button2,
+.button3,
+.button4,
+.button5,
+.button6,
+.button7,
+.button8,
+.button9,
+.button10 {
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 4px;
+	box-shadow: none;
+	box-sizing: border-box;
+	cursor: pointer;
+	font-family: inherit;
+	line-height: 1.2;
+	text-align: center;
+	text-decoration: none;
+	transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.button0:hover,
+.button1:hover,
+.button2:hover,
+.button3:hover,
+.button4:hover,
+.button5:hover,
+.button6:hover,
+.button7:hover,
+.button8:hover,
+.button9:hover,
+.button10:hover {
+	border-color: rgba(0, 0, 0, 0.16);
+	box-shadow: none;
+	transform: none;
+}
+
 /* 修正理由記入テキストエリア */
 #edit_reason_area {
     width: 85%;
@@ -2183,4 +2222,69 @@ body.lang-en #zoom-out-button {
 	position: absolute;
 	background-color: rgba(0, 140, 255, 0.3); /* 薄青色のハイライト */
 	border: 1px solid blue;
+}
+
+#area_trigger_add {
+	box-sizing: border-box;
+	margin: 8px 0;
+	padding: 8px;
+	background: #f8fffd;
+	border: 1px solid #b3e0d8;
+	border-radius: 4px;
+	color: #243b39;
+}
+
+#area_trigger_add #inputTriggerbutton {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 28px;
+	padding: 6px 10px;
+	border: 1px solid #8fc8be;
+	border-radius: 4px;
+	background: #edf8f5;
+	color: #2f5d58;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: 12px;
+	line-height: 1.2;
+	white-space: normal;
+	transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+#area_trigger_add #inputTriggerbutton:hover {
+	background: #dff1ed;
+	border-color: #70b7aa;
+	color: #214844;
+}
+
+#area_trigger_add #trigger_add {
+	margin-top: 8px;
+}
+
+#area_trigger_add input:not([type="button"]),
+#area_trigger_add select,
+#area_trigger_add textarea,
+#trigger_candidate_list input,
+#trigger_candidate_list select,
+#trigger_candidate_list textarea {
+	box-sizing: border-box;
+	border: 1px solid #c7d8d5;
+	border-radius: 4px;
+	background: #ffffff;
+	color: #2f3742;
+	font-family: inherit;
+	font-size: 12px;
+	box-shadow: none;
+	outline: none;
+}
+
+#area_trigger_add input:not([type="button"]):focus,
+#area_trigger_add select:focus,
+#area_trigger_add textarea:focus,
+#trigger_candidate_list input:focus,
+#trigger_candidate_list select:focus,
+#trigger_candidate_list textarea:focus {
+	border-color: #70b7aa;
+	box-shadow: 0 0 0 2px rgba(112, 183, 170, 0.18);
 }
