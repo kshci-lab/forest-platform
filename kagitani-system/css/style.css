@@ -488,8 +488,8 @@ input:checked+label::before {
 	height: auto;
 	flex: 1;
 	min-height: 150px;
-	/* nav を上に重ねた際にマップ内部が隠れないように上部パディングを確保 */
-	padding-top: 48px;
+	/* nav を上に重ねた際にマップ内部が隠れないように上部パディングを確保していましたが、右側の余白にもマップを表示させるため削除 */
+	padding-top: 0;
 	/* 元は75 */
 	/* min-height: 450px; */
 	margin-bottom: 0;

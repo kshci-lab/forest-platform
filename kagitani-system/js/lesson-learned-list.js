@@ -224,15 +224,7 @@
             leftWrap.appendChild(sourceInfo);
           }
 
-          // 日付2つ（作成日 + 更新日）
-          const dateWrap = document.createElement('div');
-          dateWrap.style.cssText = 'display:flex;gap:8px;font-size:10px;color:#9ca3af;';
-          const createdAt = item.created_at || item.updated_at || '';
-          const updatedAt = item.updated_at || '';
-          dateWrap.innerHTML = '<span>' + escapeHtml(createdAt) + '</span><span>' + escapeHtml(updatedAt) + '</span>';
-
           header.appendChild(leftWrap);
-          header.appendChild(dateWrap);
 
           // 本文（教訓テキスト）
           const content = document.createElement('div');
@@ -340,15 +332,7 @@
             leftWrap.appendChild(sourceInfo);
           }
 
-          // 日付2つ（作成日 + 更新日）
-          const dateWrap = document.createElement('div');
-          dateWrap.style.cssText = 'display:flex;gap:8px;font-size:10px;color:#9ca3af;';
-          const createdAt = item.created_at || item.updated_at || '';
-          const updatedAt = item.updated_at || '';
-          dateWrap.innerHTML = '<span>' + escapeHtml(createdAt) + '</span><span>' + escapeHtml(updatedAt) + '</span>';
-
           header.appendChild(leftWrap);
-          header.appendChild(dateWrap);
 
           // 本文（教訓テキスト）
           const content = document.createElement('div');

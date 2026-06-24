@@ -153,14 +153,14 @@ function macro_disp(){
 						// SRL整理マップが表示されたら
 						resizeHandle.style.display = 'block';
 						
-						// まだ手動リサイズされていない場合のみ、半分に分割
+						// まだ手動リサイズされていない場合のみ、少し縦幅を広く（約70%）割り当てる
 						if (!hasBeenResized) {
 							const totalHeight = getFullHeight();
-							const halfHeight = Math.floor((totalHeight - 8) / 2); // 8はリサイズハンドルの高さ
+							const targetHeight = Math.floor((totalHeight - 8) * 0.7); // 8はリサイズハンドルの高さ
 							jsmindContainer.style.height = '';
 							jsmindContainer.style.flex = '1 1 0%';
-							processContainer.style.height = halfHeight + 'px';
-							processContainer.style.flex = '0 0 ' + halfHeight + 'px';
+							processContainer.style.height = targetHeight + 'px';
+							processContainer.style.flex = '0 0 ' + targetHeight + 'px';
 						}
 						
 						// jsMindを再描画

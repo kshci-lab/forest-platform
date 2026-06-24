@@ -543,7 +543,7 @@ input[type="checkbox"][name="check_process"]{
     box-shadow: none;
     opacity: 0.9;
     transition: opacity 0.3s ease;
-    pointer-events: auto;
+    pointer-events: none;
     /* 横長のナビは内部で横スクロールさせることがあるので、必要ならoverflow-xは維持 */
     /* style.cssの position: absolute を優先させるため relative や margin-bottom を削除 */
     /* 横スクロールを禁止し、ボタンは折り返して表示する（スクロール不可） */
