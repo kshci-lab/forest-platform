@@ -1802,7 +1802,7 @@ function CheckClick(){
     $('#presen_menu').hide('fast');
     // $('.changemode_button').toggle('fast');
     const frame_dom = document.getElementsByClassName("inquiry_area");
-    frame_dom[0].style.border = "solid 5px #ccc";
+    frame_dom[0].style.border = "solid 5px #f6c978";
     showGeneration();
     console.log("log20221008");
   }
@@ -1848,7 +1848,7 @@ function ModeChangeButtonClick() {
    
     // $('.changemode_button').toggle('fast');
     const frame_dom = document.getElementsByClassName("inquiry_area");
-    frame_dom[0].style.border = "solid 5px #ccc";
+    frame_dom[0].style.border = "solid 5px #f6c978";
     showGeneration();
     BeforeSelectModeNumber = 0;
 
@@ -1992,7 +1992,7 @@ function ModeChangeButtonClick() {
       $('#document_slide').toggle('fast');
     }
     const frame_dom = document.getElementsByClassName("inquiry_area");
-    frame_dom[0].style.border = "solid 5px #ccc";
+    frame_dom[0].style.border = "solid 5px #f6c978";
     showGeneration();
     BeforeSelectModeNumber = 3;
   }

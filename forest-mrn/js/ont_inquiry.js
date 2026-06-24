@@ -241,18 +241,12 @@ function showGeneration(){
 	$("div#rationality").html("");	//[合理性]　を空白に
 	// console.log("showGeneration");
 	c_xmlLoad();
-	var lang = window.currentLang || 'ja';
-	// Ensure inquiryDict exists even if c_disp() hasn't been executed yet.
-	var inquiryDict = window.inquiryDict || {};
+	return;
 	var infoHeader = inquiryDict['【情報の表出化】'] ? inquiryDict['【情報の表出化】'][lang] : (lang === 'en' ? '[Externalized Information]' : '【情報の表出化】');
-	$("div#testxml").html('<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;">' + infoHeader + '</div>');
 	// Section header for 【理由・目的】
-	var lang = window.currentLang || 'ja';
 	var reasonHeader = inquiryDict['【理由・目的】'] ? inquiryDict['【理由・目的】'][lang] : (lang === 'en' ? '[Reason/Purpose]' : '【理由・目的】');
-	$("div#intention").html('<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">' + reasonHeader + '</div>');
 	// Section header for 【合理性】
 	var rationalityHeader = inquiryDict['【合理性】'] ? inquiryDict['【合理性】'][lang] : (lang === 'en' ? '[Rationality]' : '【合理性】');
-	$("div#rationality").html('<div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;">' + rationalityHeader + '</div>');
 }
 
 // 言語切替イベント (index.php から呼び出し)

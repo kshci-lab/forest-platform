@@ -321,8 +321,6 @@ $(document).on('click', '.cspan', function(){
 
 
     recommend_xmlLoad();
-    $('#mind_all').hide();
-    $('#presen_all').show();
   }
   else{
     this.focus();
@@ -337,8 +335,6 @@ $(document).on('click', '.cspan', function(){
     dom.style.border = "2px solid gray";
     dom.style.backgroundColor = "#d3d3d3"
     recommend_xmlLoad();
-    $('#mind_all').hide();
-    $('#presen_all').show();
   }
   
 });

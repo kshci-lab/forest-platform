@@ -705,19 +705,15 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                         <div id="node_version_log" class="node_version_log"></div> -->
                         <!--  hatakeyama  -->
 
-                        <div class="toi_list">
-                            <div id="mind_all">
-                                <input class="button5" type="button" onclick="showGeneration();" value="問い一覧">
-                                <b>マインドマップモード</b>
-                            </div>
-                            <div id="presen_all" hidden>
-                                <input class="button5" type="button" onclick="P_showGeneration();" value="問い一覧">
-                                <b>資料作成モード</b>
-                            </div>
-                        </div>
-
                         <div id="mind" class="side">
                             <div class="inquiry_area">
+                                <div class="inquiry-search">
+                                    <div class="search-box-wrapper">
+                                        <button type="button" id="showQuestionsBtn" class="inquiry-show-all">All</button>
+                                        <input type="search" id="inquiry_search_input" class="inquiry-search-input" placeholder="Search questions..." autocomplete="off">
+                                    </div>
+                                    <div id="inquiry_search_result" class="inquiry-search-result" aria-live="polite"></div>
+                                </div>
                                 <div id="testxml"></div>
                                 <div id="ont"></div>
                                 <div id="intention"></div>
@@ -1071,6 +1067,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/ont_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_inquiry_verp.js"></script>
         <script type="text/javascript" src="js/ont_choose_inquiry.js"></script>
+        <script type="text/javascript" src="js/inquiry_search.js"></script>
         <script type="text/javascript" src="js/ont_choose_input_output.js"></script>
         <script type="text/javascript" src="js/ont_rationality.js"></script>
         <script type="text/javascript" src="js/ont_scenario_inquiry.js"></script>
