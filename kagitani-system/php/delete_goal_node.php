@@ -7,19 +7,27 @@ if (function_exists('date_default_timezone_set')) {
 
 $object_journal_id = $_POST['object_journal_id'] ?? '';
 $content = $_POST['content'] ?? '';
-if ($object_journal_id === '' || $content === '') {
+$posted_node_id = $_POST['node_id'] ?? '';
+
+if ($object_journal_id === '') {
     echo 'パラメータ不足';
     exit;
 }
 
-// node_idを取得
-$sql = "SELECT n.node_id FROM object_journal_nodes n LEFT JOIN node_latest nl ON n.node_id = nl.node_id WHERE n.object_journal_id = ? AND nl.content = ? AND (n.deleted IS NULL OR n.deleted = 0) LIMIT 1";
-$stmt = $mysqli->prepare($sql);
-$stmt->bind_param('ss', $object_journal_id, $content);
-$stmt->execute();
-$stmt->bind_result($node_id);
-$stmt->fetch();
-$stmt->close();
+$node_id = null;
+
+if ($posted_node_id !== '') {
+    $node_id = $posted_node_id;
+} else if ($content !== '') {
+    // node_idを取得
+    $sql = "SELECT n.node_id FROM object_journal_nodes n LEFT JOIN node_latest nl ON n.node_id = nl.node_id WHERE n.object_journal_id = ? AND nl.content = ? AND (n.deleted IS NULL OR n.deleted = 0) LIMIT 1";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param('ss', $object_journal_id, $content);
+    $stmt->execute();
+    $stmt->bind_result($node_id);
+    $stmt->fetch();
+    $stmt->close();
+}
 
 if ($node_id) {
     // 論理削除: deleted フラグと update_at を更新

@@ -655,6 +655,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         // カスタムツールチップを確実に表示
                         this.showReflectionTooltip(params.node, params);
                     }
+                    // 手段ノードの場合は活動プロセスツールチップを表示
+                    if (currentNode.group === "step") {
+                        this.showMeansTooltip(params.node, params);
+                    }
                     // 影は常に有効なので、ホバー時の影変更は不要
                     if (currentNode.group === "step" || currentNode.group === "versions" || currentNode.group === "versionsBro") {
                         this.showAddNodeButton(params.node, params);
@@ -670,6 +674,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     // 内省タグの場合、カスタムツールチップを非表示
                     if (currentNode.group === 'reflection-tag') {
                         this.hideReflectionTooltip();
+                    }
+                    // 手段ノードの場合、ツールチップを非表示
+                    if (currentNode.group === "step") {
+                        this.hideMeansTooltip();
                     }
                     // 影は常に有効なので、ホバー解除時の影変更は不要
                 }
@@ -906,6 +914,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.bindshow_select = this.show_select.bind(this);
         this.bindconnect_network = this.connect_network.bind(this);
         this.bindstep_start = this.step_start.bind(this); //kagitani
+        this.bindstep_todo = this.step_todo.bind(this);
         this.bindstep_paused = this.step_paused.bind(this); //kagitani
         this.bindstep_end = this.step_end.bind(this); //kagitani
         this.bindContentmenuCancel = this.ContentmenuCancel.bind(this);
@@ -921,6 +930,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         // Use namespaced events and unbind the namespace first to ensure idempotence
         $(`#jsmind_container`).off('click.objectNetwork').on('click.objectNetwork', this.bindconnect_mindmap);
+        $(`#object_conmenu0`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_todo);
         $(`#object_conmenu1`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_start);
         $(`#object_conmenu2`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_end);
         $(`#object_conmenu3`).off('click.objectNetwork').on('click.objectNetwork', this.bindstep_paused);
@@ -946,6 +956,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     removeEventLister(){
         $(`#jsmind_container`).off('click.objectNetwork',this.bindconnect_mindmap);
+        $(`#object_conmenu0`).off('click.objectNetwork',this.bindstep_todo);
         $(`#object_conmenu1`).off('click.objectNetwork',this.bindstep_start);
         $(`#object_conmenu2`).off('click.objectNetwork',this.bindstep_end);
         $(`#object_conmenu3`).off('click.objectNetwork', this.bindstep_paused);
@@ -1531,6 +1542,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             font: { color: text_color },
             fixed: position_fixed,
             x: node_x, y: node_y,
+            status: status,
             borderWidth: border_width,
             borderWidthSelected: border_width_selected,
             shapeProperties: {
@@ -2482,10 +2494,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 NetworkMenu.classList.add('visible');
             }, 10);
             
-            // 中断ボタンは常に表示
-            const pauseBtn = document.getElementById("object_conmenu3");
-            if (pauseBtn) {
-                pauseBtn.style.display = "inline-flex";
+            // Update active state based on node status
+            const statusBtns = NetworkMenu.querySelectorAll('.seg-btn');
+            statusBtns.forEach(btn => btn.classList.remove('active'));
+            
+            let currentStatus = nodeObj.status || 'todo';
+            if (currentStatus === 'todo') {
+                document.getElementById('object_conmenu0')?.classList.add('active');
+            } else if (currentStatus === 'inProgress') {
+                document.getElementById('object_conmenu1')?.classList.add('active');
+            } else if (currentStatus === 'paused') {
+                document.getElementById('object_conmenu3')?.classList.add('active');
+            } else if (currentStatus === 'completed') {
+                document.getElementById('object_conmenu2')?.classList.add('active');
             }
         } else {
             this.onNodeDeselectedForToolbar();
@@ -3207,6 +3228,62 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         defaultRecordThinkingProcess.record_recruit(this.selectId, Ontology_Node_Id, selectedValue);
     }
 
+    //手段未着手ボタン
+    step_todo() {
+        this.onNodeDeselectedForToolbar();
+
+        if (!this.selectId) {
+            const backupSelectId = sessionStorage.getItem('currentSelectId');
+            if (backupSelectId) {
+                this.selectId = backupSelectId;
+            } else {
+                alert('ノードが選択されていません。先にノードを右クリックして選択してください。');
+                return;
+            }
+        }
+
+        try {
+            defaultRecordThinkingProcess.update_Node("status", this.selectId, "todo", 5);
+        } catch (e) {
+            console.error('update_Node エラー（無視して続行）:', e);
+        }
+
+        const oldNode = this.nodes.get(this.selectId);
+        const oldStatus = oldNode ? oldNode.status : 'todo';
+
+        let newColor = '#d6f5d6';
+        let newBorderColor = '#333';
+        if (oldNode && oldNode.group === 'topic-tag') {
+            newColor = '#0f172a';
+            newBorderColor = '#38bdf8';
+        }
+
+        this.nodes.update({
+            id: this.selectId,
+            status: 'todo',
+            color: {
+                background: newColor,
+                border: newBorderColor
+            },
+            title: "未着手",
+            size: 50,
+            borderWidth: (oldNode && oldNode.group === 'topic-tag') ? 2 : 1,
+            borderWidthSelected: (oldNode && oldNode.group === 'topic-tag') ? 4 : 2,
+            shapeProperties: {
+                borderDashes: false
+            }
+        });
+
+        if (typeof undoRedoManager !== 'undefined' && oldStatus !== 'todo') {
+            undoRedoManager.recordAction({
+                type: 'CHANGE_STATUS',
+                nodeId: this.selectId,
+                oldStatus: oldStatus,
+                newStatus: 'todo'
+            });
+        }
+    }
+
     //手段開始ボタン
     step_start() {
         this.onNodeDeselectedForToolbar();
@@ -3488,21 +3565,20 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             }
         };
     
-        // ノードの位置を取得
-        const positions = this.ownNetwork.getPositions(this.selectId);
-        if (!positions || !positions[this.selectId]) {
-            console.error("選択されたノードの位置情報が取得できませんでした。");
-            return;
+        // 現在のノードと目標ノード（topic-tag）のラベルを取得
+        const selectedNode = this.nodes.get(this.selectId);
+        const selectedLabel = selectedNode ? selectedNode.label.replace(/\n/g, '') : 'この手段';
+        
+        let topicLabel = '目標';
+        if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess) {
+            const topicTagNodes = defaultThinkingProcess.nodes.get().filter(n => n.group === 'topic-tag');
+            if (topicTagNodes.length > 0) {
+                topicLabel = topicTagNodes[0].label.replace(/\n/g, '');
+            }
         }
-        const nodePosition = positions[this.selectId];
-        const canvasPosition = this.ownNetwork.canvasToDOM({
-            x: nodePosition.x,
-            y: nodePosition.y
-        });
-    
+
         // 吹き出しの内容を設定（共通クラスを使用）
-        tooltip.style.left = `${canvasPosition.x}px`;
-        tooltip.style.top = `${canvasPosition.y + 20}px`; // ノードの下に表示
+        // 画面中央に表示するため、初期位置は後で（display:blockの後に）設定します。
         tooltip.style.position = "fixed";
         tooltip.style.zIndex = "2147483647";
         if (!tooltip.dataset.initialSized) {
@@ -3512,9 +3588,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
         tooltip.classList.add('fl-card','fl-card--wide');
         tooltip.innerHTML = `
-    <div id="feedbackTooltipHeader" class="fl-header reflection-header-row">
-        <div class="reflection-main-title" style="font-weight:700; font-size:16px;">${t('headerTitle')}</div>
-        <div class="header-actions-group">
+    <div class="fl-header" style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin: -6px -6px 0 -6px; box-sizing: border-box;">
+        <div class="feedback-greeting" style="font-size: 13px; color: #475569; line-height: 1.5; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">✨</span>
+            <div>
+                「${topicLabel}」に向けて「${selectedLabel}」お疲れ様でした！<br>
+                <span style="font-size: 12px; font-weight: 400; color: #64748b;">何か気づいたことがあれば記録してみましょう！</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
             <button type="button" id="btnReflectionHistory" class="btn-view-past-logs" aria-controls="reflectionHistoryPanel" aria-expanded="false">${t('historyBtn')}</button>
             <button type="button" id="btnCancelFeedback" class="modal-close-v4-btn" title="閉じる">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -3590,6 +3672,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             historyBtn.setAttribute('aria-expanded', 'false');
         }
         tooltip.style.display = "block";
+
+        // 画面中央に配置（サイズが確定した後に計算）
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const centerX = (window.innerWidth - tooltipRect.width) / 2;
+        const centerY = (window.innerHeight - tooltipRect.height) / 2;
+        tooltip.style.left = `${Math.max(0, centerX)}px`;
+        tooltip.style.top = `${Math.max(0, centerY)}px`;
         this.setupReflectionHistoryButton();
 
         const applyAutoGrow = (ta) => {
@@ -4163,30 +4252,107 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         });
     }
     
-    setupTooltipAutoSave(tooltip) {
+    setupTooltipAutoSave(tooltip, mode = 'edit') {
+        const saveStatusBtn = document.getElementById("node-reflection-save-status");
+        const finishBtn = document.getElementById("btn-finish-reflection");
         const cancelButton = document.getElementById("btnCancelFeedback");
+
+        const originalValues = {};
+        const getAllTextareas = () => Array.from(tooltip.querySelectorAll('textarea'));
+        
+        getAllTextareas().forEach(ta => {
+            const id = ta.id || ta.name || Math.random().toString();
+            ta.dataset.trackerId = id;
+            originalValues[id] = ta.value;
+        });
+
+        const checkState = () => {
+            let isChanged = false;
+            let hasAnyText = false;
+            getAllTextareas().forEach(ta => {
+                const val = ta.value.trim();
+                if (val.length > 0) hasAnyText = true;
+                const id = ta.dataset.trackerId;
+                if (val !== (originalValues[id] || '').trim()) {
+                    isChanged = true;
+                }
+            });
+
+            if (mode === 'initial-complete') {
+                if (finishBtn) {
+                    if (hasAnyText) {
+                        finishBtn.textContent = "学びを記録して完了する";
+                        finishBtn.classList.remove("btn-skip");
+                    } else {
+                        finishBtn.textContent = "振り返りをスキップして完了する";
+                        finishBtn.classList.add("btn-skip");
+                    }
+                }
+                if (tooltip.title) tooltip.removeAttribute('title');
+            } else {
+                if (saveStatusBtn) {
+                    if (isChanged) {
+                        saveStatusBtn.textContent = "変更を保存する";
+                        saveStatusBtn.classList.add("has-changes");
+                        saveStatusBtn.disabled = false;
+                    } else {
+                        saveStatusBtn.textContent = "保存済み";
+                        saveStatusBtn.classList.remove("has-changes");
+                        saveStatusBtn.disabled = true;
+                    }
+                }
+            }
+
+            return { isChanged, hasAnyText };
+        };
+
         if (cancelButton) {
             cancelButton.addEventListener("click", () => {
+                const state = checkState();
+                if (mode === 'initial-complete') {
+                    if (state.hasAnyText) {
+                        if (!confirm("記述を保存していませんがよろしいですか？")) return;
+                    } else {
+                        if (!confirm("完了されませんがよろしいですか？")) return;
+                    }
+                } else {
+                    if (state.isChanged) {
+                        if (!confirm("変更を保存していませんがよろしいですか？")) return;
+                    }
+                }
                 try { tooltip.style.display = "none"; } catch (e) { console.warn('failed to close tooltip on cancel', e); }
             });
         }
         
-        
-        const saveStatusBtn = document.getElementById("node-reflection-save-status");
         if (saveStatusBtn) {
             saveStatusBtn.addEventListener("click", () => {
                 if (saveStatusBtn.disabled) return;
                 executeSave();
+                try { tooltip.style.display = "none"; } catch (e) { console.warn('failed to close tooltip', e); }
             });
         }
         
-        const finishBtn = document.getElementById("btn-finish-reflection");
         if (finishBtn) {
             finishBtn.addEventListener("click", () => {
                 executeSave();
                 try { tooltip.style.display = "none"; } catch (e) { console.warn('failed to close tooltip', e); }
             });
         }
+
+        // 入力を監視するイベントデリゲーション
+        tooltip.addEventListener('input', (e) => {
+            if (e.target.tagName.toLowerCase() === 'textarea') {
+                if (!e.target.dataset.trackerId) {
+                    const id = e.target.id || e.target.name || Math.random().toString();
+                    e.target.dataset.trackerId = id;
+                    originalValues[id] = "";
+                }
+                checkState();
+            }
+        });
+
+        // 初期の状態チェックを実行
+        checkState();
         
         const executeSave = () => {
             if (saveStatusBtn) {
@@ -4432,25 +4598,21 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             // ステータスを completed に更新
             defaultRecordThinkingProcess.update_Node("status", this.selectId, "completed", 7);
         }; // executeSave end
-
-        // 全てのテキストエリアにinputイベントをバインドしてボタンをアクティブ化
-        const textareas = tooltip.querySelectorAll('.feedback-textarea, .lesson-focus, .lesson-why, .lesson-when');
-        textareas.forEach(ta => {
-            ta.addEventListener('input', () => {
-                if (saveStatusBtn && saveStatusBtn.disabled) {
-                    saveStatusBtn.textContent = "変更を保存する";
-                    saveStatusBtn.classList.add("has-changes");
-                    saveStatusBtn.disabled = false;
-                }
-            });
-        });
     }
     
     setupTooltipDrag(tooltip) {
         const header = document.getElementById("feedbackTooltipHeader");
         let offsetX = 0, offsetY = 0, isDragging = false;
     
-        header.addEventListener("mousedown", (event) => {
+        tooltip.addEventListener("mousedown", (event) => {
+            // テキストエリアやボタンのクリック時はドラッグしない
+            const targetTag = event.target.tagName.toLowerCase();
+            if (['textarea', 'input', 'button', 'select'].includes(targetTag) || 
+                event.target.closest('button') || 
+                event.target.closest('.fl-close')) {
+                return;
+            }
+
             isDragging = true;
             offsetX = event.clientX - tooltip.offsetLeft;
             offsetY = event.clientY - tooltip.offsetTop;
@@ -4898,6 +5060,128 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     // 内省タグのカスタムツールチップを非表示
     hideReflectionTooltip() {
         const tooltip = document.getElementById('reflection-tooltip');
+        if (tooltip) {
+            tooltip.classList.remove('visible');
+        }
+    }
+
+    // 手段ノードの活動プロセスツールチップを表示
+    showMeansTooltip(nodeId, params) {
+        const tooltip = document.getElementById('means-tooltip');
+        if (!tooltip) return;
+
+        const contentDiv = document.getElementById('means-process-content');
+        const nodeData = this.nodes.get(nodeId);
+        if (!nodeData) return;
+
+        // ノードの位置を取得してツールチップを配置
+        const nodePositions = this.ownNetwork.getPositions([nodeId]);
+        const nodePos = nodePositions[nodeId];
+        if (!nodePos) return;
+
+        const canvasPosition = this.ownNetwork.canvasToDOM({ x: nodePos.x, y: nodePos.y });
+        const networkContainer = document.getElementById('myProcessnetwork');
+        const containerRect = networkContainer ? networkContainer.getBoundingClientRect() : { left: 0, top: 0 };
+
+        // ツールチップの位置を設定（ノードの右側/右上に表示）
+        const tooltipX = containerRect.left + canvasPosition.x + 30;
+        const tooltipY = containerRect.top + canvasPosition.y - 50;
+
+        tooltip.style.position = 'fixed';
+        tooltip.style.left = tooltipX + 'px';
+        tooltip.style.top = tooltipY + 'px';
+        tooltip.style.zIndex = '99999';
+        tooltip.classList.add('visible');
+
+        // キャッシュがあればそれを利用
+        if (nodeData.activityProcessCache) {
+            contentDiv.innerHTML = nodeData.activityProcessCache;
+            return;
+        }
+
+        contentDiv.innerHTML = '<span style="color: #888;">読み込み中...</span>';
+
+        // AJAXリクエストで活動プロセスを取得
+        $.ajax({
+            url: 'php/get_means_history.php',
+            type: 'GET',
+            dataType: 'json',
+            data: { object_node_id: nodeId },
+            success: (res) => {
+                if(res.success && res.histories && res.histories.length > 0) {
+                    const mapJa = { 1: '手段設定', 2: 'ラベル変更', 3: '理由記述', 4: '完了時間記述', 5: '手段開始', 6: '手段中断', 7: '手段終了', 8: '内省記述' };
+                    let html = '<div class="means-timeline">';
+                    let hasActivity = false;
+                    res.histories.forEach((h, index) => {
+                        const actId = parseInt(h.activity, 10);
+                        let activityName = '更新';
+                        
+                        // activityが0またはnullの場合（座標移動などの些細な更新）は、
+                        // 初回の「手段作成」以外は表示をスキップする
+                        if (index !== 0 && (!actId || actId === 0)) {
+                            return;
+                        }
+
+                        // 初回は「手段作成」とする
+                        if (index === 0 && (!actId || actId === 0)) {
+                            activityName = '手段作成';
+                        } else if (actId && mapJa[actId]) {
+                            activityName = mapJa[actId];
+                        } else if (actId) {
+                            activityName = `活動(${actId})`;
+                        }
+
+                        let extraClass = '';
+                        let dotColor = '';
+                        if (actId === 5) { extraClass = 'action-start'; dotColor = 'background-color: #3b82f6;'; }
+                        else if (actId === 7) { extraClass = 'action-done'; dotColor = 'background-color: #10b981;'; }
+                        else if (actId === 6) { extraClass = 'action-pause'; dotColor = 'background-color: #f59e0b;'; }
+                        else if (actId === 8) { extraClass = 'action-reflect'; dotColor = 'background-color: #8b5cf6;'; }
+
+                        // 年月日時の整形
+                        const d = new Date(h.appeared_at);
+                        const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                        
+                        html += `
+                        <div class="means-timeline-item">
+                            <div class="means-timeline-time">${dateStr}</div>
+                            <div class="means-timeline-dot" style="${dotColor}"></div>
+                            <div class="means-timeline-action ${extraClass}">${activityName}</div>
+                        </div>`;
+                        hasActivity = true;
+                    });
+                    html += '</div>';
+
+                    if(!hasActivity) {
+                        html = '<span style="color: #888;">活動履歴がありません。</span>';
+                    }
+
+                    // キャッシュに保存
+                    nodeData.activityProcessCache = html;
+                    this.nodes.update(nodeData);
+
+                    // もし現在もこのノードをホバー中なら表示を更新
+                    if (tooltip.classList.contains('visible')) {
+                        contentDiv.innerHTML = html;
+                    }
+                } else {
+                    const html = '<span style="color: #888;">活動履歴がありません。</span>';
+                    nodeData.activityProcessCache = html;
+                    this.nodes.update(nodeData);
+                    if (tooltip.classList.contains('visible')) {
+                        contentDiv.innerHTML = html;
+                    }
+                }
+            },
+            error: () => {
+                contentDiv.innerHTML = '<span style="color: #e65100;">データの取得に失敗しました。</span>';
+            }
+        });
+    }
+
+    // 手段ノードの活動プロセスツールチップを非表示
+    hideMeansTooltip() {
+        const tooltip = document.getElementById('means-tooltip');
         if (tooltip) {
             tooltip.classList.remove('visible');
         }
@@ -7088,8 +7372,7 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
 
             if (Array.isArray(trigger_list_info.onode)) {
                 // 4. ルートから辿れる（繋がっている）ノードだけを実直に残す
-                // 修正：未接続の手段ノード（新規追加直後など）がリロードで消えてしまう不具合を防ぐため、フィルタリングを無効化
-                // trigger_list_info.onode = trigger_list_info.onode.filter(n => reachableNodeIds.has(String(n.object_node_id)));
+                trigger_list_info.onode = trigger_list_info.onode.filter(n => reachableNodeIds.has(String(n.object_node_id)));
             }
 
             trigger_list_info.onode.map((n) => {

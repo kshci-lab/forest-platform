@@ -60,6 +60,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>自己調整学習支援システム</title>
+        <link rel="icon" type="image/png" href="image/favicon.png">
         <link type="text/css" rel="stylesheet" href="../css/jsmind.css" />
         <link rel="stylesheet" type="text/css" href="../css/item.css">
         <link rel="stylesheet" type="text/css" href="css/font.css">
@@ -587,7 +588,7 @@ try {
                 'notStartedLabel': '未着手',
                 'navigatorGreetingHeader': 'こんにちは！',
                 'navigatorGreetingSub': 'SRL整理マップへようこそ',
-                'title_name':'自己調整学習活性化システム',
+                'title_name':'自己調整学習支援システム',
                 'weeklyGoalTooltip': '次のMTの１週間の目標',
                 'weeklyGoalStartLabel': '開始日',
                 'weeklyGoalEndLabel': '終了日',
@@ -722,6 +723,12 @@ try {
                         btn.textContent = langDict[lang]['deleteWeeklyGoalBtnText'];
                     });
                 }
+                
+                // 動的な右クリックメニューラベルを再設定
+                if (typeof window.updateAddWeeklyMenuLabel === 'function') {
+                    window.updateAddWeeklyMenuLabel();
+                }
+
                 document.getElementById('language-switching-message').style.display = 'none';
                 console.log('言語切替完了: ' + (lang === 'ja' ? '日本語' : 'English'));
                 // 問い一覧（testxml）も言語切替
@@ -768,6 +775,9 @@ try {
                 </a>
                 
                 <div id="language-toggle-container" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                        <a href="https://kshci-lab.net/" target="_blank" rel="noopener noreferrer">
+                            <img src="image/lab_logo.png" alt="知性モデリング研究室" style="height: 32px; object-fit: contain; margin-right: 8px;">
+                        </a>
                         <div class="hamburger-menu">
                             <button class="settings-button" type="button" aria-label="Settings" title="設定">
                                 <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true">
@@ -1314,30 +1324,44 @@ try {
                                         <div class="reflection-when-applicable" id="reflection-when-applicable"></div>
                                         <div class="reflection-lesson-content" id="reflection-lesson-content"></div>
                                     </div>
+                                    
+                                    <!-- 手段ノード用カスタムツールチップ -->
+                                    <div id="means-tooltip" class="reflection-tooltip means-tooltip-custom">
+                                        <div class="reflection-section" style="margin-bottom: 0;">
+                                            <span class="reflection-text" style="color: #888; font-size: 11px;">活動プロセス</span>
+                                        </div>
+                                        <div class="reflection-reason" id="means-process-content" style="white-space: pre-wrap; font-size: 12px; line-height: 1.4; color: #555; max-height: 200px; overflow-y: auto; padding-left: 4px;">
+                                            <!-- ここに履歴が挿入されます -->
+                                        </div>
+                                    </div>
                                         
-                                    <div id="t_Process_conmenu" class="floating-status-toolbar" role="menu" aria-label="進捗記録メニュー" style="display:none; position:fixed; z-index:10000;">
-                                        <div class="status-btn-group">
-                                            <button type="button" id="object_conmenu1" class="status-btn" title="開始" aria-label="作業開始">
+                                    <div id="t_Process_conmenu" class="floating-status-toolbar segmented" role="menu" aria-label="進捗記録メニュー" style="display:none; position:fixed; z-index:999999;">
+                                        <div class="seg-header">進捗ステータス</div>
+                                        <div class="status-btn-group seg-group">
+                                            <button type="button" id="object_conmenu0" class="seg-btn" title="未着手" aria-label="未着手">
+                                                <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                </svg>
+                                                <span class="seg-text">未着手</span>
+                                            </button>
+                                            <button type="button" id="object_conmenu1" class="seg-btn" title="実行中" aria-label="作業開始">
                                                 <svg class="status-icon play-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                                                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                                                 </svg>
+                                                <span class="seg-text">実行中</span>
                                             </button>
-                                            <button type="button" id="object_conmenu3" class="status-btn" title="中断" aria-label="作業中断">
+                                            <button type="button" id="object_conmenu3" class="seg-btn" title="中断" aria-label="作業中断">
                                                 <svg class="status-icon pause-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                                                     <rect x="6" y="4" width="4" height="16"></rect>
                                                     <rect x="14" y="4" width="4" height="16"></rect>
                                                 </svg>
+                                                <span class="seg-text">中断</span>
                                             </button>
-                                            <button type="button" id="object_conmenu2" class="status-btn" title="完了" aria-label="作業完了">
+                                            <button type="button" id="object_conmenu2" class="seg-btn" title="完了" aria-label="作業完了">
                                                 <svg class="status-icon check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                                     <polyline points="20 6 9 17 4 12"></polyline>
                                                 </svg>
-                                            </button>
-                                            <button type="button" id="object_conmenu4" class="status-btn cancel-btn" title="キャンセル" aria-label="キャンセル" style="display:none;">
-                                                <svg class="status-icon cross-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
+                                                <span class="seg-text">完了</span>
                                             </button>
                                         </div>
                                     </div>

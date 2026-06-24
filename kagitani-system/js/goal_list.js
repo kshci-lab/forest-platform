@@ -451,8 +451,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!contentText) contentText = t('unlinked');
                     // data 属性を付与して後でイベントバインドしやすくする
                     var nodeIdAttr = (contentItem && typeof contentItem === 'object' && contentItem.node_id) ? contentItem.node_id : '';
-                    return '<div class="jmnode question-item" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" data-node-id="' + nodeIdAttr + '" title="SRL整理マップを開けます">' +
+                    return '<div class="jmnode question-item" draggable="true" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" data-node-id="' + nodeIdAttr + '" title="SRL整理マップを開けます">' +
                         '<div style="display:flex; align-items:center; gap:6px;">' +
+                        '<span class="drag-handle" title="ドラッグして並び替え" style="cursor:grab; color:#ccc;">⋮⋮</span>' +
                         '<span>' + contentText + '</span>' +
                         '</div>' +
                         '<button onclick="deleteGoalNode(' + idx + ',' + cidx + ')" class="goal-delete-btn" title="削除" style="background:transparent;border:none;cursor:pointer;padding:0;">' +
@@ -489,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 + popoverHtml
                 + '</div>'
                 + '</div>'
-                + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
+                + '<div class="goal-nodes-container" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">' + nodeHtml + '</div>'
                 + '<div style="text-align:right;margin-top:8px;">'
                 + '<button onclick="deleteWeeklyGoal(' + idx + ')" class="goal-delete-btn btn-delete-cycle" title="' + t('delete') + '" id="deleteWeeklyGoalBtn' + idx + '">'
                 + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
@@ -498,6 +499,71 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '</div>';
         });
         weeklyListDiv.innerHTML = html;
+
+        // ドラッグ＆ドロップによる並び替え処理
+        var containers = weeklyListDiv.querySelectorAll('.goal-nodes-container');
+        containers.forEach(function(container) {
+            var draggedItem = null;
+            container.addEventListener('dragstart', function(e) {
+                var target = e.target.closest('.question-item');
+                if (!target || e.target.closest('.goal-delete-btn')) return;
+                draggedItem = target;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', ''); // Firefox用
+                setTimeout(function() {
+                    target.style.opacity = '0.5';
+                }, 0);
+            });
+            container.addEventListener('dragend', function(e) {
+                if (draggedItem) {
+                    draggedItem.style.opacity = '1';
+                    draggedItem = null;
+                }
+            });
+            container.addEventListener('dragover', function(e) {
+                e.preventDefault(); // ドロップを許可
+                e.dataTransfer.dropEffect = 'move';
+                var target = e.target.closest('.question-item');
+                if (target && target !== draggedItem) {
+                    var rect = target.getBoundingClientRect();
+                    var next = (e.clientX - rect.left) / (rect.right - rect.left) > 0.5;
+                    container.insertBefore(draggedItem, next ? target.nextSibling : target);
+                }
+            });
+            container.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (draggedItem) {
+                    var goalIdx = draggedItem.getAttribute('data-goal-idx');
+                    var newOrder = Array.from(container.querySelectorAll('.question-item')).map(function(item) {
+                        return {
+                            node_id: item.getAttribute('data-node-id'),
+                            content: (item.querySelector('span:not(.drag-handle)') ? item.querySelector('span:not(.drag-handle)').textContent.trim() : '')
+                        };
+                    });
+                    
+                    var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
+                    if (goals[goalIdx]) {
+                        goals[goalIdx].contents = newOrder;
+                        localStorage.setItem(getStorageKey('weeklyGoals'), JSON.stringify(goals));
+                        
+                        $.ajax({
+                            url: 'php/reorder_goal_nodes.php',
+                            type: 'POST',
+                            data: {
+                                object_journal_id: goals[goalIdx].object_journal_id,
+                                ordered_nodes: JSON.stringify(newOrder)
+                            },
+                            success: function(res) {
+                                console.log('Reorder saved', res);
+                                // 順番の保存後に描画をリフレッシュして内部インデックスを同期する
+                                window.renderWeeklyGoals();
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
         // 生成された .jmnode 要素にクリックリスナを登録（削除ボタンのクリックは除外）
         try {
             var jmnodes = weeklyListDiv.querySelectorAll('.jmnode');
@@ -1093,7 +1159,8 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
             type: 'POST',
             data: {
                 object_journal_id: goals[goalIdx].object_journal_id,
-                content: deletedContent
+                node_id: deletedContent.node_id || '',
+                content: deletedContent.content || deletedContent
             },
             success: function(res) {
                 console.log('delete_goal_node.php response:', res);
@@ -1277,6 +1344,7 @@ window.deleteGoalNode = function(goalIdx, contentIdx) {
             console.warn('updateAddWeeklyMenuLabel error', e);
         }
     }
+    window.updateAddWeeklyMenuLabel = updateAddWeeklyMenuLabel;
 
     // weeklyGoalsList が存在すれば変化を監視してラベル同期を行う
     if (weeklyListDiv) {

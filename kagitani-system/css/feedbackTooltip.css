@@ -568,7 +568,7 @@
 /* 初回完了ボタンの洗練スタイリング */
 .btn-finish-reflection {
   width: 100% !important;
-  background-color: #0d47a1 !important; /* またはForestのプライマリカラー（ディープグリーン等） */
+  background-color: #16a34a !important; /* Positive green for learning */
   color: #ffffff !important;
   font-size: 14px;
   font-weight: 700;
@@ -576,13 +576,26 @@
   border: none !important;
   border-radius: 8px !important;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.15);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
   transition: all 0.2s ease;
 }
 
 .btn-finish-reflection:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* スキップして完了する場合（未入力時）のスタイル */
+.btn-finish-reflection.btn-skip {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.btn-finish-reflection.btn-skip:hover {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
 }
 
 /* ヘッダー行全体：両端に綺麗に振り分ける */

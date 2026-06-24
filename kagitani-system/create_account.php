@@ -72,7 +72,7 @@ if (isset($_POST["signUp"])) {
 <html>
   <head>
   <meta charset="UTF-8">
-  <title>自己調整学習活性化支援システム</title>
+  <title>自己調整学習支援システム</title>
 
   <link rel="stylesheet" href="../css/Semantic-UI/semantic.css">
   <link rel="stylesheet" type="text/css" href="../css/signup.css">

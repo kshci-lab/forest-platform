@@ -127,7 +127,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>自己調整学習活性化支援システム</title>
+        <title>自己調整学習支援システム</title>
         <link type="text/css" rel="stylesheet" href="../css/jsmind.css" />
         <link rel="stylesheet" type="text/css" href="../css/item.css">
         <link rel="stylesheet" type="text/css" href="../css/font.css">

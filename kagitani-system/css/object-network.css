@@ -19,6 +19,40 @@
     display: block;
 }
 
+.means-timeline {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.means-timeline-item {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+}
+.means-timeline-time {
+    color: #94a3b8;
+    width: 65px;
+    font-family: monospace;
+    font-size: 10.5px;
+}
+.means-timeline-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #cbd5e1;
+    margin-right: 8px;
+}
+.means-timeline-action {
+    color: #475569;
+    font-weight: 500;
+}
+.means-timeline-action.action-start { color: #3b82f6; }
+.means-timeline-action.action-done { color: #10b981; }
+.means-timeline-action.action-pause { color: #f59e0b; }
+.means-timeline-action.action-reflect { color: #8b5cf6; }
+
+
 .reflection-section {
     display: flex;
     align-items: flex-start;
@@ -1623,3 +1657,90 @@ display: none;
 .bg-sync-slate { background-color: #7B8B9A; }
 
 
+
+/* ========================================================
+   Segmented Control Toolbar (Progress Status)
+   ======================================================== */
+.floating-status-toolbar.segmented {
+    flex-direction: column;
+    padding: 12px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.seg-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 8px;
+    text-align: center;
+    width: 100%;
+}
+
+.seg-group {
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 8px;
+    display: flex;
+    gap: 4px;
+}
+
+.seg-btn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #94a3b8;
+}
+
+.seg-btn:hover {
+    background: rgba(255,255,255,0.5);
+    color: #475569;
+}
+
+.seg-text {
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Active states */
+.seg-btn.active {
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.seg-btn.active#object_conmenu0 {
+    color: #475569; /* Todo (gray) */
+}
+.seg-btn.active#object_conmenu0 .status-icon {
+    color: #64748b;
+}
+
+.seg-btn.active#object_conmenu1 {
+    color: #2563eb; /* In Progress (blue) */
+}
+.seg-btn.active#object_conmenu1 .status-icon {
+    color: #2563eb;
+}
+
+.seg-btn.active#object_conmenu3 {
+    color: #ca8a04; /* Paused (yellow) */
+}
+.seg-btn.active#object_conmenu3 .status-icon {
+    color: #ca8a04;
+}
+
+.seg-btn.active#object_conmenu2 {
+    color: #16a34a; /* Done (green) */
+}
+.seg-btn.active#object_conmenu2 .status-icon {
+    color: #16a34a;
+}
