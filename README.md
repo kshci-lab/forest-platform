@@ -5,6 +5,17 @@
 3. localhost:8888/index.html　にアクセス
 4. connect_db.php　でデータベースの名前を設定．
 
+### ブランチ切り替え後のローカル準備
+`vendor/` と `php/sso_local.php` はGit管理外です。ブランチ切り替えや作業環境の作り直し後にSSOログインでエラーが出る場合は、プロジェクト直下で以下を実行してください。
+
+```sh
+sh scripts/setup-local.sh
+```
+
+このスクリプトはComposer依存関係をインストールし、`php/sso_local.php` が存在しない場合だけ `php/sso_local.example.php` から作成します。作成後は `php/sso_local.php` に各自のSSO設定を入れてください。
+
+`php/sso_local.php` は秘密情報を含むためGitHubには上げません。共有するのは `php/sso_local.example.php` だけにしてください。
+
 ## 起動方法（アプリケーションサーバ）
 1.　https://ks.mi.s.osakafu-u.ac.jp/software/masakado
   にアクセス
