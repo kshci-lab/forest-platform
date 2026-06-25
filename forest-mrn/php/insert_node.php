@@ -11,6 +11,12 @@ $from_mode = isset($_POST['from_mode']) ? $_POST['from_mode'] : '';
 $node_content = isset($_POST['content'])
 	? $mysqli->real_escape_string(trim(html_entity_decode(strip_tags($_POST['content']), ENT_QUOTES, 'UTF-8')))
 	: '';
+$concept_id = '';
+if (isset($_POST['concept_id'])) {
+	$concept_id_parts = preg_split('/\s+/', trim((string)$_POST['concept_id']));
+	$concept_id = isset($concept_id_parts[0]) ? preg_replace('/^topic-tag_/', '', $concept_id_parts[0]) : '';
+	$concept_id = $mysqli->real_escape_string($concept_id);
+}
 
 	//jsmind.js
 	if($_POST["insert"] == "node"){
@@ -37,10 +43,10 @@ $node_content = isset($_POST['content'])
 						VALUES ('".$_POST['id']."','".$_SESSION['USERID']."','".$_POST['type']."', '".$from_mode."', '".$deleted."')";
 					
 					$node_v_sql = "INSERT INTO node_versions (node_version_id, node_id, parent_id, node_type_id, appeared_at, disappeared_at, content, concept_id, x, y)
-						VALUES ('".$node_v_id."', '".$_POST['id']."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$_POST['concept_id']."','".$_POST['x']."','".$_POST['y']."')";
+						VALUES ('".$node_v_id."', '".$_POST['id']."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$concept_id."','".$_POST['x']."','".$_POST['y']."')";
 					
 					$node_h_sql = "INSERT INTO node_histories (node_history_id, node_version_id, parent_id, node_type_id, appeared_at, disappeared_at, content, concept_id, x, y)
-						VALUES ('".$node_h_id."', '".$node_v_id."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$_POST['concept_id']."','".$_POST['x']."','".$_POST['y']."')";
+						VALUES ('".$node_h_id."', '".$node_v_id."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$concept_id."','".$_POST['x']."','".$_POST['y']."')";
 	
 					$node_a_sql = "INSERT INTO node_actions (node_action_id, node_history_id, time, act	)
 						VALUES ('".$node_a_id."', '".$node_h_id."', '".$created_at."','add')";
@@ -86,10 +92,10 @@ $node_content = isset($_POST['content'])
 					VALUES ('".$_POST['id']."','".$_SESSION['USERID']."','".$_POST['type']."', '".$from_mode."', '".$deleted."')";
 				
 			$node_v_sql = "INSERT INTO node_versions (node_version_id, node_id, parent_id, node_type_id, appeared_at, disappeared_at, content, concept_id, x, y)
-				VALUES ('".$node_v_id."', '".$_POST['id']."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$_POST['concept_id']."','".$_POST['x']."','".$_POST['y']."')";
+				VALUES ('".$node_v_id."', '".$_POST['id']."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$concept_id."','".$_POST['x']."','".$_POST['y']."')";
 				
 			$node_h_sql = "INSERT INTO node_histories (node_history_id, node_version_id, parent_id, node_type_id, appeared_at, disappeared_at, content, concept_id, x, y)
-				VALUES ('".$node_h_id."', '".$node_v_id."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$_POST['concept_id']."','".$_POST['x']."','".$_POST['y']."')";
+				VALUES ('".$node_h_id."', '".$node_v_id."','".$_POST['parent_id']."','".$_POST['type']."', '".$created_at."', NULL,'".$node_content."','".$concept_id."','".$_POST['x']."','".$_POST['y']."')";
 
 			$node_a_sql = "INSERT INTO node_actions (node_action_id, node_history_id, time, act	)
 				VALUES ('".$node_a_id."', '".$node_h_id."', '".$created_at."','add')";
@@ -123,12 +129,8 @@ $node_content = isset($_POST['content'])
 
 	}else if($_POST["insert"] == "rationality"){
 
-		$created_at = date("Y-m-d H:i:s");
-		$id = rand();
-
-
-		$sql = "INSERT INTO rationality_nodes(id, created_at, rationality_id, node_id)
-		VALUES ('".$id."', NOW(), '".$_POST['rationality_id']."', '".$_POST['node_id']."')";
+		$sql = "INSERT INTO rationality_nodes(rationality_id, node_id, map_id, created_at)
+		VALUES ('".$_POST['rationality_id']."', '".$_POST['node_id']."', '".$_SESSION['MAPID']."', NOW())";
 		$result = $mysqli->query($sql);
 
 	}else if($_POST["insert"] == "edit_reason"){

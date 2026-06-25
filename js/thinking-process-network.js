@@ -1464,11 +1464,12 @@ const getProcessMapDataFromDB = (callback) => {
     });
 }
 
-const makeTriggerInList = (id, activity_type, concept_label, content, timestamp, trigger_on) => {
+const makeTriggerInList = (id, activity_type, concept_label, content, timestamp, trigger_on, candidate_category) => {
     // 左側の発話ノードのリストのところのノードのDOMを構成する
     let backColor = "white";
     let borderColor = "#67796b";
     let borderWidth = 1;
+    const category = candidate_category || 'related_concept';
     if(trigger_on == 1){
         backColor = "#979997";
         borderWidth = 2;
@@ -1480,7 +1481,56 @@ const makeTriggerInList = (id, activity_type, concept_label, content, timestamp,
                  timestamp='${timestamp}'
                  trigger_on='${trigger_on}'
                  activity_type='${activity_type}'
+                 data-trigger-category='${category}'
             >【${timestamp}：${activity_type}】<br>${concept_label}：<br>${content}</div>`);
+}
+
+const renderTriggerCandidateList = (target_area, candidates) => {
+    const safeCandidates = Array.isArray(candidates) ? candidates : [];
+    target_area.empty();
+
+    const filterArea = $(`
+        <div class="trigger-candidate-filter">
+            <button type="button" class="trigger-candidate-filter-btn is-active" data-trigger-filter="all">All</button>
+            <button type="button" class="trigger-candidate-filter-btn" data-trigger-filter="parent_node">親ノード関連</button>
+            <button type="button" class="trigger-candidate-filter-btn" data-trigger-filter="related_concept">関連する観点</button>
+        </div>
+    `);
+    const listSection = $('<div class="trigger-candidate-section"><div class="trigger-candidate-items"></div></div>');
+
+    target_area.append(filterArea);
+    target_area.append(listSection);
+
+    const sortedCandidates = safeCandidates.slice().sort((a, b) => {
+        const at = a && a.appeared_at ? String(a.appeared_at) : '';
+        const bt = b && b.appeared_at ? String(b.appeared_at) : '';
+        return bt.localeCompare(at);
+    });
+
+    const renderItems = (filter) => {
+        const itemsArea = listSection.find('.trigger-candidate-items');
+        itemsArea.empty();
+        sortedCandidates.forEach((u) => {
+            if(!u){ return; }
+            const category = u.candidate_category === 'parent_node' ? 'parent_node' : 'related_concept';
+            if(filter !== 'all' && filter !== category){ return; }
+            const trigger_dom = makeTriggerInList(u.activity_id, u.activity_type, u.concept_label, u.content, u.appeared_at, u.trigger_on, category);
+            itemsArea.append(trigger_dom);
+        });
+        if(itemsArea.find('.trigger_in_list').length === 0){
+            itemsArea.append('<div class="trigger-candidate-empty">候補はありません</div>');
+        }
+    };
+
+    renderItems('all');
+
+    target_area.find('.trigger-candidate-filter-btn').on('click', function(){
+        const filter = $(this).attr('data-trigger-filter') || 'all';
+        target_area.find('.trigger-candidate-filter-btn').removeClass('is-active');
+        $(this).addClass('is-active');
+        renderItems(filter);
+        addeventdisplayTriggerData();
+    });
 }
 
 // 思考過程表出化マップを表示
@@ -1510,12 +1560,7 @@ const displayTriggerData = (mode, process_display_option) => {
                 node_x += 300;
             });
             // triggerの候補一覧
-            trigger_list_info.trigger_candidate.forEach((u) => {
-                if(u){
-                    const trigger_dom = makeTriggerInList(u.activity_id, u.activity_type, u.concept_label, u.content, u.appeared_at, u.trigger_on);
-                    target_area.append(trigger_dom); // 挿入
-                }
-            });
+            renderTriggerCandidateList(target_area, trigger_list_info.trigger_candidate);
             // triggerノードの表示
             trigger_list_info.trigger.forEach((u) => {
                 j++;

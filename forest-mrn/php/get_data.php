@@ -8,7 +8,7 @@
 		$map_id = $_SESSION["MAPID"];
 		$rationality_id = $_POST["rationality_id"];
 
-		$sql = "SELECT * FROM rationality_nodes WHERE rationality_id = '".$rationality_id."'";
+		$sql = "SELECT * FROM rationality_nodes WHERE rationality_id = '".$rationality_id."' AND map_id = '".$map_id."'";
 
 		$i = 0;
 		$node_id_array = array();
@@ -26,6 +26,23 @@
 		}
 
 		echo json_encode($node_id_array);
+
+	}else if($_POST["val"] == "rationality_all"){
+		$map_id = $_SESSION["MAPID"];
+		$sql = "SELECT rationality_id, node_id FROM rationality_nodes WHERE map_id = '".$map_id."'";
+		$rationality_nodes = array();
+
+		if($result = $mysqli->query($sql)){
+			while($row = mysqli_fetch_assoc($result)){
+				$rationality_id = $row["rationality_id"];
+				if(!isset($rationality_nodes[$rationality_id])){
+					$rationality_nodes[$rationality_id] = array();
+				}
+				array_push($rationality_nodes[$rationality_id], $row["node_id"]);
+			}
+		}
+
+		echo json_encode($rationality_nodes);
 
 	}else if($_POST["val"] == "edit_reason"){
 

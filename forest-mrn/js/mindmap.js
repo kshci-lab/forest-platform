@@ -23,6 +23,13 @@ var mind = null; // jsmind_containerの中身
 var thisId;
 var parent_concept_id;
 
+function NormalizeConceptId(conceptId){
+  if(conceptId === null || typeof conceptId === "undefined"){
+    return "";
+  }
+  return String(conceptId).trim().split(/\s+/)[0].replace(/^topic-tag_/, "");
+}
+
 function getJmnodePlainText(jmnode){
     if(!jmnode){ return ""; }
     try{
@@ -43,6 +50,131 @@ function getJmnodePlainText(jmnode){
 
     return (jmnode.textContent || "").trim();
 }
+
+function getMindmapInnerElement(){
+    var container = document.getElementById("jsmind_container");
+    if(!container){ return null; }
+    return container.querySelector(".jsmind-inner") || container;
+}
+
+function getJmnodeByNodeId(nodeId){
+    var jmnode = document.getElementsByTagName("jmnode");
+    for(var i=0; i<jmnode.length; i++){
+        if(jmnode[i].getAttribute("nodeid") == nodeId){
+            return jmnode[i];
+        }
+    }
+    return null;
+}
+
+function ensureRationalityLinkLayer(){
+    var inner = getMindmapInnerElement();
+    if(!inner){ return null; }
+    var layer = document.getElementById("rationality-link-layer");
+    if(!layer){
+        layer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        layer.setAttribute("id", "rationality-link-layer");
+        layer.style.position = "absolute";
+        layer.style.left = "0";
+        layer.style.top = "0";
+        layer.style.width = "100%";
+        layer.style.height = "100%";
+        layer.style.pointerEvents = "none";
+        layer.style.overflow = "visible";
+        layer.style.zIndex = "1";
+        inner.appendChild(layer);
+    }
+    layer.setAttribute("width", Math.max(inner.scrollWidth, inner.clientWidth));
+    layer.setAttribute("height", Math.max(inner.scrollHeight, inner.clientHeight));
+    return layer;
+}
+
+function drawRationalityLinks(rationalityId, linkedNodeIds){
+    var layer = ensureRationalityLinkLayer();
+    var rationalityNode = getJmnodeByNodeId(rationalityId);
+    if(!layer || !rationalityNode || !Array.isArray(linkedNodeIds)){ return; }
+
+    var oldLines = layer.querySelectorAll("line[data-rationality-id='" + rationalityId + "']");
+    for(var i=0; i<oldLines.length; i++){
+        oldLines[i].parentNode.removeChild(oldLines[i]);
+    }
+
+    var startX = rationalityNode.offsetLeft + (rationalityNode.offsetWidth / 2);
+    var startY = rationalityNode.offsetTop + (rationalityNode.offsetHeight / 2);
+    for(var j=0; j<linkedNodeIds.length; j++){
+        var linkedNodeId = linkedNodeIds[j];
+        var linkedNode = getJmnodeByNodeId(linkedNodeId);
+        if(!linkedNode){ continue; }
+        var isActiveLine = activeRationalityLinkNodeId === rationalityId || activeRationalityLinkNodeId === linkedNodeId;
+        var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("data-rationality-id", rationalityId);
+        line.setAttribute("x1", startX);
+        line.setAttribute("y1", startY);
+        line.setAttribute("x2", linkedNode.offsetLeft + (linkedNode.offsetWidth / 2));
+        line.setAttribute("y2", linkedNode.offsetTop + (linkedNode.offsetHeight / 2));
+        line.setAttribute("stroke", "#b18c98");
+        line.setAttribute("stroke-width", "2");
+        line.setAttribute("stroke-linecap", "round");
+        if(!isActiveLine){
+            line.setAttribute("stroke-dasharray", "4 4");
+        }
+        layer.appendChild(line);
+    }
+}
+
+var rationalityLinkCache = {};
+var activeRationalityLinkNodeId = null;
+
+function redrawRationalityLinksFromCache(){
+    var layer = ensureRationalityLinkLayer();
+    if(layer){
+        while(layer.firstChild){
+            layer.removeChild(layer.firstChild);
+        }
+    }
+
+    Object.keys(rationalityLinkCache).forEach(function(rationalityId){
+        drawRationalityLinks(rationalityId, rationalityLinkCache[rationalityId]);
+    });
+}
+
+function redrawAllRationalityLinks(){
+    $.ajax({
+        url: "php/get_data.php",
+        type: "POST",
+        data: { val : "rationality_all" },
+        success: function(arr){
+            var rationalityMap = {};
+            try{
+                rationalityMap = JSON.parse(arr || "{}");
+            }catch(e){
+                console && console.warn && console.warn("rationality_all JSON parse error", e, arr);
+                return;
+            }
+
+            rationalityLinkCache = rationalityMap;
+            redrawRationalityLinksFromCache();
+        }
+    });
+}
+
+function scheduleRationalityLinkRedraw(){
+    if(scheduleRationalityLinkRedraw.timer){
+        clearTimeout(scheduleRationalityLinkRedraw.timer);
+    }
+    scheduleRationalityLinkRedraw.timer = setTimeout(function(){
+        redrawRationalityLinksFromCache();
+    }, 30);
+}
+
+function setActiveRationalityLinkNode(nodeId){
+    activeRationalityLinkNodeId = nodeId || null;
+    redrawRationalityLinksFromCache();
+}
+
+window.redrawAllRationalityLinks = redrawAllRationalityLinks;
+window.scheduleRationalityLinkRedraw = scheduleRationalityLinkRedraw;
+window.setActiveRationalityLinkNode = setActiveRationalityLinkNode;
 
 function showOnlyLabelSelect(jmnode){
     if(!jmnode || !jmnode.querySelector){ return; }
@@ -338,6 +470,33 @@ function open_empty(){
 
 open_empty();
 
+(function bindRationalityLinkFollow(){
+    var bind = function(){
+        var container = document.getElementById("jsmind_container");
+        if(!container || container._rationality_link_follow_bound){ return; }
+        container._rationality_link_follow_bound = true;
+
+        var redraw = function(){
+            if(typeof window.scheduleRationalityLinkRedraw === "function"){
+                window.scheduleRationalityLinkRedraw();
+            }
+        };
+        container.addEventListener("mousemove", redraw);
+        container.addEventListener("mouseup", redraw);
+        container.addEventListener("mouseleave", redraw);
+        container.addEventListener("touchmove", redraw);
+        container.addEventListener("touchend", redraw);
+        container.addEventListener("scroll", redraw, true);
+        window.addEventListener("resize", redraw);
+    };
+
+    if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", bind);
+    }else{
+        bind();
+    }
+})();
+
 // クリックしたノードのIDをとってくる関数
 function get_selected_nodeid(){
     var selected_node = _jm.get_selected_node();
@@ -474,7 +633,7 @@ async function add_node(){
     var node = _jm.add_node(parent_node, thisId, topic);
 
     //問い一覧から選択した問いの概念ID取得
-    parent_concept_id = this.parentNode.className;
+    parent_concept_id = NormalizeConceptId(this.parentNode.className);
 
     //XMLデータを取得して問いを絞って提示
     choose_xmlLoad();
@@ -506,10 +665,13 @@ async function add_node(){
     //合理性を問う問いを選択した場合，合理性を考えるために選択したマップ上のノードをDBに格納
     //インタフェースに依存した方法で実現していて，ノードの背景がピンク色のものを取得してDBに格納している
     if(this.id == "1519483811401_n426"){
+        var rationalityLinkedNodeIds = [];
 
         for(var j=0; j<jmnode.length; j++){
 
             if(jmnode[j].style.backgroundColor == "rgb(255, 105, 180)"){
+                var linkedNodeId = jmnode[j].getAttribute("nodeid");
+                rationalityLinkedNodeIds.push(linkedNodeId);
 
                 $.ajax({
 
@@ -517,14 +679,18 @@ async function add_node(){
                     type: "POST",
                     data: { insert : "rationality",
                             rationality_id : thisId,
-                            node_id : jmnode[j].getAttribute("nodeid") }
+                            node_id : linkedNodeId }
 
                 });
 
+                jmnode[j].style.backgroundColor = "";
+                jmnode[j].style.border = "0px solid #000";
             }
 
         }
 
+        rationalityLinkCache[thisId] = rationalityLinkedNodeIds;
+        redrawRationalityLinksFromCache();
     }
 
     //DBに追加した問いのノード情報を格納
@@ -761,7 +927,7 @@ async function add_Anode(){
 
         if(parent_id == jmnode[i].getAttribute("nodeid")){
 
-            var p_concept = jmnode[i].getAttribute("concept_id");
+            var p_concept = NormalizeConceptId(jmnode[i].getAttribute("concept_id"));
 
         }
 
@@ -877,9 +1043,9 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
   // console.log(dom_target);
   var p_type = dom_target.getAttribute("type");
   // console.log(p_type);
-  var p_concept_id = dom_target.getAttribute("concept_id");
+  var p_concept_id = NormalizeConceptId(dom_target.getAttribute("concept_id"));
   var toi_type;
-  if(p_concept_id === null){
+  if(p_concept_id === ""){
     console.log("nullです");
     p_concept_id = "";
     toi_type = "s_question";
@@ -915,7 +1081,7 @@ async function add_Pnode(dom_target){//マップへ反映ボタンでノード�
 
           for(var i=0; i<jmnode.length; i++){
               if(parent_id == jmnode[i].getAttribute("nodeid")){
-                  var p_concept = jmnode[i].getAttribute("concept_id");
+                  var p_concept = NormalizeConceptId(jmnode[i].getAttribute("concept_id"));
               }
           }
           for(var j=0; j<jmnode.length; j++){
@@ -1094,7 +1260,7 @@ async function add_Label(node_type){
 
       if(parent_id == jmnode[i].getAttribute("nodeid")){
 
-          var concept = jmnode[i].getAttribute("concept_id");
+          var concept = NormalizeConceptId(jmnode[i].getAttribute("concept_id"));
 
       }
 
@@ -1239,6 +1405,7 @@ function checkRationality(nodeid){
             var parse = JSON.parse(arr);
 
             var jmnode = document.getElementsByTagName("jmnode");
+            var linkedNodeIds = [];
 
             for(i=0; i<parse.length; i++){
 
@@ -1249,13 +1416,15 @@ function checkRationality(nodeid){
                       console.log(parse[i]);
                       console.log(jmnode[j]);
 
-                        jmnode[j].style.backgroundColor = "#ff69b4";
+                        linkedNodeIds.push(parse[i]);
 
                     }
 
                 }
 
             }
+            rationalityLinkCache[nodeid] = linkedNodeIds;
+            redrawRationalityLinksFromCache();
 
         }
 

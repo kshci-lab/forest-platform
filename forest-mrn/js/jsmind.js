@@ -1323,6 +1323,9 @@
                 });
 
             }else{
+                if(typeof window.setActiveRationalityLinkNode === 'function'){
+                    window.setActiveRationalityLinkNode(null);
+                }
                 this.select_clear();
             }
 
@@ -1333,9 +1336,12 @@
                 return;
             }
             var element = e.target || event.srcElement;
+            var nodeid = this.view.get_binded_nodeid(element);
+            if(typeof window.setActiveRationalityLinkNode === 'function'){
+                window.setActiveRationalityLinkNode(nodeid || null);
+            }
             var isexpander = this.view.is_expander(element);
             if(isexpander){
-                var nodeid = this.view.get_binded_nodeid(element);
                 if(!!nodeid){
                     this.toggle_node(nodeid);
                 }
@@ -1630,6 +1636,13 @@
                     this.view.update_node(node);
                     this.layout.layout();
                     this.view.show(false);
+                    try{
+                        if(window.refreshNodeVersionBadge){
+                            window.refreshNodeVersionBadge(nodeid);
+                        }else if(window.updateNodeVersionBadges){
+                            window.updateNodeVersionBadges();
+                        }
+                    }catch(_){}
                     this.invoke_event_handle(jm.event_type.edit,{evt:'move_node',data:[nodeid,beforeid,parentid,direction],node:nodeid});
                 }
             }else{
@@ -1691,20 +1704,6 @@
                               jsMind.util.uuid.newid()
                              );
             
-            //hatakeyama 親ノード変更によるver更新
-            var versionid = jsMind.util.uuid.newid();
-            NodeEdit(
-                versionid, 
-                nodeid, 
-                parentid, 
-                Get_NodeInfo(nodeid, "text"), 
-                "",
-                "move"
-            );
-            CheckEdit(node.id).then(function (data) {   //過去にeditがあるかチェック(dataはeditの回数)
-                var count = data + 1;
-                RecordRelation(count);
-            });
             //ここから大槻修正
             $("#reason").html("");
             //ここまで大槻修正

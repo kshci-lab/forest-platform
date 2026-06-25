@@ -229,7 +229,10 @@
 
             var jview = this.jm.view;
             var el = e.target || event.srcElement;
-            if(el.tagName.toLowerCase() != 'jmnode'){return;}
+            while(el && (!el.tagName || el.tagName.toLowerCase() != 'jmnode')){
+                el = el.parentNode;
+            }
+            if(!el || !el.tagName || el.tagName.toLowerCase() != 'jmnode'){return;}
             var nodeid = jview.get_binded_nodeid(el);
             if(!!nodeid){
                 var node = this.jm.get_node(nodeid);

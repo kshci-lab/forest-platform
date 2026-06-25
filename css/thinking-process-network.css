@@ -99,6 +99,39 @@
 	line-height:20px;
 	cursor: pointer;
 }
+.trigger-candidate-filter{
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	display: flex;
+	gap: 6px;
+	padding: 8px 8px 6px;
+	background:#90B1AB;
+}
+.trigger-candidate-filter-btn{
+	border: 1px solid #60817b;
+	background: #f1f7f2;
+	color: #04210a;
+	border-radius: 999px;
+	padding: 4px 10px;
+	font-size: 12px;
+	cursor: pointer;
+}
+.trigger-candidate-filter-btn.is-active{
+	background: #60817b;
+	color: #fff;
+}
+.trigger-candidate-section{
+	margin: 0 0 10px;
+}
+.trigger-candidate-empty{
+	margin: 0 5% 8px;
+	padding: 8px;
+	background: rgba(255,255,255,0.35);
+	border-radius: 5px;
+	color: #31524c;
+	font-size: 12px;
+}
 
 /* 学びの共有関連 */
 #lesson_display{
