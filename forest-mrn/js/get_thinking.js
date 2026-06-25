@@ -36,6 +36,13 @@ function Record_activities(nodeID, parentID, nodeACT, nodeTEXT, nodeCONCEPT, nod
 
 //node_idと取得したい情報の文字列を渡すと，
 //その情報を返す関数
+function NormalizeConceptId(conceptId){
+  if(conceptId === null || typeof conceptId === "undefined"){
+    return "";
+  }
+  return String(conceptId).trim().split(/\s+/)[0].replace(/^topic-tag_/, "");
+}
+
 function Get_NodeInfo(id, want_info){
 
   var get_info;
@@ -49,6 +56,9 @@ function Get_NodeInfo(id, want_info){
       }else{
 
               get_info = jmnode[i].getAttribute(want_info);
+              if(want_info == "concept_id"){
+                get_info = NormalizeConceptId(get_info);
+              }
 
                   // if(get_info == "toi"){ //取得したい情報がタイプの場合，"toi"や"prepared_question"の修正を行う
                   //     if(jmnode[i].getAttribute("concept_id") != ""){ //concept_idがあるならprepared_question
@@ -73,6 +83,9 @@ function Get_NodeInfo(id, want_info){
             success: function(arr){
                 var parse = JSON.parse(arr);
                 get_info = parse[0];
+                if(want_info == "concept_id"){
+                  get_info = NormalizeConceptId(get_info);
+                }
                 // console.log(get_info);
             },
             error:function(){

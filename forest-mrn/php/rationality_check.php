@@ -12,7 +12,7 @@ date_default_timezone_set('Asia/Tokyo');
 $today_date = date("Y-m-d");
 
 
-$sql = "SELECT rationality_id, node_id FROM rationality_nodes WHERE node_id IN (SELECT node_id FROM map_node_links WHERE map_id='$map_id') AND deleted='0'";
+$sql = "SELECT rationality_id, node_id FROM rationality_nodes WHERE map_id='$map_id'";
 
 $reflections = array();
 

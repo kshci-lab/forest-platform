@@ -6,8 +6,17 @@
 	require("connect_db.php");
 
   	//タイムゾーンの設定
-  	date_default_timezone_set('Asia/Tokyo');
+	date_default_timezone_set('Asia/Tokyo');
 	$timestamp = date("Y-m-d H:i:s");
+
+	function normalize_concept_id($concept_id) {
+		if ($concept_id === null) {
+			return '';
+		}
+		$parts = preg_split('/\s+/', trim((string)$concept_id));
+		$normalized = isset($parts[0]) ? $parts[0] : '';
+		return preg_replace('/^topic-tag_/', '', $normalized);
+	}
 	
 	// $id = $_POST["id"];
 	// $user_id = $_SESSION['USERID'];
@@ -79,6 +88,7 @@
 
 	//ノードのバージョンを更新
 	}else if($_POST["data"] == "node"){
+		$concept_id = $mysqli->real_escape_string(normalize_concept_id($_POST['concept_id'] ?? ''));
 		//node_versionsをUPDATE
 		$sql_nvu = "UPDATE node_versions SET disappeared_at = '".$timestamp."' WHERE node_id = '".$_POST['node_id']."' AND disappeared_at IS NULL";
 		$result_nvu = $mysqli->query($sql_nvu);
@@ -88,7 +98,7 @@
 
 		//node_versionsにINSERTする
 		$sql_nvi = "INSERT INTO node_versions(node_version_id, node_id, parent_id, node_type_id, appeared_at, disappeared_at, content, concept_id, x, y)
-			VALUES ('".$_POST['node_version_id']."', '".$_POST['node_id']."', '".$_POST['parent_id']."', ".$_POST['node_type_id'].", '".$timestamp."', NULL, '".$_POST['content']."', '".$_POST['concept_id']."', '".$_POST['x']."', '".$_POST['y']."')";
+			VALUES ('".$_POST['node_version_id']."', '".$_POST['node_id']."', '".$_POST['parent_id']."', ".$_POST['node_type_id'].", '".$timestamp."', NULL, '".$_POST['content']."', '".$concept_id."', '".$_POST['x']."', '".$_POST['y']."')";
 		$result_nvi = $mysqli->query($sql_nvi);
 		if($mysqli->error){
 			echo "Error insert node_version: ". $mysqli->error;

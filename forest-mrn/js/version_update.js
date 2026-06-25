@@ -1,5 +1,12 @@
 //hatakeyama
 
+function NormalizeConceptId(conceptId){
+  if(conceptId === null || typeof conceptId === "undefined"){
+    return "";
+  }
+  return String(conceptId).trim().split(/\s+/)[0].replace(/^topic-tag_/, "");
+}
+
 //ノードの挿入
 function NodeInsert(nodeVERSION, nodeID, parentID, nodeTEXT, reasonLEARNER, reasonSYSTEM){
   console.log("NodeInsert");
@@ -71,7 +78,7 @@ function NodeVersionUpdate(nodes){
     var class_name = ""; // intentionally empty to query node_types by type only
     var parentID = node.parent.id;
     var nodeTEXT = node.topic;
-    var conceptID = Get_NodeInfo(nodeID, 'concept_id');
+    var conceptID = NormalizeConceptId(Get_NodeInfo(nodeID, 'concept_id'));
     var x = node._data.view.abs_x;
     var y = node._data.view.abs_y;
 

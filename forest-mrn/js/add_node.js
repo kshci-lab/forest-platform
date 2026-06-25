@@ -91,6 +91,9 @@ window.addEventListener('load', () => {
 			if(typeof window.updateNodeVersionBadges === 'function'){
 				window.updateNodeVersionBadges();
 			}
+			if(typeof window.redrawAllRationalityLinks === 'function'){
+				window.redrawAllRationalityLinks();
+			}
 		}catch(e){
 			console && console.warn && console.warn('updateNodeVersionBadges failed', e);
 		}
