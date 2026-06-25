@@ -209,7 +209,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         }
         const tooltipData = node.tooltip_data;
         this.tooltipEl.textContent = '';
-        const sections = [
+        const sections = Array.isArray(tooltipData.sections) ? tooltipData.sections : [
             { heading: '経験', body: tooltipData.selected_contents || '' },
             { heading: '経験の振り返り', body: tooltipData.stage1 || '' },
             { heading: '活動文脈固有の振り返り', body: tooltipData.stage2 || '' },
@@ -433,6 +433,94 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
 
         return defaultOrganizational.nodes;
 
+    }
+
+    getKnowledgeTreeFragmentIds(nodeInfo){
+        if (!nodeInfo) return [];
+        let rawValue = null;
+        if (nodeInfo.knowledge_fragment_id !== null && typeof nodeInfo.knowledge_fragment_id !== 'undefined') {
+            rawValue = nodeInfo.knowledge_fragment_id;
+        } else if (nodeInfo.externalized_contents_id !== null && typeof nodeInfo.externalized_contents_id !== 'undefined') {
+            rawValue = nodeInfo.externalized_contents_id;
+        }
+        if (rawValue === null || typeof rawValue === 'undefined') return [];
+        return String(rawValue).split(',').map((id) => id.trim()).filter((id) => id !== '');
+    }
+
+    addProducedKnowledgeNode(nodeInfo, childMap){
+        if (!nodeInfo || nodeInfo.node_id === null || typeof nodeInfo.node_id === 'undefined') return;
+        const fragmentIds = this.getKnowledgeTreeFragmentIds(nodeInfo);
+        const children = childMap[String(nodeInfo.node_id)] || [];
+        if (fragmentIds.length === 0 || children.length > 0) return;
+
+        const nodeId = `kt_${nodeInfo.node_id}`;
+        if (!this.nodes.get(nodeId)) {
+            const nodeTitle = nodeInfo.node_title != null ? String(nodeInfo.node_title) : '(no title)';
+            this.nodes.add({
+                id: nodeId,
+                label: nodeTitle,
+                group: 'produced_knowledge',
+                produced_knowledge_id: String(nodeInfo.node_id),
+                knowledge_fragment_ids: fragmentIds,
+                color: {
+                    background: '#dff2e6',
+                    border: '#90B1AB',
+                    highlight: { background: '#d2ecd9', border: '#6f9f96' },
+                    hover: { background: '#eaf7ee', border: '#6f9f96' }
+                },
+                shape: 'box',
+                font: { color: 'black' },
+                tooltip_data: {
+                    sections: [
+                        { heading: 'コメント', body: nodeInfo.comment || '' },
+                        { heading: '更新日時', body: nodeInfo.updated_at || '' }
+                    ]
+                },
+                fixed: false,
+            });
+        }
+
+        fragmentIds.forEach((fragmentId) => {
+            if (!this.nodes.get(fragmentId)) return;
+            const edgeId = `kt_edge_${nodeInfo.node_id}_${fragmentId}`;
+            if (this.edges.get(edgeId)) return;
+            this.edges.add({
+                id: edgeId,
+                from: nodeId,
+                to: fragmentId,
+                arrows: '',
+                color: '#90B1AB',
+                group: 'produced_knowledge_fragment',
+                smooth: true,
+            });
+        });
+    }
+
+    loadProducedKnowledgeNodes(groupId){
+        let url = 'php/get_knowledge_tree.php';
+        if (groupId) {
+            url += '?group_id=' + encodeURIComponent(groupId);
+        }
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: (data) => {
+                if (!data || data.status !== 'ok' || !Array.isArray(data.nodes)) return;
+                const childMap = {};
+                data.nodes.forEach((nodeInfo) => {
+                    const parentId = nodeInfo && nodeInfo.parent_id != null ? String(nodeInfo.parent_id) : 'root';
+                    if (!childMap[parentId]) childMap[parentId] = [];
+                    childMap[parentId].push(nodeInfo);
+                });
+                data.nodes.forEach((nodeInfo) => {
+                    this.addProducedKnowledgeNode(nodeInfo, childMap);
+                });
+            },
+            error: (xhr, status, error) => {
+                console.warn('knowledge_tree 読み込み失敗', status, error);
+            }
+        });
     }
 
     addReloadTriggerNode(flag, trigger_id, edge_id, from_node, to_node, activity_id, t_label, t_type, t_time, node_x, node_y){
@@ -1397,6 +1485,7 @@ const displayOrganizationalData = (mode, selected_group_id) => {
             // organizational_list_info.tnode.map((t) => {
             //     defaultOrganizational.addReloadTriggerNode(t.user_id, t.trigger_node_id, t.content, t.trigger_node_type);
             // });
+            defaultOrganizational.loadProducedKnowledgeNodes(effectiveSelectedGroupId);
         });
     }
     
