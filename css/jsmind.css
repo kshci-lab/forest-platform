@@ -35,6 +35,10 @@ jmnode .jmnode-label{
     overflow:hidden;
     text-overflow:ellipsis;
 }
+jmnode[data-has-label-select="true"] .jmnode-label,
+jmnode:has(select[name="change_labels"]) .jmnode-label{
+    display:none !important;
+}
 /* Ensure ellipsis behavior remains consistent regardless of selection. */
 jmnode.selected .jmnode-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* Use ch so the cutoff is roughly "characters" regardless of viewport. */
@@ -376,18 +380,27 @@ jmnode[type="m_3"]:hover{background-color:#ff7792;border-radius: 0px;}
 jmnode[type="m_3"].selected{background-color:#ff7792;color:#000;border-radius: 0px;} */
 
 /* ラベル */
-jmnode[class="primary_label"]{background-color:#a7c19b;color:#000;border-radius: 0px;}
-jmnode[class="primary_label"]:hover{background-color:#a7c19b;border-radius: 0px;}
-jmnode[class="primary_label selected"]{background-color:#92ad86;color:#000;border: 10px solid #7e9574;border-radius: 0px;}
+jmnode.primary_label,
+jmnode[class~="primary_label"]{background-color:#a7c19b !important;color:#000 !important;border-radius: 0px;}
+jmnode.primary_label:hover,
+jmnode[class~="primary_label"]:hover{background-color:#a7c19b !important;border-radius: 0px;}
+jmnode.primary_label.selected,
+jmnode[class~="primary_label"][class~="selected"]{background-color:#92ad86 !important;color:#000 !important;border: 10px solid #7e9574;border-radius: 0px;}
 
 /* issue_label: use class selectors (not exact class="...") so it works with extra classes. */
-jmnode.issue_label{background-color:#a7c19b;color:#000;border-radius: 0px;}
-jmnode.issue_label:hover{background-color:#a7c19b;border-radius: 0px;}
-jmnode.issue_label.selected{background-color:#92ad86;color:#000;border: 5px solid #378c12;border-radius: 0px;}
+jmnode.issue_label,
+jmnode[class~="issue_label"]{background-color:#a7c19b !important;color:#000 !important;border-radius: 0px;}
+jmnode.issue_label:hover,
+jmnode[class~="issue_label"]:hover{background-color:#a7c19b !important;border-radius: 0px;}
+jmnode.issue_label.selected,
+jmnode[class~="issue_label"][class~="selected"]{background-color:#92ad86 !important;color:#000 !important;border: 5px solid #378c12;border-radius: 0px;}
 
-jmnode[class="consistency_label"]{background-color:#a7c19b;color:#000;border-radius: 0px;}
-jmnode[class="consistency_label"]:hover{background-color:#a7c19b;border-radius: 0px;}
-jmnode[class="consistency_label selected"]{background-color:#7e9574;color:#000;border-radius: 0px;}
+jmnode.consistency_label,
+jmnode[class~="consistency_label"]{background-color:#a7c19b !important;color:#000 !important;border-radius: 0px;}
+jmnode.consistency_label:hover,
+jmnode[class~="consistency_label"]:hover{background-color:#a7c19b !important;border-radius: 0px;}
+jmnode.consistency_label.selected,
+jmnode[class~="consistency_label"][class~="selected"]{background-color:#7e9574 !important;color:#000 !important;border-radius: 0px;}
 
 /* 以下は過去使用されていたと思われるtype */
 
