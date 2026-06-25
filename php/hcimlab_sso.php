@@ -17,7 +17,7 @@ function hcimlab_sso_require_dependencies()
 {
     $autoload = __DIR__ . '/../vendor/autoload.php';
     if (!file_exists($autoload)) {
-        throw new RuntimeException('SSO dependencies are not installed. Run composer install in the project root.');
+        throw new RuntimeException('SSO dependencies are not installed. Run scripts/setup-local.sh or composer install in the project root.');
     }
     require_once $autoload;
 }

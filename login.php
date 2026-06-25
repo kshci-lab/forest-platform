@@ -7,6 +7,11 @@ if (!empty($_SESSION['SSO_ERROR'])) {
   unset($_SESSION['SSO_ERROR']);
 }
 
+if ($errorMessage === 'SSO dependencies are not installed. Run composer install in the project root.'
+    && file_exists(__DIR__ . '/vendor/autoload.php')) {
+  $errorMessage = "";
+}
+
 if ($errorMessage === "") {
   header("Location: auth/login.php");
   exit;
