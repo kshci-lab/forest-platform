@@ -44,6 +44,18 @@ function getJmnodePlainText(jmnode){
     return (jmnode.textContent || "").trim();
 }
 
+function showOnlyLabelSelect(jmnode){
+    if(!jmnode || !jmnode.querySelector){ return; }
+    try{
+        var select = jmnode.querySelector('[name="change_labels"]');
+        if(!select){ return; }
+        if(jmnode.classList){ jmnode.classList.remove('has-label-select'); }
+        jmnode.setAttribute('data-has-label-select', 'true');
+        var label = jmnode.querySelector('.jmnode-label');
+        if(label){ label.textContent = ''; }
+    }catch(_){}
+}
+
 var $audience_model = 6;//聴衆モデル（教員）のコンセプトID
 var $goal = [];//学習者が選択した聴衆の観点のテキストの配列
 var $sub_goal = [];//学習者が選択した聴衆の観点（その他）のテキストの配列
@@ -231,13 +243,19 @@ function ensureJmnodeLabelWrapping(){
                     if(ch.nodeType === 3){ text += ch.nodeValue || ''; }
                 });
                 text = (text || el.textContent || '').trim();
+                var hasLabelSelect = false;
+                try{ hasLabelSelect = !!(el.querySelector && el.querySelector('[name="change_labels"]')); }catch(_){}
 
                 // Clear and rebuild: label span + preserved elements
                 while(el.firstChild){ el.removeChild(el.firstChild); }
                 var label = document.createElement('span');
                 label.className = 'jmnode-label';
-                label.textContent = text;
+                label.textContent = hasLabelSelect ? '' : text;
                 el.appendChild(label);
+                if(hasLabelSelect){
+                    if(el.classList){ el.classList.remove('has-label-select'); }
+                    el.setAttribute('data-has-label-select', 'true');
+                }
                 preserved.forEach(function(ch){
                     // Skip if it's the label we just created
                     try{
@@ -1104,6 +1122,8 @@ async function add_Label(node_type){
             jmnode[j].setAttribute("type",node_type);
           }
 
+          showOnlyLabelSelect(jmnode[j]);
+
           console.log(node_type_id['node_type_id']);
           $.ajax({
 
@@ -1116,7 +1136,7 @@ async function add_Label(node_type){
                       concept_id : concept,
                       x : jmnode[j].style.left,
                       y : jmnode[j].style.top,
-                      content : getJmnodePlainText(jmnode[j]),
+                      content : "ラベル選択",
                   },
                   success:function(result){
                     if(result){ console.log(result);}

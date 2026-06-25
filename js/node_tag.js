@@ -105,6 +105,12 @@ function change_tag(type,topic){
     for(var i=0; i<jmnode.length; i++){
   
         if(selected_id == jmnode[i].getAttribute("nodeid")){
+
+                        try{
+                            jmnode[i].removeAttribute("data-has-label-select");
+                            var label = jmnode[i].querySelector ? jmnode[i].querySelector(".jmnode-label") : null;
+                            if(label){ label.textContent = topic; }
+                        }catch(_){}
   
             
 
