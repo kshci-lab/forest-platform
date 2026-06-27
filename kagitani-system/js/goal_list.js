@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelBtn.onmouseleave = function() { cancelBtn.style.background = '#edf2f7'; };
 
             var saveBtn = document.createElement('button');
-            saveBtn.textContent = 'この期間でサイクルを開始';
+            saveBtn.textContent = 'この期間でSRLジャーナルを作成';
             saveBtn.style.padding = '10px 20px';
             saveBtn.style.background = '#48bb78';
             saveBtn.style.color = '#fff';

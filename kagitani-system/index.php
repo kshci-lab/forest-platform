@@ -307,14 +307,7 @@ try {
             
             // メニューを閉じる
             const hamburgerMenu = document.querySelector('.hamburger-menu');
-            const dropdownMenu = document.querySelector('.dropdown-menu');
-            const overlay = document.querySelector('.menu-overlay');
-            
-            hamburgerMenu.classList.remove('active');
-            dropdownMenu.style.opacity = '0';
-            dropdownMenu.style.visibility = 'hidden';
-            dropdownMenu.style.transform = 'translateX(-100%)';
-            overlay.classList.remove('active');
+            if (hamburgerMenu) hamburgerMenu.classList.remove('active');
         }
         
      
@@ -322,60 +315,22 @@ try {
         // ハンバーガーメニューのクリックイベント
         document.addEventListener('DOMContentLoaded', function() {
             const hamburgerMenu = document.querySelector('.hamburger-menu');
-            const dropdownMenu = document.querySelector('.dropdown-menu');
-            let isMenuOpen = false;
-            
-            // オーバーレイ要素を作成
-            const overlay = document.createElement('div');
-            overlay.className = 'menu-overlay';
-            document.body.appendChild(overlay);
-            
+            if (!hamburgerMenu) return;
+
             hamburgerMenu.addEventListener('click', function(e) {
+                // Prevent click from propagating to document
                 e.stopPropagation();
-                isMenuOpen = !isMenuOpen;
+                // If clicking inside the dropdown menu itself, don't toggle
+                if (e.target.closest('.dropdown-menu')) return;
                 
-                if (isMenuOpen) {
-                    hamburgerMenu.classList.add('active');
-                    dropdownMenu.style.opacity = '1';
-                    dropdownMenu.style.visibility = 'visible';
-                    dropdownMenu.style.transform = 'translateX(0)';
-                    overlay.classList.add('active');
-                } else {
-                    hamburgerMenu.classList.remove('active');
-                    dropdownMenu.style.opacity = '0';
-                    dropdownMenu.style.visibility = 'hidden';
-                    dropdownMenu.style.transform = 'translateX(-100%)';
-                    overlay.classList.remove('active');
-                }
+                hamburgerMenu.classList.toggle('active');
             });
             
             // メニュー外をクリックしたら閉じる
-            document.addEventListener('click', function() {
-                if (isMenuOpen) {
-                    isMenuOpen = false;
+            document.addEventListener('click', function(e) {
+                if (!hamburgerMenu.contains(e.target)) {
                     hamburgerMenu.classList.remove('active');
-                    dropdownMenu.style.opacity = '0';
-                    dropdownMenu.style.visibility = 'hidden';
-                    dropdownMenu.style.transform = 'translateX(-100%)';
-                    overlay.classList.remove('active');
                 }
-            });
-            
-            // オーバーレイをクリックしたら閉じる
-            overlay.addEventListener('click', function() {
-                if (isMenuOpen) {
-                    isMenuOpen = false;
-                    hamburgerMenu.classList.remove('active');
-                    dropdownMenu.style.opacity = '0';
-                    dropdownMenu.style.visibility = 'hidden';
-                    dropdownMenu.style.transform = 'translateX(-100%)';
-                    overlay.classList.remove('active');
-                }
-            });
-            
-            // ドロップダウンメニュー内のクリックでは閉じない
-            dropdownMenu.addEventListener('click', function(e) {
-                e.stopPropagation();
             });
             
             // 初期タブ表示設定
@@ -686,62 +641,57 @@ try {
                         span.textContent = (lang === 'ja') ? (startText + '〜' + endText) : (startText + ' - ' + endText);
                     });
                 }
-            document.getElementById('language-switching-message').style.display = 'block';
-            console.log('言語切り替え中・・・');
-            setTimeout(function() {
-                Object.keys(langDict[lang]).forEach(function(id) {
-                    var el = document.getElementById(id);
-                    if (el) {
-                        if (el.tagName === 'INPUT' && el.type === 'submit') {
-                            el.value = langDict[lang][id];
-                        } else {
-                            el.textContent = langDict[lang][id];
-                        }
+            Object.keys(langDict[lang]).forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    if (el.tagName === 'INPUT' && el.type === 'submit') {
+                        el.value = langDict[lang][id];
+                    } else {
+                        el.textContent = langDict[lang][id];
                     }
+                }
+            });
+            // Medium goal input placeholder
+            var mediumGoalInput = document.getElementById('mediumGoalText');
+            if (mediumGoalInput) {
+                mediumGoalInput.placeholder = langDict[lang]['mediumGoalTextPlaceholder'];
+            }
+            // 動的な週目標ボタンのテキストも切り替え
+            const weeklyGoalsList = document.getElementById('weeklyGoalsList');
+            if (weeklyGoalsList) {
+                // 編集ボタン
+                const editBtns = weeklyGoalsList.querySelectorAll('[id^="editWeeklyGoalBtnText"]');
+                editBtns.forEach(btn => {
+                    btn.textContent = langDict[lang]['editWeeklyGoalBtnText'];
                 });
-                // Medium goal input placeholder
-                var mediumGoalInput = document.getElementById('mediumGoalText');
-                if (mediumGoalInput) {
-                    mediumGoalInput.placeholder = langDict[lang]['mediumGoalTextPlaceholder'];
-                }
-                // 動的な週目標ボタンのテキストも切り替え
-                const weeklyGoalsList = document.getElementById('weeklyGoalsList');
-                if (weeklyGoalsList) {
-                    // 編集ボタン
-                    const editBtns = weeklyGoalsList.querySelectorAll('[id^="editWeeklyGoalBtnText"]');
-                    editBtns.forEach(btn => {
-                        btn.textContent = langDict[lang]['editWeeklyGoalBtnText'];
-                    });
-                    // レポート出力ボタン
-                    const exportBtns = weeklyGoalsList.querySelectorAll('[id^="exportWeeklyGoalBtnText"]');
-                    exportBtns.forEach(btn => {
-                        btn.textContent = langDict[lang]['exportWeeklyGoalBtnText'];
-                    });
-                    // 削除ボタン
-                    const deleteBtns = weeklyGoalsList.querySelectorAll('[id^="deleteWeeklyGoalBtnText"]');
-                    deleteBtns.forEach(btn => {
-                        btn.textContent = langDict[lang]['deleteWeeklyGoalBtnText'];
-                    });
-                }
-                
-                // 動的な右クリックメニューラベルを再設定
-                if (typeof window.updateAddWeeklyMenuLabel === 'function') {
-                    window.updateAddWeeklyMenuLabel();
-                }
+                // レポート出力ボタン
+                const exportBtns = weeklyGoalsList.querySelectorAll('[id^="exportWeeklyGoalBtnText"]');
+                exportBtns.forEach(btn => {
+                    btn.textContent = langDict[lang]['exportWeeklyGoalBtnText'];
+                });
+                // 削除ボタン
+                const deleteBtns = weeklyGoalsList.querySelectorAll('[id^="deleteWeeklyGoalBtnText"]');
+                deleteBtns.forEach(btn => {
+                    btn.textContent = langDict[lang]['deleteWeeklyGoalBtnText'];
+                });
+            }
+            
+            // 動的な右クリックメニューラベルを再設定
+            if (typeof window.updateAddWeeklyMenuLabel === 'function') {
+                window.updateAddWeeklyMenuLabel();
+            }
 
-                document.getElementById('language-switching-message').style.display = 'none';
-                console.log('言語切替完了: ' + (lang === 'ja' ? '日本語' : 'English'));
-                // 問い一覧（testxml）も言語切替
-                if (window.setInquiryLang) {
-                    window.setInquiryLang(lang);
-                }
-                if (window.updateFeedbackTooltipLang) {
-                    window.updateFeedbackTooltipLang();
-                }
-                if (window.updateLessonsTooltipLang) {
-                    window.updateLessonsTooltipLang();
-                }
-            }, 700);
+            console.log('言語切替完了: ' + (lang === 'ja' ? '日本語' : 'English'));
+            // 問い一覧（testxml）も言語切替
+            if (window.setInquiryLang) {
+                window.setInquiryLang(lang);
+            }
+            if (window.updateFeedbackTooltipLang) {
+                window.updateFeedbackTooltipLang();
+            }
+            if (window.updateLessonsTooltipLang) {
+                window.updateLessonsTooltipLang();
+            }
         }
         document.addEventListener('DOMContentLoaded', function() {
             var toggle = document.getElementById('language-toggle');
@@ -766,7 +716,7 @@ try {
                     </svg>
                 </button>
                 <span class="title_name" id="title_name">自己調整学習支援システム</span>
-                <a href="https://drive.google.com/file/d/1en13NYGb9HSW-zNvnoHOtXpEzaos7njQ/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="system-manual-link" title="システム手引書 (PDF) を開く">
+                <a href="https://drive.google.com/drive/folders/1dEgnkqKmGdIJ-CB-NnFZwP_dLwQ1Khj1?usp=drive_link" target="_blank" rel="noopener noreferrer" class="system-manual-link" title="システム手引書フォルダを開く">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-external-link">
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                         <polyline points="15 3 21 3 21 9"></polyline>
@@ -775,7 +725,7 @@ try {
                 </a>
                 
                 <div id="language-toggle-container" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                        <a href="https://kshci-lab.net/" target="_blank" rel="noopener noreferrer">
+                        <a href="https://kshci-lab.net/" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center;" title="林・油谷研究室のHPへ飛ぶ">
                             <img src="image/lab_logo.png" alt="知性モデリング研究室" style="height: 32px; object-fit: contain; margin-right: 8px;">
                         </a>
                         <div class="hamburger-menu">
@@ -786,15 +736,48 @@ try {
                                 </svg>
                             </button>
                             <div class="dropdown-menu">
-                                <div class="dropdown-item language-toggle-item">
-                                    <label style="display:flex;align-items:center;gap:8px;font-size:15px; color:#1e293b; font-weight:600;">
-                                            <span id="lang-label-ja">日本語</span>
-                                            <label class="switch">
-                                                <input type="checkbox" id="language-toggle" />
-                                                <span class="slider round"></span>
-                                            </label>
-                                            <span id="lang-label-en" style="color:#94a3b8; font-weight:400;">English</span>
-                                    </label>
+                                <div class="dropdown-item language-toggle-item" style="padding: 12px 20px; cursor:default; box-sizing:border-box;">
+                                    <div style="display:flex; align-items:center; background:rgba(0,0,0,0.05); border-radius:8px; padding:4px; width:100%; box-sizing:border-box; position:relative;">
+                                        <!-- Animated background for the active state -->
+                                        <div id="lang-bg-slider" style="position:absolute; top:4px; bottom:4px; width:calc(50% - 4px); background:#ffffff; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1); transform: translateX(0); box-sizing:border-box;"></div>
+                                        
+                                        <!-- Buttons -->
+                                        <div role="button" tabindex="0" onclick="setLangToggle(false)" style="flex:1; z-index:1; padding:6px 0; margin:0; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; text-align:center; transition: color 0.2s; user-select:none; box-sizing:border-box; border:none; outline:none;">日本語</div>
+                                        <div role="button" tabindex="0" onclick="setLangToggle(true)" style="flex:1; z-index:1; padding:6px 0; margin:0; font-size:13px; font-weight:600; color:#94a3b8; cursor:pointer; text-align:center; transition: color 0.2s; user-select:none; box-sizing:border-box; border:none; outline:none;">English</div>
+                                        
+                                        <!-- Keep the original toggle hidden to preserve the JS logic -->
+                                        <input type="checkbox" id="language-toggle" style="display:none;" />
+                                    </div>
+                                    <script>
+                                        function setLangToggle(isEnglish) {
+                                            const toggle = document.getElementById('language-toggle');
+                                            if (toggle.checked !== isEnglish) {
+                                                toggle.checked = isEnglish;
+                                                toggle.dispatchEvent(new Event('change'));
+                                            }
+                                        }
+                                        
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            const toggle = document.getElementById('language-toggle');
+                                            if (toggle) {
+                                                toggle.addEventListener('change', function() {
+                                                    const slider = document.getElementById('lang-bg-slider');
+                                                    const jaBtn = slider.nextElementSibling;
+                                                    const enBtn = jaBtn.nextElementSibling;
+                                                    
+                                                    if (this.checked) {
+                                                        slider.style.transform = 'translateX(100%)';
+                                                        enBtn.style.color = '#0f172a';
+                                                        jaBtn.style.color = '#94a3b8';
+                                                    } else {
+                                                        slider.style.transform = 'translateX(0)';
+                                                        jaBtn.style.color = '#0f172a';
+                                                        enBtn.style.color = '#94a3b8';
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    </script>
                                 </div>
                                 <div class="dropdown-divider"></div>
                                 <div class="dropdown-section">
@@ -819,8 +802,14 @@ try {
                                 </div>
                                 <div class="dropdown-divider"></div>
                                 <form name="return" method="POST" style="margin:0;">
-                                    <input class="dropdown-item" style="border:none; background:transparent; text-align:left; width:100%; cursor:pointer; font-family:inherit; font-size:inherit; padding:10px 16px;" type="submit" name="sheetbtn" id="sheetbtn" value="シート選択画面に戻る">
-                                    <input class="dropdown-item logout-btn" style="border:none; background:transparent; text-align:left; width:100%; cursor:pointer; color:#dc2626; font-family:inherit; font-size:inherit; padding:10px 16px;" type="submit" name="logout" id="logout" value="ログアウト">
+                                    <button class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="1" style="display:flex; align-items:center; gap:8px; padding:12px 20px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                                        シート選択画面に戻る
+                                    </button>
+                                    <button class="dropdown-item logout-btn" type="submit" name="logout" id="logout" value="1" style="display:flex; align-items:center; gap:8px; padding:12px 20px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                        ログアウト
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -1299,11 +1288,22 @@ try {
                                             </div>
                                         </div>
                                         <!-- シークバーを隣に配置（横幅いっぱい使用） -->
-                                        <div id="timeline_container">
-                                            <input type="range" id="timeline_slider" min="0" max="0" value="0" step="1" />
-                                            <span id="timeline_label">読み込み中...</span>
-                                            <button id="return_to_current" style="margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer;"><span id="returnToCurrentText">現在に戻る</span></button>
-                                            <span id="history_indicator" style="display: none; margin-left: 10px; color: #ff6b6b; font-weight: bold; font-size: 12px;"><span id="historyIndicatorText">📅 過去の表示</span></span>
+                                        <div id="timeline_container" style="position: relative; padding-top: 10px; padding-bottom: 5px; display: flex; align-items: center; gap: 10px;">
+                                            <button id="timeline_prev_btn" class="timeline-nav-btn" title="前の活動日へジャンプ">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                            </button>
+                                            
+                                            <div id="timeline_track_wrapper" style="position: relative; flex: 1; min-width: 0; overflow: hidden; padding-top: 25px;">
+                                                <span id="timeline_label" style="position: absolute; top: 0; left: 0; white-space: nowrap; font-size: 11px; color: #475569; padding: 3px 0; pointer-events: none; font-weight: 600; z-index: 30;">読み込み中...</span>
+                                                <span id="history_indicator" style="display: none; position: absolute; right: 0; top: 2px; color: #ef4444; font-weight: bold; font-size: 11px; z-index: 30;"><span id="historyIndicatorText">📅 過去の表示</span></span>
+                                                
+                                                <!-- 活動バーチャートコンテナ（クリック可能） -->
+                                                <div id="timeline_barchart" style="display: flex; align-items: flex-end; height: 40px; gap: 0; cursor: pointer; width: 100%; box-sizing: border-box;"></div>
+                                            </div>
+                                            
+                                            <button id="timeline_next_btn" class="timeline-nav-btn" title="次の活動日へジャンプ">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                            </button>
                                         </div>
                                     </div>
 

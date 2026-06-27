@@ -189,35 +189,75 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     */
     $escaped_node_keys = array_map(function($id) use ($mysqli) { return "'" . $mysqli->real_escape_string($id) . "'"; }, array_keys($node_map));
     $allNodeIdsStr = implode(',', $escaped_node_keys);
+    // 開いたマップごとの活動量にするため、関連ノード(allNodeIdsStr)は含めず、現在のマップのノード(nodeIdInClause)のみを対象とする
     $date_condition = "o_nodes.node_id IN (".$nodeIdInClause.")";
-    if (!empty($allNodeIdsStr)) {
-        $date_condition = "($date_condition OR o_nodes.object_node_id IN ($allNodeIdsStr))";
-    }
 
     $date_sql = "
-        SELECT DISTINCT DATE(onh.appeared_at) AS appeared_date
+        SELECT DATE(onh.appeared_at) AS appeared_date, COUNT(*) as activity_count
         FROM object_nodes_histories onh
         INNER JOIN object_nodes o_nodes ON onh.object_node_id = o_nodes.object_node_id
         WHERE $date_condition
         AND o_nodes.deleted = 0
         AND onh.appeared_at IS NOT NULL
+        GROUP BY appeared_date
         ORDER BY appeared_date ASC
     ";
     
     $result = $mysqli->query($date_sql);
     
-    $date_list = [];
+    $activity_map = [];
+    $start_date = null;
     if ($result) {
         while ($row = $result->fetch_assoc()) {
-            $date_list[] = $row['appeared_date'];
+            $activity_map[$row['appeared_date']] = (int)$row['activity_count'];
+            if ($start_date === null) {
+                $start_date = $row['appeared_date'];
+            }
         }
     } else {
         echo "SQL Error: " . $mysqli->error;
     }
     
+    // シート全体の作成日（最も古い履歴）を取得する（マップ間で統一）
+    $global_start_sql = "SELECT MIN(DATE(appeared_at)) as global_start_date FROM trigger_candidates WHERE map_id = '$map_id'";
+    $global_start_result = $mysqli->query($global_start_sql);
+    $global_start_date = null;
+    if ($global_start_result && $global_row = $global_start_result->fetch_assoc()) {
+        $global_start_date = $global_row['global_start_date'];
+    }
+    
+    // グローバル開始日がない場合（まだトリガーがない場合など）は、現在のマップの開始日か今日にフォールバック
+    if (!$global_start_date) {
+        $global_start_date = $start_date ? $start_date : date('Y-m-d');
+    }
+    // ただし、現在のマップの活動日がそれより前にある場合は早い方を優先
+    if ($start_date && strtotime($start_date) < strtotime($global_start_date)) {
+        $global_start_date = $start_date;
+    }
+
+    // シート作成日（最も古い履歴）から今日までの全ての日付を配列にする
+    $date_list = [];
+    $activity_counts = [];
+    if ($global_start_date) {
+        $current_date = new DateTime($global_start_date);
+        $end_date = new DateTime(); // 今日
+        
+        while ($current_date <= $end_date) {
+            $date_str = $current_date->format('Y-m-d');
+            $date_list[] = $date_str;
+            $activity_counts[] = isset($activity_map[$date_str]) ? $activity_map[$date_str] : 0;
+            $current_date->modify('+1 day');
+        }
+    } else {
+        $date_str = date('Y-m-d');
+        $date_list[] = $date_str;
+        $activity_counts[] = 0;
+    }
+    
     // 返却データに含める
     $return_data = $return_data ?? [];
     $return_data['dates'] = $date_list;
+    $return_data['activity_counts'] = $activity_counts;
     
     // デバッグ用ログ
     error_log("日付データ生成: SQL = " . $date_sql);
@@ -550,9 +590,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             FROM 
                 object_edges
             WHERE 
-                (edge_start IN ($ids_list) 
-                 OR edge_start IN (".$nodeIdInClause.")
-                 OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id IN (".$nodeIdInClause.")))
+                edge_start IN ($ids_list) 
                 AND deleted = 0
         ";
         error_log("SQL edges: $sql_edges");

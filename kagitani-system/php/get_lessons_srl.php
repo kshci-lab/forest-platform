@@ -21,7 +21,12 @@ try {
 
 	$debug = !empty($_GET['debug']);
 
-	$dsn = "mysql:host={$db_host};dbname={$db_dbname};charset=utf8mb4";
+	$pdo_host = $db_host;
+	$pdo_port = '3306';
+	if (strpos($db_host, ':') !== false) {
+	    list($pdo_host, $pdo_port) = explode(':', $db_host, 2);
+	}
+	$dsn = "mysql:host={$pdo_host};port={$pdo_port};dbname={$db_dbname};charset=utf8mb4";
 	$pdo = new PDO($dsn, $db_user, $db_password, [
 		PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 		PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

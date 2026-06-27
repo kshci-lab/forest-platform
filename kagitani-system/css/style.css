@@ -1012,7 +1012,7 @@ body.is-resizing #main_title {
 }
 
 .srl-sidebar-header{
-	display: flex;
+	display: none !important;
 	align-items: center;
 	justify-content: space-between;
 	padding: 12px 16px;
@@ -1221,7 +1221,7 @@ body.is-resizing #main_title {
 	height: 45%;
 	max-height: none;
 	overflow-y: auto;
-	border: solid 5px #ccc;
+	border: none;
 	margin-bottom: 0; /* remove extra space between inquiry_area and feedback_area */
 	font-size: 14px;
 	text-align: left;
@@ -2543,7 +2543,7 @@ select[name="mttime_list"] {
 }
 
 .inquiry-sidebar-header{
-	display: flex;
+	display: none !important;
 	align-items: center;
 	justify-content: space-between;
 	padding: 12px 16px;

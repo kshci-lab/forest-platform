@@ -25,8 +25,13 @@ try {
         exit;
     }
 
-    // PDO 接続を確立
-    $dsn = "mysql:host={$db_host};dbname={$db_dbname};charset=utf8mb4";
+    // PDO 接続を確立（$db_host が "host:port" 形式の場合を考慮）
+    $pdo_host = $db_host;
+    $pdo_port = '3306';
+    if (strpos($db_host, ':') !== false) {
+        list($pdo_host, $pdo_port) = explode(':', $db_host, 2);
+    }
+    $dsn = "mysql:host={$pdo_host};port={$pdo_port};dbname={$db_dbname};charset=utf8mb4";
     $pdo = new PDO($dsn, $db_user, $db_password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -134,8 +139,8 @@ try {
             $latest_reflection_join = '';
             $latest_reflection_where = '';
             if ($has_reflection_id && $has_reflection_records) {
-                $latest_reflection_join = "\n                    JOIN (\n                        SELECT r1.object_node_id, r1.reflection_id\n                        FROM object_reflection_records r1\n                        JOIN (\n                            SELECT object_node_id, MAX(created_at) AS max_created_at\n                            FROM object_reflection_records\n                            GROUP BY object_node_id\n                        ) r2 ON r1.object_node_id = r2.object_node_id AND r1.created_at = r2.max_created_at\n                    ) latest_ref ON latest_ref.object_node_id = ol.object_node_id";
-                $latest_reflection_where = "\n                      AND ol.reflection_id = latest_ref.reflection_id";
+                $latest_reflection_join = "\n                    LEFT JOIN (\n                        SELECT r1.object_node_id, r1.reflection_id\n                        FROM object_reflection_records r1\n                        JOIN (\n                            SELECT object_node_id, MAX(created_at) AS max_created_at\n                            FROM object_reflection_records\n                            GROUP BY object_node_id\n                        ) r2 ON r1.object_node_id = r2.object_node_id AND r1.created_at = r2.max_created_at\n                    ) latest_ref ON latest_ref.object_node_id = ol.object_node_id";
+                $latest_reflection_where = "\n                      AND (ol.reflection_id IS NULL OR ol.reflection_id = '' OR ol.reflection_id = latest_ref.reflection_id)";
             }
 
             // 問いノード（topic-tag）の情報も取得するためにサブクエリを追加

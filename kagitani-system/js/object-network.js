@@ -3176,8 +3176,55 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         if (recruitselect) recruitselect.style.display = "none";
         if (tProcessRecruitselect) tProcessRecruitselect.style.display = "none";
         
-        // どちらの選択リストが使用されているかを判定
-        let selectionlist = document.getElementById('recruitselectionlist');
+        let topicLabel = '目標';
+        const topicTagNodes = this.nodes.get({
+            filter: function (item) {
+                return item.group === 'topic-tag';
+            }
+        });
+        if (topicTagNodes.length > 0) {
+            topicLabel = topicTagNodes[0].label.replace(/\n/g, '');
+        } else {
+            // 親の目標・問いノードまで遡って取得する
+            const searchNodes = this.nodes;
+            const searchEdges = this.edges;
+            try {
+                let currentId = String(this.selectId);
+                let visitedIds = new Set();
+                
+                for (let i = 0; i < 10; i++) {
+                    visitedIds.add(currentId);
+                    // 関連するエッジを探す (time-tagやreflection-tagは除外)
+                    const connectedEdges = searchEdges.get().filter(e => {
+                        if (e.group === 'time-tag' || e.group === 'reflection-tag') return false;
+                        return String(e.to) === currentId || String(e.from) === currentId;
+                    });
+                    
+                    if (connectedEdges.length === 0) break;
+                    
+                    // 自分に向かってきているエッジを優先
+                    const incomingEdges = connectedEdges.filter(e => String(e.to) === currentId);
+                    const edgeToUse = incomingEdges.length > 0 ? incomingEdges[0] : connectedEdges[0];
+                    
+                    const parentId = String(edgeToUse.to) === currentId ? edgeToUse.from : edgeToUse.to;
+                    const parentNode = searchNodes.get(parentId);
+                    
+                    if (!parentNode || visitedIds.has(String(parentId))) break;
+                    
+                    // アクションノード('action', '1')やバージョンノード('versions')以外を見つけたらそれを「問い(目標)」とする
+                    if (parentNode.group !== 'action' && parentNode.group !== '1' && parentNode.id !== 'versions') {
+                        topicLabel = parentNode.label || parentNode.title || '目標';
+                        // HTMLタグ等が含まれている場合は除去
+                        topicLabel = topicLabel.replace(/<[^>]*>?/gm, '');
+                        break;
+                    }
+                    
+                    currentId = String(parentId);
+                }
+            } catch (e) {
+                console.error('topicLabel fallback error:', e);
+            }
+        }      let selectionlist = document.getElementById('recruitselectionlist');
         let tProcessSelectionlist = document.getElementById('t_Process_recruitselectionlist');
         let selectedValue = '';
         
@@ -4029,6 +4076,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                                 try { if (wEl) wEl.value = items[0].opportunity || ''; } catch(e) {}
                                             }
                                         }
+                                        // Re-snapshot originalValues after AJAX data has been loaded
+                                        try {
+                                            const tip = document.getElementById('feedbackTooltip');
+                                            if (tip && typeof tip._resetOriginalValues === 'function') tip._resetOriginalValues();
+                                        } catch(e) {}
                                     } catch(e) { console.warn('lessons success handler error', e); }
                                 },
                                 error: function() { /* ignore */ }
@@ -4053,6 +4105,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         try { if (wEl && (!wEl.value || wEl.value.trim() === '')) wEl.value = nodeData.estimated_time || ''; } catch(e) {}
                     }
                 } catch(e) { /* ignore */ }
+                // Re-snapshot originalValues after synchronous data has been loaded
+                try {
+                    const tip = document.getElementById('feedbackTooltip');
+                    if (tip && typeof tip._resetOriginalValues === 'function') tip._resetOriginalValues();
+                } catch(e) {}
             }
         } catch (e) {
             console.warn('error while pre-filling feedbackTooltip from reflection-tag', e);
@@ -4260,11 +4317,17 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         const originalValues = {};
         const getAllTextareas = () => Array.from(tooltip.querySelectorAll('textarea'));
         
-        getAllTextareas().forEach(ta => {
-            const id = ta.id || ta.name || Math.random().toString();
-            ta.dataset.trackerId = id;
-            originalValues[id] = ta.value;
-        });
+        const snapshotOriginalValues = () => {
+            getAllTextareas().forEach(ta => {
+                const id = ta.id || ta.name || Math.random().toString();
+                ta.dataset.trackerId = id;
+                originalValues[id] = ta.value;
+            });
+        };
+        snapshotOriginalValues();
+
+        // Expose so that async data loaders can re-snapshot after populating textareas
+        tooltip._resetOriginalValues = snapshotOriginalValues;
 
         const checkState = () => {
             let isChanged = false;
@@ -7391,177 +7454,367 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                 }
             });
 
-            // —————————————— 既存のシークバーに日付データを設定 ——————————————
+            // —————————————— 活動バーチャートによるタイムライン ——————————————
             const timelineDates = trigger_list_info.dates;  // 日付配列
-            const slider = document.getElementById("timeline_slider");
+            const timelineActivityCounts = trigger_list_info.activity_counts || [];  // 活動量配列
             const label = document.getElementById("timeline_label");
-            const returnButton = document.getElementById("return_to_current");
             const historyIndicator = document.getElementById("history_indicator");
+            const barchartEl = document.getElementById("timeline_barchart");
+            const returnButton = document.getElementById("return_to_current");
             
-            if (timelineDates && timelineDates.length > 0 && slider && label) {
+            if (timelineDates && timelineDates.length > 0 && label && barchartEl) {
                 console.log("日付データが取得されました:", timelineDates);
                 
-                // スライダーの設定
-                slider.max = timelineDates.length - 1;
-                slider.value = timelineDates.length - 1; // 最新の日付を初期値
+                // 活動のある日のインデックスリスト（+ 最後の日は常に含める）
+                const activeDayIndices = [];
+                for (let i = 0; i < timelineDates.length; i++) {
+                    if ((timelineActivityCounts[i] || 0) > 0) {
+                        activeDayIndices.push(i);
+                    }
+                }
+                // 最後の日（今日）を常に含める
+                const lastIdx = timelineDates.length - 1;
+                if (!activeDayIndices.includes(lastIdx)) {
+                    activeDayIndices.push(lastIdx);
+                }
                 
-                // 現在選択されている日付を表示
-                const currentIndex = parseInt(slider.value);
-                const selectedDate = timelineDates[currentIndex];
-                label.textContent = `${selectedDate} (${currentIndex + 1}/${timelineDates.length})`;
+                // 現在選択されているインデックス（activeDayIndicesの中でのインデックス）
+                let currentActiveIdx = activeDayIndices.length - 1; // 最後（最新日）
                 
-                console.log("初期選択日付（最新）:", selectedDate);
+                // 最大活動量（バー高さ正規化用）
+                const maxActivity = Math.max(1, ...timelineActivityCounts);
                 
-                // 既存のイベントリスナーを削除（重複を防ぐため）
-                const newSlider = slider.cloneNode(true);
-                slider.parentNode.replaceChild(newSlider, slider);
+                // ドラッグ用サム（つまみ）要素を作成（buildBarchartより先に定義）
+                const thumb = document.createElement('div');
+                thumb.id = 'timeline_thumb';
+                thumb.style.cssText = `
+                    position: absolute;
+                    width: 20px; height: 20px;
+                    border-radius: 50%;
+                    background: #ffffff;
+                    border: 3px solid #2563eb;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                    cursor: grab;
+                    z-index: 25;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                    transition: left 0.1s ease-out;
+                    pointer-events: auto;
+                `;
+                barchartEl.style.position = 'relative';
+                barchartEl.style.overflow = 'visible';
+                barchartEl.style.width = '100%';
+                barchartEl.style.boxSizing = 'border-box';
                 
-                // スライダーのinputイベント（リアルタイム更新）
-                newSlider.addEventListener('input', function() {
-                    const index = parseInt(this.value);
-                    const selectedDate = timelineDates[index];
-                    label.textContent = `${selectedDate} (${index + 1}/${timelineDates.length})`;
-                    console.log("選択された日付:", selectedDate);
-                });
-                
-                // スライダーのchangeイベント（ドラッグ終了時に過去データ取得）
-                newSlider.addEventListener('change', function() {
-                    const index = parseInt(this.value);
-                    const selectedDate = timelineDates[index];
-                    console.log("選択確定日付:", selectedDate);
+                // バーチャートを構築
+                const buildBarchart = () => {
+                    barchartEl.innerHTML = '';
+                    const totalDays = timelineDates.length;
                     
-                    // 最新の日付が選択されていない場合のみ過去データを取得
-                    if (index < timelineDates.length - 1) {
+                    for (let i = 0; i < totalDays; i++) {
+                        const count = timelineActivityCounts[i] || 0;
+                        const bar = document.createElement('div');
+                        bar.className = 'timeline-bar-item';
+                        bar.dataset.dateIndex = i;
+                        bar.style.flex = '1 1 0';
+                        bar.style.borderRadius = '2px 2px 0 0';
+                        bar.style.transition = 'all 0.2s ease';
+                        bar.style.position = 'relative';
+                        
+                        if (count > 0) {
+                            // 活動がある日: 高さは活動量に比例（最低10%, 最大100%）
+                            const heightPercent = Math.max(10, (count / maxActivity) * 100);
+                            bar.style.height = heightPercent + '%';
+                            bar.style.backgroundColor = '#93c5fd';
+                            bar.style.cursor = 'pointer';
+                            bar.title = `${timelineDates[i]} (活動: ${count}件)`;
+                            
+                            // 選択中のバーか？
+                            const selectedFullIdx = activeDayIndices[currentActiveIdx];
+                            if (i === selectedFullIdx) {
+                                bar.style.backgroundColor = '#2563eb';
+                                bar.style.boxShadow = '0 0 4px rgba(37,99,235,0.5)';
+                            }
+                            
+                            // クリックイベント
+                            bar.addEventListener('click', () => {
+                                const aidx = activeDayIndices.indexOf(i);
+                                if (aidx !== -1) {
+                                    currentActiveIdx = aidx;
+                                    updateSelection();
+                                    fireChangeEvent();
+                                }
+                            });
+                            
+                            // ホバーエフェクト
+                            bar.addEventListener('mouseenter', () => {
+                                if (i !== activeDayIndices[currentActiveIdx]) {
+                                    bar.style.backgroundColor = '#60a5fa';
+                                }
+                            });
+                            bar.addEventListener('mouseleave', () => {
+                                if (i !== activeDayIndices[currentActiveIdx]) {
+                                    bar.style.backgroundColor = '#93c5fd';
+                                }
+                            });
+                        } else {
+                            // 活動がない日: 最小高さの薄い線で表示
+                            bar.style.height = '2px';
+                            bar.style.backgroundColor = '#e2e8f0';
+                            bar.style.cursor = 'default';
+                            bar.style.alignSelf = 'flex-end';
+                        }
+                        
+                        barchartEl.appendChild(bar);
+                    }
+                    
+                    // サムを最後に追加（innerHTML=''で消されるため毎回再追加）
+                    barchartEl.appendChild(thumb);
+                };
+                
+                // ラベルテキストとバー選択状態を更新
+                let updateSelection = () => {
+                    const fullIdx = activeDayIndices[currentActiveIdx];
+                    const date = timelineDates[fullIdx];
+                    const count = timelineActivityCounts[fullIdx] || 0;
+                    label.textContent = `${date} (活動: ${count}件)`;
+                    
+                    // 全バーの色を更新
+                    const bars = barchartEl.querySelectorAll('.timeline-bar-item');
+                    bars.forEach(b => {
+                        const di = parseInt(b.dataset.dateIndex);
+                        const c = timelineActivityCounts[di] || 0;
+                        if (c > 0) {
+                            if (di === fullIdx) {
+                                b.style.backgroundColor = '#2563eb';
+                                b.style.boxShadow = '0 0 4px rgba(37,99,235,0.5)';
+                            } else {
+                                b.style.backgroundColor = '#93c5fd';
+                                b.style.boxShadow = 'none';
+                            }
+                        }
+                    });
+                    
+                    // ラベル位置を更新
+                    updateLabelPosition(fullIdx);
+                    
+                    // 過去表示インジケーター
+                    if (historyIndicator) {
+                        historyIndicator.style.display = (fullIdx < lastIdx) ? 'inline' : 'none';
+                    }
+                };
+                
+                // ラベル位置（常に左寄せ固定）
+                const updateLabelPosition = (fullIdx) => {
+                    label.style.left = '0px';
+                };
+                
+                // 選択変更時のデータ取得処理
+                const fireChangeEvent = () => {
+                    const fullIdx = activeDayIndices[currentActiveIdx];
+                    const selectedDate = timelineDates[fullIdx];
+                    
+                    if (fullIdx < lastIdx) {
                         console.log("過去データを取得します:", selectedDate);
                         getPassDataFromDB(selectedDate);
-                        
-                        // 過去表示インジケーターを表示
-                        if (historyIndicator) {
-                            historyIndicator.style.display = "inline";
-                        }
                     } else {
                         console.log("最新データが選択されているため、現在のマップを表示");
-                        // 現在のマップを再表示
                         displayTriggerData("allRE", "trigger_area");
                         
-                        // 過去データ表示フラグを解除
                         if (typeof defaultThinkingProcess !== 'undefined') {
                             defaultThinkingProcess.isViewingPastData = false;
-                            console.log("過去データ表示モードを無効化しました（最新データ選択）");
                             try {
                                 $('#process_removeEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
-                                // Undo/Redoボタンの状態を更新
-                                if (undoRedoManager) {
-                                    undoRedoManager.updateButtons();
-                                }
+                                if (undoRedoManager) undoRedoManager.updateButtons();
                             } catch (e) { /* ignore */ }
                             try {
-                                // ノード固定を解除（ただしタグノードなどは固定のまま）
                                 const allNodes = defaultThinkingProcess.nodes.get();
                                 if (Array.isArray(allNodes) && allNodes.length > 0) {
                                     defaultThinkingProcess.nodes.update(allNodes.map(n => ({
                                         id: n.id,
                                         fixed: n.group === 'topic-tag' ? true : false,
-                                        color: n.color,
-                                        shape: n.shape,
-                                        font: n.font,
-                                        size: n.size,
-                                        borderWidth: n.borderWidth,
-                                        borderWidthSelected: n.borderWidthSelected,
-                                        image: n.image,
-                                        group: n.group
+                                        color: n.color, shape: n.shape, font: n.font, size: n.size,
+                                        borderWidth: n.borderWidth, borderWidthSelected: n.borderWidthSelected,
+                                        image: n.image, group: n.group
                                     })));
                                 }
-                                // vis.Network のノードドラッグを有効化
                                 if (defaultThinkingProcess.ownNetwork && typeof defaultThinkingProcess.ownNetwork.setOptions === 'function') {
                                     defaultThinkingProcess.ownNetwork.setOptions({ interaction: { dragNodes: true } });
                                 }
-                                // キーボードリスナーを復元
                                 if (typeof defaultThinkingProcess.setupKeyboardListeners === 'function') {
                                     defaultThinkingProcess.setupKeyboardListeners();
                                 }
-                            } catch (e) {
-                                console.error('過去表示解除処理でエラー:', e);
-                            }
-                        }
-                        
-                        // 過去表示インジケーターを非表示
-                        if (historyIndicator) {
-                            historyIndicator.style.display = "none";
+                            } catch (e) { console.error('過去表示解除処理でエラー:', e); }
                         }
                     }
+                };
+                
+                // （サム要素はbuildBarchartより前に作成済み）
+                
+                // サム位置を更新（実際のバー要素のDOM位置を使用）
+                const updateThumbPosition = (fullIdx) => {
+                    const bar = barchartEl.querySelector(`.timeline-bar-item[data-date-index="${fullIdx}"]`);
+                    if (bar) {
+                        const barRect = bar.getBoundingClientRect();
+                        const chartRect = barchartEl.getBoundingClientRect();
+                        const pos = (barRect.left + barRect.width / 2) - chartRect.left;
+                        thumb.style.left = pos + 'px';
+                    }
+                };
+                
+                // ラベルテキスト・バー色・サム位置を一括更新
+                const updateSelectionOrig = updateSelection;
+                updateSelection = () => {
+                    const fullIdx = activeDayIndices[currentActiveIdx];
+                    const date = timelineDates[fullIdx];
+                    const count = timelineActivityCounts[fullIdx] || 0;
+                    label.textContent = `${date} (活動: ${count}件)`;
+                    
+                    // 全バーの色を更新
+                    const bars = barchartEl.querySelectorAll('.timeline-bar-item');
+                    bars.forEach(b => {
+                        const di = parseInt(b.dataset.dateIndex);
+                        const c = timelineActivityCounts[di] || 0;
+                        if (c > 0) {
+                            if (di === fullIdx) {
+                                b.style.backgroundColor = '#2563eb';
+                                b.style.boxShadow = '0 0 4px rgba(37,99,235,0.5)';
+                            } else {
+                                b.style.backgroundColor = '#93c5fd';
+                                b.style.boxShadow = 'none';
+                            }
+                        }
+                    });
+                    
+                    updateLabelPosition(fullIdx);
+                    updateThumbPosition(fullIdx);
+                    
+                    if (historyIndicator) {
+                        historyIndicator.style.display = (fullIdx < lastIdx) ? 'inline' : 'none';
+                    }
+                };
+                
+                // ドラッグ中にX座標から最寄りの活動日を見つける
+                const findNearestActiveDay = (clientX) => {
+                    const rect = barchartEl.getBoundingClientRect();
+                    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+                    const totalDays = timelineDates.length;
+                    const barWidth = rect.width / totalDays;
+                    const hoveredIdx = Math.floor(x / barWidth);
+                    const clampedIdx = Math.max(0, Math.min(totalDays - 1, hoveredIdx));
+                    
+                    // 最寄りの活動日を探す
+                    let bestAidx = currentActiveIdx;
+                    let bestDist = Infinity;
+                    for (let a = 0; a < activeDayIndices.length; a++) {
+                        const dist = Math.abs(activeDayIndices[a] - clampedIdx);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestAidx = a;
+                        }
+                    }
+                    return bestAidx;
+                };
+                
+                // ドラッグ処理
+                let isDragging = false;
+                let dragStartAidx = null;
+                
+                const onDragStart = (e) => {
+                    e.preventDefault();
+                    isDragging = true;
+                    dragStartAidx = currentActiveIdx;
+                    thumb.style.cursor = 'grabbing';
+                    thumb.style.transition = 'none'; // ドラッグ中はスムーズ追従のためtransition無効
+                    thumb.style.boxShadow = '0 3px 10px rgba(0,0,0,0.3)';
+                    thumb.style.transform = 'translate(-50%, -50%) scale(1.15)';
+                };
+                
+                const onDragMove = (e) => {
+                    if (!isDragging) return;
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const newAidx = findNearestActiveDay(clientX);
+                    if (newAidx !== currentActiveIdx) {
+                        currentActiveIdx = newAidx;
+                        updateSelection();
+                    }
+                };
+                
+                const onDragEnd = (e) => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    thumb.style.cursor = 'grab';
+                    thumb.style.transition = 'left 0.1s ease-out';
+                    thumb.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+                    thumb.style.transform = 'translate(-50%, -50%)';
+                    if (currentActiveIdx !== dragStartAidx) {
+                        fireChangeEvent();
+                    }
+                };
+                
+                // マウスイベント
+                thumb.addEventListener('mousedown', onDragStart);
+                document.addEventListener('mousemove', onDragMove);
+                document.addEventListener('mouseup', onDragEnd);
+                
+                // タッチイベント
+                thumb.addEventListener('touchstart', onDragStart, { passive: false });
+                document.addEventListener('touchmove', onDragMove, { passive: false });
+                document.addEventListener('touchend', onDragEnd);
+                
+                // 初期描画
+                buildBarchart();
+                updateSelection();
+                
+                // ナビゲーションボタン
+                const prevBtn = document.getElementById("timeline_prev_btn");
+                const nextBtn = document.getElementById("timeline_next_btn");
+                
+                if (prevBtn) {
+                    const newPrev = prevBtn.cloneNode(true);
+                    prevBtn.parentNode.replaceChild(newPrev, prevBtn);
+                    newPrev.addEventListener('click', () => {
+                        if (currentActiveIdx > 0) {
+                            currentActiveIdx--;
+                            updateSelection();
+                            fireChangeEvent();
+                        }
+                    });
+                }
+                if (nextBtn) {
+                    const newNext = nextBtn.cloneNode(true);
+                    nextBtn.parentNode.replaceChild(newNext, nextBtn);
+                    newNext.addEventListener('click', () => {
+                        if (currentActiveIdx < activeDayIndices.length - 1) {
+                            currentActiveIdx++;
+                            updateSelection();
+                            fireChangeEvent();
+                        }
+                    });
+                }
+                
+                // ウィンドウリサイズ時にサム・ラベル位置を再計算
+                window.addEventListener('resize', () => {
+                    const fullIdx = activeDayIndices[currentActiveIdx];
+                    updateLabelPosition(fullIdx);
+                    updateThumbPosition(fullIdx);
                 });
                 
                 // 「現在に戻る」ボタンのイベント
                 if (returnButton) {
-                    // 既存のイベントリスナーを削除
                     const newReturnButton = returnButton.cloneNode(true);
                     returnButton.parentNode.replaceChild(newReturnButton, returnButton);
                     
                     newReturnButton.addEventListener('click', function() {
                         console.log("現在のマップに戻ります");
+                        currentActiveIdx = activeDayIndices.length - 1;
+                        updateSelection();
+                        fireChangeEvent();
                         
-                        // スライダーを最新位置に戻す
-                        newSlider.value = timelineDates.length - 1;
-                        const latestDate = timelineDates[timelineDates.length - 1];
-                        label.textContent = `${latestDate} (${timelineDates.length}/${timelineDates.length})`;
-                        
-                        // 過去表示インジケーターを非表示
-                        if (historyIndicator) {
-                            historyIndicator.style.display = "none";
-                        }
-                        
-                        // 現在のマップを再表示
-                        displayTriggerData("allRE", "trigger_area");
-                        
-                        // 過去データ表示フラグを解除
-                        if (typeof defaultThinkingProcess !== 'undefined') {
-                            defaultThinkingProcess.isViewingPastData = false;
-                            console.log("過去データ表示モードを無効化しました");
-                            try {
-                                $('#process_removeEdge, #process_removeNode').removeClass('disabled').prop('disabled', false);
-                                // Undo/Redoボタンの状態を更新
-                                if (undoRedoManager) {
-                                    undoRedoManager.updateButtons();
-                                }
-                            } catch (e) { /* ignore */ }
-                            try {
-                                // ノード固定を解除（ただしタグノードなどは固定のまま）
-                                const allNodes = defaultThinkingProcess.nodes.get();
-                                if (Array.isArray(allNodes) && allNodes.length > 0) {
-                                    defaultThinkingProcess.nodes.update(allNodes.map(n => ({
-                                        id: n.id,
-                                        fixed: n.group === 'topic-tag' ? true : false,
-                                        color: n.color,
-                                        shape: n.shape,
-                                        font: n.font,
-                                        size: n.size,
-                                        borderWidth: n.borderWidth,
-                                        borderWidthSelected: n.borderWidthSelected,
-                                        image: n.image,
-                                        group: n.group
-                                    })));
-                                }
-                                // vis.Network のノードドラッグを有効化
-                                if (defaultThinkingProcess.ownNetwork && typeof defaultThinkingProcess.ownNetwork.setOptions === 'function') {
-                                    defaultThinkingProcess.ownNetwork.setOptions({ interaction: { dragNodes: true } });
-                                }
-                                // キーボードリスナーを復元
-                                if (typeof defaultThinkingProcess.setupKeyboardListeners === 'function') {
-                                    defaultThinkingProcess.setupKeyboardListeners();
-                                }
-                            } catch (e) {
-                                console.error('過去表示解除処理でエラー:', e);
-                            }
-                        }
-                        
-                        // 現在表示に戻った時の視覚的フィードバック
                         const networkContainer = document.getElementById("myProcessnetwork2") || document.getElementById("myProcessnetwork");
                         if (networkContainer) {
                             networkContainer.style.border = "3px solid #4CAF50";
                             networkContainer.style.backgroundColor = "#f5fff5";
-                            
-                            // 2秒後に通常の表示に戻す
                             setTimeout(() => {
                                 networkContainer.style.border = "";
                                 networkContainer.style.backgroundColor = "";
@@ -7574,10 +7827,6 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                 console.log("日付データがありません");
                 if (label) {
                     label.textContent = "日付データなし";
-                }
-                if (slider) {
-                    slider.max = 0;
-                    slider.value = 0;
                 }
                 if (returnButton) {
                     returnButton.style.display = "none";
@@ -7930,17 +8179,7 @@ function showThinkingProcessMap(clickedNodeId, isShiftKey) {
         }
     }, 200);
 
-    // シークバーのイベントリスナーを追加
-    const slider = document.getElementById("timeline_slider");
-    const label = document.getElementById("timeline_label");
-
-    slider.addEventListener("input", (event) => {
-        const value = event.target.value;
-        label.textContent = `${value}%`;
-
-        // シークバーの値に応じて表示内容を変更する処理
-        updateThinkingProcessMap(value);
-    });
+    // バーチャートベースのタイムラインに移行済み（スライダーは削除）
 }
 
 // シークバーの値に応じてマップを更新する関数

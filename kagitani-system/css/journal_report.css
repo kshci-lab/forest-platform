@@ -233,7 +233,7 @@
   box-shadow:0 8px 24px rgba(35,48,67,0.08);
   overflow:hidden;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex: 1;
   min-height: 0;
   box-sizing: border-box;
@@ -270,16 +270,22 @@
   font-size:12px;
   border-radius:6px;
   cursor:pointer;
+  margin-left:auto;
+  order: 99;
 }
 .jr-history-toggle:hover{ background:#f1f1f1; }
 
 .jr-history-panel{
   display:none;
-  border-top:1px solid #e8e0d6;
+  border-left:1px solid #e8e0d6;
   background:#fffdf9;
   padding:10px 12px 12px 12px;
+  width: 320px;
+  flex: 0 0 320px;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
-.jr-history-panel.jr-history-open{ display:block; }
+.jr-history-panel.jr-history-open{ display:flex; flex-direction: column; }
 .jr-history-header{
   font-weight:700;
   color:#2b2722;

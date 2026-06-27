@@ -15,8 +15,13 @@ $debug = array();
 
 // PDO 接続（insert_object_goal.php に合わせた実装）
 
+$pdo_host = $db_host;
+$pdo_port = '3306';
+if (strpos($db_host, ':') !== false) {
+    list($pdo_host, $pdo_port) = explode(':', $db_host, 2);
+}
 try {
-    $pdo = new PDO("mysql:host=$db_host;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
+    $pdo = new PDO("mysql:host=$pdo_host;port=$pdo_port;dbname=$db_dbname;charset=utf8", $db_user, $db_password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     $out = ['success' => false, 'error' => 'DB接続失敗: ' . $e->getMessage()];
