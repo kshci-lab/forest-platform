@@ -735,18 +735,18 @@ try {
                                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                                 </svg>
                             </button>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-item language-toggle-item" style="padding: 12px 20px; cursor:default; box-sizing:border-box;">
-                                    <div style="display:flex; align-items:center; background:rgba(0,0,0,0.05); border-radius:8px; padding:4px; width:100%; box-sizing:border-box; position:relative;">
+                            <!-- <div class="dropdown-menu"> -->
+                                <!-- <div class="dropdown-item language-toggle-item" style="padding: 12px 20px; cursor:default; box-sizing:border-box;">
+                                     <div style="display:flex; align-items:center; background:rgba(0,0,0,0.05); border-radius:8px; padding:4px; width:100%; box-sizing:border-box; position:relative;"> -->
                                         <!-- Animated background for the active state -->
-                                        <div id="lang-bg-slider" style="position:absolute; top:4px; bottom:4px; width:calc(50% - 4px); background:#ffffff; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1); transform: translateX(0); box-sizing:border-box;"></div>
+                                        <!-- <div id="lang-bg-slider" style="position:absolute; top:4px; bottom:4px; width:calc(50% - 4px); background:#ffffff; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1); transform: translateX(0); box-sizing:border-box;"></div> -->
                                         
                                         <!-- Buttons -->
-                                        <div role="button" tabindex="0" onclick="setLangToggle(false)" style="flex:1; z-index:1; padding:6px 0; margin:0; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; text-align:center; transition: color 0.2s; user-select:none; box-sizing:border-box; border:none; outline:none;">日本語</div>
-                                        <div role="button" tabindex="0" onclick="setLangToggle(true)" style="flex:1; z-index:1; padding:6px 0; margin:0; font-size:13px; font-weight:600; color:#94a3b8; cursor:pointer; text-align:center; transition: color 0.2s; user-select:none; box-sizing:border-box; border:none; outline:none;">English</div>
+                                        <!-- <div role="button" tabindex="0" onclick="setLangToggle(false)" style="flex:1; z-index:1; padding:6px 0; margin:0; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer; text-align:center; transition: color 0.2s; user-select:none; box-sizing:border-box; border:none; outline:none;">日本語</div>
+                                        <div role="button" tabindex="0" onclick="setLangToggle(true)" style="flex:1; z-index:1; padding:6px 0; margin:0; font-size:13px; font-weight:600; color:#94a3b8; cursor:pointer; text-align:center; transition: color 0.2s; user-select:none; box-sizing:border-box; border:none; outline:none;">English</div> -->
                                         
                                         <!-- Keep the original toggle hidden to preserve the JS logic -->
-                                        <input type="checkbox" id="language-toggle" style="display:none;" />
+                                        <!-- <input type="checkbox" id="language-toggle" style="display:none;" />
                                     </div>
                                     <script>
                                         function setLangToggle(isEnglish) {
@@ -788,7 +788,7 @@ try {
                                     </div>
                                 </div>
                                 <div class="dropdown-divider"></div>
-                                <div class="dropdown-section">
+                                <div class="dropdown-section"> -->
                                     <span class="dropdown-section-title">モード選択</span>
                                     <form name="target_mode" action="" style="margin:0;">
                                         <select class="dropdown-select" name="Select1">
@@ -799,9 +799,9 @@ try {
                                         </select>
                                         <input type="button" class="dropdown-button" value="実行" onclick="ModeChangeButtonClick();" />
                                     </form>
-                                </div>
-                                <div class="dropdown-divider"></div>
-                                <form name="return" method="POST" style="margin:0;">
+                                <!-- </div>  -->
+                                <!-- <div class="dropdown-divider"></div>
+                                <form name="return" method="POST" style="margin:0;"> -->
                                     <button class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="1" style="display:flex; align-items:center; gap:8px; padding:12px 20px;">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                                         シート選択画面に戻る
@@ -889,12 +889,12 @@ try {
                                             <span class="toolbar-text" id="addAnodeText">答えノード追加</span>
                                         </button>
 
-                                        <button class="toolbar-btn" id="addLabelBtn" onclick="add_Label('primary_label');">
+                                        <!-- <button class="toolbar-btn" id="addLabelBtn" onclick="add_Label('primary_label');">
                                             <div class="icon-circle bg-sync-green">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                                             </div>
                                             <span class="toolbar-text" id="addLabelText">ラベル追加</span>
-                                        </button>
+                                        </button> -->
                                     </div>
 
                                     <div class="toolbar-divider"></div>
