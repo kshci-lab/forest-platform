@@ -800,8 +800,8 @@ try {
                                         <input type="button" class="dropdown-button" value="実行" onclick="ModeChangeButtonClick();" />
                                     </form>
                                 <!-- </div>  -->
-                                <!-- <div class="dropdown-divider"></div>
-                                <form name="return" method="POST" style="margin:0;"> -->
+                                <!-- <div class="dropdown-divider"></div> -->
+                                <form name="return" method="POST" style="margin:0;">
                                     <button class="dropdown-item" type="submit" name="sheetbtn" id="sheetbtn" value="1" style="display:flex; align-items:center; gap:8px; padding:12px 20px;">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                                         シート選択画面に戻る
