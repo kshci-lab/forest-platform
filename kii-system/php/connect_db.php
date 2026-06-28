@@ -5,7 +5,7 @@
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
 	$db_password = "your_password";
-	$db_dbname = "forest_platform";
+	$db_dbname = "jiko-chouseisan-kojilab";
 	
 	// 実験データ参照用
 	// $db_host = "localhost:8889";  // DBサーバのurl
@@ -18,7 +18,7 @@
 	// $db_port = 3306;
 	// $db_user = "root";
 	// $db_password = "kslabkslab";
-	// $db_dbname = "forest_platform";
+	// $db_dbname = "jiko-chouseisan-kojilab";
 
 	// 　統合環境1
 	// $db_host = "192.168.0.82:3306";  // DBサーバのurl

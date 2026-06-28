@@ -4,7 +4,7 @@
 $db_host = "localhost";  // DBサーバのurl
 $db_user = "root";
 $db_password = "root";
-$db_dbname = "forest_platform";
+$db_dbname = "jiko-chouseisan-kojilab";
 
 $mysqli = new mysqli($db_host, $db_user, $db_password, $db_dbname);
 	if ($mysqli->connect_error) {

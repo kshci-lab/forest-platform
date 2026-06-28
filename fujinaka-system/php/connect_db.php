@@ -5,14 +5,14 @@
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
 	$db_password = "your_password";
-	$db_dbname = "forest_platform";
+	$db_dbname = "jiko-chouseisan-kojilab";
 
 	//アプリケーションサーバーにアップロードするとき．
 	// $db_host = "localhost";  // DBサーバのurl
 	// $db_port = 3306;
 	// $db_user = "root";
 	// $db_password = "kslabkslab";
-	// $db_dbname = "forest_platform";
+	// $db_dbname = "jiko-chouseisan-kojilab";
 
 	// mysqlへの接続
 	$mysqli = new mysqli($db_host, $db_user, $db_password, $db_dbname, $db_port);

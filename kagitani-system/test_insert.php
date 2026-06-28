@@ -1,5 +1,5 @@
 <?php
-$mysqli = new mysqli("localhost", "root", "root", "forest_platform", 8889);
+$mysqli = new mysqli("localhost", "root", "root", "jiko-chouseisan-kojilab", 8889);
 if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }

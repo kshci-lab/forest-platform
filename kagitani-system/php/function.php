@@ -1,7 +1,7 @@
 <?php
 // データベースに接続
 function connectDB_Test() {
-    $param = 'mysql:dbname=forest_platform;host=localhost';
+    $param = 'mysql:dbname=jiko-chouseisan-kojilab;host=localhost';
     // $param = 'mysql:dbname=shimizu;host=localhost';
     try {
         $pdo = new PDO($param, 'root', 'root');

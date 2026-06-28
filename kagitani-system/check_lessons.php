@@ -2,7 +2,7 @@
 $db_host = '127.0.0.1';
 $db_user = 'root';
 $db_password = 'root';
-$db_dbname = '2026-06-15_forest_platform';
+$db_dbname = '2026-06-15_jiko-chouseisan-kojilab';
 
 try {
     $pdo = new PDO("mysql:host={$db_host};dbname={$db_dbname};charset=utf8mb4", $db_user, $db_password, [

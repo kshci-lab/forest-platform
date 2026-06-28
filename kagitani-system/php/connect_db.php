@@ -3,7 +3,7 @@ if (function_exists('mysqli_report')) {
 	mysqli_report(MYSQLI_REPORT_OFF);
 }
 
-$db_dbname = "forest_platform";
+$db_dbname = "jiko-chouseisan-kojilab";
 
 // 試行接続は警告を起こしうるため、環境判定で1セットだけ使う
 $isProduction = false;
