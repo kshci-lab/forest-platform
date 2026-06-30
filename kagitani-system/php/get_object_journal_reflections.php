@@ -21,7 +21,7 @@ if (!isset($mysqli)) {
 }
 
 try {
-    $sql = "SELECT object_journal_reflection_id, object_journal_id, journal_history_id, evaluation_good, evaluation_bad, attribution, attribution_bad, created_at, update_at, deleted FROM object_journal_reflections WHERE object_journal_id = ? AND deleted = 0 AND journal_history_id IS NOT NULL ORDER BY update_at DESC";
+    $sql = "SELECT object_journal_reflection_id, object_journal_id, journal_history_id, evaluation_good, evaluation_bad, attribution, attribution_bad, created_at, update_at, deleted FROM object_journal_reflections WHERE object_journal_id = ? AND deleted = 0 AND journal_history_id IS NOT NULL ORDER BY created_at ASC";
     if ($stmt = $mysqli->prepare($sql)) {
         $debug[] = 'prepared reflection select';
         // object_journal_id may be a string (e.g. 'goal_...'), bind as string

@@ -135,6 +135,8 @@ try {
 
         $object_journal_reflection_id = uuid_v4();
 
+        $seqNow = date('Y-m-d H:i:s', time() + $reflectionCount);
+
         $refData = [
             'object_journal_reflection_id' => $object_journal_reflection_id,
             'object_journal_id' => $object_journal_id,
@@ -145,10 +147,10 @@ try {
             'attribution_good' => $reflection['attribution_good'] ?? '',
             'attribution_bad' => $reflection['attribution_bad'] ?? '',
             'reflection_text' => $reflection['reflection_text'] ?? '',
-            'created_at' => $now,
-            'update_at' => $now,
-            'updated_at' => $now,
-            'appeared_at' => $now,
+            'created_at' => $seqNow,
+            'update_at' => $seqNow,
+            'updated_at' => $seqNow,
+            'appeared_at' => $seqNow,
             'deleted' => 0
         ];
         if ($map_id !== null) $refData['map_id'] = $map_id;
@@ -176,14 +178,16 @@ try {
             $whyImportant = trim($lesson['why_important'] ?? '');
             if ($lessonText === '' && $opportunity === '' && $whyImportant === '') continue;
 
+            $seqLessonNow = date('Y-m-d H:i:s', time() + $lessonCount);
+
             $lessonData = [
                 'object_journal_lesson-learned_id' => uuid_v4(),
                 'object_journal_reflection_id' => $object_journal_reflection_id,
                 'lesson_learned' => $lessonText,
                 'why_important' => $whyImportant,
                 'opportunity' => $opportunity,
-                'created_at' => $now,
-                'updated_at' => $now,
+                'created_at' => $seqLessonNow,
+                'updated_at' => $seqLessonNow,
                 'deleted' => 0
             ];
             if ($map_id !== null) $lessonData['map_id'] = $map_id;

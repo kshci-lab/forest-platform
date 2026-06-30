@@ -427,28 +427,46 @@
 				}
 			}
 
-			// 重複チェック（record->reflection: activity=8）
-			$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$object_node_id' AND appeared_at = '$timestamp' AND activity = 8";
-			$dup_res = $mysqli->query($dup_check_sql);
-			$dup_count = 0;
-			if ($dup_res) {
-				$row_dup = $dup_res->fetch_assoc();
-				$dup_count = (int)$row_dup['cnt'];
+			$has_reflection = false;
+			if ((isset($evaluation_good) && trim($evaluation_good) !== '') ||
+				(isset($evaluation_bad) && trim($evaluation_bad) !== '') ||
+				(isset($attribution) && trim($attribution) !== '') ||
+				(isset($attribution_bad) && trim($attribution_bad) !== '') ||
+				(isset($application) && trim($application) !== '') ||
+				(isset($application_timing) && trim($application_timing) !== '')) {
+				$has_reflection = true;
 			}
-			if ($dup_count === 0) {
-				$result = $mysqli->query($h_sql);
-				if ($mysqli->error) {
-					echo json_encode([
-						"success" => false,
-						"error" => "履歴保存エラー: " . $mysqli->error,
-						"sql" => $h_sql
-					]);
+			$lessons_json = isset($_POST['lessons_json']) ? $_POST['lessons_json'] : null;
+			if ($lessons_json !== null && trim($lessons_json) !== '' && $lessons_json !== '[]') {
+				$has_reflection = true;
+			}
+
+			if ($has_reflection) {
+				// 重複チェック（record->reflection: activity=8）
+				$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$object_node_id' AND appeared_at = '$timestamp' AND activity = 8";
+				$dup_res = $mysqli->query($dup_check_sql);
+				$dup_count = 0;
+				if ($dup_res) {
+					$row_dup = $dup_res->fetch_assoc();
+					$dup_count = (int)$row_dup['cnt'];
+				}
+				if ($dup_count === 0) {
+					$result = $mysqli->query($h_sql);
+					if ($mysqli->error) {
+						echo json_encode([
+							"success" => false,
+							"error" => "履歴保存エラー: " . $mysqli->error,
+							"sql" => $h_sql
+						]);
+					} else {
+						echo json_encode(["success" => true]);
+					}
 				} else {
-					echo json_encode(["success" => true]);
+					error_log("Skip duplicate history insert for node $object_node_id at $timestamp (record->reflection)");
+					echo json_encode(["success" => true, "note" => "duplicate skipped"]);
 				}
 			} else {
-				error_log("Skip duplicate history insert for node $object_node_id at $timestamp (record->reflection)");
-				echo json_encode(["success" => true, "note" => "duplicate skipped"]);
+				echo json_encode(["success" => true, "note" => "no reflection written"]);
 			}
 			
 		}else if($record_thing === 'estimated_time'){
@@ -638,28 +656,42 @@
 					}
 				}
 				
-				// 重複チェック（record->reflection bottom: activity=8）
-				$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$object_node_id' AND appeared_at = '$timestamp' AND activity = 8";
-				$dup_res = $mysqli->query($dup_check_sql);
-				$dup_count = 0;
-				if ($dup_res) {
-					$row_dup = $dup_res->fetch_assoc();
-					$dup_count = (int)$row_dup['cnt'];
+				$has_reflection = false;
+				if ((isset($evaluation_good) && trim($evaluation_good) !== '') ||
+					(isset($evaluation_bad) && trim($evaluation_bad) !== '') ||
+					(isset($attribution) && trim($attribution) !== '') ||
+					(isset($attribution_bad) && trim($attribution_bad) !== '') ||
+					(isset($application) && trim($application) !== '') ||
+					(isset($application_timing) && trim($application_timing) !== '')) {
+					$has_reflection = true;
 				}
-				if ($dup_count === 0) {
-					$result = $mysqli->query($h_sql);
-					if ($mysqli->error) {
-						echo json_encode([
-							"success" => false,
-							"error" => "履歴保存エラー: " . $mysqli->error,
-							"sql" => $h_sql
-						]);
+
+				if ($has_reflection) {
+					// 重複チェック（record->reflection bottom: activity=8）
+					$dup_check_sql = "SELECT COUNT(*) AS cnt FROM object_nodes_histories WHERE object_node_id = '$object_node_id' AND appeared_at = '$timestamp' AND activity = 8";
+					$dup_res = $mysqli->query($dup_check_sql);
+					$dup_count = 0;
+					if ($dup_res) {
+						$row_dup = $dup_res->fetch_assoc();
+						$dup_count = (int)$row_dup['cnt'];
+					}
+					if ($dup_count === 0) {
+						$result = $mysqli->query($h_sql);
+						if ($mysqli->error) {
+							echo json_encode([
+								"success" => false,
+								"error" => "履歴保存エラー: " . $mysqli->error,
+								"sql" => $h_sql
+							]);
+						} else {
+							echo json_encode(["success" => true]);
+						}
 					} else {
-						echo json_encode(["success" => true]);
+						error_log("Skip duplicate history insert for node $object_node_id at $timestamp (reflection bottom)");
+						echo json_encode(["success" => true, "note" => "duplicate skipped"]);
 					}
 				} else {
-					error_log("Skip duplicate history insert for node $object_node_id at $timestamp (reflection bottom)");
-					echo json_encode(["success" => true, "note" => "duplicate skipped"]);
+					echo json_encode(["success" => true, "note" => "no reflection written"]);
 				}
 			} else {
 				echo json_encode([

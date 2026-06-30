@@ -5,6 +5,13 @@ if (function_exists('mysqli_report')) {
 }
 
 $db_dbname = "forest_platform";
+if (!empty($_SERVER['REQUEST_URI'])) {
+    if (strpos($_SERVER['REQUEST_URI'], '/software/jiko-chouseisan-kojilab') !== false) {
+        $db_dbname = "jiko-chouseisan-kojilab";
+    } elseif (strpos($_SERVER['REQUEST_URI'], '/software/jiko-chouseisan') !== false) {
+        $db_dbname = "forest_platform";
+    }
+}
 
 // 試行接続は警告を起こしうるため、環境判定で1セットだけ使う
 $isProduction = false;

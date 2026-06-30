@@ -3510,8 +3510,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 lessonFocusLabel: '今後の活動でどのようなことを意識したいですか？',
                 lessonFocusPlaceholder: '例: 次回は開始前にゴールを共有する',
                 lessonWhyLabel: 'なぜその教訓が大切だと考えますか？',
-                lessonWhyPlaceholder: '（例）この教訓を意識することで、次に類似した課題に直面した際、同じ失敗を回避できると考えたため。',
-                lessonWhenLabel: 'その教訓はどのような時に活かせそうですか？',
+                lessonWhyPlaceholder: 'なぜこれを教訓として記述しようとしたのか，大切だと感じたのかを考えてみましょう',
+                lessonWhenLabel: 'その教訓は次にどのような時に活かせそうですか？',
                 lessonWhenPlaceholder: '例: 次回の準備開始時',
                 cancelBtn: 'キャンセル',
                 saveBtn: '振り返りを終える',
@@ -4676,6 +4676,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 return;
             }
 
+            // 右下のリサイズハンドル部分のクリック時はドラッグしない (リサイズを優先)
+            const rect = tooltip.getBoundingClientRect();
+            const isResizeArea = (event.clientX > rect.right - 24) && (event.clientY > rect.bottom - 24);
+            if (isResizeArea) {
+                return;
+            }
+
             isDragging = true;
             offsetX = event.clientX - tooltip.offsetLeft;
             offsetY = event.clientY - tooltip.offsetTop;
@@ -5682,6 +5689,16 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     initialReason = this.ReasonContent[rIdx];
                 } else if (editNode.purpose && editNode.purpose.trim() !== '') {
                     initialReason = editNode.purpose;
+                }
+                
+                // それでもない場合、親へのエッジのツールチップ(title)から抽出を試みる
+                if ((!initialReason || initialReason.trim() === '') && parentEdge && parentEdge.title) {
+                    if (parentEdge.title.includes('理由:')) {
+                        const match = parentEdge.title.match(/理由:\s*(.+)/);
+                        if (match && match[1]) {
+                            initialReason = match[1].trim();
+                        }
+                    }
                 }
             }
         }
@@ -8258,7 +8275,8 @@ window.addEventListener('load', () => {
         defaultThinkingProcess.zoomOut();
     });
     
-    // Undo/Redoボタンのイベントハンドラ
+    // Undo/Redoボタンのイベントハンドラ (コメントアウト中)
+    /*
     $(`#process_undo`).on("click", e => {
         if (defaultThinkingProcess && defaultThinkingProcess.isViewingPastData) {
             console.log('過去データ表示中のため、Undoは無効化されています');
@@ -8277,8 +8295,10 @@ window.addEventListener('load', () => {
             undoRedoManager.redo();
         }
     });
+    */
     
-    // キーボードショートカット（Ctrl+Z: Undo, Ctrl+Y: Redo）
+    // キーボードショートカット（Ctrl+Z: Undo, Ctrl+Y: Redo） - コメントアウト中
+    /*
     document.addEventListener('keydown', (e) => {
         // テキスト入力中は無効
         const activeElement = document.activeElement;
@@ -8310,6 +8330,7 @@ window.addEventListener('load', () => {
             }
         }
     });
+    */
 
     const accordionHeaders = document.querySelectorAll('#accordion_discussion .accordion-header');
     accordionHeaders.forEach(header => {

@@ -500,10 +500,10 @@ input[type="checkbox"][name="check_process"]{
     width: fit-content;
     gap: 6px;
     padding: 4px 6px;
-    background: var(--background-white);
+    background: transparent;
     border-radius: 5px;
-    border: 1px solid var(--border-light);
-    box-shadow: 0 1px 3px var(--shadow-light);
+    border: none;
+    box-shadow: none;
     opacity: 1;
     position: absolute;
     top: 8px;
@@ -775,9 +775,10 @@ input[type="checkbox"][name="check_process"]{
 /* タイムラインバーチャート */
 #timeline_barchart {
     display: flex;
+    justify-content: center;
     align-items: flex-end;
     height: 40px;
-    gap: 0;
+    gap: 2px;
     cursor: pointer;
     background: linear-gradient(to top, #f8fafc 0%, transparent 100%);
     border-radius: 4px;
@@ -791,8 +792,9 @@ input[type="checkbox"][name="check_process"]{
 
 .timeline-bar-item {
     flex: 1;
+    max-width: 40px;
     min-width: 0;
-    border-radius: 2px 2px 0 0;
+    border-radius: 3px 3px 0 0;
     transition: all 0.15s ease;
     position: relative;
 }
