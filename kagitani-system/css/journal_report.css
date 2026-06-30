@@ -266,11 +266,12 @@
   background:#f7f7f7;
   border:1px solid rgba(34,34,34,0.08);
   color:#333;
-  padding:6px 10px;
+  padding:4px 8px;
   font-size:12px;
   border-radius:6px;
   cursor:pointer;
   margin-left:auto;
+  margin-right: 48px; /* Avoid overlap with close button when closed */
   order: 99;
 }
 .jr-history-toggle:hover{ background:#f1f1f1; }
@@ -289,10 +290,17 @@
 .jr-history-header{
   font-weight:700;
   color:#2b2722;
+  font-size:13px; /* made even smaller */
   margin-bottom:8px;
   display:flex;
   align-items:center;
   gap:8px;
+}
+.jr-history-header .jr-history-toggle {
+  margin-left: 12px; /* Place immediately to the right of the text */
+  margin-right: 0;
+  font-size: 11px;
+  padding: 3px 6px;
 }
 .jr-history-header::before{ content:'🕒'; }
 .jr-history-list{ display:flex; flex-direction:column; gap:10px; }

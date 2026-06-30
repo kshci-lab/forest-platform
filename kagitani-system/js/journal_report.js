@@ -541,11 +541,13 @@
                                     historyPanel.classList.remove('jr-history-open');
                                     historyBtn.textContent = (getCurrentLang() === 'ja') ? '過去の記録を見る' : 'View history';
                                     historyBtn.setAttribute('aria-expanded', 'false');
+                                    tabContainer.appendChild(historyBtn);
                                     return;
                                 }
                                 historyPanel.classList.add('jr-history-open');
                                 historyBtn.textContent = (getCurrentLang() === 'ja') ? '過去の記録を閉じる' : 'Hide history';
                                 historyBtn.setAttribute('aria-expanded', 'true');
+                                historyHeader.appendChild(historyBtn);
                                 loadJournalHistory();
                             });
 
@@ -1240,7 +1242,7 @@
                                 
                                 // Focus question
                                 var labelTop = document.createElement('label');
-                                labelTop.textContent = (getCurrentLang() === 'ja') ? '今後の活動ではどのようなことを意識すればよいと思いますか？' : 'What should you pay attention to in future activities?';
+                                labelTop.textContent = (getCurrentLang() === 'ja') ? '今後の活動でどのようなことを意識したいですか？' : 'What should you pay attention to in future activities?';
                                 labelTop.className = 'jr-label';
                                 var taTop = document.createElement('textarea');
                                 taTop.rows = 2;
@@ -1256,7 +1258,7 @@
                                 labelWhy.className = 'jr-label';
                                 var taWhy = document.createElement('textarea');
                                 taWhy.rows = 2;
-                                taWhy.placeholder = (getCurrentLang() === 'ja') ? '（例）この教訓を意識することで、次に類似した課題に直面した際の失敗を防げるため。' : '(e.g.) Being aware of this lesson will prevent failures when facing similar challenges.';
+                                taWhy.placeholder = (getCurrentLang() === 'ja') ? 'なぜこれを教訓として記述しようとしたのか，大切だと感じたのかを考えてみましょう' : 'Think about why you decided to document this as a lesson and why you felt it was important.';
                                 taWhy.className = 'jr-textarea wr-lesson-why';
                                 if (whyVal) taWhy.value = whyVal;
                                 content.appendChild(labelWhy);
@@ -2057,10 +2059,16 @@
                                         chTextWrap.style.flex = '1';
                                         chTextWrap.style.lineHeight = '1.5';
 
-                                        // Extract purpose from the latest history
-                                        var lastHistory = (grp && grp.length) ? grp[grp.length - 1] : null;
-                                        var purposeText = (lastHistory && lastHistory.purpose) ? lastHistory.purpose.trim() : '';
-                                        
+                                        // Extract purpose from the history (find the most recent non-empty purpose)
+                                        var purposeText = '';
+                                        if (grp && grp.length) {
+                                            for (var i = grp.length - 1; i >= 0; i--) {
+                                                if (grp[i] && grp[i].purpose && grp[i].purpose.trim() !== '') {
+                                                    purposeText = grp[i].purpose.trim();
+                                                    break;
+                                                }
+                                            }
+                                        }
                                         if (purposeText) {
                                             var chPurpose = document.createElement('div');
                                             chPurpose.textContent = purposeText; // No "理由：" prefix
@@ -2424,13 +2432,13 @@
                                         success: function (res) {
                                             if (res && res.success) {
                                                 window.__jr_hasUnsavedChanges = false;
-                                                var sb = modal.querySelector('.jr-save-btn');
-                                                if (sb) {
+                                                var sbs = modal.querySelectorAll('.jr-save-btn');
+                                                sbs.forEach(function(sb) {
                                                     sb.textContent = (getCurrentLang() === 'ja') ? '保存済み' : 'Saved';
                                                     sb.style.background = '#edf2f7';
                                                     sb.style.color = '#a0aec0';
                                                     sb.disabled = true;
-                                                }
+                                                });
                                             } else {
                                                 console.warn('snapshot save failed', res);
                                                 alert((getCurrentLang() === 'ja') ? '保存に失敗しました' : 'Save failed');
@@ -2495,7 +2503,8 @@
                                 }
                                 if (e.target.tagName.toLowerCase() === 'textarea' || e.target.tagName.toLowerCase() === 'input') {
                                     window.__jr_hasUnsavedChanges = true;
-                                    var sb = modalContent.querySelector('.jr-save-btn');
+                                    var currentWrap = e.target.closest('.jr-info-wrap');
+                                    var sb = currentWrap ? currentWrap.querySelector('.jr-save-btn') : modalContent.querySelector('.jr-save-btn');
                                     if (sb && sb.disabled) {
                                         sb.textContent = (getCurrentLang() === 'ja') ? '変更を保存する' : 'Save Changes';
                                         sb.style.background = '#2c7a7b';

@@ -952,11 +952,11 @@ h3 {
 
 .srl-sidebar{
 	position: fixed;
-	top: 0; /* main_titleが右にスライドするため全画面高さにする */
+	top: 35px; /* main_titleの下から開始 */
 	left: 0;
 	width: 420px;
 	max-width: 88vw;
-	height: 100vh;
+	height: calc(100vh - 35px);
 	background: #f8fafc;
 	border-right: 1px solid rgba(16,24,40,0.08);
 	box-shadow: 8px 0 20px rgba(16,24,40,0.12);
@@ -994,6 +994,7 @@ h3 {
 	transition: none;
 }
 
+/* main_titleは固定表示するためコメントアウト
 body.srl-sidebar-open #main_title {
 	margin-left: var(--srl-sidebar-width, 420px) !important;
 	width: calc(100% - var(--srl-sidebar-width, 420px)) !important;
@@ -1010,6 +1011,7 @@ body.srl-sidebar-open.inquiry-sidebar-open #main_title {
 body.is-resizing #main_title {
 	transition: none !important;
 }
+*/
 
 .srl-sidebar-header{
 	display: none !important;
@@ -2511,11 +2513,11 @@ select[name="mttime_list"] {
 /* Inquiry slide-in sidebar (right) */
 .inquiry-sidebar{
 	position: fixed;
-	top: 0;
+	top: 35px; /* main_titleの下から開始 */
 	right: 0;
 	width: 360px;
 	max-width: 90vw;
-	height: 100vh;
+	height: calc(100vh - 35px);
 	background: #f8fafc;
 	border-left: 1px solid rgba(16,24,40,0.08);
 	box-shadow: -8px 0 20px rgba(16,24,40,0.12);
@@ -2596,4 +2598,31 @@ select[name="mttime_list"] {
 jmnode.is-process-active, .jm-node.is-process-active {
   border: 2px solid #0ea5e9 !important;
   box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2), 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* JSベースのグローバルツールチップ用に変更（overflow:hidden対策） */
+.custom-tooltip {
+    /* position: relative; */ /* JSで制御するため不要 */
+}
+
+/* ツールチップ本体のスタイル（JSでbody直下に追加される要素用） */
+#global-custom-tooltip {
+    position: fixed;
+    background-color: #333;
+    color: #fff;
+    font-size: 13px;
+    border-radius: 4px;
+    padding: 6px 12px;
+    white-space: nowrap;
+    z-index: 100000;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#global-custom-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
 }

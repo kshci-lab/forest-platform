@@ -3,6 +3,7 @@
 
 session_start();
 require("connect_db.php");
+date_default_timezone_set('Asia/Tokyo');
 
 // POSTデータの受け取り
 $user_id = $_SESSION['USERID'];      //ユーザID
@@ -502,6 +503,20 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     // 指定された日付とnode_idに存在していたノードの履歴を取得
     // ドラッグ操作（drag=1）の履歴から最新の座標を取得し、それ以外の情報は非ドラッグ履歴から取得
     // サブクエリで各ノードの指定日時時点での最新座標を取得
+    // カラムの存在確認
+    $availableHistCols = array();
+    $cr_hist = $mysqli->query("SHOW COLUMNS FROM object_nodes_histories");
+    if ($cr_hist) {
+        while ($r = $cr_hist->fetch_assoc()) { $availableHistCols[] = $r['Field']; }
+        $cr_hist->free();
+    }
+
+    $eval_good_col = in_array('evaluation_good', $availableHistCols) ? 'onh.evaluation_good' : 'NULL';
+    $attrib_col = in_array('attribution', $availableHistCols) ? 'onh.attribution' : 'NULL';
+    $attrib_bad_col = in_array('attribution_bad', $availableHistCols) ? 'onh.attribution_bad' : 'NULL';
+    $app_col = in_array('application', $availableHistCols) ? 'onh.application' : 'NULL';
+    $est_time_col = in_array('estimated_time', $availableHistCols) ? 'onh.estimated_time' : 'NULL';
+
     $sql_histories = "
         SELECT 
             onh.object_node_id, 
@@ -525,11 +540,11 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             onh.appeared_at, 
             onh.disappeared_at, 
             onh.purpose, 
-            NULL AS evaluation_good, 
-            NULL AS attribution, 
-            NULL AS attribution_bad,
-            NULL AS application, 
-            NULL AS estimated_time
+            $eval_good_col AS evaluation_good, 
+            $attrib_col AS attribution, 
+            $attrib_bad_col AS attribution_bad,
+            $app_col AS application, 
+            $est_time_col AS estimated_time
         FROM 
             object_nodes_histories onh
         INNER JOIN 

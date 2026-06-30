@@ -38,7 +38,8 @@ try {
             g.start_date,
             g.finish_date,
             CAST(ojn.node_id AS CHAR) AS node_id,
-            nl.content AS content
+            nl.content AS content,
+            (SELECT COUNT(*) FROM object_journal_reflections r WHERE r.object_journal_id = g.object_journal_id AND r.deleted = 0 AND r.journal_history_id IS NOT NULL) AS reflection_count
         FROM object_journals g
         LEFT JOIN object_journal_nodes ojn
             ON g.object_journal_id = ojn.object_journal_id

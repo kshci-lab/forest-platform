@@ -442,7 +442,6 @@ try {
                             <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; border-radius: 4px; font-size: 12px;"><span id="inquiryAreaTitle">【情報の表出化】</span></div>
                             <div id="testxml"></div>
                             <div id="ont"></div>
-                            <div style="background-color: #69a7ff; color: white; padding: 3px 6px; text-align: center; font-weight: bold; margin-bottom: 7px; margin-top: 10px; border-radius: 4px; font-size: 12px;"><span id="reasonPurposeTitle">【理由・目的】</span></div>
                             <div id="intention"></div>
                             <!-- Rationality header removed to eliminate extra spacing under inquiry_area -->
                             <div id="rationality"></div>
@@ -522,7 +521,7 @@ try {
                 'addQNodeText': '問いノード追加',
                 'addAnodeText': '答えノード追加',
                 'addLabelText': 'ラベル追加',
-                'removeNodeText': 'ノードの削除',
+                'removeNodeText': 'ノード削除',
                 'zoomInText': '拡大',
                 'zoomOutText': '縮小',
                 'screenshotLabel': '【Screenshot】',
@@ -709,14 +708,14 @@ try {
         <!---        タイトルメニューStart                 -->
         <div id="main_title">
             <div class="header-container">
-                <button id="srlSidebarToggle" class="header-logo-btn" type="button" aria-controls="srlSidebar" aria-expanded="false" title="ジャーナル一覧を開く">
+                <button id="srlSidebarToggle" class="header-logo-btn custom-tooltip" type="button" aria-controls="srlSidebar" aria-expanded="false" data-tooltip="ジャーナル一覧を開く">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
                     </svg>
                 </button>
                 <span class="title_name" id="title_name">自己調整学習支援システム</span>
-                <a href="https://drive.google.com/drive/folders/1dEgnkqKmGdIJ-CB-NnFZwP_dLwQ1Khj1?usp=drive_link" target="_blank" rel="noopener noreferrer" class="system-manual-link" title="システム手引書フォルダを開く">
+                <a href="https://drive.google.com/file/d/1Oq5g2Mw64yr0Pr0MSerG9MG24ryikY0H/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="system-manual-link custom-tooltip" data-tooltip="システム手引書を開く（別タブで開きます）">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="icon-external-link">
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                         <polyline points="15 3 21 3 21 9"></polyline>
@@ -725,11 +724,11 @@ try {
                 </a>
                 
                 <div id="language-toggle-container" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
-                        <a href="https://kshci-lab.net/" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center;" title="林・油谷研究室のHPへ飛ぶ">
+                        <a href="https://kshci-lab.net/" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center;" class="custom-tooltip" data-tooltip="林・油谷研究室のHPへ飛ぶ（別タブで開きます）">
                             <img src="image/lab_logo.png" alt="知性モデリング研究室" style="height: 32px; object-fit: contain; margin-right: 8px;">
                         </a>
                         <div class="hamburger-menu">
-                            <button class="settings-button" type="button" aria-label="Settings" title="設定">
+                            <button class="settings-button custom-tooltip" type="button" aria-label="Settings" data-tooltip="設定を開く">
                                 <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true">
                                     <circle cx="12" cy="12" r="3"></circle>
                                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -904,7 +903,7 @@ try {
                                             <div class="icon-circle bg-sync-red">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                             </div>
-                                            <span class="toolbar-text" id="removeNodeText">ノードの削除</span>
+                                            <span class="toolbar-text" id="removeNodeText">ノード削除</span>
                                         </button>
                                     </div>
 
@@ -1251,7 +1250,7 @@ try {
                                             
                                             <div class="toolbar-divider"></div>
                                             
-                                            <!-- 履歴グループ -->
+                                            <!-- 履歴グループ (コメントアウト中)
                                             <div class="toolbar-group">
                                                 <button class="toolbar-btn" id="process_undo" title="元に戻す (Ctrl+Z)" disabled>
                                                     <div class="icon-circle bg-sync-slate">
@@ -1267,8 +1266,11 @@ try {
                                                     <span class="toolbar-text">進む</span>
                                                 </button>
                                             </div>
+                                            -->
                                             
+                                            <!--
                                             <div class="toolbar-divider"></div>
+                                            -->
                                             
                                             <!-- ズームグループ -->
                                             <div class="toolbar-group">
@@ -1288,22 +1290,25 @@ try {
                                             </div>
                                         </div>
                                         <!-- シークバーを隣に配置（横幅いっぱい使用） -->
-                                        <div id="timeline_container" style="position: relative; padding-top: 10px; padding-bottom: 5px; display: flex; align-items: center; gap: 10px;">
-                                            <button id="timeline_prev_btn" class="timeline-nav-btn" title="前の活動日へジャンプ">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                                            </button>
-                                            
+                                        <div id="timeline_container" style="position: relative; padding-top: 10px; padding-bottom: 5px; display: flex; align-items: center; gap: 0;">
                                             <div id="timeline_track_wrapper" style="position: relative; flex: 1; min-width: 0; overflow: hidden; padding-top: 25px;">
-                                                <span id="timeline_label" style="position: absolute; top: 0; left: 0; white-space: nowrap; font-size: 11px; color: #475569; padding: 3px 0; pointer-events: none; font-weight: 600; z-index: 30;">読み込み中...</span>
-                                                <span id="history_indicator" style="display: none; position: absolute; right: 0; top: 2px; color: #ef4444; font-weight: bold; font-size: 11px; z-index: 30;"><span id="historyIndicatorText">📅 過去の表示</span></span>
-                                                
+                                                <div style="position: absolute; top: 0; left: 0; display: flex; align-items: center; z-index: 30;">
+                                                    <button id="timeline_prev_btn" class="timeline-nav-btn" title="前の活動日へジャンプ" style="margin-right: 4px;">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                                    </button>
+                                                    <span id="timeline_label" style="white-space: nowrap; font-size: 11px; color: #475569; pointer-events: none; font-weight: 600;">読み込み中...</span>
+                                                    <button id="timeline_next_btn" class="timeline-nav-btn" title="次の活動日へジャンプ" style="margin-left: 4px;">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                                    </button>
+                                                </div>
                                                 <!-- 活動バーチャートコンテナ（クリック可能） -->
                                                 <div id="timeline_barchart" style="display: flex; align-items: flex-end; height: 40px; gap: 0; cursor: pointer; width: 100%; box-sizing: border-box;"></div>
                                             </div>
-                                            
-                                            <button id="timeline_next_btn" class="timeline-nav-btn" title="次の活動日へジャンプ">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                            </button>
+                                        </div>
+                                        
+                                        <!-- 過去の表示インジケーター（タイムラインのすぐ下） -->
+                                        <div style="text-align: right; margin-top: 2px; margin-bottom: 5px;">
+                                            <span id="history_indicator" style="display: none; color: #ef4444; font-weight: bold; font-size: 12px; z-index: 30; padding: 2px 6px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;"><span id="historyIndicatorText">📅 過去マップ表示中・・・</span></span>
                                         </div>
                                     </div>
 
@@ -1330,7 +1335,7 @@ try {
                                         <div class="reflection-section" style="margin-bottom: 0;">
                                             <span class="reflection-text" style="color: #888; font-size: 11px;">活動プロセス</span>
                                         </div>
-                                        <div class="reflection-reason" id="means-process-content" style="white-space: pre-wrap; font-size: 12px; line-height: 1.4; color: #555; max-height: 200px; overflow-y: auto; padding-left: 4px;">
+                                        <div class="reflection-reason" id="means-process-content" style="white-space: pre-wrap; font-size: 12px; line-height: 1.4; color: #555; padding-left: 4px;">
                                             <!-- ここに履歴が挿入されます -->
                                         </div>
                                     </div>
@@ -1991,6 +1996,60 @@ try {
                     }
                 });
             }
+        });
+        </script>
+        
+        <!-- グローバルツールチップハンドラー -->
+        <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipEl = document.createElement('div');
+            tooltipEl.id = 'global-custom-tooltip';
+            document.body.appendChild(tooltipEl);
+
+            document.body.addEventListener('mouseover', function(e) {
+                var target = e.target.closest('.custom-tooltip');
+                if (target) {
+                    var text = target.getAttribute('data-tooltip');
+                    if (text) {
+                        tooltipEl.textContent = text;
+                        tooltipEl.classList.add('visible');
+                        
+                        var rect = target.getBoundingClientRect();
+                        var tooltipRect = tooltipEl.getBoundingClientRect();
+                        
+                        // 基本は上端の右揃え
+                        var topPos = rect.top - tooltipRect.height - 8;
+                        var leftPos = rect.right - tooltipRect.width;
+                        
+                        // IDによる特殊配置（左揃えなど）
+                        if (target.id === 'srlSidebarToggle') {
+                            leftPos = rect.left;
+                            topPos = rect.bottom + 8; // ヘッダーにあるため下に出す
+                        }
+                        
+                        // 画面バウンダリチェック
+                        if (leftPos < 0) leftPos = 4;
+                        if (leftPos + tooltipRect.width > window.innerWidth) leftPos = window.innerWidth - tooltipRect.width - 4;
+                        if (topPos < 0) topPos = rect.bottom + 8; // 上にはみ出る場合は下へ
+                        if (topPos + tooltipRect.height > window.innerHeight) topPos = rect.top - tooltipRect.height - 8;
+                        
+                        tooltipEl.style.top = topPos + 'px';
+                        tooltipEl.style.left = leftPos + 'px';
+                    }
+                }
+            });
+
+            document.body.addEventListener('mouseout', function(e) {
+                var target = e.target.closest('.custom-tooltip');
+                if (target) {
+                    tooltipEl.classList.remove('visible');
+                }
+            });
+            
+            // スクロール時にツールチップを非表示にする
+            window.addEventListener('scroll', function() {
+                tooltipEl.classList.remove('visible');
+            }, true);
         });
         </script>
     </body>
