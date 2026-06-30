@@ -2780,7 +2780,8 @@ function saveToKnowledgeExplorer(areaLabel, nodeTitle, commentText){
                     parent_node_id: parentId,
                     node_title: nodeTitle,
                     comment: commentText || '',
-                    node_type: ''
+                    node_type: '',
+                    fragment_source_type: 'externalized'
                 };
                 // knowledge_fragment_id: UIバッジの表示リストからDOMを辿って外部化IDを取得しCSV化
                 var extOnly = [];
@@ -4447,4 +4448,3 @@ $(document).on('click', '#kra-submit', function(){
         });
     }catch(e){ console && console.error && console.error('kra-submit discussed->DONE handler error', e); }
 });
-

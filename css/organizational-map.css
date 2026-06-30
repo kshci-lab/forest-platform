@@ -532,17 +532,29 @@ body.is-fragment-reordering *{
 	box-shadow:0 2px 6px rgba(0,0,0,0.18);
 }
 #shared_combination_overlay .knowledge_fragment{
-	border:1px solid rgba(255, 99, 132, 0.35);
-	background:rgba(255, 99, 132, 0.06);
+	border:1px solid #e2c968;
+	background:#fff7cf;
 	border-radius:10px;
 	padding:10px 10px 8px 10px;
 	margin:10px 0;
+}
+#shared_combination_overlay .knowledge_fragment[data-source-type="experience"]{
+	border-color:#e2c968;
+	background:#fff7cf;
+}
+#shared_combination_overlay .knowledge_fragment[data-source-type="externalized"]{
+	border-color:#e4a8b8;
+	background:#fde3ea;
+}
+#shared_combination_overlay .knowledge_fragment[data-source-type="SRL"]{
+	border-color:#9fc4ea;
+	background:#dceeff;
 }
 #shared_combination_overlay .fragment-node-wrapper .knowledge_fragment{
 	margin:0;
 }
 #shared_combination_overlay .knowledge_fragment.is-selected{
-	outline:2px solid rgba(255, 99, 132, 0.55);
+	outline:2px solid rgba(0,0,0,0.25);
 }
 #shared_combination_overlay .knowledge_fragment .card-title{
 	font-weight:700;
@@ -565,6 +577,69 @@ body.is-fragment-reordering *{
 	padding:4px 10px;
 	cursor:pointer;
 	font-size:12px;
+}
+.source-filter{
+	display:inline-flex;
+	align-items:center;
+	gap:4px;
+	margin-left:8px;
+	flex-wrap:wrap;
+}
+.filter-toolbar{
+	display:inline-flex;
+	align-items:center;
+	gap:10px;
+	flex-wrap:wrap;
+}
+.filter-heading{
+	font-size:11px;
+	font-weight:700;
+	color:#555;
+	margin-right:2px;
+}
+.source-filter-btn{
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	border-radius:999px;
+	padding:3px 9px;
+	cursor:pointer;
+	font-size:11px;
+	line-height:1.4;
+	color:#333;
+}
+.source-filter-btn.is-active{
+	background:#dff2e6;
+	border-color:#90B1AB;
+	color:#111;
+	font-weight:700;
+}
+.source-filter-btn:hover{
+	background:rgba(144,177,171,0.16);
+}
+.display-filter{
+	display:inline-flex;
+	align-items:center;
+	gap:4px;
+	flex-wrap:wrap;
+}
+.display-filter-btn{
+	border:1px solid rgba(0,0,0,0.18);
+	background:#fff;
+	border-radius:999px;
+	padding:3px 9px;
+	cursor:pointer;
+	font-size:11px;
+	line-height:1.4;
+	color:#333;
+}
+.display-filter-btn.is-active{
+	background:#dff2e6;
+	border-color:#90B1AB;
+	color:#111;
+	font-weight:700;
+}
+.display-filter-btn:hover{
+	background:rgba(144,177,171,0.16);
 }
 #shared_combination_overlay .overlay_knowledge_tree{
 	padding:10px 12px;

@@ -32,6 +32,26 @@ function __resolve_knowledge_tree_group_id(mysqli $mysqli): string {
     return $groupId;
 }
 
+function __split_knowledge_tree_ids($value): array {
+    if ($value === null || $value === '') { return []; }
+    $parts = preg_split('/\s*,\s*/', (string)$value);
+    $ids = [];
+    foreach ($parts as $part) {
+        $id = intval(trim((string)$part), 10);
+        if ($id > 0 && !in_array($id, $ids, true)) { $ids[] = $id; }
+    }
+    return $ids;
+}
+
+function __normalize_knowledge_tree_source_type($value): string {
+    $type = strtolower(trim((string)$value));
+    if ($type === 'discussion') { return 'externalized'; }
+    if ($type === 'srl') { return 'SRL'; }
+    if (in_array($type, ['experience', 'externalized'], true)) { return $type; }
+    if ((string)$value === 'SRL') { return 'SRL'; }
+    return '';
+}
+
 // テーブル存在チェック
 $table = 'knowledge_explorer';
 $tbl = $mysqli->query("SHOW TABLES LIKE '".$mysqli->real_escape_string($table)."'");
@@ -304,6 +324,64 @@ if($resAll = $mysqli->query($sqlAll)){
         ['node_id'=>2, 'parent_id'=>null, 'node_title'=>'研究方略関連', 'comment'=>null, 'updated_at'=>null],
         ['node_id'=>3, 'parent_id'=>null, 'node_title'=>'その他', 'comment'=>null, 'updated_at'=>null]
     ];
+}
+
+$linkTypesByNode = [];
+$linkIdsByNode = [];
+if (!empty($nodes)) {
+    $nodeIds = [];
+    foreach ($nodes as $node) {
+        $nidForLink = isset($node['node_id']) ? intval($node['node_id'], 10) : 0;
+        if ($nidForLink > 0) { $nodeIds[] = $nidForLink; }
+    }
+    $nodeIds = array_values(array_unique($nodeIds));
+    if ($nodeIds) {
+        if ($resLinkTable = $mysqli->query("SHOW TABLES LIKE 'knowledge_explorer_fragment_links'")) {
+            $hasLinkTable = ($resLinkTable->num_rows > 0);
+            $resLinkTable->free();
+            if ($hasLinkTable) {
+                $inNodeIds = implode(',', array_map('intval', $nodeIds));
+                $sqlLinks = "SELECT knowledge_node_id, fragment_source_type, fragment_source_id
+                               FROM knowledge_explorer_fragment_links
+                              WHERE knowledge_node_id IN ($inNodeIds)
+                           ORDER BY COALESCE(display_order, 999999), id";
+                if ($resLinks = $mysqli->query($sqlLinks)) {
+                    while ($linkRow = $resLinks->fetch_assoc()) {
+                        $linkNodeId = isset($linkRow['knowledge_node_id']) ? intval($linkRow['knowledge_node_id'], 10) : 0;
+                        $sourceType = __normalize_knowledge_tree_source_type(isset($linkRow['fragment_source_type']) ? $linkRow['fragment_source_type'] : '');
+                        $sourceId = isset($linkRow['fragment_source_id']) ? intval($linkRow['fragment_source_id'], 10) : 0;
+                        if ($linkNodeId <= 0 || $sourceType === '' || $sourceId <= 0) { continue; }
+                        if (!isset($linkTypesByNode[$linkNodeId])) { $linkTypesByNode[$linkNodeId] = []; }
+                        if (!isset($linkIdsByNode[$linkNodeId])) { $linkIdsByNode[$linkNodeId] = []; }
+                        if (!in_array($sourceType, $linkTypesByNode[$linkNodeId], true)) { $linkTypesByNode[$linkNodeId][] = $sourceType; }
+                        if (!isset($linkIdsByNode[$linkNodeId][$sourceType])) { $linkIdsByNode[$linkNodeId][$sourceType] = []; }
+                        if (!in_array($sourceId, $linkIdsByNode[$linkNodeId][$sourceType], true)) { $linkIdsByNode[$linkNodeId][$sourceType][] = $sourceId; }
+                    }
+                    $resLinks->free();
+                }
+            }
+        }
+    }
+    foreach ($nodes as &$node) {
+        $nidForLink = isset($node['node_id']) ? intval($node['node_id'], 10) : 0;
+        $types = isset($linkTypesByNode[$nidForLink]) ? $linkTypesByNode[$nidForLink] : [];
+        $idsByType = isset($linkIdsByNode[$nidForLink]) ? $linkIdsByNode[$nidForLink] : [];
+        if (empty($types)) {
+            if (!empty($node['externalized_contents_id'])) {
+                $types[] = 'externalized';
+                $idsByType['externalized'] = [(int)$node['externalized_contents_id']];
+            } elseif (!empty($node['knowledge_fragment_id'])) {
+                $fallbackIds = __split_knowledge_tree_ids($node['knowledge_fragment_id']);
+                if ($fallbackIds) {
+                    $types[] = 'experience';
+                    $idsByType['experience'] = $fallbackIds;
+                }
+            }
+        }
+        $node['fragment_source_types'] = array_values(array_unique($types));
+        $node['fragment_source_ids'] = $idsByType;
+    }
+    unset($node);
 }
 $mysqli->close();
 

@@ -11,7 +11,21 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         this.nodes = new vis.DataSet();
         this.edges = new vis.DataSet();
         this.options = {
-	        physics: true,
+	        physics: {
+                enabled: true,
+                solver: 'barnesHut',
+                barnesHut: {
+                    gravitationalConstant: -500,
+                    centralGravity: 0.1,
+                    springLength: 170,
+                    springConstant: 0.03,
+                    damping: 0.12,
+                    avoidOverlap: 0.4
+                },
+                stabilization: {
+                    iterations: 250
+                }
+            },
             nodes: {
                 margin: 10,
                 widthConstraint: {
@@ -54,12 +68,14 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         this.material_id = null;
         this.concept_id = null;
         this.scale = 1;
+        this.activeSourceTypes = ['experience', 'externalized', 'SRL'];
         this.BoxDisplay = {
             x: 0,
             y: 0
         }//右クリックされやメニューの表示場所
         this.tooltipEl = null;
         this.ownNetwork = this.generateOrganizationalNetworkCanvas(container, this.nodes, this.edges); // デフォルトのマップを表示
+        this.ownNetwork.on('stabilizationIterationsDone', this.applyNodeDisplayStyles.bind(this));
         this.ensureTooltipElement();
         this.choose_input_xmlLoad();
         if(load == "load"){
@@ -366,25 +382,35 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         return this.nodes;
     }
 
-    addReloadProcessNode(user_id, node_id, node_label, node_type, concept_id, thought_experience_node_id, selected_contents, stage1, stage2, stage3) {
+    addReloadProcessNode(user_id, node_id, node_label, node_type, concept_id, thought_experience_node_id, selected_contents, stage1, stage2, stage3, source_type, source_id) {
         const existingNode = this.nodes.get(node_id);
         if (existingNode) {
             console.log(`Node with ID ${node_id} already exists. Skipping addition.`);
             return; // 重複がある場合は追加せずにリターン
         }
-        let node_color = '#ffdb4f'; // ノードの背景色
         let node_shape = 'box';     // ノードの形状
         let text_color = 'black';   // ノード内文字列の色
+        const normalizedSourceType = this.normalizeSourceType(source_type) || 'experience';
+        const palette = this.getSourcePalette(normalizedSourceType);
         
         const contentLabel = node_label || '';
         const newNode = {
             id: `${node_id}`, label: contentLabel,
-            group: node_type,
-            experience_knowledge_id: `${node_id}`,
+            node_type: node_type,
+            experience_knowledge_id: normalizedSourceType === 'experience' ? String(source_id || '').trim() : '',
+            source_record_id: String(source_id || '').trim(),
             concept_id: concept_id,
             thought_experience_node_id: thought_experience_node_id,
             user_id: user_id,
-            color: node_color, shape: node_shape,
+            source_type: normalizedSourceType,
+            source_types: [normalizedSourceType],
+            color: {
+                background: palette.background,
+                border: palette.border,
+                highlight: { background: palette.highlightBackground, border: palette.border },
+                hover: { background: palette.hoverBackground, border: palette.border }
+            },
+            shape: node_shape,
             font: { color: text_color },
             tooltip_data: {
                 selected_contents: selected_contents,
@@ -405,8 +431,136 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             smooth: true,
         };
         defaultOrganizational.edges.add(newEdge);
+        this.applyNodeDisplayStyles();
 
         return defaultOrganizational.nodes, defaultOrganizational.edges;
+    }
+
+    normalizeSourceType(type){
+        const raw = String(type || '').trim();
+        const lower = raw.toLowerCase();
+        if (lower === 'discussion') return 'externalized';
+        if (lower === 'srl') return 'SRL';
+        if (lower === 'experience') return 'experience';
+        if (lower === 'externalized') return 'externalized';
+        return '';
+    }
+
+    parseSourceTypes(value, fallback){
+        let sourceTypes = [];
+        if (Array.isArray(value)) {
+            sourceTypes = value;
+        } else if (value !== null && typeof value !== 'undefined') {
+            sourceTypes = String(value).split(',');
+        }
+        sourceTypes = sourceTypes.map((type) => this.normalizeSourceType(type)).filter((type) => type !== '');
+        sourceTypes = sourceTypes.filter((type, index) => sourceTypes.indexOf(type) === index);
+        if (sourceTypes.length === 0 && fallback) sourceTypes = [fallback];
+        return sourceTypes;
+    }
+
+    getSourcePalette(sourceType){
+        const normalized = this.normalizeSourceType(sourceType) || 'experience';
+        if (normalized === 'externalized') {
+            return {
+                background: '#fde3ea',
+                border: '#e4a8b8',
+                highlightBackground: '#fbd6e1',
+                hoverBackground: '#feeaf0'
+            };
+        }
+        if (normalized === 'SRL') {
+            return {
+                background: '#dceeff',
+                border: '#9fc4ea',
+                highlightBackground: '#d0e8ff',
+                hoverBackground: '#ebf5ff'
+            };
+        }
+        return {
+            background: '#fff7cf',
+            border: '#e2c968',
+            highlightBackground: '#fff1aa',
+            hoverBackground: '#fff9de'
+        };
+    }
+
+    applyNodeDisplayStyles(){
+        const updates = [];
+        this.nodes.forEach((node) => {
+            if (node && node.group === 'produced_knowledge') {
+                updates.push({
+                    id: node.id,
+                    color: {
+                        background: '#dff2e6',
+                        border: '#90B1AB',
+                        highlight: { background: '#d2ecd9', border: '#90B1AB' },
+                        hover: { background: '#eaf7ee', border: '#90B1AB' }
+                    },
+                    font: Object.assign({}, node.font || {}, { color: 'black' })
+                });
+                return;
+            }
+            const sourceTypes = this.parseSourceTypes(node && (node.source_types || node.source_type), '');
+            if (!sourceTypes.length) return;
+            const palette = this.getSourcePalette(sourceTypes[0]);
+            updates.push({
+                id: node.id,
+                color: {
+                    background: palette.background,
+                    border: palette.border,
+                    highlight: { background: palette.highlightBackground, border: palette.border },
+                    hover: { background: palette.hoverBackground, border: palette.border }
+                },
+                font: Object.assign({}, node.font || {}, { color: 'black' })
+            });
+        });
+        if (updates.length) {
+            this.nodes.update(updates);
+        }
+    }
+
+    nodeMatchesSourceFilter(node){
+        const sourceTypes = this.parseSourceTypes(node && (node.source_types || node.source_type), '');
+        if (sourceTypes.length === 0) return true;
+        return sourceTypes.some((type) => this.activeSourceTypes.indexOf(type) !== -1);
+    }
+
+    applySourceFilter(sourceTypes, options){
+        this.applyNodeDisplayStyles();
+        this.activeSourceTypes = this.parseSourceTypes(sourceTypes, '').length ? this.parseSourceTypes(sourceTypes, '') : ['experience', 'externalized', 'SRL'];
+        this.nodes.forEach((node) => {
+            if (node && node.group === 'produced_knowledge') {
+                this.ensureProducedKnowledgeEdges(node.id);
+            }
+        });
+        const hideOrganizationalKnowledge = !!(options && options.hideOrganizationalKnowledge);
+        const hiddenByNode = {};
+        this.nodes.forEach((node) => {
+            let hidden = !this.nodeMatchesSourceFilter(node);
+            if (!hidden && hideOrganizationalKnowledge && node && node.group === 'produced_knowledge') {
+                hidden = true;
+            }
+            hiddenByNode[String(node.id)] = hidden;
+            if (node.hidden !== hidden) {
+                this.nodes.update({ id: node.id, hidden: hidden });
+            }
+        });
+        this.edges.forEach((edge) => {
+            const edgeHidden = !!hiddenByNode[String(edge.from)] || !!hiddenByNode[String(edge.to)];
+            if (edge.hidden !== edgeHidden) {
+                this.edges.update({ id: edge.id, hidden: edgeHidden });
+            }
+        });
+        this.applyNodeDisplayStyles();
+        try{ this.ownNetwork.redraw(); }catch(_){}
+        try{
+            const self = this;
+            setTimeout(function(){
+                try{ self.applyNodeDisplayStyles(); }catch(_){}
+                try{ self.ownNetwork.redraw(); }catch(_){}
+            }, 0);
+        }catch(_){}
     }
 
     addUserNode(user_id, user_name, node_type){
@@ -435,6 +589,13 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
 
     }
 
+    makeFragmentNodeId(sourceType, sourceId){
+        const normalized = this.normalizeSourceType(sourceType) || 'experience';
+        const rawId = String(sourceId || '').trim();
+        if (!rawId) return '';
+        return normalized + ':' + rawId;
+    }
+
     getKnowledgeTreeFragmentIds(nodeInfo){
         if (!nodeInfo) return [];
         let rawValue = null;
@@ -447,13 +608,60 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         return String(rawValue).split(',').map((id) => id.trim()).filter((id) => id !== '');
     }
 
-    addProducedKnowledgeNode(nodeInfo, childMap){
-        if (!nodeInfo || nodeInfo.node_id === null || typeof nodeInfo.node_id === 'undefined') return;
+    getKnowledgeTreeFragmentNodeIds(nodeInfo){
+        if (!nodeInfo) return [];
+        const ids = [];
+        if (nodeInfo.fragment_source_ids && typeof nodeInfo.fragment_source_ids === 'object') {
+            Object.keys(nodeInfo.fragment_source_ids).forEach((sourceType) => {
+                const sourceIds = Array.isArray(nodeInfo.fragment_source_ids[sourceType]) ? nodeInfo.fragment_source_ids[sourceType] : [];
+                sourceIds.forEach((sourceId) => {
+                    const nodeId = this.makeFragmentNodeId(sourceType, sourceId);
+                    if (nodeId && ids.indexOf(nodeId) === -1) ids.push(nodeId);
+                });
+            });
+        }
+        if (ids.length) return ids;
         const fragmentIds = this.getKnowledgeTreeFragmentIds(nodeInfo);
+        const sourceTypes = this.parseSourceTypes(nodeInfo.fragment_source_types, fragmentIds.length ? 'experience' : '');
+        const fallbackType = sourceTypes[0] || 'experience';
+        fragmentIds.forEach((fragmentId) => {
+            const nodeId = this.makeFragmentNodeId(fallbackType, fragmentId);
+            if (nodeId && ids.indexOf(nodeId) === -1) ids.push(nodeId);
+        });
+        return ids;
+    }
+
+    ensureProducedKnowledgeEdges(nodeId){
+        const producedNode = this.nodes.get(nodeId);
+        if (!producedNode || producedNode.group !== 'produced_knowledge') return;
+        const fragmentNodeIds = Array.isArray(producedNode.knowledge_fragment_node_ids) ? producedNode.knowledge_fragment_node_ids : [];
+        fragmentNodeIds.forEach((fragmentNodeId) => {
+            if (!fragmentNodeId || !this.nodes.get(fragmentNodeId)) return;
+            const edgeId = `kt_edge_${producedNode.produced_knowledge_id}_${fragmentNodeId}`;
+            if (this.edges.get(edgeId)) return;
+            this.edges.add({
+                id: edgeId,
+                from: nodeId,
+                to: fragmentNodeId,
+                arrows: '',
+                color: '#90B1AB',
+                group: 'produced_knowledge_fragment',
+                smooth: true,
+            });
+        });
+    }
+
+    addProducedKnowledgeNode(nodeInfo, childMap){
+        if (!nodeInfo || nodeInfo.node_id === null || typeof nodeInfo.node_id === 'undefined') return false;
+        const fragmentIds = this.getKnowledgeTreeFragmentIds(nodeInfo);
+        const fragmentNodeIds = this.getKnowledgeTreeFragmentNodeIds(nodeInfo);
+        const sourceTypes = this.parseSourceTypes(nodeInfo.fragment_source_types, fragmentIds.length ? 'experience' : '');
         const children = childMap[String(nodeInfo.node_id)] || [];
-        if (fragmentIds.length === 0 || children.length > 0) return;
+        const isRootNode = (nodeInfo.parent_id === null || typeof nodeInfo.parent_id === 'undefined');
+        if (isRootNode || children.length > 0) return false;
 
         const nodeId = `kt_${nodeInfo.node_id}`;
+        let addedNode = false;
         if (!this.nodes.get(nodeId)) {
             const nodeTitle = nodeInfo.node_title != null ? String(nodeInfo.node_title) : '(no title)';
             this.nodes.add({
@@ -462,6 +670,9 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 group: 'produced_knowledge',
                 produced_knowledge_id: String(nodeInfo.node_id),
                 knowledge_fragment_ids: fragmentIds,
+                knowledge_fragment_node_ids: fragmentNodeIds,
+                source_type: sourceTypes[0] || '',
+                source_types: sourceTypes,
                 color: {
                     background: '#dff2e6',
                     border: '#90B1AB',
@@ -478,25 +689,62 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 },
                 fixed: false,
             });
+            addedNode = true;
+        } else {
+            this.nodes.update({
+                id: nodeId,
+                knowledge_fragment_ids: fragmentIds,
+                knowledge_fragment_node_ids: fragmentNodeIds,
+                source_type: sourceTypes[0] || '',
+                source_types: sourceTypes
+            });
         }
 
-        fragmentIds.forEach((fragmentId) => {
-            if (!this.nodes.get(fragmentId)) return;
-            const edgeId = `kt_edge_${nodeInfo.node_id}_${fragmentId}`;
-            if (this.edges.get(edgeId)) return;
-            this.edges.add({
-                id: edgeId,
-                from: nodeId,
-                to: fragmentId,
-                arrows: '',
-                color: '#90B1AB',
-                group: 'produced_knowledge_fragment',
-                smooth: true,
-            });
-        });
+        this.ensureProducedKnowledgeEdges(nodeId);
+        this.applyNodeDisplayStyles();
+        return addedNode;
     }
 
-    loadProducedKnowledgeNodes(groupId){
+    refreshProducedKnowledgeView(addedCount){
+        if (!addedCount || !this.ownNetwork) return;
+        setTimeout(() => {
+            this.applyNodeDisplayStyles();
+            try{ this.ownNetwork.redraw(); }catch(_){}
+            try{ this.ownNetwork.fit({ animation: false }); }catch(_){}
+        }, 0);
+    }
+
+    syncProducedKnowledgeFromDom(){
+        const tree = document.getElementById('overlay_knowledge_tree');
+        if (!tree) return 0;
+        let addedCount = 0;
+        const contentTitles = tree.querySelectorAll('.kt-node .kt-content-title');
+        contentTitles.forEach((titleEl) => {
+            const ktNode = titleEl.closest ? titleEl.closest('.kt-node') : null;
+            if (!ktNode) return;
+            const nodeId = ktNode.getAttribute('data-node-id');
+            if (!nodeId) return;
+            const nodeInfo = {
+                node_id: nodeId,
+                parent_id: ktNode.classList.contains('kt-root') ? null : '__dom_parent__',
+                node_title: titleEl.textContent || '',
+                comment: '',
+                updated_at: '',
+                knowledge_fragment_id: ktNode.getAttribute('data-kfrag-id') || ''
+            };
+            const sourceTypes = ktNode.getAttribute('data-source-types') || '';
+            if (sourceTypes) {
+                nodeInfo.fragment_source_types = sourceTypes.split(',');
+            }
+            if (this.addProducedKnowledgeNode(nodeInfo, {})) {
+                addedCount += 1;
+            }
+        });
+        this.refreshProducedKnowledgeView(addedCount);
+        return addedCount;
+    }
+
+    loadProducedKnowledgeNodes(groupId, allowGroupFallback = true){
         let url = 'php/get_knowledge_tree.php';
         if (groupId) {
             url += '?group_id=' + encodeURIComponent(groupId);
@@ -506,19 +754,39 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             type: 'GET',
             dataType: 'json',
             success: (data) => {
-                if (!data || data.status !== 'ok' || !Array.isArray(data.nodes)) return;
+                if (!data || data.status !== 'ok' || !Array.isArray(data.nodes)) {
+                    this.syncProducedKnowledgeFromDom();
+                    return;
+                }
                 const childMap = {};
                 data.nodes.forEach((nodeInfo) => {
                     const parentId = nodeInfo && nodeInfo.parent_id != null ? String(nodeInfo.parent_id) : 'root';
                     if (!childMap[parentId]) childMap[parentId] = [];
                     childMap[parentId].push(nodeInfo);
                 });
+                let addedCount = 0;
                 data.nodes.forEach((nodeInfo) => {
-                    this.addProducedKnowledgeNode(nodeInfo, childMap);
+                    if (this.addProducedKnowledgeNode(nodeInfo, childMap)) {
+                        addedCount += 1;
+                    }
                 });
+                if (addedCount === 0) {
+                    addedCount = this.syncProducedKnowledgeFromDom();
+                }
+                if (addedCount === 0 && groupId && allowGroupFallback) {
+                    this.loadProducedKnowledgeNodes('', false);
+                    return;
+                }
+                this.applySourceFilter(this.activeSourceTypes);
+                this.refreshProducedKnowledgeView(addedCount);
             },
             error: (xhr, status, error) => {
                 console.warn('knowledge_tree 読み込み失敗', status, error);
+                const addedCount = this.syncProducedKnowledgeFromDom();
+                if (addedCount === 0 && groupId && allowGroupFallback) {
+                    this.loadProducedKnowledgeNodes('', false);
+                }
+                this.applySourceFilter(this.activeSourceTypes);
             }
         });
     }
@@ -1470,7 +1738,7 @@ const displayOrganizationalData = (mode, selected_group_id) => {
             organizational_list_info.enode.map((n) => {
                 defaultOrganizational.addReloadProcessNode(
                     n.user_id,
-                    n.experience_knowledge_id,
+                    n.display_node_id || defaultOrganizational.makeFragmentNodeId(n.source_type, n.source_id || n.experience_knowledge_id || n.externalized_contents_id),
                     n.knowledge_fragment_content,
                     n.experience_type,
                     n.concept_id,
@@ -1478,9 +1746,13 @@ const displayOrganizationalData = (mode, selected_group_id) => {
                     n.selected_contents,
                     n.stage1,
                     n.stage2,
-                    n.stage3
+                    n.stage3,
+                    n.source_type,
+                    n.source_id || n.experience_knowledge_id || n.externalized_contents_id
                 );
             });
+            defaultOrganizational.applyNodeDisplayStyles();
+            try{ defaultOrganizational.ownNetwork.redraw(); }catch(_){}
             // ユーザーごとのTriggerノードを表示
             // organizational_list_info.tnode.map((t) => {
             //     defaultOrganizational.addReloadTriggerNode(t.user_id, t.trigger_node_id, t.content, t.trigger_node_type);

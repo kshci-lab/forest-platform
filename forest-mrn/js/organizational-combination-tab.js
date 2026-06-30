@@ -4,6 +4,146 @@
 
   function qs(sel, root){ return (root || document).querySelector(sel); }
   function qsa(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  var SOURCE_TYPES = ['experience', 'externalized', 'SRL'];
+  var sourceFilterState = {
+    cooperation: SOURCE_TYPES.slice(),
+    fragments: SOURCE_TYPES.slice(),
+    'knowledge-tree': SOURCE_TYPES.slice()
+  };
+  var displayFilterState = {
+    cooperation: {
+      hideOrganizationalKnowledge: false
+    },
+    'knowledge-tree': {
+      hideOrganizationalKnowledge: false
+    }
+  };
+
+  function normalizeSourceType(type){
+    var raw = String(type || '').trim();
+    var lower = raw.toLowerCase();
+    if(lower === 'discussion') return 'externalized';
+    if(lower === 'srl') return 'SRL';
+    if(lower === 'experience') return 'experience';
+    if(lower === 'externalized') return 'externalized';
+    return '';
+  }
+
+  function parseSourceTypes(value, fallback){
+    var values = String(value || '').split(',').map(function(v){ return normalizeSourceType(v); }).filter(Boolean);
+    values = values.filter(function(v, i){ return values.indexOf(v) === i; });
+    if(values.length === 0 && fallback){ values = [fallback]; }
+    return values;
+  }
+
+  function getActiveSourceTypes(scope){
+    var active = sourceFilterState[scope] || SOURCE_TYPES.slice();
+    if(!active.length) return SOURCE_TYPES.slice();
+    return active.slice();
+  }
+
+  function matchesSourceFilter(sourceTypes, scope){
+    var active = getActiveSourceTypes(scope);
+    return sourceTypes.some(function(type){ return active.indexOf(type) !== -1; });
+  }
+
+  function applyFragmentSourceFilter(){
+    var workspace = document.getElementById('knowledge_fragments_workspace');
+    if(!workspace) return;
+    qsa('.fragment-node-wrapper', workspace).forEach(function(wrap){
+      var sourceTypes = parseSourceTypes(wrap.getAttribute('data-source-type'), 'experience');
+      wrap.style.display = matchesSourceFilter(sourceTypes, 'fragments') ? '' : 'none';
+    });
+  }
+
+  function applyKnowledgeTreeSourceFilter(){
+    var tree = document.getElementById('overlay_knowledge_tree');
+    if(!tree) return;
+    if(displayFilterState['knowledge-tree'] && displayFilterState['knowledge-tree'].hideOrganizationalKnowledge){
+      qsa(':scope > .kt-node', tree).forEach(function(node){
+        node.style.display = 'none';
+      });
+      return;
+    }
+    function applyNode(node){
+      var children = qsa(':scope > .kt-children > .kt-node', node);
+      var childVisible = false;
+      children.forEach(function(child){
+        if(applyNode(child)) childVisible = true;
+      });
+      var sourceTypes = parseSourceTypes(node.getAttribute('data-source-types'), '');
+      var isRoot = node.classList.contains('kt-root');
+      var ownVisible = isRoot || sourceTypes.length === 0 || matchesSourceFilter(sourceTypes, 'knowledge-tree');
+      var visible = childVisible || ownVisible;
+      node.style.display = visible ? '' : 'none';
+      return visible;
+    }
+    qsa(':scope > .kt-node', tree).forEach(applyNode);
+  }
+
+  function applySourceFilter(scope){
+    if(scope === 'fragments') applyFragmentSourceFilter();
+    if(scope === 'knowledge-tree') applyKnowledgeTreeSourceFilter();
+    if(scope === 'cooperation'){
+      try{
+        if(typeof defaultOrganizational !== 'undefined' && defaultOrganizational && typeof defaultOrganizational.applySourceFilter === 'function'){
+          defaultOrganizational.applySourceFilter(getActiveSourceTypes('cooperation'), {
+            hideOrganizationalKnowledge: !!(displayFilterState.cooperation && displayFilterState.cooperation.hideOrganizationalKnowledge)
+          });
+        }
+      }catch(_){ }
+    }
+  }
+
+  function bindSourceFilters(){
+    qsa('.source-filter').forEach(function(group){
+      if(group.__sourceFilterBound) return;
+      group.__sourceFilterBound = true;
+      var scope = group.getAttribute('data-filter-scope') || '';
+      group.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('.source-filter-btn') : null;
+        if(!btn || !group.contains(btn)) return;
+        var type = normalizeSourceType(btn.getAttribute('data-source-filter'));
+        if(!type) return;
+        var active = sourceFilterState[scope] || SOURCE_TYPES.slice();
+        var idx = active.indexOf(type);
+        if(idx === -1) active.push(type);
+        else active.splice(idx, 1);
+        if(active.length === 0) active = SOURCE_TYPES.slice();
+        sourceFilterState[scope] = active;
+        qsa('.source-filter-btn', group).forEach(function(each){
+          var eachType = normalizeSourceType(each.getAttribute('data-source-filter'));
+          each.classList.toggle('is-active', active.indexOf(eachType) !== -1);
+        });
+        applySourceFilter(scope);
+      }, false);
+    });
+    qsa('.display-filter').forEach(function(group){
+      if(group.__displayFilterBound) return;
+      group.__displayFilterBound = true;
+      var scope = group.getAttribute('data-filter-scope') || '';
+      qsa('.display-filter-btn', group).forEach(function(btn){
+        var filterName = String(btn.getAttribute('data-display-filter') || '').trim();
+        if(filterName === 'hide-organizational-knowledge'){
+          var hidden = !!(displayFilterState[scope] && displayFilterState[scope].hideOrganizationalKnowledge);
+          btn.classList.toggle('is-active', !hidden);
+          btn.textContent = '組織知';
+        }
+      });
+      group.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('.display-filter-btn') : null;
+        if(!btn || !group.contains(btn)) return;
+        var filterName = String(btn.getAttribute('data-display-filter') || '').trim();
+        if(filterName !== 'hide-organizational-knowledge') return;
+        if(!displayFilterState[scope]) displayFilterState[scope] = {};
+        displayFilterState[scope].hideOrganizationalKnowledge = !displayFilterState[scope].hideOrganizationalKnowledge;
+        var hidden = !!displayFilterState[scope].hideOrganizationalKnowledge;
+        btn.classList.toggle('is-active', !hidden);
+        btn.textContent = '組織知';
+        applySourceFilter(scope);
+      }, false);
+    });
+  }
 
   function setTab(activeId){
     var tabIds = ['org-tab-cooperation','org-tab-combination'];
@@ -28,6 +168,17 @@
 
     if(activeId === 'org-tab-combination'){
       try{ initCombinationOverlay(); }catch(e){ /* no-op */ }
+      bindSourceFilters();
+      applyFragmentSourceFilter();
+      applyKnowledgeTreeSourceFilter();
+    } else if(activeId === 'org-tab-cooperation'){
+      try{
+        if(window.defaultOrganizational && typeof window.defaultOrganizational.loadProducedKnowledgeNodes === 'function'){
+          window.defaultOrganizational.loadProducedKnowledgeNodes(getSelectedGroupId());
+        } else if(typeof defaultOrganizational !== 'undefined' && defaultOrganizational && typeof defaultOrganizational.loadProducedKnowledgeNodes === 'function'){
+          defaultOrganizational.loadProducedKnowledgeNodes(getSelectedGroupId());
+        }
+      }catch(e){ /* no-op */ }
     }
   }
 
@@ -49,6 +200,9 @@
     bindKnowledgeTreeAddNode();
     bindGroupSelectSync(workspace);
     bindDiscussion();
+    bindSourceFilters();
+    applyFragmentSourceFilter();
+    applyKnowledgeTreeSourceFilter();
     autoRestoreUnderwayTargets(workspace, function(){
       // Whether restored or not, load discussion once with the current selection state.
       loadDiscussion();
@@ -312,6 +466,7 @@
       try{ _kfragUndo.length = 0; _kfragRedo.length = 0; updateKfragButtons(); }catch(_){ }
       // Re-init workspace wrappers for new cards
       initFragmentWorkspace(workspace);
+      applyFragmentSourceFilter();
       clearFragmentSelectionState(workspace);
       loadDiscussion();
       if(done) done(true);
@@ -777,6 +932,7 @@
       if(!list) return;
       var wrapper = ev.target && ev.target.closest ? ev.target.closest('.fragment-node-wrapper') : null;
       if(!wrapper || !list.contains(wrapper)) return;
+      if(String(wrapper.getAttribute('data-source-type') || 'experience') !== 'experience') return;
       candidate = { wrapper: wrapper };
       startX = ev.clientX;
       startY = ev.clientY;
@@ -862,6 +1018,8 @@
         wrap.appendChild(card);
       }
       if(extId){ wrap.setAttribute('data-ext-id', extId); }
+      if(!wrap.getAttribute('data-source-type')){ wrap.setAttribute('data-source-type', card.getAttribute('data-source-type') || 'experience'); }
+      if(!card.getAttribute('data-source-type')){ card.setAttribute('data-source-type', wrap.getAttribute('data-source-type') || 'experience'); }
       wrap.style.left = '';
       wrap.style.top = '';
 
@@ -907,6 +1065,9 @@
 
       var frag = e.target && e.target.closest ? e.target.closest('.knowledge_fragment') : null;
       if(frag){
+        if(String(frag.getAttribute('data-source-type') || 'experience') !== 'experience'){
+          return;
+        }
         var ext = frag.getAttribute('data-ext-id');
         if(ext){
           // If discussion is underway, keep the selection set fixed.
@@ -1147,6 +1308,16 @@
       } else if(typeof n.externalized_contents_id !== 'undefined' && n.externalized_contents_id !== null){
         kfragId = n.externalized_contents_id;
       }
+      var sourceTypes = [];
+      if(Array.isArray(n.fragment_source_types)){
+        sourceTypes = n.fragment_source_types.map(function(type){ return normalizeSourceType(type); }).filter(Boolean);
+      }
+      if(sourceTypes.length === 0 && kfragId !== null && kfragId !== '' && typeof kfragId !== 'undefined'){
+        sourceTypes = ['experience'];
+      }
+      if(sourceTypes.length){
+        try{ node.setAttribute('data-source-types', sourceTypes.filter(function(v, i){ return sourceTypes.indexOf(v) === i; }).join(',')); }catch(_){ }
+      }
       if(kfragId !== null && kfragId !== '' && typeof kfragId !== 'undefined'){
         try{ node.setAttribute('data-kfrag-id', String(kfragId)); }catch(_){ }
       }
@@ -1158,7 +1329,7 @@
 
       // Title / content
       var titleSpan = document.createElement('span');
-      if(kfragId !== null && kfragId !== '' && !hasChildren){
+      if((kfragId !== null && kfragId !== '' || sourceTypes.length > 0) && !hasChildren){
         titleSpan.className = 'kt-content-title';
       } else {
         titleSpan.className = 'kt-node-title';
@@ -1166,7 +1337,7 @@
       titleSpan.textContent = (n.node_title != null ? String(n.node_title) : '(no title)');
       node.appendChild(titleSpan);
 
-      if(kfragId !== null && kfragId !== '' && typeof kfragId !== 'undefined'){
+      if((kfragId !== null && kfragId !== '' && typeof kfragId !== 'undefined') || sourceTypes.length > 0){
         var detailBtn = document.createElement('button');
         detailBtn.type = 'button';
         detailBtn.className = 'kt-detail-button';
@@ -1233,6 +1404,7 @@
     (children['root'] || []).forEach(function(n){
       rootEl.appendChild(buildNode(n));
     });
+    applyKnowledgeTreeSourceFilter();
 
     function getKnowledgeDetailOverlay(){
       var overlay = document.getElementById('knowledge-detail-overlay-tab');
@@ -1670,7 +1842,10 @@
       if(gid) fd.append('group_id', gid);
       // Link to selected fragments (primary + additional) as CSV (fukushima-system behavior)
       var ids = getSelectedFragmentIds();
-      if(ids.length){ fd.append('knowledge_fragment_id', ids.join(',')); }
+      if(ids.length){
+        fd.append('knowledge_fragment_id', ids.join(','));
+        fd.append('fragment_source_type', 'experience');
+      }
 
       var xhr = new XMLHttpRequest();
       xhr.open('POST', 'php/insert_knowledge_node.php', true);
@@ -1811,6 +1986,8 @@
     var comb = document.getElementById('org-tab-combination');
     if(coop) coop.addEventListener('click', function(){ setTab('org-tab-cooperation'); }, false);
     if(comb) comb.addEventListener('click', function(){ setTab('org-tab-combination'); }, false);
+    bindSourceFilters();
+    applySourceFilter('cooperation');
 
     // Default: cooperation (existing behavior); if URL has ?orgtab=combination, open it.
     try{

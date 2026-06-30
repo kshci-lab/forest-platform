@@ -31,6 +31,61 @@ function __resolve_insert_knowledge_group_id(mysqli $mysqli): string {
     return $groupId;
 }
 
+function __parse_fragment_link_ids($value): array {
+    if ($value === null || $value === '') { return []; }
+    $parts = is_array($value) ? $value : preg_split('/\s*,\s*/', (string)$value);
+    $ids = [];
+    foreach ($parts as $part) {
+        $id = intval(trim((string)$part), 10);
+        if ($id > 0 && !in_array($id, $ids, true)) { $ids[] = $id; }
+    }
+    return $ids;
+}
+
+function __normalize_fragment_source_type($value, string $fallback): string {
+    $type = strtolower(trim((string)$value));
+    if ($type === 'discussion') { return 'externalized'; }
+    if ($type === 'srl') { return 'SRL'; }
+    if (in_array($type, ['experience', 'externalized'], true)) { return $type; }
+    if ((string)$value === 'SRL') { return 'SRL'; }
+    return $fallback;
+}
+
+function __ensure_knowledge_fragment_links_table(mysqli $mysqli): bool {
+    $sql = "CREATE TABLE IF NOT EXISTS `knowledge_explorer_fragment_links` (".
+           "`id` INT NOT NULL AUTO_INCREMENT,".
+           "`knowledge_node_id` INT NOT NULL,".
+           "`fragment_source_type` ENUM('experience','externalized','SRL') NOT NULL,".
+           "`fragment_source_id` INT NOT NULL,".
+           "`display_order` INT DEFAULT NULL,".
+           "`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,".
+           "PRIMARY KEY (`id`),".
+           "UNIQUE KEY `uniq_knowledge_fragment` (`knowledge_node_id`,`fragment_source_type`,`fragment_source_id`),".
+           "KEY `idx_knowledge_node_id` (`knowledge_node_id`),".
+           "KEY `idx_fragment_lookup` (`fragment_source_type`,`fragment_source_id`)".
+           ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    if (!$mysqli->query($sql)) { return false; }
+    @$mysqli->query("UPDATE `knowledge_explorer_fragment_links` SET `fragment_source_type` = 'externalized' WHERE `fragment_source_type` = 'discussion'");
+    @$mysqli->query("ALTER TABLE `knowledge_explorer_fragment_links` MODIFY COLUMN `fragment_source_type` ENUM('experience','externalized','SRL') NOT NULL");
+    return true;
+}
+
+function __save_knowledge_fragment_links(mysqli $mysqli, int $knowledgeNodeId, array $fragmentIds, string $sourceType): void {
+    if ($knowledgeNodeId <= 0 || empty($fragmentIds)) { return; }
+    if (!__ensure_knowledge_fragment_links_table($mysqli)) { return; }
+    $sql = "INSERT INTO `knowledge_explorer_fragment_links` ".
+           "(`knowledge_node_id`,`fragment_source_type`,`fragment_source_id`,`display_order`) ".
+           "VALUES (?,?,?,?) ".
+           "ON DUPLICATE KEY UPDATE `display_order` = VALUES(`display_order`)";
+    if (!$stmt = $mysqli->prepare($sql)) { return; }
+    foreach (array_values($fragmentIds) as $index => $fragmentId) {
+        $order = $index + 1;
+        $stmt->bind_param('isii', $knowledgeNodeId, $sourceType, $fragmentId, $order);
+        $stmt->execute();
+    }
+    $stmt->close();
+}
+
 $parent_label = isset($_POST['parent_label']) ? trim((string)$_POST['parent_label']) : '';
 $parent_id = null;
 if(isset($_POST['parent_id']) && $_POST['parent_id'] !== '' && $_POST['parent_id'] !== null){
@@ -40,6 +95,7 @@ if(isset($_POST['parent_id']) && $_POST['parent_id'] !== '' && $_POST['parent_id
 }
 $title = isset($_POST['node_title']) ? trim((string)$_POST['node_title']) : '';
 $comment = isset($_POST['comment']) ? trim((string)$_POST['comment']) : '';
+$fragmentSourceType = __normalize_fragment_source_type(isset($_POST['fragment_source_type']) ? $_POST['fragment_source_type'] : '', 'experience');
 // optional: knowledge_fragment_id (accept CSV string or array); store as-is (expects VARCHAR column)
 $kfragId = '';
 if (isset($_POST['knowledge_fragment_id']) && $_POST['knowledge_fragment_id'] !== '') {
@@ -60,6 +116,7 @@ if (isset($_POST['knowledge_fragment_id']) && $_POST['knowledge_fragment_id'] !=
         }
     }
 }
+$fragmentLinkIds = __parse_fragment_link_ids($kfragId);
 if($title===''){
     echo json_encode(['status'=>'error','message'=>'node_title が空です']);
     exit;
@@ -240,6 +297,8 @@ if(!$stmt->execute()){
     exit;
 }
 $stmt->close();
+$savedLinkCount = count($fragmentLinkIds);
+__save_knowledge_fragment_links($mysqli, (int)$nextId, $fragmentLinkIds, $fragmentSourceType);
 $mysqli->close();
 
-echo json_encode(['status'=>'ok','node_id'=>$nextId,'parent_id'=>$parentId,'node_title'=>$title]);
+echo json_encode(['status'=>'ok','node_id'=>$nextId,'parent_id'=>$parentId,'node_title'=>$title,'fragment_link_count'=>$savedLinkCount]);

@@ -874,6 +874,18 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         id="organizational_ZoomIn" value="拡大" />
                                 <input type="button" class="Organizational_network_button"
                                         id="organizational_ZoomOut" value="縮小" />
+                                <div class="filter-toolbar">
+                                    <div class="source-filter" data-filter-scope="cooperation" aria-label="共同化フィルター">
+                                        <span class="filter-heading">産出機会</span>
+                                        <button type="button" class="source-filter-btn is-active" data-source-filter="experience">experience</button>
+                                        <button type="button" class="source-filter-btn is-active" data-source-filter="externalized">discussion</button>
+                                        <!-- <button type="button" class="source-filter-btn is-active" data-source-filter="SRL">SRL</button> -->
+                                    </div>
+                                    <div class="display-filter" data-filter-scope="cooperation" aria-label="共同化表示フィルター">
+                                        <span class="filter-heading">知</span>
+                                        <button type="button" class="display-filter-btn" data-display-filter="hide-organizational-knowledge">組織知</button>
+                                    </div>
+                                </div>
                                 <!-- <div class="checkbox_organizational">
                                     <input type="checkbox" id="checkbox_organizational" class="checkbox_organizational" name="check_organizational" onclick="ShowRelatedOrganizational('brother')">
                                     <label for="checkbox_organizational" data-on-label="On" data-off-label="Off"></label>
@@ -943,6 +955,12 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                                <div id="knowledge_fragments_workspace" class="knowledge_fragments_workspace">
 	                                                    <div class="overlay-title">
 	                                                        知識フラグメント一覧
+                                                            <div class="source-filter" data-filter-scope="fragments" aria-label="知識フラグメントフィルター">
+                                                                <span class="filter-heading">産出機会</span>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="experience">experience</button>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="externalized">discussion</button>
+                                                                <!-- <button type="button" class="source-filter-btn is-active" data-source-filter="SRL">SRL</button> -->
+                                                            </div>
 	                                                        <div class="kfrag-action-group">
 	                                                            <button type="button" id="kfrag-reset" class="kfrag-action-btn">Reset</button>
 	                                                            <button type="button" id="kfrag-undo" class="kfrag-action-btn" disabled>Undo</button>
@@ -1012,6 +1030,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                            <div class="overlay-knowledge-tree">
 	                                                <div class="overlay-title overlay-title-with-action">
 	                                                    産出した知
+                                                        <div class="filter-toolbar">
+                                                            <div class="source-filter" data-filter-scope="knowledge-tree" aria-label="産出した知フィルター">
+                                                                <span class="filter-heading">産出機会</span>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="experience">experience</button>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="externalized">discussion</button>
+                                                                <!-- <button type="button" class="source-filter-btn is-active" data-source-filter="SRL">SRL</button> -->
+                                                            </div>
+                                                        </div>
 	                                                    <button type="button" id="kt-add-node" class="kt-add-node-btn" aria-label="項目を追加">＋</button>
 	                                                </div>
 	                                                <div id="overlay_knowledge_tree" class="overlay_knowledge_tree"></div>
