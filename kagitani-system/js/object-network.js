@@ -5817,9 +5817,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
             if (mode === 'add') {
                 // 新規追加ロジック
+                const parentPositions = this.ownNetwork.getPositions([targetNodeId]);
+                const parentPos = parentPositions[targetNodeId] || { x: parentNode.x || 0, y: parentNode.y || 0 };
                 const parentBoundingBox = this.ownNetwork.getBoundingBox(targetNodeId);
-                const newNodeX = parentNode.x;
-                const newNodeY = parentBoundingBox.bottom + 80;
+                const newNodeX = parentPos.x;
+                const newNodeY = parentBoundingBox ? parentBoundingBox.bottom + 80 : parentPos.y + 80;
 
                 const newNodeId = this.generateUniqueNumberText();
                 this.addNode(newNodeId, newLabel, "step", newNodeX, newNodeY);
