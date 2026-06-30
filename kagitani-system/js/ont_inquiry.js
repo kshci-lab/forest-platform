@@ -319,14 +319,29 @@ function c_disp(){
 								targetCategory = 'rationality'; // 【合理性】
 							}
 							
-							window.inquiryData.push({
-								id: $id,
-								conceptId: $concept_id,
-								content: $inquiry_content,
-								conceptContent: $concept_content,
-								category: targetCategory,
-								tags: []
-							});
+							var ignoredQuestions = [
+								'自分の興味は何ですか？',
+								'悩んでいることは何ですか？',
+								'前回のMTの内容はどのようなものでしたか？',
+								'時間的制約を考慮すると，その計画は現実的ですか？',
+								'時間的制約を考慮すると、その計画は現実的ですか？',
+								'議論目的に沿った指針を考えられていますか？',
+								'議論目的は何ですか',
+								'議論目的は何ですか？',
+								'議論すべき内容は何ですか？',
+								'議論参加者の観点から考えられていますか？'
+							];
+							
+							if (ignoredQuestions.indexOf($inquiry_content) === -1) {
+								window.inquiryData.push({
+									id: $id,
+									conceptId: $concept_id,
+									content: $inquiry_content,
+									conceptContent: $concept_content,
+									category: targetCategory,
+									tags: []
+								});
+							}
 						}
 					}
 				}
