@@ -1703,10 +1703,25 @@ window.addWeeklyGoal = function () {
         if (!container) return;
 
         var popover = container.querySelector('.reflection-popover');
-        if (!popover || popover.dataset.loaded === 'true' || popover.dataset.loading === 'true') return;
+        if (!popover) return;
 
         var btn = container.querySelector('.btn-reflect');
         if (!btn) return;
+
+        // 【追加】親要素のoverflowによる見切れを防ぐため、fixedで動的に配置
+        var rect = btn.getBoundingClientRect();
+        popover.style.position = 'fixed';
+        popover.style.top = (rect.bottom + 8) + 'px';
+        var popoverWidth = 280; // CSSで指定している幅
+        var leftPos = rect.right - popoverWidth;
+        // 画面外にはみ出さないよう調整
+        if (leftPos < 10) leftPos = 10;
+        popover.style.left = leftPos + 'px';
+        popover.style.right = 'auto'; // CSSのright:0を上書き
+        popover.style.zIndex = '999999';
+
+        if (popover.dataset.loaded === 'true' || popover.dataset.loading === 'true') return;
+
 
         var goalIdx = btn.dataset.idx;
         var goals = JSON.parse(localStorage.getItem(getStorageKey('weeklyGoals')) || '[]');
