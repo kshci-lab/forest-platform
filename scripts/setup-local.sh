@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 PHP_BIN="${PHP_BIN:-}"
 COMPOSER_BIN="${COMPOSER_BIN:-}"
+CA_BUNDLE_URL="https://curl.se/ca/cacert.pem"
 
 if [ -z "$PHP_BIN" ]; then
   if [ -x "/Applications/MAMP/bin/php/php8.3.14/bin/php" ]; then
@@ -30,6 +31,18 @@ if [ -z "$COMPOSER_BIN" ]; then
 fi
 
 "$PHP_BIN" "$COMPOSER_BIN" install
+
+mkdir -p "certs"
+if [ ! -f "certs/cacert.pem" ]; then
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$CA_BUNDLE_URL" -o "certs/cacert.pem"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "certs/cacert.pem" "$CA_BUNDLE_URL"
+  else
+    echo "curl or wget was not found. Download certs/cacert.pem manually from $CA_BUNDLE_URL." >&2
+    exit 1
+  fi
+fi
 
 if [ ! -f "php/sso_local.php" ] && [ -f "php/sso_local.example.php" ]; then
   cp "php/sso_local.example.php" "php/sso_local.php"

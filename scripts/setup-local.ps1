@@ -129,6 +129,22 @@ function Ensure-ComposerPhar {
     return $composerPharPath
 }
 
+function Ensure-CaBundle {
+    param([string]$ProjectRoot)
+
+    $certsDir = Join-Path $ProjectRoot 'certs'
+    $caBundlePath = Join-Path $certsDir 'cacert.pem'
+    if (Test-Path $caBundlePath) {
+        return
+    }
+
+    if (!(Test-Path $certsDir)) {
+        New-Item -ItemType Directory -Path $certsDir | Out-Null
+    }
+
+    Invoke-WebRequest -Uri 'https://curl.se/ca/cacert.pem' -OutFile $caBundlePath
+}
+
 $resolvedPhpBin = Resolve-PhpBin -Candidate $PhpBin
 $phpRuntimeOptions = Get-PhpRuntimeOptions -ResolvedPhpBin $resolvedPhpBin
 
@@ -164,6 +180,8 @@ if ($LASTEXITCODE -ne 0) {
 if (!(Test-Path (Join-Path $rootDir 'vendor\autoload.php'))) {
     throw 'Composer install did not create vendor/autoload.php.'
 }
+
+Ensure-CaBundle -ProjectRoot $rootDir
 
 $ssoLocalPath = Join-Path $rootDir 'php\sso_local.php'
 $ssoExamplePath = Join-Path $rootDir 'php\sso_local.example.php'

@@ -1,5 +1,6 @@
 <?php
 
+use GuzzleHttp\Client;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use League\OAuth2\Client\Provider\GenericProvider;
@@ -24,23 +25,53 @@ function hcimlab_sso_require_dependencies()
 
 function hcimlab_sso_http_json($url, array $headers = array())
 {
-    $headerLines = array_merge(array('Accept: application/json'), $headers);
-    $context = stream_context_create(array(
-        'http' => array(
-            'method' => 'GET',
-            'header' => implode("\r\n", $headerLines),
-            'timeout' => 10,
-        ),
+    hcimlab_sso_require_dependencies();
+    $response = hcimlab_sso_http_client()->request('GET', $url, array(
+        'headers' => array_merge(array('Accept' => 'application/json'), hcimlab_sso_header_pairs($headers)),
     ));
-    $body = @file_get_contents($url, false, $context);
-    if ($body === false) {
-        throw new RuntimeException('Failed to fetch ' . $url);
-    }
-    $json = json_decode($body, true);
+    $json = json_decode((string)$response->getBody(), true);
     if (!is_array($json)) {
         throw new RuntimeException('Invalid JSON response from ' . $url);
     }
     return $json;
+}
+
+function hcimlab_sso_header_pairs(array $headers)
+{
+    $result = array();
+    foreach ($headers as $header) {
+        $parts = explode(':', $header, 2);
+        if (count($parts) === 2) {
+            $result[trim($parts[0])] = trim($parts[1]);
+        }
+    }
+    return $result;
+}
+
+function hcimlab_sso_http_options()
+{
+    $config = hcimlab_sso_config();
+    $options = array(
+        'timeout' => 10,
+    );
+
+    if (!empty($config['ca_bundle'])) {
+        if (!file_exists($config['ca_bundle'])) {
+            throw new RuntimeException('SSL CA bundle not found: ' . $config['ca_bundle']);
+        }
+        $options['verify'] = $config['ca_bundle'];
+    }
+
+    return $options;
+}
+
+function hcimlab_sso_http_client()
+{
+    static $client = null;
+    if ($client === null) {
+        $client = new Client(hcimlab_sso_http_options());
+    }
+    return $client;
 }
 
 function hcimlab_sso_discovery()
@@ -69,16 +100,21 @@ function hcimlab_sso_provider()
     }
 
     $metadata = hcimlab_sso_discovery();
-    return new GenericProvider(array(
-        'clientId' => $config['client_id'],
-        'clientSecret' => $config['client_secret'],
-        'redirectUri' => $config['redirect_uri'],
-        'urlAuthorize' => $metadata['authorization_endpoint'],
-        'urlAccessToken' => $metadata['token_endpoint'],
-        'urlResourceOwnerDetails' => $metadata['userinfo_endpoint'],
-        'scopes' => $config['scope'],
-        'pkceMethod' => 'S256',
-    ));
+    return new GenericProvider(
+        array(
+            'clientId' => $config['client_id'],
+            'clientSecret' => $config['client_secret'],
+            'redirectUri' => $config['redirect_uri'],
+            'urlAuthorize' => $metadata['authorization_endpoint'],
+            'urlAccessToken' => $metadata['token_endpoint'],
+            'urlResourceOwnerDetails' => $metadata['userinfo_endpoint'],
+            'scopes' => $config['scope'],
+            'pkceMethod' => 'S256',
+        ),
+        array(
+            'httpClient' => hcimlab_sso_http_client(),
+        )
+    );
 }
 
 function hcimlab_sso_verify_id_token($idToken, $expectedNonce)
