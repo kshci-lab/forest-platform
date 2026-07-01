@@ -12,6 +12,14 @@
 sh scripts/setup-local.sh
 ```
 
+Windows では PowerShell で以下を実行してください。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-local.ps1
+```
+
+Windows で `composer` コマンドが未導入でも、このスクリプトは必要に応じて `composer.phar` をプロジェクト直下に取得して続行します。
+
 このスクリプトはComposer依存関係をインストールし、`php/sso_local.php` が存在しない場合だけ `php/sso_local.example.php` から作成します。作成後は `php/sso_local.php` に各自のSSO設定を入れてください。
 
 `php/sso_local.php` は秘密情報を含むためGitHubには上げません。共有するのは `php/sso_local.example.php` だけにしてください。
