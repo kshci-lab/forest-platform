@@ -999,7 +999,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                                </div>
 
 	                                                <div id="knowledge_register_area" class="knowledge_register_area">
-	                                                    <div class="overlay-title">知識登録</div>
+	                                                    <div class="overlay-title">組織知登録</div>
 	                                                    <form id="knowledge_register_form" class="knowledge_register_form" onsubmit="return false;">
 	                                                        <div class="kra-row kra-top">
 	                                                            <label for="kra_area_select" class="kra-label">追加する領域:</label>
@@ -1010,11 +1010,29 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                                            </select>
 	                                                        </div>
 	                                                        <div class="kra-row kra-body">
-	                                                            <textarea id="kra_knowledge_content" class="kra-control" rows="4" maxlength="255" placeholder="ここに内容を記入"></textarea>
+	                                                            <div class="kra-section-title">知の内容</div>
+	                                                            <label for="kra_knowledge_content" class="kra-label">要約（一言で表すとどのような知か）:</label>
+	                                                            <textarea id="kra_knowledge_content" class="kra-control" rows="2" maxlength="255" placeholder="例：研究内容を定期的に言語化することは，未整理の検討要素に気づく契機となる。"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_tacto_when" class="kra-label">When（どのような場面で有効か）:</label>
+	                                                            <textarea id="kra_tacto_when" class="kra-control kra-structured-control" rows="2" placeholder="例：研究目的や支援機能の位置づけが曖昧になっているとき"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_tacto_what" class="kra-label">What（何を考える／行うとよいか）:</label>
+	                                                            <textarea id="kra_tacto_what" class="kra-control kra-structured-control" rows="2" placeholder="例：研究内容を一連の流れとして言語化する"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_tacto_why" class="kra-label">Why（なぜそれが有効か）:</label>
+	                                                            <textarea id="kra_tacto_why" class="kra-control kra-structured-control" rows="2" placeholder="例：自分では明確でなかった検討要素や論理の不足に気づけるため"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_organizational_basis" class="kra-label">組織知化の根拠（なぜこの KF 群を根拠に組織知として登録したのか）:</label>
+	                                                            <textarea id="kra_organizational_basis" class="kra-control kra-structured-control" rows="3" placeholder="例：複数のKFに共通して，研究内容を全体像として捉え直す重要性が示されていたため"></textarea>
 	                                                        </div>
 	                                                        <div class="kra-row kra-comment">
-	                                                            <label for="kra_comment_input" class="kra-label">コメント:</label>
-	                                                            <textarea id="kra_comment_input" class="kra-control" rows="2" maxlength="255" placeholder="任意のコメント(適用場面・記述理由など)"></textarea>
+	                                                            <label for="kra_comment_input" class="kra-label">補足コメント（適用上の注意，例外，今後の検討，登録者メモなど）:</label>
+	                                                            <textarea id="kra_comment_input" class="kra-control" rows="2" placeholder="例：研究段階や説明相手によって，整理の粒度を変える必要がある"></textarea>
 	                                                        </div>
 	                                                        <div class="kra-actions">
 	                                                            <button type="submit" class="button4-seci kra-submit" id="kra-submit">登録</button>

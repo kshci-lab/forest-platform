@@ -2026,6 +2026,73 @@
     // Render as nested divs to match fukushima-system DOM/CSS expectations:
     // <div class="kt-node" data-node-id="..."><span class="kt-toggle">+</span><span class="kt-node-title">...</span> ... <div class="kt-children">...</div></div>
 
+    function buildKnowledgeStructureText(n){
+      var fields = [
+        ['When', n ? n.tacto_when : ''],
+        ['What', n ? n.tacto_what : ''],
+        ['Why', n ? n.tacto_why : ''],
+        ['組織知化の根拠', n ? n.organizational_basis : ''],
+        ['補足コメント', n ? n.comment : '']
+      ];
+      var lines = [];
+      fields.forEach(function(pair){
+        var body = pair[1] != null ? String(pair[1]).trim() : '';
+        if(body !== '') lines.push('【' + pair[0] + '】\n' + body);
+      });
+      return lines.join('\n\n');
+    }
+
+    function getKnowledgeStructureFromNodeEl(nodeEl){
+      if(!nodeEl) return '';
+      return buildKnowledgeStructureText({
+        tacto_when: nodeEl.getAttribute('data-tacto-when') || '',
+        tacto_what: nodeEl.getAttribute('data-tacto-what') || '',
+        tacto_why: nodeEl.getAttribute('data-tacto-why') || '',
+        organizational_basis: nodeEl.getAttribute('data-organizational-basis') || '',
+        comment: nodeEl.getAttribute('data-comment') || ''
+      });
+    }
+
+    function removeKnowledgeStructureBlock(nodeEl){
+      if(!nodeEl) return;
+      var toggleEl = qs(':scope > .kt-comment-toggle', nodeEl);
+      var commentEl = qs(':scope > .kt-comment', nodeEl);
+      if(toggleEl && toggleEl.parentNode) toggleEl.parentNode.removeChild(toggleEl);
+      if(commentEl && commentEl.parentNode) commentEl.parentNode.removeChild(commentEl);
+    }
+
+    function appendKnowledgeStructureBlock(nodeEl, structureText){
+      if(!nodeEl || !structureText) return;
+      var toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'kt-comment-toggle';
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.textContent = '知の内容を表示';
+
+      var c = document.createElement('div');
+      c.className = 'kt-comment';
+      c.hidden = true;
+      c.textContent = structureText;
+
+      var childrenEl = qs(':scope > .kt-children', nodeEl);
+      var updatedEl = qs(':scope > .kt-updated', nodeEl);
+      var refEl = childrenEl || updatedEl;
+      if(refEl){
+        nodeEl.insertBefore(toggleBtn, refEl);
+        nodeEl.insertBefore(c, refEl);
+      } else {
+        nodeEl.appendChild(toggleBtn);
+        nodeEl.appendChild(c);
+      }
+    }
+
+    function syncKnowledgeStructureBlock(nodeEl){
+      if(!nodeEl) return;
+      var structureText = getKnowledgeStructureFromNodeEl(nodeEl);
+      removeKnowledgeStructureBlock(nodeEl);
+      if(structureText) appendKnowledgeStructureBlock(nodeEl, structureText);
+    }
+
     function pad2(n){ return (n < 10 ? '0' : '') + String(n); }
     function formatTs(ts){
       if(!ts) return '';
@@ -2070,6 +2137,10 @@
       node.setAttribute('data-node-id', String(n.node_id));
       try{ node.setAttribute('data-node-title', String(n.node_title != null ? n.node_title : '')); }catch(_){ }
       try{ node.setAttribute('data-comment', String(n.comment != null ? n.comment : '')); }catch(_){ }
+      try{ node.setAttribute('data-tacto-when', String(n.tacto_when != null ? n.tacto_when : '')); }catch(_){ }
+      try{ node.setAttribute('data-tacto-what', String(n.tacto_what != null ? n.tacto_what : '')); }catch(_){ }
+      try{ node.setAttribute('data-tacto-why', String(n.tacto_why != null ? n.tacto_why : '')); }catch(_){ }
+      try{ node.setAttribute('data-organizational-basis', String(n.organizational_basis != null ? n.organizational_basis : '')); }catch(_){ }
       if(n && (n.parent_id === null || typeof n.parent_id === 'undefined')){
         node.classList.add('kt-root');
       }
@@ -2155,12 +2226,10 @@
         node.appendChild(mv);
       }
 
-      // Comment (leaf nodes typically have comment)
-      if(n.comment != null && String(n.comment).trim() !== ''){
-        var c = document.createElement('div');
-        c.className = 'kt-comment';
-        c.textContent = String(n.comment);
-        node.appendChild(c);
+      // Structured organizational knowledge details.
+      var knowledgeStructureText = buildKnowledgeStructureText(n);
+      if(knowledgeStructureText !== ''){
+        appendKnowledgeStructureBlock(node, knowledgeStructureText);
       }
 
       // Updated info
@@ -2323,9 +2392,25 @@
       titleInput.value = nodeEl.getAttribute('data-node-title') || title || '';
       titleLabel.appendChild(titleInput);
 
+      function makeEditTextArea(labelText, value, rows){
+        var label = document.createElement('label');
+        label.className = 'knowledge-edit-label';
+        label.textContent = labelText;
+        var input = document.createElement('textarea');
+        input.className = 'knowledge-edit-control';
+        input.rows = rows || 2;
+        input.value = value || '';
+        label.appendChild(input);
+        return { label: label, input: input };
+      }
+
+      var whenField = makeEditTextArea('When（どのような場面で有効か）', nodeEl.getAttribute('data-tacto-when') || '', 2);
+      var whatField = makeEditTextArea('What（何を考える／行うとよいか）', nodeEl.getAttribute('data-tacto-what') || '', 2);
+      var whyField = makeEditTextArea('Why（なぜそれが有効か）', nodeEl.getAttribute('data-tacto-why') || '', 2);
+      var basisField = makeEditTextArea('組織知化の根拠', nodeEl.getAttribute('data-organizational-basis') || '', 3);
       var commentLabel = document.createElement('label');
       commentLabel.className = 'knowledge-edit-label';
-      commentLabel.textContent = 'コメント';
+      commentLabel.textContent = '補足コメント';
       var commentInput = document.createElement('textarea');
       commentInput.className = 'knowledge-edit-control';
       commentInput.rows = 3;
@@ -2370,6 +2455,10 @@
       actions.appendChild(saveBtn);
 
       panel.appendChild(titleLabel);
+      panel.appendChild(whenField.label);
+      panel.appendChild(whatField.label);
+      panel.appendChild(whyField.label);
+      panel.appendChild(basisField.label);
       panel.appendChild(commentLabel);
       panel.appendChild(linkRow);
       panel.appendChild(actions);
@@ -2386,6 +2475,10 @@
 
       panel.addEventListener('submit', function(){
         var newTitle = String(titleInput.value || '').trim();
+        var newWhen = String(whenField.input.value || '').trim();
+        var newWhat = String(whatField.input.value || '').trim();
+        var newWhy = String(whyField.input.value || '').trim();
+        var newBasis = String(basisField.input.value || '').trim();
         var newComment = String(commentInput.value || '').trim();
         var ids = splitKfragIds(linkInput.value).join(',');
         if(!newTitle){
@@ -2398,6 +2491,10 @@
         var fd = new FormData();
         fd.append('node_id', String(nodeId));
         fd.append('node_title', newTitle);
+        fd.append('tacto_when', newWhen);
+        fd.append('tacto_what', newWhat);
+        fd.append('tacto_why', newWhy);
+        fd.append('organizational_basis', newBasis);
         fd.append('comment', newComment);
         fd.append('knowledge_fragment_id', ids);
         fd.append('fragment_source_type', 'experience');
@@ -2421,23 +2518,15 @@
           }
           feedback.textContent = '保存しました';
           try{ nodeEl.setAttribute('data-node-title', newTitle); }catch(_){ }
+          try{ nodeEl.setAttribute('data-tacto-when', newWhen); }catch(_){ }
+          try{ nodeEl.setAttribute('data-tacto-what', newWhat); }catch(_){ }
+          try{ nodeEl.setAttribute('data-tacto-why', newWhy); }catch(_){ }
+          try{ nodeEl.setAttribute('data-organizational-basis', newBasis); }catch(_){ }
           try{ nodeEl.setAttribute('data-comment', newComment); }catch(_){ }
           try{ nodeEl.setAttribute('data-kfrag-id', ids); }catch(_){ }
           var titleEl = qs('.kt-node-title, .kt-content-title', nodeEl);
           if(titleEl) titleEl.textContent = newTitle;
-          var commentEl = qs('.kt-comment', nodeEl);
-          if(newComment){
-            if(!commentEl){
-              commentEl = document.createElement('div');
-              commentEl.className = 'kt-comment';
-              var childrenEl = qs('.kt-children', nodeEl);
-              if(childrenEl) nodeEl.insertBefore(commentEl, childrenEl);
-              else nodeEl.appendChild(commentEl);
-            }
-            commentEl.textContent = newComment;
-          } else if(commentEl && commentEl.parentNode){
-            commentEl.parentNode.removeChild(commentEl);
-          }
+          syncKnowledgeStructureBlock(nodeEl);
           var ws = document.getElementById('knowledge_fragments_workspace');
           if(ws) updateKnowledgeConnectionOverlay(ws, splitKfragIds(ids), newTitle);
           panel.style.display = 'none';
@@ -2521,6 +2610,19 @@
       rootEl.addEventListener('click', function(e){
         var t = e.target;
         if(!t) return;
+        var commentToggle = t.closest ? t.closest('.kt-comment-toggle') : null;
+        if(commentToggle){
+          e.preventDefault();
+          e.stopPropagation();
+          var nodeElC = commentToggle.closest ? commentToggle.closest('.kt-node') : null;
+          var commentEl = nodeElC ? qs(':scope > .kt-comment', nodeElC) : null;
+          if(!commentEl) return;
+          var isOpen = commentToggle.getAttribute('aria-expanded') === 'true';
+          commentToggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+          commentToggle.textContent = isOpen ? '知の内容を表示' : '知の内容を閉じる';
+          commentEl.hidden = isOpen;
+          return;
+        }
         // Root reorder buttons
         var mvBtn = t.closest ? t.closest('.kt-root-move-btn') : null;
         if(mvBtn){
@@ -2816,20 +2918,37 @@
     form.addEventListener('submit', function(){
       var area = qs('#kra_area_select', form);
       var content = qs('#kra_knowledge_content', form);
+      var tactoWhen = qs('#kra_tacto_when', form);
+      var tactoWhat = qs('#kra_tacto_what', form);
+      var tactoWhy = qs('#kra_tacto_why', form);
+      var organizationalBasis = qs('#kra_organizational_basis', form);
       var comment = qs('#kra_comment_input', form);
       var feedback = document.getElementById('knowledge_register_feedback');
       var parent_id = area ? String(area.value || '') : '';
+      var parent_label = '';
+      if(area && area.options && area.selectedIndex >= 0){
+        parent_label = String(area.options[area.selectedIndex].textContent || '').trim();
+      }
       var node_title = content ? content.value.trim() : '';
+      var tacto_when = tactoWhen ? tactoWhen.value.trim() : '';
+      var tacto_what = tactoWhat ? tactoWhat.value.trim() : '';
+      var tacto_why = tactoWhy ? tactoWhy.value.trim() : '';
+      var organizational_basis = organizationalBasis ? organizationalBasis.value.trim() : '';
       var node_comment = comment ? comment.value.trim() : '';
       if(!node_title){
-        if(feedback) feedback.textContent = '内容を入力してください。';
+        if(feedback) feedback.textContent = '組織知の要約を入力してください。';
         return;
       }
       if(feedback) feedback.textContent = '登録中...';
 
       var fd = new FormData();
       if(parent_id) fd.append('parent_id', parent_id);
+      if(parent_label) fd.append('parent_label', parent_label);
       fd.append('node_title', node_title);
+      fd.append('tacto_when', tacto_when);
+      fd.append('tacto_what', tacto_what);
+      fd.append('tacto_why', tacto_why);
+      fd.append('organizational_basis', organizational_basis);
       if(node_comment){ fd.append('comment', node_comment); }
       var gid = getSelectedGroupId();
       if(gid) fd.append('group_id', gid);
@@ -2856,6 +2975,10 @@
           return;
         }
         if(content) content.value = '';
+        if(tactoWhen) tactoWhen.value = '';
+        if(tactoWhat) tactoWhat.value = '';
+        if(tactoWhy) tactoWhy.value = '';
+        if(organizationalBasis) organizationalBasis.value = '';
         if(comment) comment.value = '';
         if(feedback) feedback.textContent = '登録しました。';
         loadKnowledgeTree();

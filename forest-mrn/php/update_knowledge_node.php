@@ -85,6 +85,10 @@ function replace_fragment_links(mysqli $mysqli, $nodeId, array $fragmentIds, $so
 $nodeId = isset($_POST['node_id']) ? intval($_POST['node_id'], 10) : 0;
 $title = isset($_POST['node_title']) ? trim((string)$_POST['node_title']) : '';
 $comment = isset($_POST['comment']) ? trim((string)$_POST['comment']) : '';
+$tactoWhen = isset($_POST['tacto_when']) ? trim((string)$_POST['tacto_when']) : '';
+$tactoWhat = isset($_POST['tacto_what']) ? trim((string)$_POST['tacto_what']) : '';
+$tactoWhy = isset($_POST['tacto_why']) ? trim((string)$_POST['tacto_why']) : '';
+$organizationalBasis = isset($_POST['organizational_basis']) ? trim((string)$_POST['organizational_basis']) : '';
 $fragmentIdsRaw = isset($_POST['knowledge_fragment_id']) ? $_POST['knowledge_fragment_id'] : '';
 $fragmentIds = parse_fragment_ids($fragmentIdsRaw);
 $fragmentCsv = implode(',', $fragmentIds);
@@ -112,6 +116,10 @@ $colKFragId = null;
 $kfragColType = '';
 $colUpdatedAt = null;
 $colUpdatedBy = null;
+$colTactoWhen = null;
+$colTactoWhat = null;
+$colTactoWhy = null;
+$colOrganizationalBasis = null;
 $hasDeleted = false;
 
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM `$table`")) {
@@ -125,6 +133,10 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM `$table`")) {
     if ($lf === 'knowledge_fragment_id' && isset($c['Type'])) { $kfragColType = strtolower((string)$c['Type']); }
     if ($colUpdatedAt === null && in_array($lf, ['updated_at','update_at','updated','modified_at'], true)) { $colUpdatedAt = $f; }
     if ($colUpdatedBy === null && $lf === 'updated_by') { $colUpdatedBy = $f; }
+    if ($colTactoWhen === null && $lf === 'tacto_when') { $colTactoWhen = $f; }
+    if ($colTactoWhat === null && $lf === 'tacto_what') { $colTactoWhat = $f; }
+    if ($colTactoWhy === null && $lf === 'tacto_why') { $colTactoWhy = $f; }
+    if ($colOrganizationalBasis === null && $lf === 'organizational_basis') { $colOrganizationalBasis = $f; }
     if ($lf === 'deleted') { $hasDeleted = true; }
   }
   $resCols->close();
@@ -132,6 +144,23 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM `$table`")) {
 
 if ($colComment === null) {
   if (@$mysqli->query("ALTER TABLE `$table` ADD COLUMN `comment` TEXT NULL DEFAULT NULL")) { $colComment = 'comment'; }
+}
+if ($colTactoWhen === null) {
+  if (@$mysqli->query("ALTER TABLE `$table` ADD COLUMN `tacto_when` TEXT NULL DEFAULT NULL")) { $colTactoWhen = 'tacto_when'; }
+}
+if ($colTactoWhat === null) {
+  if (@$mysqli->query("ALTER TABLE `$table` ADD COLUMN `tacto_what` TEXT NULL DEFAULT NULL")) { $colTactoWhat = 'tacto_what'; }
+}
+if ($colTactoWhy === null) {
+  if (@$mysqli->query("ALTER TABLE `$table` ADD COLUMN `tacto_why` TEXT NULL DEFAULT NULL")) { $colTactoWhy = 'tacto_why'; }
+}
+if ($colOrganizationalBasis === null) {
+  if (@$mysqli->query("ALTER TABLE `$table` ADD COLUMN `organizational_basis` TEXT NULL DEFAULT NULL")) { $colOrganizationalBasis = 'organizational_basis'; }
+}
+foreach ([$colComment, $colTactoWhen, $colTactoWhat, $colTactoWhy, $colOrganizationalBasis] as $textCol) {
+  if ($textCol !== null) {
+    @$mysqli->query("ALTER TABLE `$table` MODIFY COLUMN `$textCol` TEXT NULL DEFAULT NULL");
+  }
 }
 if ($colKFragId === null) {
   if (@$mysqli->query("ALTER TABLE `$table` ADD COLUMN `knowledge_fragment_id` VARCHAR(255) NULL DEFAULT NULL")) { $colKFragId = 'knowledge_fragment_id'; }
@@ -156,6 +185,26 @@ if ($colComment !== null) {
   $setParts[] = "`$colComment` = ?";
   $types .= 's';
   $params[] = $comment;
+}
+if ($colTactoWhen !== null) {
+  $setParts[] = "`$colTactoWhen` = ?";
+  $types .= 's';
+  $params[] = $tactoWhen;
+}
+if ($colTactoWhat !== null) {
+  $setParts[] = "`$colTactoWhat` = ?";
+  $types .= 's';
+  $params[] = $tactoWhat;
+}
+if ($colTactoWhy !== null) {
+  $setParts[] = "`$colTactoWhy` = ?";
+  $types .= 's';
+  $params[] = $tactoWhy;
+}
+if ($colOrganizationalBasis !== null) {
+  $setParts[] = "`$colOrganizationalBasis` = ?";
+  $types .= 's';
+  $params[] = $organizationalBasis;
 }
 if ($colKFragId !== null) {
   $setParts[] = "`$colKFragId` = ?";
@@ -208,6 +257,10 @@ echo json_encode([
   'status' => 'ok',
   'node_id' => $nodeId,
   'node_title' => $title,
+  'tacto_when' => $tactoWhen,
+  'tacto_what' => $tactoWhat,
+  'tacto_why' => $tactoWhy,
+  'organizational_basis' => $organizationalBasis,
   'comment' => $comment,
   'knowledge_fragment_id' => $fragmentCsv,
   'fragment_link_count' => $linkCount,

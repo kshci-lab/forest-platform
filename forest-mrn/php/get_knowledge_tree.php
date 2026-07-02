@@ -86,6 +86,10 @@ $tbl->close();
 $ensureCols = [
     ['name' => 'deleted', 'sql' => "ALTER TABLE `$table` ADD COLUMN `deleted` TINYINT(1) NOT NULL DEFAULT 0"],
     ['name' => 'comment', 'sql' => "ALTER TABLE `$table` ADD COLUMN `comment` TEXT NULL DEFAULT NULL"],
+    ['name' => 'tacto_when', 'sql' => "ALTER TABLE `$table` ADD COLUMN `tacto_when` TEXT NULL DEFAULT NULL"],
+    ['name' => 'tacto_what', 'sql' => "ALTER TABLE `$table` ADD COLUMN `tacto_what` TEXT NULL DEFAULT NULL"],
+    ['name' => 'tacto_why', 'sql' => "ALTER TABLE `$table` ADD COLUMN `tacto_why` TEXT NULL DEFAULT NULL"],
+    ['name' => 'organizational_basis', 'sql' => "ALTER TABLE `$table` ADD COLUMN `organizational_basis` TEXT NULL DEFAULT NULL"],
     ['name' => 'updated_by', 'sql' => "ALTER TABLE `$table` ADD COLUMN `updated_by` INT(11) NULL DEFAULT NULL"],
     // store as CSV string to support multiple fragments (fukushima-system behavior)
     ['name' => 'knowledge_fragment_id', 'sql' => "ALTER TABLE `$table` ADD COLUMN `knowledge_fragment_id` VARCHAR(255) NULL DEFAULT NULL"],
@@ -105,6 +109,21 @@ foreach($ensureCols as $c){
         @$mysqli->query($c['sql']);
     }
 }
+
+// If text-like fields use legacy VARCHAR sizes, try to widen them for structured organizational knowledge.
+try{
+    foreach(['comment', 'tacto_when', 'tacto_what', 'tacto_why', 'organizational_basis'] as $textCol){
+        $colType = '';
+        if($resCol = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE '".$mysqli->real_escape_string($textCol)."'")){
+            $rowCol = $resCol->fetch_assoc();
+            if($rowCol && isset($rowCol['Type'])){ $colType = strtolower((string)$rowCol['Type']); }
+            $resCol->free();
+        }
+        if($colType && strpos($colType,'text') === false){
+            @$mysqli->query("ALTER TABLE `$table` MODIFY COLUMN `$textCol` TEXT NULL DEFAULT NULL");
+        }
+    }
+}catch(Throwable $e){ }
 
 // If knowledge_fragment_id exists but is not VARCHAR/TEXT, try to widen it to VARCHAR for CSV support.
 try{
@@ -130,6 +149,11 @@ $colKFragId = null;   // knowledge_fragment_id（外部化IDと同一扱い）
 $colExtContentsId = null; // externalized_contents_id（外部化のPK）
 $colSort = null; // sort_order
 $colGroup = null; // knowledge_group_id
+$colTactoWhen = null;
+$colTactoWhat = null;
+$colTactoWhy = null;
+$colOrganizationalBasis = null;
+$colLegacyKfCommonPoints = null;
 $hasDeleted = false;
 $idIsAutoInc = false;
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
@@ -147,6 +171,11 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
         if($colExtContentsId===null && in_array($lf, ['externalized_contents_id','externalizedcontent_id','externalized_id'])){ $colExtContentsId = $f; }
         if($colSort===null && in_array($lf, ['sort_order'])){ $colSort = $f; }
         if($colGroup===null && in_array($lf, ['knowledge_group_id','group_id'])){ $colGroup = $f; }
+        if($colTactoWhen===null && $lf === 'tacto_when'){ $colTactoWhen = $f; }
+        if($colTactoWhat===null && $lf === 'tacto_what'){ $colTactoWhat = $f; }
+        if($colTactoWhy===null && $lf === 'tacto_why'){ $colTactoWhy = $f; }
+        if($colOrganizationalBasis===null && $lf === 'organizational_basis'){ $colOrganizationalBasis = $f; }
+        if($colLegacyKfCommonPoints===null && $lf === 'kf_common_points'){ $colLegacyKfCommonPoints = $f; }
         if($lf === 'deleted'){ $hasDeleted = true; }
         if($f === $colId && isset($c['Extra']) && stripos($c['Extra'], 'auto_increment') !== false){ $idIsAutoInc = true; }
     }
@@ -278,6 +307,13 @@ if($resAll = $mysqli->query($sqlAll)){
         $commentVal = null; $updatedVal = null;
         if($colComment && array_key_exists($colComment,$row)) { $commentVal = $row[$colComment]; }
         elseif(array_key_exists('comment',$row)) { $commentVal = $row['comment']; }
+        $tactoWhenVal = ($colTactoWhen && array_key_exists($colTactoWhen,$row)) ? $row[$colTactoWhen] : null;
+        $tactoWhatVal = ($colTactoWhat && array_key_exists($colTactoWhat,$row)) ? $row[$colTactoWhat] : null;
+        $tactoWhyVal = ($colTactoWhy && array_key_exists($colTactoWhy,$row)) ? $row[$colTactoWhy] : null;
+        $organizationalBasisVal = ($colOrganizationalBasis && array_key_exists($colOrganizationalBasis,$row)) ? $row[$colOrganizationalBasis] : null;
+        if(($organizationalBasisVal === null || trim((string)$organizationalBasisVal) === '') && $colLegacyKfCommonPoints && array_key_exists($colLegacyKfCommonPoints,$row)){
+            $organizationalBasisVal = $row[$colLegacyKfCommonPoints];
+        }
         if($colUpdated && array_key_exists($colUpdated,$row)) { $updatedVal = $row[$colUpdated]; }
         elseif(array_key_exists('updated_at',$row)) { $updatedVal = $row['updated_at']; }
         $updatedById = null; $updatedByName = null;
@@ -307,6 +343,10 @@ if($resAll = $mysqli->query($sqlAll)){
             'parent_id'=>$pid,
             'node_title'=>$title,
             'comment'=> $commentVal !== null ? $commentVal : null,
+            'tacto_when'=> $tactoWhenVal !== null ? $tactoWhenVal : null,
+            'tacto_what'=> $tactoWhatVal !== null ? $tactoWhatVal : null,
+            'tacto_why'=> $tactoWhyVal !== null ? $tactoWhyVal : null,
+            'organizational_basis'=> $organizationalBasisVal !== null ? $organizationalBasisVal : null,
             'updated_at'=> $updatedVal !== null ? $updatedVal : null,
             'updated_by'=> $updatedById !== null ? (int)$updatedById : null,
             'updated_by_name'=> $updatedByName !== null ? $updatedByName : null,

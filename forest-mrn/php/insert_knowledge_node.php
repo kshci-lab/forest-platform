@@ -86,6 +86,41 @@ function __save_knowledge_fragment_links(mysqli $mysqli, int $knowledgeNodeId, a
     $stmt->close();
 }
 
+function __ensure_text_column(mysqli $mysqli, string $table, string $column): void {
+    $exists = false;
+    $type = '';
+    if ($res = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE '".$mysqli->real_escape_string($column)."'")) {
+        if ($row = $res->fetch_assoc()) {
+            $exists = true;
+            $type = isset($row['Type']) ? strtolower((string)$row['Type']) : '';
+        }
+        $res->free();
+    }
+    if (!$exists) {
+        @$mysqli->query("ALTER TABLE `$table` ADD COLUMN `$column` TEXT NULL DEFAULT NULL");
+        return;
+    }
+    if ($type && strpos($type, 'text') === false) {
+        @$mysqli->query("ALTER TABLE `$table` MODIFY COLUMN `$column` TEXT NULL DEFAULT NULL");
+    }
+}
+
+function __build_structured_comment_fallback(string $comment, string $when, string $what, string $why, string $basis): string {
+    $sections = [
+        'When' => $when,
+        'What' => $what,
+        'Why' => $why,
+        '組織知化の根拠' => $basis,
+        '補足コメント' => $comment
+    ];
+    $lines = [];
+    foreach ($sections as $label => $body) {
+        $body = trim($body);
+        if ($body !== '') { $lines[] = '【'.$label.'】'."\n".$body; }
+    }
+    return implode("\n\n", $lines);
+}
+
 $parent_label = isset($_POST['parent_label']) ? trim((string)$_POST['parent_label']) : '';
 $parent_id = null;
 if(isset($_POST['parent_id']) && $_POST['parent_id'] !== '' && $_POST['parent_id'] !== null){
@@ -95,6 +130,13 @@ if(isset($_POST['parent_id']) && $_POST['parent_id'] !== '' && $_POST['parent_id
 }
 $title = isset($_POST['node_title']) ? trim((string)$_POST['node_title']) : '';
 $comment = isset($_POST['comment']) ? trim((string)$_POST['comment']) : '';
+$tactoWhen = isset($_POST['tacto_when']) ? trim((string)$_POST['tacto_when']) : '';
+$tactoWhat = isset($_POST['tacto_what']) ? trim((string)$_POST['tacto_what']) : '';
+$tactoWhy = isset($_POST['tacto_why']) ? trim((string)$_POST['tacto_why']) : '';
+$organizationalBasis = isset($_POST['organizational_basis']) ? trim((string)$_POST['organizational_basis']) : '';
+if ($organizationalBasis === '' && isset($_POST['kf_common_points'])) {
+    $organizationalBasis = trim((string)$_POST['kf_common_points']);
+}
 $fragmentSourceType = __normalize_fragment_source_type(isset($_POST['fragment_source_type']) ? $_POST['fragment_source_type'] : '', 'experience');
 // optional: knowledge_fragment_id (accept CSV string or array); store as-is (expects VARCHAR column)
 $kfragId = '';
@@ -123,6 +165,10 @@ if($title===''){
 }
 $table = 'knowledge_explorer';
 
+foreach (['comment', 'tacto_when', 'tacto_what', 'tacto_why', 'organizational_basis'] as $textColumn) {
+    __ensure_text_column($mysqli, $table, $textColumn);
+}
+
 // カラム存在の動的検出
 $colId = 'knowledge_node_id';
 $colParent = 'parent_id';
@@ -132,6 +178,10 @@ $colComment = null;   // comment/memo 等
 $colKFragId = null;   // knowledge_fragment_id 等
 $colSort = null;      // sort_order (root categories)
 $colGroup = null;     // knowledge_group_id
+$colTactoWhen = null;
+$colTactoWhat = null;
+$colTactoWhy = null;
+$colOrganizationalBasis = null;
 $hasDeleted = false;
 $kfragColType = '';
 if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
@@ -145,6 +195,10 @@ if($cols = $mysqli->query("SHOW COLUMNS FROM $table")){
         if($colKFragId===null && in_array($lf, ['knowledge_fragment_id','knowledgefragment_id','kfrag_id'])){ $colKFragId = $f; }
         if($colSort===null && $lf === 'sort_order'){ $colSort = $f; }
         if($colGroup===null && in_array($lf, ['knowledge_group_id','group_id'])){ $colGroup = $f; }
+        if($colTactoWhen===null && $lf === 'tacto_when'){ $colTactoWhen = $f; }
+        if($colTactoWhat===null && $lf === 'tacto_what'){ $colTactoWhat = $f; }
+        if($colTactoWhy===null && $lf === 'tacto_why'){ $colTactoWhy = $f; }
+        if($colOrganizationalBasis===null && $lf === 'organizational_basis'){ $colOrganizationalBasis = $f; }
         if($lf === 'knowledge_fragment_id' && isset($c['Type'])){ $kfragColType = strtolower((string)$c['Type']); }
         if($lf==='deleted'){ $hasDeleted = true; }
         if($lf==='updated_by'){ $colUpdatedBy = $f; }
@@ -229,7 +283,32 @@ if($colComment){
     $colsIns[] = $colComment;
     $valsIns[] = '?';
     $types .= 's';
-    $params[] = $comment;
+    $hasStructuredColumns = ($colTactoWhen || $colTactoWhat || $colTactoWhy || $colOrganizationalBasis);
+    $params[] = $hasStructuredColumns ? $comment : __build_structured_comment_fallback($comment, $tactoWhen, $tactoWhat, $tactoWhy, $organizationalBasis);
+}
+if($colTactoWhen){
+    $colsIns[] = $colTactoWhen;
+    $valsIns[] = '?';
+    $types .= 's';
+    $params[] = $tactoWhen;
+}
+if($colTactoWhat){
+    $colsIns[] = $colTactoWhat;
+    $valsIns[] = '?';
+    $types .= 's';
+    $params[] = $tactoWhat;
+}
+if($colTactoWhy){
+    $colsIns[] = $colTactoWhy;
+    $valsIns[] = '?';
+    $types .= 's';
+    $params[] = $tactoWhy;
+}
+if($colOrganizationalBasis){
+    $colsIns[] = $colOrganizationalBasis;
+    $valsIns[] = '?';
+    $types .= 's';
+    $params[] = $organizationalBasis;
 }
 if($colKFragId && $kfragId !== ''){
     $colsIns[] = $colKFragId;
