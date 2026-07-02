@@ -218,7 +218,7 @@ if ($resT = $mysqli->query("SHOW TABLES LIKE 'externalized_contents'")) {
                    ec.user_id,
                    COALESCE(u.name,'') AS user_name,
                    ec.discussed,
-                   'externalized' AS source_type
+                   'discussion' AS source_type
               FROM externalized_contents ec
               LEFT JOIN users u ON u.user_id = ec.user_id
              WHERE ec.deleted = 0
@@ -260,7 +260,7 @@ if ($resT = $mysqli->query("SHOW TABLES LIKE 'externalized_contents'")) {
             'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
             'user_name' => $__user_name,
             'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
-            'source_type' => 'externalized',
+            'source_type' => 'discussion',
             'source_id' => isset($row['source_id']) ? (int)$row['source_id'] : null,
             'updated_at' => isset($row['updated_at']) ? (string)$row['updated_at'] : ''
           ];
@@ -366,14 +366,13 @@ $mysqli->close();
             $__s3 = isset($__kfrag_raw['stage3']) ? (string)$__kfrag_raw['stage3'] : '';
             $__uname = isset($__kfrag_raw['user_name']) ? (string)$__kfrag_raw['user_name'] : $__current_user_name;
             $__sourceType = isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience';
-            $__selectedLabel = ($__sourceType === 'externalized') ? 'discussion' : '経験';
-            $__stage1Label = ($__sourceType === 'externalized') ? '【discussionの振り返り】' : '【経験の振り返り】';
+            $__selectedLabel = ($__sourceType === 'discussion') ? 'discussion' : '経験';
+            $__stage1Label = ($__sourceType === 'discussion') ? '【discussionの振り返り】' : '【経験の振り返り】';
             $num = isset($__kfrag_raw['display_num']) ? intval($__kfrag_raw['display_num'], 10) : ($totalK - $i);
   ?>
     <div class="fragment-node-wrapper" data-source-type="<?php echo htmlspecialchars(isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience', ENT_QUOTES, 'UTF-8'); ?>"<?php
       $sourceType = isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience';
       $sourceId = isset($__kfrag_raw['source_id']) ? intval($__kfrag_raw['source_id'],10) : 0;
-      if($sourceType === 'experience' && $sourceId>0){ echo ' data-ext-id="'.$sourceId.'"'; }
       if($sourceId>0){ echo ' data-source-id="'.$sourceId.'"'; }
       if($sourceType === 'experience' && $sourceId>0 && isset($canvasMap) && isset($canvasMap[$sourceId])){
         echo ' data-canvas-x="'.htmlspecialchars((string)$canvasMap[$sourceId]['x'], ENT_QUOTES, 'UTF-8').'"';
@@ -384,7 +383,6 @@ $mysqli->close();
       <div class="knowledge_fragment" data-source-type="<?php echo htmlspecialchars($sourceType, ENT_QUOTES, 'UTF-8'); ?>" data-kfrag-num="<?php echo intval($num,10); ?>"<?php
       $disc = isset($__kfrag_raw['discussed']) ? trim($__kfrag_raw['discussed']) : '';
       if($disc!==''){ echo ' data-discussed="'.htmlspecialchars($disc,ENT_QUOTES,'UTF-8').'"'; }
-      if($sourceType === 'experience' && $sourceId>0){ echo ' data-ext-id="'.$sourceId.'"'; }
       if($sourceId>0){ echo ' data-source-id="'.$sourceId.'"'; }
     ?>>
         <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>

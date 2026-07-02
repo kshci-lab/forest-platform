@@ -33,9 +33,9 @@ function parse_fragment_ids($value) {
 
 function normalize_fragment_source_type($value) {
   $type = strtolower(trim((string)$value));
-  if ($type === 'discussion') { return 'externalized'; }
+  if ($type === 'discussion') { return 'discussion'; }
   if ($type === 'srl') { return 'SRL'; }
-  if (in_array($type, ['experience', 'externalized'], true)) { return $type; }
+  if (in_array($type, ['experience', 'discussion'], true)) { return $type; }
   if ((string)$value === 'SRL') { return 'SRL'; }
   return 'experience';
 }
@@ -44,7 +44,7 @@ function ensure_fragment_links_table(mysqli $mysqli) {
   $sql = "CREATE TABLE IF NOT EXISTS `knowledge_explorer_fragment_links` (".
          "`id` INT NOT NULL AUTO_INCREMENT,".
          "`knowledge_node_id` INT NOT NULL,".
-         "`fragment_source_type` ENUM('experience','externalized','SRL') NOT NULL,".
+         "`fragment_source_type` ENUM('experience','discussion','SRL') NOT NULL,".
          "`fragment_source_id` INT NOT NULL,".
          "`display_order` INT DEFAULT NULL,".
          "`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,".
@@ -54,8 +54,8 @@ function ensure_fragment_links_table(mysqli $mysqli) {
          "KEY `idx_fragment_lookup` (`fragment_source_type`,`fragment_source_id`)".
          ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
   if (!$mysqli->query($sql)) { return false; }
-  @$mysqli->query("UPDATE `knowledge_explorer_fragment_links` SET `fragment_source_type` = 'externalized' WHERE `fragment_source_type` = 'discussion'");
-  @$mysqli->query("ALTER TABLE `knowledge_explorer_fragment_links` MODIFY COLUMN `fragment_source_type` ENUM('experience','externalized','SRL') NOT NULL");
+  @$mysqli->query("UPDATE `knowledge_explorer_fragment_links` SET `fragment_source_type` = 'discussion' WHERE `fragment_source_type` = 'externalized'");
+  @$mysqli->query("ALTER TABLE `knowledge_explorer_fragment_links` MODIFY COLUMN `fragment_source_type` ENUM('experience','discussion','SRL') NOT NULL");
   return true;
 }
 

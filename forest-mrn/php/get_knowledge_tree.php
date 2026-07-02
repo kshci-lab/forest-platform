@@ -45,9 +45,9 @@ function __split_knowledge_tree_ids($value): array {
 
 function __normalize_knowledge_tree_source_type($value): string {
     $type = strtolower(trim((string)$value));
-    if ($type === 'discussion') { return 'externalized'; }
+    if ($type === 'discussion') { return 'discussion'; }
     if ($type === 'srl') { return 'SRL'; }
-    if (in_array($type, ['experience', 'externalized'], true)) { return $type; }
+    if (in_array($type, ['experience', 'discussion'], true)) { return $type; }
     if ((string)$value === 'SRL') { return 'SRL'; }
     return '';
 }
@@ -368,8 +368,8 @@ if (!empty($nodes)) {
         $idsByType = isset($linkIdsByNode[$nidForLink]) ? $linkIdsByNode[$nidForLink] : [];
         if (empty($types)) {
             if (!empty($node['externalized_contents_id'])) {
-                $types[] = 'externalized';
-                $idsByType['externalized'] = [(int)$node['externalized_contents_id']];
+                $types[] = 'discussion';
+                $idsByType['discussion'] = [(int)$node['externalized_contents_id']];
             } elseif (!empty($node['knowledge_fragment_id'])) {
                 $fallbackIds = __split_knowledge_tree_ids($node['knowledge_fragment_id']);
                 if ($fallbackIds) {

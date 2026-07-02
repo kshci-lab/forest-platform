@@ -4,7 +4,7 @@
 
   function qs(sel, root){ return (root || document).querySelector(sel); }
   function qsa(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
-  var SOURCE_TYPES = ['experience', 'externalized', 'SRL'];
+  var SOURCE_TYPES = ['experience', 'discussion', 'SRL'];
   var sourceFilterState = {
     cooperation: SOURCE_TYPES.slice(),
     fragments: SOURCE_TYPES.slice(),
@@ -18,7 +18,9 @@
       hideOrganizationalKnowledge: false
     }
   };
+  var kfragRelationVisible = false;
   var KFRAG_VIEW_STORAGE_KEY = 'forest_combination_kfrag_view_mode';
+  var KFRAG_ZOOM_STORAGE_KEY = 'forest_combination_kfrag_canvas_zoom';
 
   function getKfragViewStorageKey(){
     var gid = '';
@@ -26,13 +28,19 @@
     return KFRAG_VIEW_STORAGE_KEY + ':' + (gid || 'default');
   }
 
+  function getKfragZoomStorageKey(){
+    var gid = '';
+    try{ gid = getSelectedGroupId ? getSelectedGroupId() : ''; }catch(_){ gid = ''; }
+    return KFRAG_ZOOM_STORAGE_KEY + ':' + (gid || 'default');
+  }
+
   function normalizeSourceType(type){
     var raw = String(type || '').trim();
     var lower = raw.toLowerCase();
-    if(lower === 'discussion') return 'externalized';
+    if(lower === 'discussion') return 'discussion';
     if(lower === 'srl') return 'SRL';
     if(lower === 'experience') return 'experience';
-    if(lower === 'externalized') return 'externalized';
+    if(lower === 'discussion') return 'discussion';
     return '';
   }
 
@@ -232,6 +240,22 @@
     }catch(_){ }
   }
 
+  function getKfragCanvasZoom(){
+    try{
+      if(window.localStorage){
+        var raw = parseFloat(window.localStorage.getItem(getKfragZoomStorageKey()) || '1');
+        if(!isNaN(raw) && raw >= 0.5 && raw <= 1.8) return raw;
+      }
+    }catch(_){ }
+    return 1;
+  }
+
+  function saveKfragCanvasZoom(zoom){
+    try{
+      if(window.localStorage) window.localStorage.setItem(getKfragZoomStorageKey(), String(zoom));
+    }catch(_){ }
+  }
+
   function ensureKfragViewControls(workspace){
     if(!workspace) return;
     var group = qs('.kfrag-action-group', workspace);
@@ -260,25 +284,63 @@
     viewGroup.appendChild(canvasBtn);
     group.insertBefore(viewGroup, group.firstChild);
 
-    var linkBtn = document.createElement('button');
-    linkBtn.type = 'button';
-    linkBtn.id = 'kfrag-link-selected';
-    linkBtn.className = 'kfrag-action-btn kfrag-link-btn';
-    linkBtn.textContent = 'Link KF';
-    group.appendChild(linkBtn);
+    var zoomGroup = document.createElement('span');
+    zoomGroup.className = 'kfrag-zoom-switch';
+    zoomGroup.setAttribute('role', 'group');
 
-    var unlinkBtn = document.createElement('button');
-    unlinkBtn.type = 'button';
-    unlinkBtn.id = 'kfrag-unlink-selected';
-    unlinkBtn.className = 'kfrag-action-btn kfrag-unlink-btn';
-    unlinkBtn.textContent = 'Unlink KF';
-    group.appendChild(unlinkBtn);
+    var zoomOutBtn = document.createElement('button');
+    zoomOutBtn.type = 'button';
+    zoomOutBtn.className = 'kfrag-zoom-btn';
+    zoomOutBtn.setAttribute('data-kfrag-zoom-action', 'out');
+    zoomOutBtn.textContent = '−';
+
+    var zoomLabel = document.createElement('span');
+    zoomLabel.className = 'kfrag-zoom-label';
+    zoomLabel.id = 'kfrag-zoom-label';
+    zoomLabel.textContent = '100%';
+
+    var zoomInBtn = document.createElement('button');
+    zoomInBtn.type = 'button';
+    zoomInBtn.className = 'kfrag-zoom-btn';
+    zoomInBtn.setAttribute('data-kfrag-zoom-action', 'in');
+    zoomInBtn.textContent = '+';
+
+    var zoomResetBtn = document.createElement('button');
+    zoomResetBtn.type = 'button';
+    zoomResetBtn.className = 'kfrag-zoom-btn';
+    zoomResetBtn.setAttribute('data-kfrag-zoom-action', 'reset');
+    zoomResetBtn.textContent = '100%';
+
+    zoomGroup.appendChild(zoomOutBtn);
+    zoomGroup.appendChild(zoomLabel);
+    zoomGroup.appendChild(zoomInBtn);
+    zoomGroup.appendChild(zoomResetBtn);
+    group.appendChild(zoomGroup);
+
+    var relationBtn = document.createElement('button');
+    relationBtn.type = 'button';
+    relationBtn.id = 'kfrag-toggle-relations';
+    relationBtn.className = 'kfrag-action-btn kfrag-relation-toggle';
+    relationBtn.textContent = 'KFリンク';
+    group.appendChild(relationBtn);
 
     viewGroup.addEventListener('click', function(e){
       var btn = e.target && e.target.closest ? e.target.closest('.kfrag-view-btn') : null;
       if(!btn || !viewGroup.contains(btn)) return;
       var mode = btn.getAttribute('data-kfrag-view') === 'canvas' ? 'canvas' : 'list';
       setKfragViewMode(workspace, mode, true);
+    }, false);
+
+    zoomGroup.addEventListener('click', function(e){
+      var btn = e.target && e.target.closest ? e.target.closest('.kfrag-zoom-btn') : null;
+      if(!btn || !zoomGroup.contains(btn)) return;
+      var action = btn.getAttribute('data-kfrag-zoom-action') || '';
+      var current = getKfragCanvasZoom();
+      var next = current;
+      if(action === 'in') next = Math.min(1.8, Math.round((current + 0.1) * 10) / 10);
+      else if(action === 'out') next = Math.max(0.5, Math.round((current - 0.1) * 10) / 10);
+      else next = 1;
+      applyKfragCanvasZoom(workspace, next, true);
     }, false);
   }
 
@@ -288,6 +350,50 @@
       btn.classList.toggle('is-active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
+  }
+
+  function updateKfragRelationToggleButtons(){
+    qsa('.kfrag-relation-toggle').forEach(function(btn){
+      var active = !!kfragRelationVisible;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function updateKfragZoomUI(workspace, zoom){
+    var label = document.getElementById('kfrag-zoom-label');
+    if(label) label.textContent = String(Math.round((zoom || 1) * 100)) + '%';
+    workspace.classList.toggle('is-canvas-zoomable', workspace.classList.contains('is-canvas-mode'));
+  }
+
+  function getKfragCanvasZoomValue(workspace){
+    if(!workspace) return 1;
+    var raw = parseFloat(workspace.getAttribute('data-kfrag-canvas-zoom') || '1');
+    return (!isNaN(raw) && raw > 0) ? raw : 1;
+  }
+
+  function applyKfragCanvasZoom(workspace, zoom, persist){
+    if(!workspace) return;
+    var list = qs('.knowledge-fragment-list', workspace);
+    if(!list) return;
+    zoom = parseFloat(zoom);
+    if(isNaN(zoom)) zoom = 1;
+    zoom = Math.max(0.5, Math.min(1.8, zoom));
+    list.style.zoom = String(zoom);
+    workspace.setAttribute('data-kfrag-canvas-zoom', String(zoom));
+    updateKfragZoomUI(workspace, zoom);
+    if(persist) saveKfragCanvasZoom(zoom);
+    if(workspace.classList.contains('is-canvas-mode')){
+      renderKfragRelations(workspace);
+      if(window.activeKnowledgeLinkedFragmentIds && window.activeKnowledgeLinkedFragmentIds.length){
+        updateKnowledgeConnectionOverlay(
+          workspace,
+          window.activeKnowledgeLinkedFragmentIds,
+          window.activeKnowledgeLinkedTitle || '',
+          window.activeKnowledgeLinkedFragmentRefs || []
+        );
+      }
+    }
   }
 
   function setKfragViewMode(workspace, mode, persist){
@@ -311,9 +417,15 @@
         w.style.zIndex = '';
       });
     }
+    applyKfragCanvasZoom(workspace, getKfragCanvasZoom(), false);
     try{
       if(window.activeKnowledgeLinkedFragmentIds && window.activeKnowledgeLinkedFragmentIds.length){
-        updateKnowledgeConnectionOverlay(workspace, window.activeKnowledgeLinkedFragmentIds, window.activeKnowledgeLinkedTitle || '');
+        updateKnowledgeConnectionOverlay(
+          workspace,
+          window.activeKnowledgeLinkedFragmentIds,
+          window.activeKnowledgeLinkedTitle || '',
+          window.activeKnowledgeLinkedFragmentRefs || []
+        );
       }
     }catch(_){ }
     renderKfragRelations(workspace);
@@ -519,11 +631,14 @@
   function clearFragmentSelectionState(workspace){
     try{
       window.activeKnowledgeFragmentId = null;
+      window.activeKnowledgeFragmentSourceType = null;
       window.activeKnowledgeFragmentDiscussed = null;
+      window.activeKnowledgeNoLinked = false;
       window.kfrag_add_selected = { ext: [], kfid: [] };
       window.kfrag_display_list = null;
       window.kfrag_add_select_mode = false;
       window.activeKnowledgeLinkedFragmentIds = [];
+      window.activeKnowledgeLinkedFragmentRefs = [];
       window.activeKnowledgeLinkedTitle = '';
       var addBtn = document.getElementById('fragment-add-select-toggle');
       if(addBtn) addBtn.classList.remove('is-adding');
@@ -616,6 +731,8 @@
   window.kfrag_display_list = window.kfrag_display_list || null;
   // Avoid race conditions when restoring multi-fragment selection async.
   window._kfragRestoreSeq = window._kfragRestoreSeq || 0;
+  window.activeKnowledgeFragmentSourceType = window.activeKnowledgeFragmentSourceType || null;
+  window.activeKnowledgeNoLinked = window.activeKnowledgeNoLinked || false;
 
   function getActiveFragmentId(){
     return (typeof window.activeKnowledgeFragmentId !== 'undefined' && window.activeKnowledgeFragmentId !== null)
@@ -623,7 +740,47 @@
       : null;
   }
 
+  function getActiveFragmentSourceType(){
+    return normalizeSourceType(window.activeKnowledgeFragmentSourceType || '');
+  }
+
+  function getSelectedFragmentRefs(){
+    var refs = [];
+    var primary = getActiveFragmentId();
+    var primaryType = getActiveFragmentSourceType();
+    if(primary !== null && !isNaN(primary) && primaryType){
+      refs.push(makeKfragRef(primaryType, primary));
+    }
+    try{
+      if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+        window.kfrag_add_selected.kfid.forEach(function(ref){
+          var normalizedRef = splitKfragRefs(String(ref || '')).shift() || '';
+          if(normalizedRef && refs.indexOf(normalizedRef) === -1) refs.push(normalizedRef);
+        });
+      } else if(primaryType === 'experience' && window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+        window.kfrag_add_selected.ext.forEach(function(x){
+          var ref = makeKfragRef('experience', x);
+          if(ref && refs.indexOf(ref) === -1) refs.push(ref);
+        });
+      }
+    }catch(_){ }
+    return refs.filter(Boolean);
+  }
+
+  function findFragmentWrapper(workspace, sourceType, sourceId){
+    if(!workspace || !sourceType || !sourceId) return null;
+    return qs('.fragment-node-wrapper[data-source-type="'+sourceType+'"][data-source-id="'+String(sourceId)+'"]', workspace);
+  }
+
+  function findFragmentCard(workspace, sourceType, sourceId){
+    if(!workspace || !sourceType || !sourceId) return null;
+    return qs('.knowledge_fragment[data-source-type="'+sourceType+'"][data-source-id="'+String(sourceId)+'"]', workspace);
+  }
+
   function getSelectedFragmentIds(){
+    if(getActiveFragmentSourceType() && getActiveFragmentSourceType() !== 'experience'){
+      return [];
+    }
     // If discussion is underway, prefer the frozen display list.
     try{
       if(String(window.activeKnowledgeFragmentDiscussed || '').trim() === 'UNDERWAY' &&
@@ -645,19 +802,30 @@
     return ids;
   }
 
+  function getSelectedFragmentSourceIds(){
+    return getSelectedFragmentRefs().map(function(ref){
+      var pos = ref.indexOf(':');
+      return pos === -1 ? '' : String(ref.slice(pos + 1)).trim();
+    }).filter(Boolean);
+  }
+
   function updateAdditionalHighlight(workspace){
     try{
       qsa('.fragment-node-wrapper.additional-selected', workspace).forEach(function(w){ w.classList.remove('additional-selected'); });
       qsa('.fragment-node-wrapper.kfrag-selected-highlight', workspace).forEach(function(w){ w.classList.remove('kfrag-selected-highlight'); });
-      var ids = getSelectedFragmentIds();
-      ids.forEach(function(id, idx){
-        var w = qs('.fragment-node-wrapper[data-ext-id="'+id+'"]', workspace);
+      var refs = getSelectedFragmentRefs();
+      refs.forEach(function(ref, idx){
+        var pos = ref.indexOf(':');
+        if(pos === -1) return;
+        var sourceType = normalizeSourceType(ref.slice(0, pos));
+        var id = String(ref.slice(pos + 1)).trim();
+        var w = findFragmentWrapper(workspace, sourceType, id);
         if(w){
           w.classList.add('kfrag-selected-highlight');
           if(idx > 0) w.classList.add('additional-selected');
         }
       });
-      updateKnowledgeTreeReverseHighlights(ids);
+      updateKnowledgeTreeReverseHighlights(refs);
     }catch(_){ }
   }
 
@@ -669,21 +837,50 @@
     });
   }
 
-  function updateKnowledgeTreeReverseHighlights(ids){
+  function makeKfragRef(sourceType, id){
+    var normalizedType = normalizeSourceType(sourceType);
+    var normalizedId = String(id || '').trim();
+    if(!normalizedType || !normalizedId || isNaN(parseInt(normalizedId, 10))) return '';
+    return normalizedType + ':' + normalizedId;
+  }
+
+  function splitKfragRefs(value){
+    return String(value || '').split(',').map(function(part){
+      var raw = String(part || '').trim();
+      if(!raw) return '';
+      var pos = raw.indexOf(':');
+      if(pos === -1) return '';
+      return makeKfragRef(raw.slice(0, pos), raw.slice(pos + 1));
+    }).filter(Boolean).filter(function(ref, index, arr){
+      return arr.indexOf(ref) === index;
+    });
+  }
+
+  function getNodeKfragRefs(nodeEl){
+    if(!nodeEl) return [];
+    var refs = splitKfragRefs(nodeEl.getAttribute('data-kfrag-refs'));
+    if(refs.length) return refs;
+    var ids = splitKfragIds(nodeEl.getAttribute('data-kfrag-id'));
+    var sourceTypes = parseSourceTypes(nodeEl.getAttribute('data-source-types'), ids.length ? 'experience' : '');
+    var fallbackType = sourceTypes[0] || 'experience';
+    return ids.map(function(id){ return makeKfragRef(fallbackType, id); }).filter(Boolean);
+  }
+
+  function updateKnowledgeTreeReverseHighlights(refs){
     var tree = document.getElementById('overlay_knowledge_tree');
     if(!tree) return;
-    ids = (ids || []).map(function(x){ return String(x); }).filter(Boolean);
+    refs = (refs || []).map(function(x){ return String(x); }).filter(Boolean);
     qsa('.kt-node.kfrag-reverse-linked', tree).forEach(function(node){ node.classList.remove('kfrag-reverse-linked'); });
     qsa('.kt-node.kfrag-reverse-primary', tree).forEach(function(node){ node.classList.remove('kfrag-reverse-primary'); });
-    if(!ids.length) return;
+    if(!refs.length) return;
 
-    var primary = ids[0];
+    var primary = refs[0];
     qsa('.kt-node[data-kfrag-id]', tree).forEach(function(node){
-      var nodeIds = splitKfragIds(node.getAttribute('data-kfrag-id'));
-      var matched = nodeIds.some(function(id){ return ids.indexOf(String(id)) !== -1; });
+      var nodeRefs = getNodeKfragRefs(node);
+      var matched = nodeRefs.some(function(ref){ return refs.indexOf(String(ref)) !== -1; });
       if(!matched) return;
       node.classList.add('kfrag-reverse-linked');
-      if(primary && nodeIds.indexOf(String(primary)) !== -1){
+      if(primary && nodeRefs.indexOf(String(primary)) !== -1){
         node.classList.add('kfrag-reverse-primary');
       }
       var p = node.parentNode;
@@ -713,21 +910,33 @@
     }catch(_){ }
   }
 
-  function updateKnowledgeConnectionOverlay(workspace, ids, titleText){
+  function updateKnowledgeConnectionOverlay(workspace, ids, titleText, refs){
     if(!workspace) return;
     clearKnowledgeConnectionOverlay(workspace);
     ids = (ids || []).map(function(x){ return String(x); }).filter(Boolean);
-    if(!ids.length) return;
+    refs = (refs || []).map(function(ref){ return String(ref || '').trim(); }).filter(Boolean);
+    if(!ids.length && !refs.length) return;
     try{
       window.activeKnowledgeLinkedFragmentIds = ids.slice();
+      window.activeKnowledgeLinkedFragmentRefs = refs.slice();
       window.activeKnowledgeLinkedTitle = String(titleText || '');
     }catch(_){ }
 
     var list = qs('.knowledge-fragment-list', workspace);
     if(!list) return;
     var wrappers = [];
-    ids.forEach(function(id){
-      var w = qs('.fragment-node-wrapper[data-ext-id="'+id+'"]', list);
+    var seen = {};
+    var effectiveRefs = refs.length ? refs : ids.map(function(id){ return makeKfragRef('experience', id); }).filter(Boolean);
+    effectiveRefs.forEach(function(ref){
+      var pos = ref.indexOf(':');
+      if(pos === -1) return;
+      var sourceType = normalizeSourceType(ref.slice(0, pos));
+      var id = String(ref.slice(pos + 1)).trim();
+      if(!sourceType || !id) return;
+      var key = sourceType + ':' + id;
+      if(seen[key]) return;
+      seen[key] = true;
+      var w = findFragmentWrapper(list, sourceType, id);
       if(w){
         w.classList.add('knowledge-linked-highlight');
         wrappers.push(w);
@@ -737,7 +946,7 @@
 
     var summary = document.createElement('div');
     summary.className = 'kfrag-connection-summary';
-    summary.textContent = 'Linked KF: ' + ids.join(', ');
+    summary.textContent = 'Linked KF: ' + (effectiveRefs.length ? effectiveRefs.join(', ') : ids.join(', '));
     if(titleText && String(titleText).trim() !== ''){
       summary.setAttribute('title', String(titleText).trim());
     }
@@ -754,17 +963,19 @@
     svg.innerHTML = '';
 
     var listRect = list.getBoundingClientRect();
-    var width = Math.max(list.scrollWidth, list.clientWidth, 1);
-    var height = Math.max(list.scrollHeight, list.clientHeight, 1);
+    var zoom = getKfragCanvasZoomValue(workspace);
+    var width = Math.max(list.scrollWidth * zoom, list.clientWidth * zoom, 1);
+    var height = Math.max(list.scrollHeight * zoom, list.clientHeight * zoom, 1);
     svg.setAttribute('width', String(width));
     svg.setAttribute('height', String(height));
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+    svg.style.zoom = String(1 / zoom);
 
     var points = wrappers.map(function(w){
       var r = w.getBoundingClientRect();
       return {
-        x: (r.left - listRect.left) + list.scrollLeft + (r.width / 2),
-        y: (r.top - listRect.top) + list.scrollTop + (r.height / 2)
+        x: (r.left - listRect.left) + (list.scrollLeft * zoom) + (r.width / 2),
+        y: (r.top - listRect.top) + (list.scrollTop * zoom) + (r.height / 2)
       };
     });
 
@@ -845,6 +1056,7 @@
       var ids = _normalizeIdList(fid, data.targets.map(function(x){ return String(x); }));
       window.kfrag_add_selected = window.kfrag_add_selected || { ext: [], kfid: [] };
       window.kfrag_add_selected.ext = ids.slice(1);
+      window.kfrag_add_selected.kfid = ids.slice(1).map(function(id){ return makeKfragRef('experience', id); }).filter(Boolean);
 
       // When UNDERWAY, lock the selection set to the latest stored target list.
       if(String(discussedStatus || '').trim() === 'UNDERWAY'){
@@ -895,6 +1107,8 @@
 
   function setActiveFragment(id, meta){
     try{ window.activeKnowledgeFragmentId = (id !== null ? parseInt(id, 10) : null); }catch(_){ window.activeKnowledgeFragmentId = null; }
+    try{ window.activeKnowledgeFragmentSourceType = (meta && meta.sourceType) ? normalizeSourceType(meta.sourceType) : null; }catch(_){ window.activeKnowledgeFragmentSourceType = null; }
+    try{ window.activeKnowledgeNoLinked = !!(meta && meta.noLinked); }catch(_){ window.activeKnowledgeNoLinked = false; }
     // store discussed status (for UI)
     try{
       if(meta && typeof meta.discussed !== 'undefined'){ window.activeKnowledgeFragmentDiscussed = meta.discussed; }
@@ -908,19 +1122,23 @@
     if(!box) return;
     box.innerHTML = '';
 
-    var ids = getSelectedFragmentIds();
-    if(ids.length === 0){
+    var refs = getSelectedFragmentRefs();
+    if(refs.length === 0){
       var empty = document.createElement('div');
       empty.className = 'selected-empty';
-      empty.textContent = '未選択';
+      empty.textContent = window.activeKnowledgeNoLinked ? '--' : '未選択';
       box.appendChild(empty);
       return;
     }
-    ids.forEach(function(id, idx){
+    refs.forEach(function(ref, idx){
+      var pos = ref.indexOf(':');
+      var sourceType = pos === -1 ? '' : normalizeSourceType(ref.slice(0, pos));
+      var id = pos === -1 ? ref : ref.slice(pos + 1);
       var item = document.createElement('span');
       item.className = 'fragment-selected-item' + (idx === 0 ? ' primary' : '');
       item.setAttribute('data-kfid', id);
-      item.textContent = '#' + id;
+      item.setAttribute('data-source-type', sourceType || '');
+      item.textContent = '#' + id + (sourceType ? ' [' + sourceType + ']' : '');
       if(idx > 0){
         var rm = document.createElement('span');
         rm.className = 'remove-btn';
@@ -998,11 +1216,11 @@
 
   function buildAutoCanvasPosition(index, listWidth){
     var cardW = 250;
-    var gap = 14;
+    var gap = 34;
     var cols = Math.max(1, Math.floor((Math.max(listWidth || 0, cardW) + gap) / (cardW + gap)));
     return {
       left: gap + (index % cols) * (cardW + gap),
-      top: gap + Math.floor(index / cols) * 142
+      top: gap + Math.floor(index / cols) * 186
     };
   }
 
@@ -1114,19 +1332,19 @@
   }
 
   function normalizeRelationPair(a, b){
-    var ai = parseInt(a, 10);
-    var bi = parseInt(b, 10);
-    if(!ai || !bi || ai === bi) return null;
-    return ai < bi ? { from: ai, to: bi } : { from: bi, to: ai };
+    var as = String(a || '').trim();
+    var bs = String(b || '').trim();
+    if(!as || !bs || as === bs) return null;
+    return as < bs ? { from: as, to: bs } : { from: bs, to: as };
   }
 
-  function getRelationPairsFromIds(ids){
-    ids = (ids || []).map(function(x){ return String(x); }).filter(Boolean);
-    if(ids.length < 2) return [];
-    var primary = ids[0];
+  function getRelationPairsFromRefs(refs){
+    refs = (refs || []).map(function(x){ return String(x); }).filter(Boolean);
+    if(refs.length < 2) return [];
+    var primary = refs[0];
     var seen = {};
     var pairs = [];
-    ids.slice(1).forEach(function(id){
+    refs.slice(1).forEach(function(id){
       var p = normalizeRelationPair(primary, id);
       if(!p) return;
       var key = p.from + '-' + p.to;
@@ -1140,53 +1358,43 @@
   function loadKfragRelations(workspace){
     workspace = workspace || document.getElementById('knowledge_fragments_workspace');
     if(!workspace) return;
+    var knowledgeRelations = [];
+    qsa('#overlay_knowledge_tree .kt-node[data-kfrag-refs]').forEach(function(node){
+      var refs = getNodeKfragRefs(node);
+      getRelationPairsFromRefs(refs).forEach(function(pair){
+        knowledgeRelations.push({
+          from: pair.from,
+          to: pair.to,
+          relation_scope: 'knowledge'
+        });
+      });
+    });
     var gid = getSelectedGroupId();
-    var url = 'php/get_kfrag_relations.php';
+    var url = 'php/get_underway_kfrag_relations.php';
     if(gid) url += '?group_id=' + encodeURIComponent(gid);
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
-      if(xhr.status !== 200) return;
+      var discussionRelations = [];
+      if(xhr.status === 200){
+        var res = null;
+        try{ res = JSON.parse(xhr.responseText || '{}'); }catch(_){ res = null; }
+        if(res && res.status === 'ok' && Array.isArray(res.relations)){
+          discussionRelations = res.relations.map(function(rel){
+            return {
+              from: String(rel.from || ''),
+              to: String(rel.to || ''),
+              relation_scope: 'discussion'
+            };
+          }).filter(function(rel){ return rel.from && rel.to; });
+        }
+      }
+      window.kfragRelations = knowledgeRelations.concat(discussionRelations);
       var res = null;
-      try{ res = JSON.parse(xhr.responseText || '{}'); }catch(_){ res = null; }
-      if(!res || res.status !== 'ok' || !Array.isArray(res.relations)) return;
-      window.kfragRelations = res.relations;
       renderKfragRelations(workspace);
     };
     xhr.send(null);
-  }
-
-  function saveSelectedKfragRelations(workspace, action){
-    var ids = getSelectedFragmentIds();
-    var pairs = getRelationPairsFromIds(ids);
-    if(pairs.length === 0){
-      try{ if(window.alert) alert('2つ以上のKFを選択してください'); }catch(_){ }
-      return;
-    }
-    var xhr = new XMLHttpRequest();
-    var fd = new FormData();
-    fd.append('pairs', JSON.stringify(pairs));
-    fd.append('relation_type', 'related');
-    fd.append('action', action === 'delete' ? 'delete' : 'save');
-    var gid = getSelectedGroupId();
-    if(gid) fd.append('group_id', gid);
-    xhr.open('POST', 'php/save_kfrag_relation.php', true);
-    xhr.onreadystatechange = function(){
-      if(xhr.readyState !== 4) return;
-      if(xhr.status !== 200){
-        try{ if(window.alert) alert('KF間の接続保存に失敗しました'); }catch(_){ }
-        return;
-      }
-      var res = null;
-      try{ res = JSON.parse(xhr.responseText || '{}'); }catch(_){ res = null; }
-      if(!res || res.status !== 'ok'){
-        try{ if(window.alert) alert((res && res.message) ? res.message : 'KF間の接続保存に失敗しました'); }catch(_){ }
-        return;
-      }
-      loadKfragRelations(workspace);
-    };
-    xhr.send(fd);
   }
 
   function clearKfragRelationOverlay(workspace){
@@ -1207,12 +1415,15 @@
     if(!relations.length) return;
     var list = qs('.knowledge-fragment-list', workspace);
     if(!list) return;
+    if(!kfragRelationVisible) return;
 
     relations.forEach(function(rel){
-      var a = rel.from_fragment_id || rel.from || rel.source_id;
-      var b = rel.to_fragment_id || rel.to || rel.target_id;
-      var wa = qs('.fragment-node-wrapper[data-ext-id="'+String(a)+'"]', list);
-      var wb = qs('.fragment-node-wrapper[data-ext-id="'+String(b)+'"]', list);
+      var a = String(rel.from_fragment_id || rel.from || rel.source_id || '');
+      var b = String(rel.to_fragment_id || rel.to || rel.target_id || '');
+      var pa = a.indexOf(':');
+      var pb = b.indexOf(':');
+      var wa = pa === -1 ? null : findFragmentWrapper(list, normalizeSourceType(a.slice(0, pa)), a.slice(pa + 1));
+      var wb = pb === -1 ? null : findFragmentWrapper(list, normalizeSourceType(b.slice(0, pb)), b.slice(pb + 1));
       if(wa) wa.classList.add('has-kfrag-relation');
       if(wb) wb.classList.add('has-kfrag-relation');
     });
@@ -1227,24 +1438,28 @@
     svg.innerHTML = '';
 
     var listRect = list.getBoundingClientRect();
-    var width = Math.max(list.scrollWidth, list.clientWidth, 1);
-    var height = Math.max(list.scrollHeight, list.clientHeight, 1);
+    var zoom = getKfragCanvasZoomValue(workspace);
+    var width = Math.max(list.scrollWidth * zoom, list.clientWidth * zoom, 1);
+    var height = Math.max(list.scrollHeight * zoom, list.clientHeight * zoom, 1);
     svg.setAttribute('width', String(width));
     svg.setAttribute('height', String(height));
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+    svg.style.zoom = String(1 / zoom);
 
     relations.forEach(function(rel){
-      var a = rel.from_fragment_id || rel.from || rel.source_id;
-      var b = rel.to_fragment_id || rel.to || rel.target_id;
-      var wa = qs('.fragment-node-wrapper[data-ext-id="'+String(a)+'"]', list);
-      var wb = qs('.fragment-node-wrapper[data-ext-id="'+String(b)+'"]', list);
+      var a = String(rel.from_fragment_id || rel.from || rel.source_id || '');
+      var b = String(rel.to_fragment_id || rel.to || rel.target_id || '');
+      var pa = a.indexOf(':');
+      var pb = b.indexOf(':');
+      var wa = pa === -1 ? null : findFragmentWrapper(list, normalizeSourceType(a.slice(0, pa)), a.slice(pa + 1));
+      var wb = pb === -1 ? null : findFragmentWrapper(list, normalizeSourceType(b.slice(0, pb)), b.slice(pb + 1));
       if(!wa || !wb) return;
       var ra = wa.getBoundingClientRect();
       var rb = wb.getBoundingClientRect();
-      var x1 = (ra.left - listRect.left) + list.scrollLeft + (ra.width / 2);
-      var y1 = (ra.top - listRect.top) + list.scrollTop + (ra.height / 2);
-      var x2 = (rb.left - listRect.left) + list.scrollLeft + (rb.width / 2);
-      var y2 = (rb.top - listRect.top) + list.scrollTop + (rb.height / 2);
+      var x1 = (ra.left - listRect.left) + (list.scrollLeft * zoom) + (ra.width / 2);
+      var y1 = (ra.top - listRect.top) + (list.scrollTop * zoom) + (ra.height / 2);
+      var x2 = (rb.left - listRect.left) + (list.scrollLeft * zoom) + (rb.width / 2);
+      var y2 = (rb.top - listRect.top) + (list.scrollTop * zoom) + (rb.height / 2);
       var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', String(x1));
       line.setAttribute('y1', String(y1));
@@ -1425,8 +1640,7 @@
     var resetBtn = document.getElementById('kfrag-reset');
     var undoBtn = document.getElementById('kfrag-undo');
     var redoBtn = document.getElementById('kfrag-redo');
-    var linkBtn = document.getElementById('kfrag-link-selected');
-    var unlinkBtn = document.getElementById('kfrag-unlink-selected');
+    var relationToggle = document.getElementById('kfrag-toggle-relations');
 
     if(resetBtn){
       resetBtn.addEventListener('click', function(){
@@ -1459,34 +1673,42 @@
         updateKfragButtons();
       }, false);
     }
-    if(linkBtn && !linkBtn.__bound){
-      linkBtn.__bound = true;
-      linkBtn.addEventListener('click', function(){
-        saveSelectedKfragRelations(workspace, 'save');
+    if(relationToggle && !relationToggle.__bound){
+      relationToggle.__bound = true;
+      relationToggle.addEventListener('click', function(){
+        kfragRelationVisible = !kfragRelationVisible;
+        updateKfragRelationToggleButtons();
+        renderKfragRelations(workspace);
       }, false);
     }
-    if(unlinkBtn && !unlinkBtn.__bound){
-      unlinkBtn.__bound = true;
-      unlinkBtn.addEventListener('click', function(){
-        saveSelectedKfragRelations(workspace, 'delete');
-      }, false);
-    }
+    updateKfragRelationToggleButtons();
     updateKfragButtons();
   }
 
   function toggleAdditionalSelection(workspace, extId){
     if(!extId) return;
+    var sourceType = getActiveFragmentSourceType() || 'experience';
     var primary = getActiveFragmentId();
     var s = String(extId);
     if(primary !== null && String(primary) === s) return;
     window.kfrag_add_selected = window.kfrag_add_selected || { ext: [], kfid: [] };
-    var arr = window.kfrag_add_selected.ext;
-    if(!Array.isArray(arr)) arr = window.kfrag_add_selected.ext = [];
-    var idx = arr.indexOf(s);
+    var ref = makeKfragRef(sourceType, s);
+    var arr = window.kfrag_add_selected.kfid;
+    if(!Array.isArray(arr)) arr = window.kfrag_add_selected.kfid = [];
+    if(sourceType === 'experience'){
+      window.kfrag_add_selected.ext = window.kfrag_add_selected.ext || [];
+    }
+    var idx = arr.indexOf(ref);
     if(idx === -1){
-      arr.push(s);
+      arr.push(ref);
+      if(sourceType === 'experience' && Array.isArray(window.kfrag_add_selected.ext) && window.kfrag_add_selected.ext.indexOf(s) === -1){
+        window.kfrag_add_selected.ext.push(s);
+      }
     } else {
       arr.splice(idx,1);
+      if(sourceType === 'experience' && Array.isArray(window.kfrag_add_selected.ext)){
+        window.kfrag_add_selected.ext = window.kfrag_add_selected.ext.filter(function(x){ return String(x) !== s; });
+      }
     }
     updateFragmentSelectedUI();
     updateAdditionalHighlight(workspace);
@@ -1505,6 +1727,7 @@
 
     cards.forEach(function(card){
       var extId = card.getAttribute('data-ext-id') || '';
+      var sourceId = card.getAttribute('data-source-id') || extId || '';
       var num = card.getAttribute('data-kfrag-num') || '';
       var wrap = card.closest && card.closest('.fragment-node-wrapper');
       if(!wrap){
@@ -1519,13 +1742,20 @@
         wrap.appendChild(card);
       }
       if(extId){ wrap.setAttribute('data-ext-id', extId); }
+      if(sourceId){ wrap.setAttribute('data-source-id', sourceId); }
       if(!wrap.getAttribute('data-source-type')){ wrap.setAttribute('data-source-type', card.getAttribute('data-source-type') || 'experience'); }
       if(!card.getAttribute('data-source-type')){ card.setAttribute('data-source-type', wrap.getAttribute('data-source-type') || 'experience'); }
+      if(sourceId && !card.getAttribute('data-source-id')){ card.setAttribute('data-source-id', sourceId); }
       wrap.style.left = '';
       wrap.style.top = '';
 
-      // match sample-ish
-      try{ card.setAttribute('draggable','true'); }catch(_){ }
+      try{ card.setAttribute('draggable','false'); }catch(_){ }
+      if(!card.__kfragDragStartBound){
+        card.__kfragDragStartBound = true;
+        card.addEventListener('dragstart', function(ev){
+          try{ ev.preventDefault(); }catch(_){ }
+        }, false);
+      }
       try{ card.style.width = ''; }catch(_){ }
 
       // details hidden by default
@@ -1565,19 +1795,18 @@
 
       var frag = e.target && e.target.closest ? e.target.closest('.knowledge_fragment') : null;
       if(frag){
-        if(String(frag.getAttribute('data-source-type') || 'experience') !== 'experience'){
-          return;
-        }
-        var ext = frag.getAttribute('data-ext-id');
+        var selectedSourceType = normalizeSourceType(frag.getAttribute('data-source-type') || 'experience') || 'experience';
+        var ext = frag.getAttribute('data-source-id') || frag.getAttribute('data-ext-id');
         if(ext){
           try{
             window.activeKnowledgeLinkedFragmentIds = [];
+            window.activeKnowledgeLinkedFragmentRefs = [];
             window.activeKnowledgeLinkedTitle = '';
             clearKnowledgeConnectionOverlay(workspace);
           }catch(_){ }
           // If discussion is underway, keep the selection set fixed.
           // Allow toggling additional only when add-select mode is on.
-          if(String(window.activeKnowledgeFragmentDiscussed || '').trim() === 'UNDERWAY'){
+          if(selectedSourceType === 'experience' && String(window.activeKnowledgeFragmentDiscussed || '').trim() === 'UNDERWAY'){
             if(window.kfrag_add_select_mode){
               toggleAdditionalSelection(workspace, String(ext));
               loadDiscussion();
@@ -1587,8 +1816,9 @@
             return;
           }
           var primary = getActiveFragmentId();
+          var primarySourceType = getActiveFragmentSourceType();
           // add-select mode: keep primary, toggle additional
-          if(window.kfrag_add_select_mode && primary !== null && String(primary) !== String(ext)){
+          if(window.kfrag_add_select_mode && primary !== null && String(primary) !== String(ext) && primarySourceType === selectedSourceType){
             // mark wrapper additional selection
             toggleAdditionalSelection(workspace, String(ext));
             loadDiscussion();
@@ -1603,10 +1833,11 @@
           var discussed2 = frag.getAttribute('data-discussed') || '';
           setActiveFragment(ext, {
             discussed: discussed2,
+            sourceType: selectedSourceType,
             title: (qs('.card-body', frag) ? qs('.card-body', frag).textContent.trim() : null)
           });
           updateAdditionalHighlight(workspace);
-          if(String(discussed2 || '').trim() === 'UNDERWAY'){
+          if(selectedSourceType === 'experience' && String(discussed2 || '').trim() === 'UNDERWAY'){
             // Restore latest multi-fragment targets from discussion_history (CSV) so reload still works.
             restoreDiscussionTargetsForPrimary(ext, workspace, discussed2, function(){
               loadDiscussion();
@@ -1629,11 +1860,16 @@
         var item = btn.closest('.fragment-selected-item');
         if(!item) return;
         var id = item.getAttribute('data-kfid');
+        var sourceType = normalizeSourceType(item.getAttribute('data-source-type') || '') || getActiveFragmentSourceType() || 'experience';
         if(!id) return;
         // do not remove primary
-        var ids = getSelectedFragmentIds();
-        if(ids.length && ids[0] === id) return;
-        if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
+        var refs = getSelectedFragmentRefs();
+        var ref = makeKfragRef(sourceType, id);
+        if(refs.length && refs[0] === ref) return;
+        if(window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.kfid)){
+          window.kfrag_add_selected.kfid = window.kfrag_add_selected.kfid.filter(function(x){ return String(x) !== String(ref); });
+        }
+        if(sourceType === 'experience' && window.kfrag_add_selected && Array.isArray(window.kfrag_add_selected.ext)){
           window.kfrag_add_selected.ext = window.kfrag_add_selected.ext.filter(function(x){ return String(x) !== String(id); });
         }
         updateFragmentSelectedUI();
@@ -1650,8 +1886,9 @@
 
       function onMove(ev){
         if(!dragging) return;
-        var dx = ev.clientX - startX;
-        var dy = ev.clientY - startY;
+        var zoom = getKfragCanvasZoomValue(workspace);
+        var dx = (ev.clientX - startX) / zoom;
+        var dy = (ev.clientY - startY) / zoom;
         if(!moved && Math.sqrt(dx * dx + dy * dy) < 4) return;
         moved = true;
         ev.preventDefault();
@@ -1672,7 +1909,12 @@
           applyCanvasLayout(workspace, false);
           renderKfragRelations(workspace);
           if(window.activeKnowledgeLinkedFragmentIds && window.activeKnowledgeLinkedFragmentIds.length){
-            updateKnowledgeConnectionOverlay(workspace, window.activeKnowledgeLinkedFragmentIds, window.activeKnowledgeLinkedTitle || '');
+            updateKnowledgeConnectionOverlay(
+              workspace,
+              window.activeKnowledgeLinkedFragmentIds,
+              window.activeKnowledgeLinkedTitle || '',
+              window.activeKnowledgeLinkedFragmentRefs || []
+            );
           }
           try{ ev.preventDefault(); ev.stopPropagation(); }catch(_){ }
           workspace.__suppressNextFragmentClick = true;
@@ -1691,6 +1933,7 @@
         if(ev.target && ev.target.closest && ev.target.closest('button, input, textarea, select, a')) return;
         var list = qs('.knowledge-fragment-list', workspace);
         if(!list || !list.contains(w)) return;
+        try{ ev.preventDefault(); ev.stopPropagation(); }catch(_){ }
         dragging = w;
         dragging.classList.add('is-canvas-dragging');
         document.body.classList.add('is-fragment-canvas-dragging');
@@ -1849,6 +2092,20 @@
       if(sourceTypes.length){
         try{ node.setAttribute('data-source-types', sourceTypes.filter(function(v, i){ return sourceTypes.indexOf(v) === i; }).join(',')); }catch(_){ }
       }
+      if(n && n.fragment_source_ids && typeof n.fragment_source_ids === 'object'){
+        var refs = [];
+        Object.keys(n.fragment_source_ids).forEach(function(sourceType){
+          var normalizedType = normalizeSourceType(sourceType);
+          var sourceIds = Array.isArray(n.fragment_source_ids[sourceType]) ? n.fragment_source_ids[sourceType] : [];
+          sourceIds.forEach(function(sourceId){
+            var ref = makeKfragRef(normalizedType, sourceId);
+            if(ref && refs.indexOf(ref) === -1) refs.push(ref);
+          });
+        });
+        if(refs.length){
+          try{ node.setAttribute('data-kfrag-refs', refs.join(',')); }catch(_){ }
+        }
+      }
       if(kfragId !== null && kfragId !== '' && typeof kfragId !== 'undefined'){
         try{ node.setAttribute('data-kfrag-id', String(kfragId)); }catch(_){ }
       }
@@ -1936,7 +2193,8 @@
       rootEl.appendChild(buildNode(n));
     });
     applyKnowledgeTreeSourceFilter();
-    updateKnowledgeTreeReverseHighlights(getSelectedFragmentIds());
+    updateKnowledgeTreeReverseHighlights(getSelectedFragmentRefs());
+    loadKfragRelations(document.getElementById('knowledge_fragments_workspace'));
 
     function getKnowledgeDetailOverlay(){
       var overlay = document.getElementById('knowledge-detail-overlay-tab');
@@ -2042,9 +2300,18 @@
       var nodeId = nodeEl.getAttribute('data-node-id') || '';
       if(!nodeId) return;
 
+      var actionsBar = document.createElement('div');
+      actionsBar.className = 'knowledge-detail-actions';
+      var toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'knowledge-detail-edit-toggle';
+      toggleBtn.textContent = '編集';
+      actionsBar.appendChild(toggleBtn);
+
       var panel = document.createElement('form');
       panel.className = 'knowledge-edit-panel';
       panel.setAttribute('action', 'javascript:void(0)');
+      panel.style.display = 'none';
 
       var titleLabel = document.createElement('label');
       titleLabel.className = 'knowledge-edit-label';
@@ -2090,17 +2357,32 @@
       actions.className = 'knowledge-edit-actions';
       var feedback = document.createElement('div');
       feedback.className = 'knowledge-edit-feedback';
+      var cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'knowledge-edit-reflect';
+      cancelBtn.textContent = '閉じる';
       var saveBtn = document.createElement('button');
       saveBtn.type = 'submit';
       saveBtn.className = 'knowledge-edit-save';
       saveBtn.textContent = '保存';
       actions.appendChild(feedback);
+      actions.appendChild(cancelBtn);
       actions.appendChild(saveBtn);
 
       panel.appendChild(titleLabel);
       panel.appendChild(commentLabel);
       panel.appendChild(linkRow);
       panel.appendChild(actions);
+
+      toggleBtn.addEventListener('click', function(){
+        panel.style.display = 'block';
+        toggleBtn.style.display = 'none';
+      }, false);
+      cancelBtn.addEventListener('click', function(){
+        panel.style.display = 'none';
+        toggleBtn.style.display = '';
+        feedback.textContent = '';
+      }, false);
 
       panel.addEventListener('submit', function(){
         var newTitle = String(titleInput.value || '').trim();
@@ -2158,26 +2440,50 @@
           }
           var ws = document.getElementById('knowledge_fragments_workspace');
           if(ws) updateKnowledgeConnectionOverlay(ws, splitKfragIds(ids), newTitle);
+          panel.style.display = 'none';
+          toggleBtn.style.display = '';
           loadKnowledgeTree();
         };
         xhr.send(fd);
       }, false);
 
+      content.appendChild(actionsBar);
       content.appendChild(panel);
     }
 
     function applySelectionFromKfragId(kid, nodeEl, titleText){
-      if(!kid) return;
-      // Support CSV: first is primary, rest are additional selections.
-      var parts = splitKfragIds(kid);
+      var refs = getNodeKfragRefs(nodeEl);
+      if(!refs.length && kid){
+        refs = splitKfragIds(kid).map(function(id){ return makeKfragRef('experience', id); }).filter(Boolean);
+      }
+      if(!refs.length){
+        setActiveFragment(null, {
+          discussed: '',
+          sourceType: null,
+          title: (titleText || '').trim(),
+          noLinked: true
+        });
+        var wsEmpty = document.getElementById('knowledge_fragments_workspace');
+        if(wsEmpty){
+          try{ qsa('.knowledge_fragment.is-selected', wsEmpty).forEach(function(el){ el.classList.remove('is-selected'); }); }catch(_){ }
+          updateAdditionalHighlight(wsEmpty);
+          clearKnowledgeConnectionOverlay(wsEmpty);
+        }
+        loadDiscussion();
+        return;
+      }
+      var parts = refs.map(function(ref){ return String(ref.split(':')[1] || '').trim(); }).filter(Boolean);
+      var primaryRef = refs[0];
       var primaryId = parts.length ? parts[0] : null;
+      var primaryType = primaryRef ? normalizeSourceType(primaryRef.split(':')[0]) : '';
       if(!primaryId) return;
 
       window.kfrag_add_selected = window.kfrag_add_selected || { ext: [], kfid: [] };
-      window.kfrag_add_selected.ext = parts.slice(1);
+      window.kfrag_add_selected.ext = primaryType === 'experience' ? parts.slice(1) : [];
+      window.kfrag_add_selected.kfid = refs.slice(1);
       // If discussion is underway, keep display list frozen to the current selection set.
       // Otherwise ensure display list is cleared so additional selections are shown.
-      if(String(window.activeKnowledgeFragmentDiscussed || '').trim() === 'UNDERWAY'){
+      if(primaryType === 'experience' && String(window.activeKnowledgeFragmentDiscussed || '').trim() === 'UNDERWAY'){
         window.kfrag_display_list = parts.slice();
       } else {
         window.kfrag_display_list = null;
@@ -2192,16 +2498,20 @@
       var ws = document.getElementById('knowledge_fragments_workspace');
       if(ws){
         qsa('.knowledge_fragment.is-selected', ws).forEach(function(el){ el.classList.remove('is-selected'); });
-        var card = primaryId ? qs('.knowledge_fragment[data-ext-id="'+String(primaryId)+'"]', ws) : null;
+        var card = (primaryId && primaryType) ? findFragmentCard(ws, primaryType, primaryId) : null;
         if(card){
           card.classList.add('is-selected');
           discussed = card.getAttribute('data-discussed') || '';
         }
       }
 
-      setActiveFragment(primaryId, { discussed: discussed, title: (titleText || '').trim() });
+      setActiveFragment(primaryId, {
+        discussed: primaryType === 'experience' ? discussed : '',
+        sourceType: primaryType,
+        title: (titleText || '').trim()
+      });
       if(ws) updateAdditionalHighlight(ws);
-      if(ws) updateKnowledgeConnectionOverlay(ws, parts, titleText || '');
+      if(ws) updateKnowledgeConnectionOverlay(ws, parts, titleText || '', refs);
       loadDiscussion();
     }
 
@@ -2294,10 +2604,18 @@
             } else {
               var ws0 = document.getElementById('knowledge_fragments_workspace');
               try{
+                setActiveFragment(null, {
+                  discussed: '',
+                  sourceType: null,
+                  title: (titleEl.textContent || '').trim(),
+                  noLinked: true
+                });
                 window.activeKnowledgeLinkedFragmentIds = [];
+                window.activeKnowledgeLinkedFragmentRefs = [];
                 window.activeKnowledgeLinkedTitle = '';
                 clearKnowledgeConnectionOverlay(ws0);
               }catch(_){ }
+              loadDiscussion();
             }
           }
           return;
@@ -2414,7 +2732,7 @@
     var btn = document.getElementById('fragment-discussed-toggle');
     if(btn){
       btn.addEventListener('click', function(){
-        var ids = getSelectedFragmentIds();
+        var ids = getSelectedFragmentSourceIds();
         if(ids.length === 0){
           if(window.alert) alert('議論対象とするフラグメントを選択してください');
           return;
@@ -2427,9 +2745,13 @@
         // update all selected fragments
         var pending = ids.length;
         var anyFail = false;
+        var activeSourceType = getActiveFragmentSourceType() || 'experience';
         ids.forEach(function(fid){
           var fd = new FormData();
-          fd.append('externalized_contents_id', String(fid)); // legacy param name
+          if(activeSourceType === 'experience') fd.append('experience_knowledge_id', String(fid));
+          else if(activeSourceType === 'discussion') fd.append('externalized_contents_id', String(fid));
+          else fd.append('srl_id', String(fid));
+          fd.append('fragment_source_type', activeSourceType);
           fd.append('status', next);
           var xhr = new XMLHttpRequest();
           xhr.open('POST', 'php/update_discussed_status.php', true);
@@ -2458,7 +2780,7 @@
               var ws = document.getElementById('knowledge_fragments_workspace');
               if(ws){
                 ids.forEach(function(id2){
-                  var card2 = qs('.knowledge_fragment[data-ext-id="'+String(id2)+'"]', ws);
+                  var card2 = findFragmentCard(ws, activeSourceType, id2);
                   if(card2){ try{ card2.setAttribute('data-discussed', next); }catch(_){ } }
                 });
                 updateFragmentDiscussedIndicators(ws);
@@ -2512,10 +2834,11 @@
       var gid = getSelectedGroupId();
       if(gid) fd.append('group_id', gid);
       // Link to selected fragments (primary + additional) as CSV (fukushima-system behavior)
-      var ids = getSelectedFragmentIds();
+      var ids = getSelectedFragmentSourceIds();
+      var sourceType = getActiveFragmentSourceType() || 'experience';
       if(ids.length){
         fd.append('knowledge_fragment_id', ids.join(','));
-        fd.append('fragment_source_type', 'experience');
+        fd.append('fragment_source_type', sourceType);
       }
 
       var xhr = new XMLHttpRequest();
@@ -2550,7 +2873,8 @@
     form.addEventListener('submit', function(){
       var text = input.value.trim();
       if(!text) return;
-      var ids = getSelectedFragmentIds();
+      var ids = getSelectedFragmentSourceIds();
+      var sourceType = getActiveFragmentSourceType() || 'experience';
       if(ids.length === 0){
         if(window.alert) alert('議論対象とするフラグメントを選択してください');
         return;
@@ -2558,6 +2882,7 @@
       var fd = new FormData();
       fd.append('content', text);
       fd.append('knowledge_fragment_id', ids.join(','));
+      fd.append('fragment_source_type', sourceType);
       var xhr = new XMLHttpRequest();
       xhr.open('POST', 'php/save_discussion_history.php', true);
       xhr.onreadystatechange = function(){
@@ -2583,13 +2908,14 @@
     var list = document.getElementById('discussion_message_list');
     var form = document.getElementById('discussion_post_form');
     if(!list) return;
-    var ids = getSelectedFragmentIds();
+    var sourceType = getActiveFragmentSourceType() || 'experience';
+    var ids = getSelectedFragmentSourceIds();
     if(ids.length === 0){
       // No selection -> placeholder + hide form
       list.innerHTML = '';
       var ph = document.createElement('div');
       ph.className = 'discussion-placeholder';
-      ph.textContent = '議論対象とするフラグメントを選択してください';
+      ph.textContent = window.activeKnowledgeNoLinked ? 'この組織知に紐づく KF はありません。' : '議論対象とするフラグメントを選択してください';
       list.appendChild(ph);
       if(form) form.style.display = 'none';
       updateDiscussedButton();
@@ -2600,6 +2926,7 @@
 
     var url = 'php/get_discussion_history.php?limit=200';
     url += '&fragment_id=' + encodeURIComponent(ids.join(','));
+    url += '&fragment_source_type=' + encodeURIComponent(sourceType);
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onreadystatechange = function(){

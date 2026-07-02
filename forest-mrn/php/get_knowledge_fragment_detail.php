@@ -46,9 +46,9 @@ function column_exists(mysqli $mysqli, string $table, string $column): bool {
 
 function add_links(array &$links, string $sourceType, array $ids): void {
     $normalized = strtolower(trim((string)$sourceType));
-    if ($normalized === 'discussion') { $sourceType = 'externalized'; }
+    if ($normalized === 'externalized') { $sourceType = 'discussion'; }
     elseif ($normalized === 'srl') { $sourceType = 'SRL'; }
-    if (!in_array($sourceType, ['experience', 'externalized', 'SRL'], true)) { return; }
+    if (!in_array($sourceType, ['experience', 'discussion', 'SRL'], true)) { return; }
     foreach ($ids as $id) {
         $key = $sourceType . ':' . intval($id, 10);
         if ($id > 0 && !isset($links[$key])) {
@@ -87,7 +87,7 @@ if (!$links && $nodeId > 0 && table_exists($mysqli, 'knowledge_explorer_fragment
 
 if (!$links && $nodeId <= 0) {
     if (isset($_GET['experience_knowledge_id'])) { add_links($links, 'experience', split_fragment_ids($_GET['experience_knowledge_id'])); }
-    if (isset($_GET['externalized_contents_id'])) { add_links($links, 'externalized', split_fragment_ids($_GET['externalized_contents_id'])); }
+    if (isset($_GET['externalized_contents_id'])) { add_links($links, 'discussion', split_fragment_ids($_GET['externalized_contents_id'])); }
     if (isset($_GET['discussion_history_id'])) { add_links($links, 'discussion', split_fragment_ids($_GET['discussion_history_id'])); }
     if (!$links && isset($_GET['fragment_ids'])) { add_links($links, 'experience', split_fragment_ids($_GET['fragment_ids'])); }
     if (!$links && isset($_GET['fragment_id'])) { add_links($links, 'experience', split_fragment_ids($_GET['fragment_id'])); }
@@ -118,7 +118,7 @@ if (!$links && $nodeId > 0 && table_exists($mysqli, 'knowledge_explorer')) {
                 if ($stmt->execute() && ($res = $stmt->get_result())) {
                     if ($row = $res->fetch_assoc()) {
                         if (isset($row['kfrag_id'])) { add_links($links, 'experience', split_fragment_ids($row['kfrag_id'])); }
-                        if (isset($row['ext_id'])) { add_links($links, 'externalized', split_fragment_ids($row['ext_id'])); }
+                        if (isset($row['ext_id'])) { add_links($links, 'discussion', split_fragment_ids($row['ext_id'])); }
                     }
                     $res->free();
                 }
@@ -134,7 +134,7 @@ if (!$links) {
 }
 
 $orderedLinks = array_values($links);
-$idsByType = ['experience' => [], 'externalized' => [], 'SRL' => []];
+$idsByType = ['experience' => [], 'discussion' => [], 'SRL' => []];
 foreach ($orderedLinks as $link) {
     $idsByType[$link['type']][] = $link['id'];
 }
@@ -169,8 +169,8 @@ if ($idsByType['experience'] && table_exists($mysqli, 'experience_knowledges')) 
     }
 }
 
-if ($idsByType['externalized'] && table_exists($mysqli, 'externalized_contents')) {
-    $ids = $idsByType['externalized'];
+if ($idsByType['discussion'] && table_exists($mysqli, 'externalized_contents')) {
+    $ids = $idsByType['discussion'];
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
     $contentCol = column_exists($mysqli, 'externalized_contents', 'knowledge_fragments_content') ? 'knowledge_fragments_content' : 'knowledge_fragment_content';
     $sql = "SELECT ec.externalized_contents_id AS source_id,
@@ -191,7 +191,7 @@ if ($idsByType['externalized'] && table_exists($mysqli, 'externalized_contents')
         call_user_func_array([$stmt, 'bind_param'], $bind);
         if ($stmt->execute() && ($res = $stmt->get_result())) {
             while ($row = $res->fetch_assoc()) {
-                $rows['externalized:' . (int)$row['source_id']] = $row + ['source_type' => 'externalized'];
+                $rows['discussion:' . (int)$row['source_id']] = $row + ['source_type' => 'discussion'];
             }
             $res->free();
         }

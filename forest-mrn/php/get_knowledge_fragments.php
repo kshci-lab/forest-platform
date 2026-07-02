@@ -96,7 +96,7 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
                      COALESCE(u.name,'') AS user_name,
                      ec.discussed,
                      ec.updated_at,
-                     'externalized' AS source_type
+                     'discussion' AS source_type
                 FROM externalized_contents ec
                 LEFT JOIN users u ON u.user_id = ec.user_id
                WHERE ec.deleted = 0
@@ -120,7 +120,7 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
               'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
               'user_name' => $__user_name,
               'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
-              'source_type' => 'externalized',
+              'source_type' => 'discussion',
               'source_id' => isset($row['source_id']) ? (int)$row['source_id'] : null,
               'updated_at' => isset($row['updated_at']) ? (string)$row['updated_at'] : ''
             ];
@@ -231,8 +231,8 @@ if (!empty($__kfrag_list) && isset($mysqli) && $mysqli instanceof mysqli) {
             $__s3 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage3']) ? (string)$__kfrag_raw['stage3'] : '';
             $__uname = is_array($__kfrag_raw) && isset($__kfrag_raw['user_name']) ? (string)$__kfrag_raw['user_name'] : $__current_user_name;
             $__sourceType = is_array($__kfrag_raw) && isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience';
-            $__selectedLabel = ($__sourceType === 'externalized') ? 'discussion' : '経験';
-            $__stage1Label = ($__sourceType === 'externalized') ? '【discussionの振り返り】' : '【経験の振り返り】';
+            $__selectedLabel = ($__sourceType === 'discussion') ? 'discussion' : '経験';
+            $__stage1Label = ($__sourceType === 'discussion') ? '【discussionの振り返り】' : '【経験の振り返り】';
             // PHPでは配列は新しい順(new->old)で格納されています。表示順はこのままに、番号は古い->1 に合わせる。
             $num = isset($__kfrag_raw['display_num']) ? intval($__kfrag_raw['display_num'], 10) : ($totalK - $i);
   ?>

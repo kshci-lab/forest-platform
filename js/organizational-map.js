@@ -68,7 +68,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         this.material_id = null;
         this.concept_id = null;
         this.scale = 1;
-        this.activeSourceTypes = ['experience', 'externalized', 'SRL'];
+        this.activeSourceTypes = ['experience', 'discussion', 'SRL'];
         this.BoxDisplay = {
             x: 0,
             y: 0
@@ -439,10 +439,10 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
     normalizeSourceType(type){
         const raw = String(type || '').trim();
         const lower = raw.toLowerCase();
-        if (lower === 'discussion') return 'externalized';
+        if (lower === 'discussion') return 'discussion';
         if (lower === 'srl') return 'SRL';
         if (lower === 'experience') return 'experience';
-        if (lower === 'externalized') return 'externalized';
+        if (lower === 'discussion') return 'discussion';
         return '';
     }
 
@@ -461,7 +461,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
 
     getSourcePalette(sourceType){
         const normalized = this.normalizeSourceType(sourceType) || 'experience';
-        if (normalized === 'externalized') {
+        if (normalized === 'discussion') {
             return {
                 background: '#fde3ea',
                 border: '#e4a8b8',
@@ -528,7 +528,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
 
     applySourceFilter(sourceTypes, options){
         this.applyNodeDisplayStyles();
-        this.activeSourceTypes = this.parseSourceTypes(sourceTypes, '').length ? this.parseSourceTypes(sourceTypes, '') : ['experience', 'externalized', 'SRL'];
+        this.activeSourceTypes = this.parseSourceTypes(sourceTypes, '').length ? this.parseSourceTypes(sourceTypes, '') : ['experience', 'discussion', 'SRL'];
         this.nodes.forEach((node) => {
             if (node && node.group === 'produced_knowledge') {
                 this.ensureProducedKnowledgeEdges(node.id);
