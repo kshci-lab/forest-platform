@@ -18,6 +18,13 @@
       hideOrganizationalKnowledge: false
     }
   };
+  var KFRAG_VIEW_STORAGE_KEY = 'forest_combination_kfrag_view_mode';
+
+  function getKfragViewStorageKey(){
+    var gid = '';
+    try{ gid = getSelectedGroupId ? getSelectedGroupId() : ''; }catch(_){ gid = ''; }
+    return KFRAG_VIEW_STORAGE_KEY + ':' + (gid || 'default');
+  }
 
   function normalizeSourceType(type){
     var raw = String(type || '').trim();
@@ -189,8 +196,10 @@
 
     var workspace = document.getElementById('knowledge_fragments_workspace');
     if(workspace){
+      ensureKfragViewControls(workspace);
       initFragmentWorkspace(workspace);
       bindKfragActions(workspace);
+      loadKfragRelations(workspace);
     }
 
     bindDiscussedControls();
@@ -207,6 +216,107 @@
       // Whether restored or not, load discussion once with the current selection state.
       loadDiscussion();
     });
+  }
+
+  function getKfragViewMode(){
+    try{
+      var saved = window.localStorage ? window.localStorage.getItem(getKfragViewStorageKey()) : '';
+      if(saved === 'canvas') return 'canvas';
+    }catch(_){ }
+    return 'list';
+  }
+
+  function saveKfragViewMode(mode){
+    try{
+      if(window.localStorage) window.localStorage.setItem(getKfragViewStorageKey(), mode === 'canvas' ? 'canvas' : 'list');
+    }catch(_){ }
+  }
+
+  function ensureKfragViewControls(workspace){
+    if(!workspace) return;
+    var group = qs('.kfrag-action-group', workspace);
+    if(!group || group.__viewControlsReady) return;
+    group.__viewControlsReady = true;
+
+    var viewGroup = document.createElement('span');
+    viewGroup.className = 'kfrag-view-switch';
+    viewGroup.setAttribute('role', 'group');
+
+    var listBtn = document.createElement('button');
+    listBtn.type = 'button';
+    listBtn.id = 'kfrag-view-list';
+    listBtn.className = 'kfrag-view-btn';
+    listBtn.setAttribute('data-kfrag-view', 'list');
+    listBtn.textContent = 'List';
+
+    var canvasBtn = document.createElement('button');
+    canvasBtn.type = 'button';
+    canvasBtn.id = 'kfrag-view-canvas';
+    canvasBtn.className = 'kfrag-view-btn';
+    canvasBtn.setAttribute('data-kfrag-view', 'canvas');
+    canvasBtn.textContent = 'Canvas';
+
+    viewGroup.appendChild(listBtn);
+    viewGroup.appendChild(canvasBtn);
+    group.insertBefore(viewGroup, group.firstChild);
+
+    var linkBtn = document.createElement('button');
+    linkBtn.type = 'button';
+    linkBtn.id = 'kfrag-link-selected';
+    linkBtn.className = 'kfrag-action-btn kfrag-link-btn';
+    linkBtn.textContent = 'Link KF';
+    group.appendChild(linkBtn);
+
+    var unlinkBtn = document.createElement('button');
+    unlinkBtn.type = 'button';
+    unlinkBtn.id = 'kfrag-unlink-selected';
+    unlinkBtn.className = 'kfrag-action-btn kfrag-unlink-btn';
+    unlinkBtn.textContent = 'Unlink KF';
+    group.appendChild(unlinkBtn);
+
+    viewGroup.addEventListener('click', function(e){
+      var btn = e.target && e.target.closest ? e.target.closest('.kfrag-view-btn') : null;
+      if(!btn || !viewGroup.contains(btn)) return;
+      var mode = btn.getAttribute('data-kfrag-view') === 'canvas' ? 'canvas' : 'list';
+      setKfragViewMode(workspace, mode, true);
+    }, false);
+  }
+
+  function updateKfragViewButtons(mode){
+    qsa('.kfrag-view-btn').forEach(function(btn){
+      var active = (btn.getAttribute('data-kfrag-view') === mode);
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function setKfragViewMode(workspace, mode, persist){
+    if(!workspace) return;
+    mode = (mode === 'canvas') ? 'canvas' : 'list';
+    workspace.setAttribute('data-kfrag-view', mode);
+    workspace.classList.toggle('is-canvas-mode', mode === 'canvas');
+    workspace.classList.toggle('is-list-mode', mode !== 'canvas');
+    updateKfragViewButtons(mode);
+    if(persist) saveKfragViewMode(mode);
+    if(mode === 'canvas'){
+      applyCanvasLayout(workspace, false);
+    } else {
+      var list = qs('.knowledge-fragment-list', workspace);
+      if(list) list.style.minHeight = '';
+      qsa('.fragment-node-wrapper', workspace).forEach(function(w){
+        w.style.position = '';
+        w.style.left = '';
+        w.style.top = '';
+        w.style.width = '';
+        w.style.zIndex = '';
+      });
+    }
+    try{
+      if(window.activeKnowledgeLinkedFragmentIds && window.activeKnowledgeLinkedFragmentIds.length){
+        updateKnowledgeConnectionOverlay(workspace, window.activeKnowledgeLinkedFragmentIds, window.activeKnowledgeLinkedTitle || '');
+      }
+    }catch(_){ }
+    renderKfragRelations(workspace);
   }
 
   // ---------------------------------------------------------------------------
@@ -413,6 +523,8 @@
       window.kfrag_add_selected = { ext: [], kfid: [] };
       window.kfrag_display_list = null;
       window.kfrag_add_select_mode = false;
+      window.activeKnowledgeLinkedFragmentIds = [];
+      window.activeKnowledgeLinkedTitle = '';
       var addBtn = document.getElementById('fragment-add-select-toggle');
       if(addBtn) addBtn.classList.remove('is-adding');
     }catch(_){ }
@@ -420,6 +532,7 @@
       try{ qsa('.knowledge_fragment.is-selected', workspace).forEach(function(el){ el.classList.remove('is-selected'); }); }catch(_){ }
       try{ updateAdditionalHighlight(workspace); }catch(_){ }
       try{ updateFragmentDiscussedIndicators(workspace); }catch(_){ }
+      try{ clearKnowledgeConnectionOverlay(workspace); }catch(_){ }
     }
     try{ updateFragmentSelectedUI(); }catch(_){ }
     try{ updateDiscussedButton(); }catch(_){ }
@@ -466,6 +579,7 @@
       try{ _kfragUndo.length = 0; _kfragRedo.length = 0; updateKfragButtons(); }catch(_){ }
       // Re-init workspace wrappers for new cards
       initFragmentWorkspace(workspace);
+      loadKfragRelations(workspace);
       applyFragmentSourceFilter();
       clearFragmentSelectionState(workspace);
       loadDiscussion();
@@ -543,7 +657,134 @@
           if(idx > 0) w.classList.add('additional-selected');
         }
       });
+      updateKnowledgeTreeReverseHighlights(ids);
     }catch(_){ }
+  }
+
+  function splitKfragIds(value){
+    return String(value || '').split(',').map(function(x){ return String(x || '').trim(); }).filter(function(x){
+      return x !== '' && !isNaN(parseInt(x, 10));
+    }).filter(function(x, i, arr){
+      return arr.indexOf(x) === i;
+    });
+  }
+
+  function updateKnowledgeTreeReverseHighlights(ids){
+    var tree = document.getElementById('overlay_knowledge_tree');
+    if(!tree) return;
+    ids = (ids || []).map(function(x){ return String(x); }).filter(Boolean);
+    qsa('.kt-node.kfrag-reverse-linked', tree).forEach(function(node){ node.classList.remove('kfrag-reverse-linked'); });
+    qsa('.kt-node.kfrag-reverse-primary', tree).forEach(function(node){ node.classList.remove('kfrag-reverse-primary'); });
+    if(!ids.length) return;
+
+    var primary = ids[0];
+    qsa('.kt-node[data-kfrag-id]', tree).forEach(function(node){
+      var nodeIds = splitKfragIds(node.getAttribute('data-kfrag-id'));
+      var matched = nodeIds.some(function(id){ return ids.indexOf(String(id)) !== -1; });
+      if(!matched) return;
+      node.classList.add('kfrag-reverse-linked');
+      if(primary && nodeIds.indexOf(String(primary)) !== -1){
+        node.classList.add('kfrag-reverse-primary');
+      }
+      var p = node.parentNode;
+      while(p && p !== tree){
+        if(p.classList && p.classList.contains('kt-children')){
+          p.style.display = 'block';
+          var parentNode = p.parentNode;
+          var tg = parentNode ? qs(':scope > .kt-toggle', parentNode) : null;
+          if(tg) tg.textContent = '-';
+        }
+        p = p.parentNode;
+      }
+    });
+  }
+
+  function clearKnowledgeConnectionOverlay(workspace){
+    workspace = workspace || document.getElementById('knowledge_fragments_workspace');
+    if(!workspace) return;
+    try{ qsa('.fragment-node-wrapper.knowledge-linked-highlight', workspace).forEach(function(w){ w.classList.remove('knowledge-linked-highlight'); }); }catch(_){ }
+    try{
+      var svg = qs('.kfrag-link-overlay', workspace);
+      if(svg) svg.innerHTML = '';
+    }catch(_){ }
+    try{
+      var summary = qs('.kfrag-connection-summary', workspace);
+      if(summary) summary.parentNode.removeChild(summary);
+    }catch(_){ }
+  }
+
+  function updateKnowledgeConnectionOverlay(workspace, ids, titleText){
+    if(!workspace) return;
+    clearKnowledgeConnectionOverlay(workspace);
+    ids = (ids || []).map(function(x){ return String(x); }).filter(Boolean);
+    if(!ids.length) return;
+    try{
+      window.activeKnowledgeLinkedFragmentIds = ids.slice();
+      window.activeKnowledgeLinkedTitle = String(titleText || '');
+    }catch(_){ }
+
+    var list = qs('.knowledge-fragment-list', workspace);
+    if(!list) return;
+    var wrappers = [];
+    ids.forEach(function(id){
+      var w = qs('.fragment-node-wrapper[data-ext-id="'+id+'"]', list);
+      if(w){
+        w.classList.add('knowledge-linked-highlight');
+        wrappers.push(w);
+      }
+    });
+    if(!wrappers.length) return;
+
+    var summary = document.createElement('div');
+    summary.className = 'kfrag-connection-summary';
+    summary.textContent = 'Linked KF: ' + ids.join(', ');
+    if(titleText && String(titleText).trim() !== ''){
+      summary.setAttribute('title', String(titleText).trim());
+    }
+    list.insertBefore(summary, list.firstChild);
+
+    if(!workspace.classList.contains('is-canvas-mode')) return;
+
+    var svg = qs('.kfrag-link-overlay', list);
+    if(!svg){
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'kfrag-link-overlay');
+      list.insertBefore(svg, list.firstChild);
+    }
+    svg.innerHTML = '';
+
+    var listRect = list.getBoundingClientRect();
+    var width = Math.max(list.scrollWidth, list.clientWidth, 1);
+    var height = Math.max(list.scrollHeight, list.clientHeight, 1);
+    svg.setAttribute('width', String(width));
+    svg.setAttribute('height', String(height));
+    svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+
+    var points = wrappers.map(function(w){
+      var r = w.getBoundingClientRect();
+      return {
+        x: (r.left - listRect.left) + list.scrollLeft + (r.width / 2),
+        y: (r.top - listRect.top) + list.scrollTop + (r.height / 2)
+      };
+    });
+
+    for(var i=0; i<points.length - 1; i++){
+      var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(points[i].x));
+      line.setAttribute('y1', String(points[i].y));
+      line.setAttribute('x2', String(points[i+1].x));
+      line.setAttribute('y2', String(points[i+1].y));
+      line.setAttribute('class', 'kfrag-link-line');
+      svg.appendChild(line);
+    }
+    points.forEach(function(p){
+      var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', String(p.x));
+      dot.setAttribute('cy', String(p.y));
+      dot.setAttribute('r', '5');
+      dot.setAttribute('class', 'kfrag-link-dot');
+      svg.appendChild(dot);
+    });
   }
 
   function updateFragmentDiscussedIndicators(workspace){
@@ -703,7 +944,9 @@
     qsa('.fragment-node-wrapper', workspace).forEach(function(w){
       var id = w.getAttribute('data-ext-id');
       if(!id) return;
-      snap[id] = { left: parseInt(w.style.left || '0', 10) || 0, top: parseInt(w.style.top || '0', 10) || 0 };
+      var left = parseFloat(w.style.left || w.getAttribute('data-canvas-x') || '0') || 0;
+      var top = parseFloat(w.style.top || w.getAttribute('data-canvas-y') || '0') || 0;
+      snap[id] = { left: left, top: top };
     });
     return snap;
   }
@@ -713,9 +956,16 @@
     qsa('.fragment-node-wrapper', workspace).forEach(function(w){
       var id = w.getAttribute('data-ext-id');
       if(!id || !snap[id]) return;
-      w.style.left = snap[id].left + 'px';
-      w.style.top = snap[id].top + 'px';
+      var left = parseFloat(snap[id].left || 0) || 0;
+      var top = parseFloat(snap[id].top || 0) || 0;
+      w.setAttribute('data-canvas-x', String(left));
+      w.setAttribute('data-canvas-y', String(top));
+      if(workspace.classList.contains('is-canvas-mode')){
+        w.style.left = left + 'px';
+        w.style.top = top + 'px';
+      }
     });
+    saveFragmentCanvasPositions(workspace);
   }
 
   function pushHistory(workspace, beforeSnap){
@@ -742,6 +992,63 @@
     });
   }
 
+  function hasStoredCanvasPosition(w){
+    return w && w.hasAttribute('data-canvas-x') && w.hasAttribute('data-canvas-y');
+  }
+
+  function buildAutoCanvasPosition(index, listWidth){
+    var cardW = 250;
+    var gap = 14;
+    var cols = Math.max(1, Math.floor((Math.max(listWidth || 0, cardW) + gap) / (cardW + gap)));
+    return {
+      left: gap + (index % cols) * (cardW + gap),
+      top: gap + Math.floor(index / cols) * 142
+    };
+  }
+
+  function applyCanvasLayout(workspace, forceReset){
+    var list = qs('.knowledge-fragment-list', workspace);
+    if(!list) return;
+    var rect = list.getBoundingClientRect();
+    var wrappers = qsa('.fragment-node-wrapper', list);
+    var maxBottom = 0;
+    wrappers.forEach(function(w, idx){
+      var pos = null;
+      if(!forceReset && hasStoredCanvasPosition(w)){
+        pos = {
+          left: parseFloat(w.getAttribute('data-canvas-x') || '0') || 0,
+          top: parseFloat(w.getAttribute('data-canvas-y') || '0') || 0
+        };
+      } else {
+        pos = buildAutoCanvasPosition(idx, rect.width || list.clientWidth || 0);
+        w.setAttribute('data-canvas-x', String(pos.left));
+        w.setAttribute('data-canvas-y', String(pos.top));
+      }
+      w.style.position = 'absolute';
+      w.style.left = pos.left + 'px';
+      w.style.top = pos.top + 'px';
+      w.style.width = '';
+      var h = w.offsetHeight || 128;
+      maxBottom = Math.max(maxBottom, pos.top + h + 24);
+    });
+    list.style.minHeight = Math.max(260, maxBottom) + 'px';
+    if(forceReset) saveFragmentCanvasPositions(workspace);
+  }
+
+  function getCanvasPositions(workspace){
+    var out = [];
+    qsa('.fragment-node-wrapper', workspace).forEach(function(w){
+      var id = w.getAttribute('data-ext-id');
+      if(!id) return;
+      out.push({
+        id: id,
+        x: parseFloat(w.getAttribute('data-canvas-x') || w.style.left || '0') || 0,
+        y: parseFloat(w.getAttribute('data-canvas-y') || w.style.top || '0') || 0
+      });
+    });
+    return out;
+  }
+
   function getFragmentOrder(workspace){
     return qsa('.fragment-node-wrapper', workspace).map(function(w){
       return w.getAttribute('data-ext-id') || '';
@@ -757,6 +1064,8 @@
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append('order', JSON.stringify(order));
+    var gid = getSelectedGroupId();
+    if(gid) fd.append('group_id', gid);
     xhr.open('POST', 'php/save_fragment_order.php', true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
@@ -774,6 +1083,176 @@
       }
     };
     xhr.send(fd);
+  }
+
+  function saveFragmentCanvasPositions(workspace){
+    var positions = getCanvasPositions(workspace);
+    if(!positions.length) return;
+
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append('positions', JSON.stringify(positions));
+    var gid = getSelectedGroupId();
+    if(gid) fd.append('group_id', gid);
+    xhr.open('POST', 'php/save_fragment_order.php', true);
+    xhr.onreadystatechange = function(){
+      if(xhr.readyState !== 4) return;
+      if(xhr.status !== 200){
+        try{ console.warn('knowledge_fragment position save failed', xhr.status, xhr.responseText || ''); }catch(_){ }
+        return;
+      }
+      try{
+        var res = JSON.parse(xhr.responseText || '{}');
+        if(!res || res.status !== 'ok'){
+          try{ console.warn('knowledge_fragment position save error', res); }catch(_){ }
+        }
+      }catch(err){
+        try{ console.warn('knowledge_fragment position save parse error', err, xhr.responseText || ''); }catch(_){ }
+      }
+    };
+    xhr.send(fd);
+  }
+
+  function normalizeRelationPair(a, b){
+    var ai = parseInt(a, 10);
+    var bi = parseInt(b, 10);
+    if(!ai || !bi || ai === bi) return null;
+    return ai < bi ? { from: ai, to: bi } : { from: bi, to: ai };
+  }
+
+  function getRelationPairsFromIds(ids){
+    ids = (ids || []).map(function(x){ return String(x); }).filter(Boolean);
+    if(ids.length < 2) return [];
+    var primary = ids[0];
+    var seen = {};
+    var pairs = [];
+    ids.slice(1).forEach(function(id){
+      var p = normalizeRelationPair(primary, id);
+      if(!p) return;
+      var key = p.from + '-' + p.to;
+      if(seen[key]) return;
+      seen[key] = true;
+      pairs.push(p);
+    });
+    return pairs;
+  }
+
+  function loadKfragRelations(workspace){
+    workspace = workspace || document.getElementById('knowledge_fragments_workspace');
+    if(!workspace) return;
+    var gid = getSelectedGroupId();
+    var url = 'php/get_kfrag_relations.php';
+    if(gid) url += '?group_id=' + encodeURIComponent(gid);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function(){
+      if(xhr.readyState !== 4) return;
+      if(xhr.status !== 200) return;
+      var res = null;
+      try{ res = JSON.parse(xhr.responseText || '{}'); }catch(_){ res = null; }
+      if(!res || res.status !== 'ok' || !Array.isArray(res.relations)) return;
+      window.kfragRelations = res.relations;
+      renderKfragRelations(workspace);
+    };
+    xhr.send(null);
+  }
+
+  function saveSelectedKfragRelations(workspace, action){
+    var ids = getSelectedFragmentIds();
+    var pairs = getRelationPairsFromIds(ids);
+    if(pairs.length === 0){
+      try{ if(window.alert) alert('2つ以上のKFを選択してください'); }catch(_){ }
+      return;
+    }
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append('pairs', JSON.stringify(pairs));
+    fd.append('relation_type', 'related');
+    fd.append('action', action === 'delete' ? 'delete' : 'save');
+    var gid = getSelectedGroupId();
+    if(gid) fd.append('group_id', gid);
+    xhr.open('POST', 'php/save_kfrag_relation.php', true);
+    xhr.onreadystatechange = function(){
+      if(xhr.readyState !== 4) return;
+      if(xhr.status !== 200){
+        try{ if(window.alert) alert('KF間の接続保存に失敗しました'); }catch(_){ }
+        return;
+      }
+      var res = null;
+      try{ res = JSON.parse(xhr.responseText || '{}'); }catch(_){ res = null; }
+      if(!res || res.status !== 'ok'){
+        try{ if(window.alert) alert((res && res.message) ? res.message : 'KF間の接続保存に失敗しました'); }catch(_){ }
+        return;
+      }
+      loadKfragRelations(workspace);
+    };
+    xhr.send(fd);
+  }
+
+  function clearKfragRelationOverlay(workspace){
+    workspace = workspace || document.getElementById('knowledge_fragments_workspace');
+    if(!workspace) return;
+    try{
+      var svg = qs('.kfrag-relation-overlay', workspace);
+      if(svg) svg.innerHTML = '';
+    }catch(_){ }
+    try{ qsa('.fragment-node-wrapper.has-kfrag-relation', workspace).forEach(function(w){ w.classList.remove('has-kfrag-relation'); }); }catch(_){ }
+  }
+
+  function renderKfragRelations(workspace){
+    workspace = workspace || document.getElementById('knowledge_fragments_workspace');
+    if(!workspace) return;
+    clearKfragRelationOverlay(workspace);
+    var relations = Array.isArray(window.kfragRelations) ? window.kfragRelations : [];
+    if(!relations.length) return;
+    var list = qs('.knowledge-fragment-list', workspace);
+    if(!list) return;
+
+    relations.forEach(function(rel){
+      var a = rel.from_fragment_id || rel.from || rel.source_id;
+      var b = rel.to_fragment_id || rel.to || rel.target_id;
+      var wa = qs('.fragment-node-wrapper[data-ext-id="'+String(a)+'"]', list);
+      var wb = qs('.fragment-node-wrapper[data-ext-id="'+String(b)+'"]', list);
+      if(wa) wa.classList.add('has-kfrag-relation');
+      if(wb) wb.classList.add('has-kfrag-relation');
+    });
+
+    if(!workspace.classList.contains('is-canvas-mode')) return;
+    var svg = qs('.kfrag-relation-overlay', list);
+    if(!svg){
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'kfrag-relation-overlay');
+      list.insertBefore(svg, list.firstChild);
+    }
+    svg.innerHTML = '';
+
+    var listRect = list.getBoundingClientRect();
+    var width = Math.max(list.scrollWidth, list.clientWidth, 1);
+    var height = Math.max(list.scrollHeight, list.clientHeight, 1);
+    svg.setAttribute('width', String(width));
+    svg.setAttribute('height', String(height));
+    svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+
+    relations.forEach(function(rel){
+      var a = rel.from_fragment_id || rel.from || rel.source_id;
+      var b = rel.to_fragment_id || rel.to || rel.target_id;
+      var wa = qs('.fragment-node-wrapper[data-ext-id="'+String(a)+'"]', list);
+      var wb = qs('.fragment-node-wrapper[data-ext-id="'+String(b)+'"]', list);
+      if(!wa || !wb) return;
+      var ra = wa.getBoundingClientRect();
+      var rb = wb.getBoundingClientRect();
+      var x1 = (ra.left - listRect.left) + list.scrollLeft + (ra.width / 2);
+      var y1 = (ra.top - listRect.top) + list.scrollTop + (ra.height / 2);
+      var x2 = (rb.left - listRect.left) + list.scrollLeft + (rb.width / 2);
+      var y2 = (rb.top - listRect.top) + list.scrollTop + (rb.height / 2);
+      var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(x1));
+      line.setAttribute('y1', String(y1));
+      line.setAttribute('x2', String(x2));
+      line.setAttribute('y2', String(y2));
+      line.setAttribute('class', 'kfrag-relation-line');
+      svg.appendChild(line);
+    });
   }
 
   function getFragmentDisplayNumber(wrapper){
@@ -926,6 +1405,7 @@
     }
 
     workspace.addEventListener('mousedown', function(ev){
+      if(workspace.classList.contains('is-canvas-mode')) return;
       if(ev.button !== 0) return;
       if(ev.target && ev.target.closest && ev.target.closest('button, input, textarea, select, a')) return;
       var list = getList();
@@ -945,10 +1425,18 @@
     var resetBtn = document.getElementById('kfrag-reset');
     var undoBtn = document.getElementById('kfrag-undo');
     var redoBtn = document.getElementById('kfrag-redo');
+    var linkBtn = document.getElementById('kfrag-link-selected');
+    var unlinkBtn = document.getElementById('kfrag-unlink-selected');
 
     if(resetBtn){
       resetBtn.addEventListener('click', function(){
-        resetFragmentOrderByInitialNumber(workspace);
+        if(workspace.classList.contains('is-canvas-mode')){
+          var before = snapshotPositions(workspace);
+          applyCanvasLayout(workspace, true);
+          pushHistory(workspace, before);
+        } else {
+          resetFragmentOrderByInitialNumber(workspace);
+        }
       }, false);
     }
     if(undoBtn){
@@ -969,6 +1457,18 @@
         _kfragUndo.push(cur);
         applyPositions(workspace, next);
         updateKfragButtons();
+      }, false);
+    }
+    if(linkBtn && !linkBtn.__bound){
+      linkBtn.__bound = true;
+      linkBtn.addEventListener('click', function(){
+        saveSelectedKfragRelations(workspace, 'save');
+      }, false);
+    }
+    if(unlinkBtn && !unlinkBtn.__bound){
+      unlinkBtn.__bound = true;
+      unlinkBtn.addEventListener('click', function(){
+        saveSelectedKfragRelations(workspace, 'delete');
       }, false);
     }
     updateKfragButtons();
@@ -997,6 +1497,7 @@
     // inside .knowledge-fragment-list. PHP emits this structure; JS keeps
     // a fallback for older/unwrapped responses.
 
+    ensureKfragViewControls(workspace);
     try{ workspace.style.position = 'relative'; }catch(_){ }
 
     var cards = qsa('.knowledge_fragment', workspace);
@@ -1034,9 +1535,8 @@
       if(detailBtn){ detailBtn.textContent = '詳細▼'; }
     });
 
-    // default layout
-    defaultLayout(workspace);
     bindFragmentReorder(workspace);
+    setKfragViewMode(workspace, getKfragViewMode(), false);
     updateFragmentDiscussedIndicators(workspace);
 
     // click handlers: detail toggle + selection
@@ -1070,6 +1570,11 @@
         }
         var ext = frag.getAttribute('data-ext-id');
         if(ext){
+          try{
+            window.activeKnowledgeLinkedFragmentIds = [];
+            window.activeKnowledgeLinkedTitle = '';
+            clearKnowledgeConnectionOverlay(workspace);
+          }catch(_){ }
           // If discussion is underway, keep the selection set fixed.
           // Allow toggling additional only when add-select mode is on.
           if(String(window.activeKnowledgeFragmentDiscussed || '').trim() === 'UNDERWAY'){
@@ -1137,39 +1642,63 @@
       }, false);
     }
 
-    // List layout is reordered by bindFragmentReorder().
-    workspace.__dragBound = true;
-    // drag support (mousedown to move wrapper)
+    // Canvas layout support (list layout is reordered by bindFragmentReorder()).
     if(!workspace.__dragBound){
       workspace.__dragBound = true;
       var dragging = null;
-      var startX = 0, startY = 0, origL = 0, origT = 0, beforeSnap = null;
+      var startX = 0, startY = 0, origL = 0, origT = 0, beforeSnap = null, moved = false;
 
       function onMove(ev){
         if(!dragging) return;
         var dx = ev.clientX - startX;
         var dy = ev.clientY - startY;
+        if(!moved && Math.sqrt(dx * dx + dy * dy) < 4) return;
+        moved = true;
+        ev.preventDefault();
         dragging.style.left = (origL + dx) + 'px';
         dragging.style.top = (origT + dy) + 'px';
+        dragging.setAttribute('data-canvas-x', String(origL + dx));
+        dragging.setAttribute('data-canvas-y', String(origT + dy));
       }
-      function onUp(){
+      function onUp(ev){
         if(!dragging) return;
         document.removeEventListener('mousemove', onMove, true);
         document.removeEventListener('mouseup', onUp, true);
-        pushHistory(workspace, beforeSnap);
+        dragging.classList.remove('is-canvas-dragging');
+        document.body.classList.remove('is-fragment-canvas-dragging');
+        if(moved){
+          pushHistory(workspace, beforeSnap);
+          saveFragmentCanvasPositions(workspace);
+          applyCanvasLayout(workspace, false);
+          renderKfragRelations(workspace);
+          if(window.activeKnowledgeLinkedFragmentIds && window.activeKnowledgeLinkedFragmentIds.length){
+            updateKnowledgeConnectionOverlay(workspace, window.activeKnowledgeLinkedFragmentIds, window.activeKnowledgeLinkedTitle || '');
+          }
+          try{ ev.preventDefault(); ev.stopPropagation(); }catch(_){ }
+          workspace.__suppressNextFragmentClick = true;
+          setTimeout(function(){ workspace.__suppressNextFragmentClick = false; }, 0);
+        }
         dragging = null;
+        moved = false;
       }
 
       workspace.addEventListener('mousedown', function(ev){
+        if(!workspace.classList.contains('is-canvas-mode')) return;
+        if(ev.button !== 0) return;
         var w = ev.target && ev.target.closest ? ev.target.closest('.fragment-node-wrapper') : null;
         if(!w) return;
         // ignore when clicking a button inside card (detail button etc.)
-        if(ev.target && ev.target.closest && ev.target.closest('button')) return;
+        if(ev.target && ev.target.closest && ev.target.closest('button, input, textarea, select, a')) return;
+        var list = qs('.knowledge-fragment-list', workspace);
+        if(!list || !list.contains(w)) return;
         dragging = w;
+        dragging.classList.add('is-canvas-dragging');
+        document.body.classList.add('is-fragment-canvas-dragging');
         beforeSnap = snapshotPositions(workspace);
         startX = ev.clientX; startY = ev.clientY;
-        origL = parseInt(w.style.left || '0', 10) || 0;
-        origT = parseInt(w.style.top || '0', 10) || 0;
+        origL = parseFloat(w.style.left || w.getAttribute('data-canvas-x') || '0') || 0;
+        origT = parseFloat(w.style.top || w.getAttribute('data-canvas-y') || '0') || 0;
+        moved = false;
         document.addEventListener('mousemove', onMove, true);
         document.addEventListener('mouseup', onUp, true);
       }, false);
@@ -1296,6 +1825,8 @@
       var node = document.createElement('div');
       node.className = 'kt-node';
       node.setAttribute('data-node-id', String(n.node_id));
+      try{ node.setAttribute('data-node-title', String(n.node_title != null ? n.node_title : '')); }catch(_){ }
+      try{ node.setAttribute('data-comment', String(n.comment != null ? n.comment : '')); }catch(_){ }
       if(n && (n.parent_id === null || typeof n.parent_id === 'undefined')){
         node.classList.add('kt-root');
       }
@@ -1405,6 +1936,7 @@
       rootEl.appendChild(buildNode(n));
     });
     applyKnowledgeTreeSourceFilter();
+    updateKnowledgeTreeReverseHighlights(getSelectedFragmentIds());
 
     function getKnowledgeDetailOverlay(){
       var overlay = document.getElementById('knowledge-detail-overlay-tab');
@@ -1486,6 +2018,7 @@
           heading.textContent = title;
           content.appendChild(heading);
         }
+        renderKnowledgeEditPanel(content, nodeEl, title, fragmentIds);
         var body = document.createElement('div');
         body.innerHTML = html || '<div class="knowledge-detail-empty">詳細情報がありません。</div>';
         content.appendChild(body);
@@ -1498,15 +2031,145 @@
           }catch(_){ }
         }
         content.innerHTML = '<div class="knowledge-detail-error"></div>';
+        renderKnowledgeEditPanel(content, nodeEl, title, fragmentIds);
         var err = qs('.knowledge-detail-error', content);
         if(err) err.textContent = message;
       });
     }
 
+    function renderKnowledgeEditPanel(content, nodeEl, title, fragmentIds){
+      if(!content || !nodeEl) return;
+      var nodeId = nodeEl.getAttribute('data-node-id') || '';
+      if(!nodeId) return;
+
+      var panel = document.createElement('form');
+      panel.className = 'knowledge-edit-panel';
+      panel.setAttribute('action', 'javascript:void(0)');
+
+      var titleLabel = document.createElement('label');
+      titleLabel.className = 'knowledge-edit-label';
+      titleLabel.textContent = 'タイトル';
+      var titleInput = document.createElement('textarea');
+      titleInput.className = 'knowledge-edit-control knowledge-edit-title';
+      titleInput.rows = 2;
+      titleInput.maxLength = 255;
+      titleInput.value = nodeEl.getAttribute('data-node-title') || title || '';
+      titleLabel.appendChild(titleInput);
+
+      var commentLabel = document.createElement('label');
+      commentLabel.className = 'knowledge-edit-label';
+      commentLabel.textContent = 'コメント';
+      var commentInput = document.createElement('textarea');
+      commentInput.className = 'knowledge-edit-control';
+      commentInput.rows = 3;
+      commentInput.value = nodeEl.getAttribute('data-comment') || '';
+      commentLabel.appendChild(commentInput);
+
+      var linkRow = document.createElement('div');
+      linkRow.className = 'knowledge-edit-link-row';
+      var linkLabel = document.createElement('label');
+      linkLabel.className = 'knowledge-edit-label knowledge-edit-link-label';
+      linkLabel.textContent = '接続KF';
+      var linkInput = document.createElement('input');
+      linkInput.type = 'text';
+      linkInput.className = 'knowledge-edit-control knowledge-edit-links';
+      linkInput.value = splitKfragIds(fragmentIds).join(',');
+      linkLabel.appendChild(linkInput);
+
+      var reflectBtn = document.createElement('button');
+      reflectBtn.type = 'button';
+      reflectBtn.className = 'knowledge-edit-reflect';
+      reflectBtn.textContent = '現在選択中のKFを反映';
+      reflectBtn.addEventListener('click', function(){
+        linkInput.value = getSelectedFragmentIds().join(',');
+      }, false);
+      linkRow.appendChild(linkLabel);
+      linkRow.appendChild(reflectBtn);
+
+      var actions = document.createElement('div');
+      actions.className = 'knowledge-edit-actions';
+      var feedback = document.createElement('div');
+      feedback.className = 'knowledge-edit-feedback';
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'submit';
+      saveBtn.className = 'knowledge-edit-save';
+      saveBtn.textContent = '保存';
+      actions.appendChild(feedback);
+      actions.appendChild(saveBtn);
+
+      panel.appendChild(titleLabel);
+      panel.appendChild(commentLabel);
+      panel.appendChild(linkRow);
+      panel.appendChild(actions);
+
+      panel.addEventListener('submit', function(){
+        var newTitle = String(titleInput.value || '').trim();
+        var newComment = String(commentInput.value || '').trim();
+        var ids = splitKfragIds(linkInput.value).join(',');
+        if(!newTitle){
+          feedback.textContent = 'タイトルを入力してください';
+          return;
+        }
+        feedback.textContent = '保存中...';
+        saveBtn.disabled = true;
+
+        var fd = new FormData();
+        fd.append('node_id', String(nodeId));
+        fd.append('node_title', newTitle);
+        fd.append('comment', newComment);
+        fd.append('knowledge_fragment_id', ids);
+        fd.append('fragment_source_type', 'experience');
+        var gid = getSelectedGroupId();
+        if(gid) fd.append('group_id', gid);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'php/update_knowledge_node.php', true);
+        xhr.onreadystatechange = function(){
+          if(xhr.readyState !== 4) return;
+          saveBtn.disabled = false;
+          if(xhr.status !== 200){
+            feedback.textContent = '保存に失敗しました';
+            return;
+          }
+          var res = null;
+          try{ res = JSON.parse(xhr.responseText || '{}'); }catch(_){ res = null; }
+          if(!res || res.status !== 'ok'){
+            feedback.textContent = (res && res.message) ? res.message : '保存に失敗しました';
+            return;
+          }
+          feedback.textContent = '保存しました';
+          try{ nodeEl.setAttribute('data-node-title', newTitle); }catch(_){ }
+          try{ nodeEl.setAttribute('data-comment', newComment); }catch(_){ }
+          try{ nodeEl.setAttribute('data-kfrag-id', ids); }catch(_){ }
+          var titleEl = qs('.kt-node-title, .kt-content-title', nodeEl);
+          if(titleEl) titleEl.textContent = newTitle;
+          var commentEl = qs('.kt-comment', nodeEl);
+          if(newComment){
+            if(!commentEl){
+              commentEl = document.createElement('div');
+              commentEl.className = 'kt-comment';
+              var childrenEl = qs('.kt-children', nodeEl);
+              if(childrenEl) nodeEl.insertBefore(commentEl, childrenEl);
+              else nodeEl.appendChild(commentEl);
+            }
+            commentEl.textContent = newComment;
+          } else if(commentEl && commentEl.parentNode){
+            commentEl.parentNode.removeChild(commentEl);
+          }
+          var ws = document.getElementById('knowledge_fragments_workspace');
+          if(ws) updateKnowledgeConnectionOverlay(ws, splitKfragIds(ids), newTitle);
+          loadKnowledgeTree();
+        };
+        xhr.send(fd);
+      }, false);
+
+      content.appendChild(panel);
+    }
+
     function applySelectionFromKfragId(kid, nodeEl, titleText){
       if(!kid) return;
       // Support CSV: first is primary, rest are additional selections.
-      var parts = String(kid).split(',').map(function(x){ return x.trim(); }).filter(function(x){ return x !== ''; });
+      var parts = splitKfragIds(kid);
       var primaryId = parts.length ? parts[0] : null;
       if(!primaryId) return;
 
@@ -1538,6 +2201,7 @@
 
       setActiveFragment(primaryId, { discussed: discussed, title: (titleText || '').trim() });
       if(ws) updateAdditionalHighlight(ws);
+      if(ws) updateKnowledgeConnectionOverlay(ws, parts, titleText || '');
       loadDiscussion();
     }
 
@@ -1627,6 +2291,13 @@
             var kid0 = nodeEl.getAttribute('data-kfrag-id');
             if(kid0){
               applySelectionFromKfragId(kid0, nodeEl, titleEl.textContent || '');
+            } else {
+              var ws0 = document.getElementById('knowledge_fragments_workspace');
+              try{
+                window.activeKnowledgeLinkedFragmentIds = [];
+                window.activeKnowledgeLinkedTitle = '';
+                clearKnowledgeConnectionOverlay(ws0);
+              }catch(_){ }
             }
           }
           return;

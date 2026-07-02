@@ -290,10 +290,16 @@ if (!empty($__kfrag_list)) {
   unset($itemInitial);
 
   $orderMap = [];
+  $canvasMap = [];
   if ($resP = $mysqli->query("SHOW TABLES LIKE 'knowledge_fragment_positions'")) {
     $hasPositions = ($resP->num_rows > 0);
     $resP->free();
     if ($hasPositions) {
+      $hasGroupIdInPositions = false;
+      if ($resG = $mysqli->query("SHOW COLUMNS FROM `knowledge_fragment_positions` LIKE 'group_id'")) {
+        $hasGroupIdInPositions = ($resG->num_rows > 0);
+        $resG->free();
+      }
       $idsForOrder = [];
       foreach ($__kfrag_list as $item) {
         if (!isset($item['source_type']) || $item['source_type'] !== 'experience') { continue; }
@@ -303,9 +309,20 @@ if (!empty($__kfrag_list)) {
       $idsForOrder = array_values(array_unique($idsForOrder));
       if ($idsForOrder) {
         $in = implode(',', array_map('intval', $idsForOrder));
-        if ($resO = $mysqli->query("SELECT externalized_contents_id, pos_y FROM knowledge_fragment_positions WHERE externalized_contents_id IN ($in)")) {
+        if ($hasGroupIdInPositions) {
+          $groupWhere = ($group_id > 0) ? " AND group_id IN (0,".intval($group_id).")" : " AND group_id = 0";
+          $sqlPos = "SELECT externalized_contents_id, group_id, pos_x, pos_y FROM knowledge_fragment_positions WHERE externalized_contents_id IN ($in)$groupWhere ORDER BY group_id ASC";
+        } else {
+          $sqlPos = "SELECT externalized_contents_id, 0 AS group_id, pos_x, pos_y FROM knowledge_fragment_positions WHERE externalized_contents_id IN ($in)";
+        }
+        if ($resO = $mysqli->query($sqlPos)) {
           while ($rowO = $resO->fetch_assoc()) {
-            $orderMap[intval($rowO['externalized_contents_id'], 10)] = floatval($rowO['pos_y']);
+            $posId = intval($rowO['externalized_contents_id'], 10);
+            $orderMap[$posId] = floatval($rowO['pos_y']);
+            $canvasMap[$posId] = [
+              'x' => isset($rowO['pos_x']) ? floatval($rowO['pos_x']) : 0.0,
+              'y' => isset($rowO['pos_y']) ? floatval($rowO['pos_y']) : 0.0
+            ];
           }
           $resO->free();
         }
@@ -358,6 +375,10 @@ $mysqli->close();
       $sourceId = isset($__kfrag_raw['source_id']) ? intval($__kfrag_raw['source_id'],10) : 0;
       if($sourceType === 'experience' && $sourceId>0){ echo ' data-ext-id="'.$sourceId.'"'; }
       if($sourceId>0){ echo ' data-source-id="'.$sourceId.'"'; }
+      if($sourceType === 'experience' && $sourceId>0 && isset($canvasMap) && isset($canvasMap[$sourceId])){
+        echo ' data-canvas-x="'.htmlspecialchars((string)$canvasMap[$sourceId]['x'], ENT_QUOTES, 'UTF-8').'"';
+        echo ' data-canvas-y="'.htmlspecialchars((string)$canvasMap[$sourceId]['y'], ENT_QUOTES, 'UTF-8').'"';
+      }
     ?>>
       <div class="fragment-number-badge" aria-hidden="true"><?php echo intval($num,10); ?></div>
       <div class="knowledge_fragment" data-source-type="<?php echo htmlspecialchars($sourceType, ENT_QUOTES, 'UTF-8'); ?>" data-kfrag-num="<?php echo intval($num,10); ?>"<?php
