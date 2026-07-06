@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.1.2
 -- https://www.phpmyadmin.net/
 --
 -- ホスト: localhost:8889
--- 生成日時: 2026 年 6 月 30 日 05:26
--- サーバのバージョン： 8.0.40
--- PHP のバージョン: 8.3.14
+-- 生成日時: 2026-07-06 01:44:58
+-- サーバのバージョン： 5.7.24
+-- PHP のバージョン: 8.3.1
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -28,18 +28,18 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `activities` (
-  `id` varchar(45) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
+  `id` varchar(45) CHARACTER SET latin1 NOT NULL,
   `timestamp` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-  `node_id` varchar(45) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
-  `act` varchar(10) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
-  `type` varchar(20) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL,
-  `concept_id` varchar(45) CHARACTER SET latin1 COLLATE latin1_swedish_ci DEFAULT NULL,
+  `node_id` varchar(45) CHARACTER SET latin1 NOT NULL,
+  `act` varchar(10) CHARACTER SET latin1 NOT NULL,
+  `type` varchar(20) CHARACTER SET latin1 NOT NULL,
+  `concept_id` varchar(45) CHARACTER SET latin1 DEFAULT NULL,
   `text` varchar(999) DEFAULT NULL,
-  `parent_id` varchar(45) CHARACTER SET latin1 COLLATE latin1_swedish_ci DEFAULT NULL,
-  `user_id` int NOT NULL,
-  `map_id` int NOT NULL,
+  `parent_id` varchar(45) CHARACTER SET latin1 DEFAULT NULL,
+  `user_id` int(11) NOT NULL,
+  `map_id` int(11) NOT NULL,
   `object_map_id` varchar(45) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -49,11 +49,11 @@ CREATE TABLE `activities` (
 
 CREATE TABLE `chapters` (
   `chapter_id` varchar(45) NOT NULL,
-  `map_id` int NOT NULL,
+  `map_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -68,7 +68,7 @@ CREATE TABLE `chapter_histories` (
   `title` varchar(1024) NOT NULL DEFAULT '',
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -93,11 +93,11 @@ CREATE TABLE `chapter_versions` (
   `chapter_version_id` varchar(45) NOT NULL,
   `chapter_id` varchar(45) NOT NULL,
   `chapter_bro_id` varchar(45) NOT NULL,
-  `map_version_id` int NOT NULL,
+  `map_version_id` int(11) NOT NULL,
   `title` varchar(1024) NOT NULL DEFAULT '',
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -106,14 +106,14 @@ CREATE TABLE `chapter_versions` (
 --
 
 CREATE TABLE `combined_contents` (
-  `combined_contents_id` int NOT NULL,
+  `combined_contents_id` int(11) NOT NULL,
   `externalized_contents_id` varchar(255) DEFAULT NULL,
   `content` varchar(255) NOT NULL,
   `comment` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -122,11 +122,11 @@ CREATE TABLE `combined_contents` (
 --
 
 CREATE TABLE `comments` (
-  `comment_id` int NOT NULL,
+  `comment_id` int(11) NOT NULL,
   `content` longtext NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `status` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -135,13 +135,13 @@ CREATE TABLE `comments` (
 --
 
 CREATE TABLE `comment_annotations` (
-  `annotation_id` int NOT NULL,
-  `comment_id` int NOT NULL,
-  `start_char_id` int NOT NULL,
-  `end_char_id` int NOT NULL,
+  `annotation_id` int(11) NOT NULL,
+  `comment_id` int(11) NOT NULL,
+  `start_char_id` int(11) NOT NULL,
+  `end_char_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -150,12 +150,12 @@ CREATE TABLE `comment_annotations` (
 --
 
 CREATE TABLE `comment_destinations` (
-  `id` int NOT NULL,
-  `comment_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `comment_id` int(11) NOT NULL,
   `destination` varchar(45) NOT NULL,
   `type` varchar(45) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -164,12 +164,13 @@ CREATE TABLE `comment_destinations` (
 --
 
 CREATE TABLE `discussion_history` (
-  `discussion_history_id` int NOT NULL,
-  `user_id` int NOT NULL,
+  `discussion_history_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
   `posted_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `content` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `knowledge_fragment_id` varchar(255) COLLATE utf8mb4_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `content` varchar(255) NOT NULL,
+  `knowledge_fragment_id` varchar(255) NOT NULL,
+  `fragment_source_type` varchar(32) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -178,9 +179,9 @@ CREATE TABLE `discussion_history` (
 --
 
 CREATE TABLE `discussion_participants` (
-  `discussion_id` int NOT NULL,
+  `discussion_id` int(11) NOT NULL,
   `user_id` varchar(45) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -189,10 +190,10 @@ CREATE TABLE `discussion_participants` (
 --
 
 CREATE TABLE `discussion_sessions` (
-  `discussion_id` int NOT NULL,
+  `discussion_id` int(11) NOT NULL,
   `start_time` varchar(45) NOT NULL,
   `end_time` varchar(45) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -201,14 +202,14 @@ CREATE TABLE `discussion_sessions` (
 --
 
 CREATE TABLE `discussion_utterances` (
-  `utterance_id` int NOT NULL,
-  `discussion_id` int NOT NULL,
-  `user_id` int NOT NULL,
+  `utterance_id` int(11) NOT NULL,
+  `discussion_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
   `content` longtext NOT NULL,
-  `network_on` int DEFAULT NULL,
+  `network_on` int(11) DEFAULT NULL,
   `utter_time` varchar(45) NOT NULL,
   `utter_epoc_time` double NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -217,13 +218,13 @@ CREATE TABLE `discussion_utterances` (
 --
 
 CREATE TABLE `document_titles` (
-  `document_id` int NOT NULL,
-  `map_id` int NOT NULL,
+  `document_id` int(11) NOT NULL,
+  `map_id` int(11) NOT NULL,
   `title` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -232,22 +233,22 @@ CREATE TABLE `document_titles` (
 --
 
 CREATE TABLE `experience_knowledges` (
-  `experience_knowledge_id` int NOT NULL,
+  `experience_knowledge_id` int(11) NOT NULL,
   `remarked_utterance_id` varchar(255) DEFAULT NULL,
   `thought_experience_node_id` varchar(255) DEFAULT NULL,
   `experience_type` varchar(45) DEFAULT NULL,
-  `used_remarked_utterance` tinyint NOT NULL,
+  `used_remarked_utterance` tinyint(4) NOT NULL,
   `selected_contents` longtext NOT NULL,
   `knowledge_fragment_content` varchar(255) NOT NULL,
-  `user_id` int NOT NULL,
+  `user_id` int(11) NOT NULL,
   `stage1` varchar(255) NOT NULL,
   `stage2` varchar(255) DEFAULT NULL,
   `stage3` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL,
+  `deleted` tinyint(4) NOT NULL,
   `discussed` enum('YET','UNDERWAY','DONE') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -256,22 +257,22 @@ CREATE TABLE `experience_knowledges` (
 --
 
 CREATE TABLE `externalized_contents` (
-  `externalized_contents_id` int NOT NULL,
+  `externalized_contents_id` int(11) NOT NULL,
   `remarked_utterance_id` varchar(255) NOT NULL,
   `thought_experience_node_id` varchar(255) DEFAULT NULL,
   `externalized_type` varchar(45) DEFAULT NULL,
-  `used_remarked_utterance` tinyint NOT NULL,
+  `used_remarked_utterance` tinyint(4) NOT NULL,
   `selected_contents` longtext NOT NULL,
   `knowledge_fragment_content` varchar(255) NOT NULL,
-  `user_id` int NOT NULL,
+  `user_id` int(11) NOT NULL,
   `stage1` varchar(255) NOT NULL,
   `stage2` varchar(255) DEFAULT NULL,
   `stage3` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL,
+  `deleted` tinyint(4) NOT NULL,
   `discussed` enum('YET','UNDERWAY','DONE') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -280,13 +281,13 @@ CREATE TABLE `externalized_contents` (
 --
 
 CREATE TABLE `feedbacks` (
-  `feedback_id` int NOT NULL,
+  `feedback_id` int(11) NOT NULL,
   `node_history_id` varchar(45) NOT NULL,
   `concept` varchar(45) NOT NULL,
   `content` varchar(999) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `status` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -299,9 +300,9 @@ CREATE TABLE `images` (
   `image_name` varchar(256) NOT NULL,
   `image_type` varchar(64) NOT NULL,
   `image_content` mediumblob NOT NULL,
-  `image_size` int NOT NULL,
+  `image_size` int(11) NOT NULL,
   `created_at` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -311,11 +312,11 @@ CREATE TABLE `images` (
 
 CREATE TABLE `items` (
   `item_id` varchar(45) NOT NULL,
-  `map_id` int NOT NULL,
+  `map_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -328,8 +329,8 @@ CREATE TABLE `item_contents` (
   `item_id` varchar(45) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -345,10 +346,10 @@ CREATE TABLE `item_content_histories` (
   `node_id` varchar(45) DEFAULT NULL,
   `logic_option` varchar(100) NOT NULL DEFAULT '0',
   `title` varchar(999) DEFAULT '',
-  `type` int DEFAULT NULL,
+  `type` int(11) DEFAULT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -367,11 +368,11 @@ CREATE TABLE `item_content_latest` (
 ,`concept_id` varchar(45)
 ,`logic_option` varchar(100)
 ,`title` varchar(999)
-,`node_type_id` int
+,`node_type_id` int(11)
 ,`class` varchar(100)
 ,`type` varchar(100)
 ,`appeared_at` timestamp
-,`map_id` bigint
+,`map_id` bigint(11)
 );
 
 -- --------------------------------------------------------
@@ -390,10 +391,10 @@ CREATE TABLE `item_content_relations` (
   `item_content2_id` varchar(45) NOT NULL,
   `item_content2_label` varchar(45) NOT NULL,
   `ont2_id` varchar(45) NOT NULL,
-  `deleted` tinyint NOT NULL DEFAULT '0',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -407,12 +408,12 @@ CREATE TABLE `item_content_versions` (
   `item_content_bro_id` varchar(45) NOT NULL DEFAULT 'root',
   `indent` varchar(45) NOT NULL DEFAULT 'root',
   `node_id` varchar(45) DEFAULT NULL,
-  `logic_option` int NOT NULL DEFAULT '0',
+  `logic_option` int(11) NOT NULL DEFAULT '0',
   `title` varchar(999) DEFAULT '',
-  `type` int DEFAULT NULL,
+  `type` int(11) DEFAULT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -425,11 +426,11 @@ CREATE TABLE `item_histories` (
   `item_version_id` varchar(45) NOT NULL,
   `item_bro_id` varchar(45) NOT NULL DEFAULT 'root',
   `node_id` varchar(45) DEFAULT NULL,
-  `logic_option` int NOT NULL DEFAULT '0',
+  `logic_option` int(11) NOT NULL DEFAULT '0',
   `title` varchar(999) DEFAULT '',
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -442,10 +443,10 @@ CREATE TABLE `item_latest` (
 ,`item_version_id` varchar(45)
 ,`item_history_id` varchar(45)
 ,`item_bro_id` varchar(45)
-,`map_id` int
+,`map_id` int(11)
 ,`node_id` varchar(45)
 ,`concept_id` varchar(45)
-,`logic_option` int
+,`logic_option` int(11)
 ,`title` varchar(999)
 ,`appeared_at` timestamp
 );
@@ -466,10 +467,10 @@ CREATE TABLE `item_relations` (
   `item2_id` varchar(45) NOT NULL,
   `item2_label` varchar(45) NOT NULL,
   `ont2_id` varchar(45) NOT NULL,
-  `deleted` tinyint NOT NULL DEFAULT '0',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -482,11 +483,11 @@ CREATE TABLE `item_versions` (
   `item_id` varchar(45) NOT NULL,
   `item_bro_id` varchar(45) NOT NULL DEFAULT 'root',
   `node_id` varchar(45) DEFAULT NULL,
-  `logic_option` int NOT NULL DEFAULT '0',
+  `logic_option` int(11) NOT NULL DEFAULT '0',
   `title` varchar(999) DEFAULT '',
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -495,13 +496,13 @@ CREATE TABLE `item_versions` (
 --
 
 CREATE TABLE `kgroup_user_link` (
-  `id` int NOT NULL,
-  `group_id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `role` varchar(45) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'others',
+  `id` int(11) NOT NULL,
+  `group_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `role` varchar(45) NOT NULL DEFAULT 'others',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -510,19 +511,23 @@ CREATE TABLE `kgroup_user_link` (
 --
 
 CREATE TABLE `knowledge_explorer` (
-  `knowledge_node_id` int NOT NULL,
-  `parent_node_id` int DEFAULT NULL,
+  `knowledge_node_id` int(11) NOT NULL,
+  `parent_node_id` int(11) DEFAULT NULL,
   `node_title` varchar(255) NOT NULL,
   `knowledge_fragment_id` varchar(255) DEFAULT NULL,
-  `comment` varchar(255) DEFAULT NULL,
+  `comment` text,
+  `tacto_when` text,
+  `tacto_what` text,
+  `tacto_why` text,
+  `organizational_basis` text,
   `node_type` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_by` int NOT NULL,
-  `deleted` tinyint NOT NULL,
-  `sort_order` int DEFAULT NULL,
-  `knowledge_group_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `updated_by` int(11) NOT NULL,
+  `deleted` tinyint(4) NOT NULL,
+  `sort_order` int(11) DEFAULT NULL,
+  `knowledge_group_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -531,24 +536,26 @@ CREATE TABLE `knowledge_explorer` (
 --
 
 CREATE TABLE `knowledge_explorer_fragment_links` (
-  `id` int NOT NULL,
-  `knowledge_node_id` int NOT NULL,
-  `fragment_source_type` enum('experience','externalized','SRL') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `fragment_source_id` int NOT NULL,
-  `display_order` int DEFAULT NULL,
+  `id` int(11) NOT NULL,
+  `knowledge_node_id` int(11) NOT NULL,
+  `fragment_source_type` enum('experience','discussion','SRL') NOT NULL,
+  `fragment_source_id` int(11) NOT NULL,
+  `display_order` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
 
 --
 -- テーブルの構造 `knowledge_fragment`
 --
 
 CREATE TABLE `knowledge_fragment` (
-  `knowledge_fragment_id` int NOT NULL,
+  `knowledge_fragment_id` int(11) NOT NULL,
   `knowledge_fragment_content` varchar(255) NOT NULL,
-  `externalized_contents_id` int NOT NULL,
+  `externalized_contents_id` int(11) NOT NULL,
   `discussed` enum('YET','UNDERWAY','DONE','') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -557,12 +564,13 @@ CREATE TABLE `knowledge_fragment` (
 --
 
 CREATE TABLE `knowledge_fragment_positions` (
-  `id` int NOT NULL,
-  `externalized_contents_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `group_id` int(11) NOT NULL DEFAULT '0',
+  `externalized_contents_id` int(11) NOT NULL,
   `pos_x` float NOT NULL,
   `pos_y` float NOT NULL,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -571,12 +579,12 @@ CREATE TABLE `knowledge_fragment_positions` (
 --
 
 CREATE TABLE `knowledge_groups` (
-  `group_id` int NOT NULL,
-  `name` varchar(45) COLLATE utf8mb4_general_ci NOT NULL,
-  `creater` int NOT NULL,
+  `group_id` int(11) NOT NULL,
+  `name` varchar(45) NOT NULL,
+  `creater` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -585,14 +593,14 @@ CREATE TABLE `knowledge_groups` (
 --
 
 CREATE TABLE `maps` (
-  `map_id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `paper_id` int DEFAULT NULL,
+  `map_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `paper_id` int(11) DEFAULT NULL,
   `name` varchar(45) NOT NULL DEFAULT '',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -601,15 +609,15 @@ CREATE TABLE `maps` (
 -- (実際のビューを参照するには下にあります)
 --
 CREATE TABLE `map_mode_link` (
-`map_id` int
-,`user_id` int
-,`paper_id` int
+`map_id` int(11)
+,`user_id` int(11)
+,`paper_id` int(11)
 ,`name` varchar(45)
 ,`created_at` timestamp
 ,`updated_at` timestamp
-,`deleted` tinyint
+,`deleted` tinyint(4)
 ,`mode_name` varchar(45)
-,`mode_id` int
+,`mode_id` int(11)
 );
 
 -- --------------------------------------------------------
@@ -619,10 +627,10 @@ CREATE TABLE `map_mode_link` (
 --
 
 CREATE TABLE `map_mode_links` (
-  `id` int NOT NULL,
-  `map_id` int NOT NULL,
-  `mode_id` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `id` int(11) NOT NULL,
+  `map_id` int(11) NOT NULL,
+  `mode_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -631,12 +639,12 @@ CREATE TABLE `map_mode_links` (
 --
 
 CREATE TABLE `map_node_links` (
-  `id` int NOT NULL,
-  `map_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `map_id` int(11) NOT NULL,
   `node_id` varchar(45) NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -645,12 +653,12 @@ CREATE TABLE `map_node_links` (
 --
 
 CREATE TABLE `map_versions` (
-  `map_version_id` int NOT NULL,
-  `map_id` int NOT NULL,
+  `map_version_id` int(11) NOT NULL,
+  `map_id` int(11) NOT NULL,
   `name` varchar(45) NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -659,10 +667,10 @@ CREATE TABLE `map_versions` (
 --
 
 CREATE TABLE `map_version_reasons` (
-  `id` int NOT NULL,
-  `map_version_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `map_version_id` int(11) NOT NULL,
   `reason` varchar(999) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -671,9 +679,9 @@ CREATE TABLE `map_version_reasons` (
 --
 
 CREATE TABLE `modes` (
-  `mode_id` int NOT NULL,
+  `mode_id` int(11) NOT NULL,
   `name` varchar(45) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -682,10 +690,10 @@ CREATE TABLE `modes` (
 --
 
 CREATE TABLE `mt_timing` (
-  `id` int NOT NULL,
-  `user_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
   `mt_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -699,8 +707,8 @@ CREATE TABLE `network_edges` (
   `edge_end` varchar(45) NOT NULL,
   `edge_label` varchar(45) DEFAULT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -710,11 +718,11 @@ CREATE TABLE `network_edges` (
 
 CREATE TABLE `network_maps` (
   `network_map_id` varchar(45) NOT NULL,
-  `map_id` int NOT NULL,
+  `map_id` int(11) NOT NULL,
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `end_time` timestamp NULL DEFAULT NULL,
   `situation` varchar(45) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -726,7 +734,7 @@ CREATE TABLE `network_mindmap_connects` (
   `network_node_id` varchar(45) NOT NULL,
   `mindmap_node_id` varchar(45) NOT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -738,13 +746,13 @@ CREATE TABLE `network_nodes` (
   `network_node_id` varchar(45) NOT NULL,
   `network_map_id` varchar(45) NOT NULL,
   `label` varchar(100) NOT NULL,
-  `node_x` int NOT NULL,
-  `node_y` int NOT NULL,
+  `node_x` int(11) NOT NULL,
+  `node_y` int(11) NOT NULL,
   `node_type` varchar(45) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -756,7 +764,7 @@ CREATE TABLE `network_ontology_connects` (
   `network_node_id` varchar(45) NOT NULL,
   `ontology_id` varchar(45) NOT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -770,7 +778,7 @@ CREATE TABLE `network_recruits` (
   `result_recruit` varchar(5) NOT NULL,
   `reason` longtext,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -779,14 +787,14 @@ CREATE TABLE `network_recruits` (
 --
 
 CREATE TABLE `network_texts` (
-  `network_text_id` int NOT NULL,
+  `network_text_id` int(11) NOT NULL,
   `network_map_id` varchar(45) NOT NULL,
   `sender` varchar(45) NOT NULL,
   `content` longtext NOT NULL,
   `time` double NOT NULL,
   `JPNtime` varchar(45) NOT NULL,
   `ST_Time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -796,11 +804,11 @@ CREATE TABLE `network_texts` (
 
 CREATE TABLE `nodes` (
   `node_id` varchar(45) NOT NULL,
-  `user_id` int NOT NULL,
-  `node_type_id` int NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `node_type_id` int(11) NOT NULL,
   `from_mode` varchar(100) DEFAULT NULL,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -813,7 +821,7 @@ CREATE TABLE `node_actions` (
   `node_history_id` varchar(45) NOT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `act` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -822,8 +830,8 @@ CREATE TABLE `node_actions` (
 -- (実際のビューを参照するには下にあります)
 --
 CREATE TABLE `node_allchange_view` (
-`user_id` int
-,`map_id` int
+`user_id` int(11)
+,`map_id` int(11)
 ,`node_id` varchar(45)
 ,`node_version_id` varchar(45)
 ,`node_history_id` varchar(45)
@@ -832,7 +840,7 @@ CREATE TABLE `node_allchange_view` (
 ,`disappeared_at` timestamp
 ,`concept_id` varchar(45)
 ,`parent_id` varchar(45)
-,`node_type_id` int
+,`node_type_id` int(11)
 ,`type` varchar(100)
 ,`class` varchar(100)
 );
@@ -847,14 +855,14 @@ CREATE TABLE `node_histories` (
   `node_history_id` varchar(45) NOT NULL,
   `node_version_id` varchar(45) NOT NULL,
   `parent_id` varchar(45) DEFAULT 'root',
-  `node_type_id` int NOT NULL,
+  `node_type_id` int(11) NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL,
   `content` varchar(999) DEFAULT '',
   `concept_id` varchar(45) DEFAULT NULL,
   `x` varchar(45) NOT NULL,
   `y` varchar(45) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -867,7 +875,7 @@ CREATE TABLE `node_latest` (
 ,`node_version_id` varchar(45)
 ,`node_history_id` varchar(45)
 ,`parent_id` varchar(45)
-,`node_type_id` int
+,`node_type_id` int(11)
 ,`class` varchar(100)
 ,`type` varchar(100)
 ,`content` varchar(999)
@@ -884,10 +892,10 @@ CREATE TABLE `node_latest` (
 --
 
 CREATE TABLE `node_types` (
-  `node_type_id` int NOT NULL,
+  `node_type_id` int(11) NOT NULL,
   `class` varchar(100) DEFAULT NULL,
   `type` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -899,14 +907,14 @@ CREATE TABLE `node_versions` (
   `node_version_id` varchar(45) NOT NULL,
   `node_id` varchar(45) NOT NULL,
   `parent_id` varchar(45) DEFAULT 'root',
-  `node_type_id` int NOT NULL,
+  `node_type_id` int(11) NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NULL DEFAULT NULL,
   `content` varchar(999) DEFAULT '',
   `concept_id` varchar(45) DEFAULT NULL,
   `x` varchar(45) NOT NULL,
   `y` varchar(45) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -920,7 +928,7 @@ CREATE TABLE `object_activities` (
   `activity_id` varchar(45) NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `activity_text` varchar(999) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -935,7 +943,7 @@ CREATE TABLE `object_edges` (
   `label` varchar(999) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -962,12 +970,12 @@ CREATE TABLE `object_edge_histories` (
 
 CREATE TABLE `object_journals` (
   `object_journal_id` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `map_id` int NOT NULL,
+  `map_id` int(11) NOT NULL,
   `start_date` date NOT NULL,
   `finish_date` date NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `update_at` timestamp NULL DEFAULT NULL,
-  `delete` int NOT NULL
+  `delete` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -980,7 +988,7 @@ CREATE TABLE `object_journal_history_records` (
   `journal_history_id` varchar(45) NOT NULL,
   `object_journal_id` varchar(45) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -996,8 +1004,8 @@ CREATE TABLE `object_journal_lesson-learneds` (
   `opportunity` longtext COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0',
-  `map_id` int NOT NULL
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `map_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1013,7 +1021,7 @@ CREATE TABLE `object_journal_nodes` (
   `deleted` varchar(1) NOT NULL DEFAULT '0',
   `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `update_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1031,7 +1039,7 @@ CREATE TABLE `object_journal_reflections` (
   `attribution_bad` longtext COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1043,13 +1051,13 @@ CREATE TABLE `object_journal_reflections` (
 CREATE TABLE `object_lesson-learneds` (
   `object_le_id` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
   `object_node_id` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `reflection_id` varchar(45) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+  `reflection_id` varchar(45) CHARACTER SET utf8 DEFAULT NULL,
   `lesson_learned` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
-  `why_important` longtext CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
+  `why_important` longtext CHARACTER SET utf8,
   `opportunity` longtext COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  `deleted` tinyint NOT NULL DEFAULT '0'
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1067,7 +1075,7 @@ CREATE TABLE `object_nodes` (
   `object_nodes_type` varchar(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL,
+  `deleted` tinyint(4) NOT NULL,
   `status` varchar(11) DEFAULT NULL,
   `purpose` varchar(100) DEFAULT NULL,
   `estimated_time` varchar(50) DEFAULT NULL,
@@ -1075,7 +1083,7 @@ CREATE TABLE `object_nodes` (
   `evaluation_bad` longtext,
   `attribution` longtext,
   `attribution_bad` longtext
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1098,9 +1106,9 @@ CREATE TABLE `object_nodes_histories` (
   `action_reason` varchar(999) DEFAULT NULL,
   `completion_reason` varchar(999) DEFAULT NULL,
   `challenges_learnings` varchar(999) DEFAULT NULL,
-  `drag` int NOT NULL DEFAULT '0',
-  `activity` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `drag` int(11) NOT NULL DEFAULT '0',
+  `activity` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1109,9 +1117,9 @@ CREATE TABLE `object_nodes_histories` (
 -- (実際のビューを参照するには下にあります)
 --
 CREATE TABLE `object_nodes_summary` (
-`user_id` int
+`user_id` int(11)
 ,`name` varchar(45)
-,`total_active_objects` bigint
+,`total_active_objects` bigint(21)
 ,`inProgress` decimal(23,0)
 ,`paused` decimal(23,0)
 ,`completed` decimal(23,0)
@@ -1137,7 +1145,7 @@ CREATE TABLE `object_reflection_records` (
   `evaluation_bad` longtext,
   `attribution_bad` longtext,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1146,11 +1154,11 @@ CREATE TABLE `object_reflection_records` (
 --
 
 CREATE TABLE `papers` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `paper_content` longtext NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `paper_title` varchar(45) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1159,14 +1167,14 @@ CREATE TABLE `papers` (
 --
 
 CREATE TABLE `paper_annotations` (
-  `annotation_id` int NOT NULL,
+  `annotation_id` int(11) NOT NULL,
   `node_id` varchar(45) NOT NULL,
-  `start_char_id` int NOT NULL,
-  `end_char_id` int NOT NULL,
+  `start_char_id` int(11) NOT NULL,
+  `end_char_id` int(11) NOT NULL,
   `content` longtext NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1179,8 +1187,8 @@ CREATE TABLE `paragraphes` (
   `section_id` varchar(45) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1193,8 +1201,8 @@ CREATE TABLE `paragraph_contents` (
   `paragraph_id` varchar(45) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1210,10 +1218,10 @@ CREATE TABLE `paragraph_content_histories` (
   `node_id` varchar(45) NOT NULL,
   `content` varchar(999) NOT NULL,
   `concept_id` varchar(45) NOT NULL,
-  `node_type_id` int NOT NULL,
+  `node_type_id` int(11) NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1230,7 +1238,7 @@ CREATE TABLE `paragraph_content_latest` (
 ,`node_id` varchar(45)
 ,`concept_id` varchar(45)
 ,`content` varchar(999)
-,`node_type_id` int
+,`node_type_id` int(11)
 ,`appeared_at` timestamp
 );
 
@@ -1249,10 +1257,10 @@ CREATE TABLE `paragraph_content_versions` (
   `content` varchar(999) NOT NULL,
   `node_id` varchar(45) NOT NULL,
   `concept_id` varchar(45) NOT NULL,
-  `node_type_id` int NOT NULL,
+  `node_type_id` int(11) NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1268,7 +1276,7 @@ CREATE TABLE `paragraph_histories` (
   `content` longtext NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1301,7 +1309,7 @@ CREATE TABLE `paragraph_versions` (
   `content` longtext NOT NULL,
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1316,8 +1324,8 @@ CREATE TABLE `process_edges` (
   `label` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1330,12 +1338,12 @@ CREATE TABLE `process_nodes` (
   `node_id` varchar(45) NOT NULL,
   `content` varchar(100) DEFAULT NULL,
   `process_node_type` varchar(45) NOT NULL DEFAULT 'process',
-  `node_x` int NOT NULL,
-  `node_y` int NOT NULL,
+  `node_x` int(11) NOT NULL,
+  `node_y` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1344,11 +1352,11 @@ CREATE TABLE `process_nodes` (
 --
 
 CREATE TABLE `rationality_nodes` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `rationality_id` varchar(45) NOT NULL,
   `node_id` varchar(45) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1357,13 +1365,13 @@ CREATE TABLE `rationality_nodes` (
 --
 
 CREATE TABLE `remarked_utterances` (
-  `utterance_id` int NOT NULL,
+  `utterance_id` int(11) NOT NULL,
   `remarked_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL,
+  `deleted` tinyint(4) NOT NULL,
   `user_id` varchar(255) NOT NULL,
   `type` enum('SELF','OTHER','ORGANIZATION','UNKNOWN') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1372,13 +1380,13 @@ CREATE TABLE `remarked_utterances` (
 --
 
 CREATE TABLE `scenario_titles` (
-  `scenario_id` int NOT NULL,
-  `map_id` int NOT NULL,
+  `scenario_id` int(11) NOT NULL,
+  `map_id` int(11) NOT NULL,
   `title` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1391,8 +1399,8 @@ CREATE TABLE `sections` (
   `chapter_id` varchar(45) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1407,7 +1415,7 @@ CREATE TABLE `section_histories` (
   `title` varchar(1024) NOT NULL DEFAULT '',
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1436,7 +1444,7 @@ CREATE TABLE `section_versions` (
   `title` varchar(1024) NOT NULL DEFAULT '',
   `appeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `disappeared_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1445,13 +1453,13 @@ CREATE TABLE `section_versions` (
 --
 
 CREATE TABLE `shared_nodes` (
-  `id` int NOT NULL,
-  `experience_knowledge_id` int NOT NULL,
-  `knowledge_group_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `experience_knowledge_id` int(11) NOT NULL,
+  `knowledge_group_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -1468,10 +1476,10 @@ CREATE TABLE `triggers` (
   `activity_type` varchar(100) DEFAULT NULL,
   `content` varchar(999) DEFAULT NULL,
   `add_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `x` int NOT NULL,
-  `y` int NOT NULL,
-  `deleted` tinyint NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+  `x` int(11) NOT NULL,
+  `y` int(11) NOT NULL,
+  `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1482,13 +1490,13 @@ CREATE TABLE `triggers` (
 CREATE TABLE `trigger_candidates` (
 `activity_id` varchar(45)
 ,`activity_type` varchar(5)
-,`map_id` bigint
+,`map_id` bigint(11)
 ,`node_id` varchar(45)
 ,`content` varchar(999)
 ,`concept_id` varchar(45)
 ,`appeared_at` timestamp
 ,`disappeared_at` timestamp
-,`trigger_on` int
+,`trigger_on` int(1)
 );
 
 -- --------------------------------------------------------
@@ -1498,7 +1506,7 @@ CREATE TABLE `trigger_candidates` (
 --
 
 CREATE TABLE `users` (
-  `user_id` int NOT NULL,
+  `user_id` int(11) NOT NULL,
   `sso_sub` varchar(191) DEFAULT NULL,
   `name` varchar(45) NOT NULL,
   `login_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1511,7 +1519,7 @@ CREATE TABLE `users` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `sso_claims_json` longtext,
   `sso_updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -1520,10 +1528,6 @@ CREATE TABLE `users` (
 -- (実際のビューを参照するには下にあります)
 --
 CREATE TABLE `user_final_lesson_summary` (
-`user_id` int
-,`name` varchar(45)
-,`node_lesson_count` bigint
-,`journal_lesson_count` bigint
 );
 
 -- --------------------------------------------------------
@@ -1533,10 +1537,10 @@ CREATE TABLE `user_final_lesson_summary` (
 -- (実際のビューを参照するには下にあります)
 --
 CREATE TABLE `user_journal_node_summary` (
-`user_id` int
+`user_id` int(11)
 ,`name` varchar(45)
-,`total_node_count` bigint
-,`total_journal_count` bigint
+,`total_node_count` bigint(21)
+,`total_journal_count` bigint(21)
 );
 
 -- --------------------------------------------------------
@@ -1546,10 +1550,6 @@ CREATE TABLE `user_journal_node_summary` (
 -- (実際のビューを参照するには下にあります)
 --
 CREATE TABLE `user_journal_record_summary` (
-`user_id` int
-,`name` varchar(45)
-,`journal_count` bigint
-,`journal_node_count` bigint
 );
 
 -- --------------------------------------------------------
@@ -1559,10 +1559,10 @@ CREATE TABLE `user_journal_record_summary` (
 -- (実際のビューを参照するには下にあります)
 --
 CREATE TABLE `user_lesson_learned_summary` (
-`user_id` int
+`user_id` int(11)
 ,`name` varchar(45)
-,`node_lesson_count` bigint
-,`journal_lesson_count` bigint
+,`node_lesson_count` bigint(21)
+,`journal_lesson_count` bigint(21)
 );
 
 -- --------------------------------------------------------
@@ -1587,7 +1587,7 @@ CREATE TABLE `view_changed_content_vs_latest` (
 --
 DROP TABLE IF EXISTS `chapter_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `chapter_latest`  AS SELECT `c`.`chapter_id` AS `chapter_id`, `cv`.`chapter_bro_id` AS `chapter_bro_id`, `cv`.`title` AS `title`, `cv`.`appeared_at` AS `appeared_at` FROM ((`chapters` `c` join `chapter_versions` `cv` on((`c`.`chapter_id` = `cv`.`chapter_id`))) join `chapter_histories` `ch` on((`cv`.`chapter_version_id` = `ch`.`chapter_version_id`))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `chapter_latest`  AS SELECT `c`.`chapter_id` AS `chapter_id`, `cv`.`chapter_bro_id` AS `chapter_bro_id`, `cv`.`title` AS `title`, `cv`.`appeared_at` AS `appeared_at` FROM ((`chapters` `c` join `chapter_versions` `cv` on((`c`.`chapter_id` = `cv`.`chapter_id`))) join `chapter_histories` `ch` on((`cv`.`chapter_version_id` = `ch`.`chapter_version_id`)))  ;
 
 -- --------------------------------------------------------
 
@@ -1596,7 +1596,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `item_content_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `item_content_latest`  AS SELECT `ic`.`item_content_id` AS `item_content_id`, `ic`.`item_id` AS `item_id`, `icv`.`item_content_version_id` AS `item_content_version_id`, `ich`.`item_content_history_id` AS `item_content_history_id`, `ich`.`indent` AS `indent`, `ich`.`item_content_bro_id` AS `item_content_bro_id`, `ich`.`node_id` AS `node_id`, `node_latest`.`concept_id` AS `concept_id`, `ich`.`logic_option` AS `logic_option`, `ich`.`title` AS `title`, `node_types`.`node_type_id` AS `node_type_id`, `node_types`.`class` AS `class`, `node_types`.`type` AS `type`, `ich`.`appeared_at` AS `appeared_at`, (select `items`.`map_id` from `items` where (`items`.`item_id` = `ic`.`item_id`)) AS `map_id` FROM ((((`item_contents` `ic` join `item_content_versions` `icv` on((`ic`.`item_content_id` = `icv`.`item_content_id`))) join `item_content_histories` `ich` on((`icv`.`item_content_version_id` = `ich`.`item_content_version_id`))) join `node_types` on((`ich`.`type` = `node_types`.`node_type_id`))) left join `node_latest` on((`ich`.`node_id` = `node_latest`.`node_id`))) WHERE ((`ic`.`deleted` = 0) AND (`ich`.`disappeared_at` is null)) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `item_content_latest`  AS SELECT `ic`.`item_content_id` AS `item_content_id`, `ic`.`item_id` AS `item_id`, `icv`.`item_content_version_id` AS `item_content_version_id`, `ich`.`item_content_history_id` AS `item_content_history_id`, `ich`.`indent` AS `indent`, `ich`.`item_content_bro_id` AS `item_content_bro_id`, `ich`.`node_id` AS `node_id`, `node_latest`.`concept_id` AS `concept_id`, `ich`.`logic_option` AS `logic_option`, `ich`.`title` AS `title`, `node_types`.`node_type_id` AS `node_type_id`, `node_types`.`class` AS `class`, `node_types`.`type` AS `type`, `ich`.`appeared_at` AS `appeared_at`, (select `items`.`map_id` from `items` where (`items`.`item_id` = `ic`.`item_id`)) AS `map_id` FROM ((((`item_contents` `ic` join `item_content_versions` `icv` on((`ic`.`item_content_id` = `icv`.`item_content_id`))) join `item_content_histories` `ich` on((`icv`.`item_content_version_id` = `ich`.`item_content_version_id`))) join `node_types` on((`ich`.`type` = `node_types`.`node_type_id`))) left join `node_latest` on((`ich`.`node_id` = `node_latest`.`node_id`))) WHERE ((`ic`.`deleted` = 0) AND isnull(`ich`.`disappeared_at`))  ;
 
 -- --------------------------------------------------------
 
@@ -1605,7 +1605,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `item_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `item_latest`  AS SELECT `i`.`item_id` AS `item_id`, `iv`.`item_version_id` AS `item_version_id`, `ih`.`item_history_id` AS `item_history_id`, `ih`.`item_bro_id` AS `item_bro_id`, `i`.`map_id` AS `map_id`, `ih`.`node_id` AS `node_id`, `node_latest`.`concept_id` AS `concept_id`, `ih`.`logic_option` AS `logic_option`, `ih`.`title` AS `title`, `ih`.`appeared_at` AS `appeared_at` FROM (((`items` `i` join `item_versions` `iv` on((`iv`.`item_id` = `i`.`item_id`))) join `item_histories` `ih` on((`ih`.`item_version_id` = `iv`.`item_version_id`))) left join `node_latest` on((`ih`.`node_id` = `node_latest`.`node_id`))) WHERE ((`iv`.`appeared_at` = (select max(`iv2`.`appeared_at`) from `item_versions` `iv2` where (`iv2`.`item_id` = `i`.`item_id`))) AND (`ih`.`appeared_at` = (select max(`ih2`.`appeared_at`) from `item_histories` `ih2` where (`ih2`.`item_version_id` = `iv`.`item_version_id`))) AND (`i`.`deleted` = 0)) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `item_latest`  AS SELECT `i`.`item_id` AS `item_id`, `iv`.`item_version_id` AS `item_version_id`, `ih`.`item_history_id` AS `item_history_id`, `ih`.`item_bro_id` AS `item_bro_id`, `i`.`map_id` AS `map_id`, `ih`.`node_id` AS `node_id`, `node_latest`.`concept_id` AS `concept_id`, `ih`.`logic_option` AS `logic_option`, `ih`.`title` AS `title`, `ih`.`appeared_at` AS `appeared_at` FROM (((`items` `i` join `item_versions` `iv` on((`iv`.`item_id` = `i`.`item_id`))) join `item_histories` `ih` on((`ih`.`item_version_id` = `iv`.`item_version_id`))) left join `node_latest` on((`ih`.`node_id` = `node_latest`.`node_id`))) WHERE ((`iv`.`appeared_at` = (select max(`iv2`.`appeared_at`) from `item_versions` `iv2` where (`iv2`.`item_id` = `i`.`item_id`))) AND (`ih`.`appeared_at` = (select max(`ih2`.`appeared_at`) from `item_histories` `ih2` where (`ih2`.`item_version_id` = `iv`.`item_version_id`))) AND (`i`.`deleted` = 0))  ;
 
 -- --------------------------------------------------------
 
@@ -1614,7 +1614,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `map_mode_link`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `map_mode_link`  AS SELECT `maps`.`map_id` AS `map_id`, `maps`.`user_id` AS `user_id`, `maps`.`paper_id` AS `paper_id`, `maps`.`name` AS `name`, `maps`.`created_at` AS `created_at`, `maps`.`updated_at` AS `updated_at`, `maps`.`deleted` AS `deleted`, `t1`.`name` AS `mode_name`, `t1`.`mode_id` AS `mode_id` FROM (`maps` join (select `map_mode_links`.`map_id` AS `map_id`,`modes`.`name` AS `name`,`modes`.`mode_id` AS `mode_id` from (`map_mode_links` join `modes` on((`map_mode_links`.`mode_id` = `modes`.`mode_id`)))) `t1` on((`maps`.`map_id` = `t1`.`map_id`))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `map_mode_link`  AS SELECT `maps`.`map_id` AS `map_id`, `maps`.`user_id` AS `user_id`, `maps`.`paper_id` AS `paper_id`, `maps`.`name` AS `name`, `maps`.`created_at` AS `created_at`, `maps`.`updated_at` AS `updated_at`, `maps`.`deleted` AS `deleted`, `t1`.`name` AS `mode_name`, `t1`.`mode_id` AS `mode_id` FROM (`maps` join (select `map_mode_links`.`map_id` AS `map_id`,`modes`.`name` AS `name`,`modes`.`mode_id` AS `mode_id` from (`map_mode_links` join `modes` on((`map_mode_links`.`mode_id` = `modes`.`mode_id`)))) `t1` on((`maps`.`map_id` = `t1`.`map_id`)))  ;
 
 -- --------------------------------------------------------
 
@@ -1623,7 +1623,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `node_allchange_view`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `node_allchange_view`  AS SELECT `u`.`user_id` AS `user_id`, `m`.`map_id` AS `map_id`, `n`.`node_id` AS `node_id`, `nv`.`node_version_id` AS `node_version_id`, `nh`.`node_history_id` AS `node_history_id`, `nh`.`content` AS `content`, `nh`.`appeared_at` AS `appeared_at`, `nh`.`disappeared_at` AS `disappeared_at`, `nh`.`concept_id` AS `concept_id`, `nh`.`parent_id` AS `parent_id`, `nt`.`node_type_id` AS `node_type_id`, `nt`.`type` AS `type`, `nt`.`class` AS `class` FROM ((((((`users` `u` join `maps` `m` on((`u`.`user_id` = `m`.`user_id`))) join `map_node_links` `mnl` on((`m`.`map_id` = `mnl`.`map_id`))) join `nodes` `n` on((`mnl`.`node_id` = `n`.`node_id`))) join `node_versions` `nv` on((`n`.`node_id` = `nv`.`node_id`))) join `node_histories` `nh` on((`nv`.`node_version_id` = `nh`.`node_version_id`))) join `node_types` `nt` on((`nh`.`node_type_id` = `nt`.`node_type_id`))) WHERE (`n`.`deleted` = 1) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `node_allchange_view`  AS SELECT `u`.`user_id` AS `user_id`, `m`.`map_id` AS `map_id`, `n`.`node_id` AS `node_id`, `nv`.`node_version_id` AS `node_version_id`, `nh`.`node_history_id` AS `node_history_id`, `nh`.`content` AS `content`, `nh`.`appeared_at` AS `appeared_at`, `nh`.`disappeared_at` AS `disappeared_at`, `nh`.`concept_id` AS `concept_id`, `nh`.`parent_id` AS `parent_id`, `nt`.`node_type_id` AS `node_type_id`, `nt`.`type` AS `type`, `nt`.`class` AS `class` FROM ((((((`users` `u` join `maps` `m` on((`u`.`user_id` = `m`.`user_id`))) join `map_node_links` `mnl` on((`m`.`map_id` = `mnl`.`map_id`))) join `nodes` `n` on((`mnl`.`node_id` = `n`.`node_id`))) join `node_versions` `nv` on((`n`.`node_id` = `nv`.`node_id`))) join `node_histories` `nh` on((`nv`.`node_version_id` = `nh`.`node_version_id`))) join `node_types` `nt` on((`nh`.`node_type_id` = `nt`.`node_type_id`))) WHERE (`n`.`deleted` = 1)  ;
 
 -- --------------------------------------------------------
 
@@ -1632,7 +1632,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `node_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `node_latest`  AS SELECT `nodes`.`node_id` AS `node_id`, `node_histories`.`node_version_id` AS `node_version_id`, `node_histories`.`node_history_id` AS `node_history_id`, `node_histories`.`parent_id` AS `parent_id`, `node_types`.`node_type_id` AS `node_type_id`, `node_types`.`class` AS `class`, `node_types`.`type` AS `type`, `node_histories`.`content` AS `content`, `node_histories`.`concept_id` AS `concept_id`, `node_histories`.`x` AS `x`, `node_histories`.`y` AS `y`, `node_histories`.`appeared_at` AS `appeared_at` FROM (((`nodes` join `node_versions` on((`node_versions`.`node_id` = `nodes`.`node_id`))) join `node_histories` on((`node_histories`.`node_version_id` = `node_versions`.`node_version_id`))) join `node_types` on((`node_histories`.`node_type_id` = `node_types`.`node_type_id`))) WHERE ((`node_versions`.`appeared_at` = (select max(`node_versions`.`appeared_at`) from `node_versions` where ((`node_versions`.`node_id` = `nodes`.`node_id`) AND (`nodes`.`deleted` = 0)))) AND (`node_histories`.`appeared_at` = (select max(`node_histories`.`appeared_at`) from `node_histories` where (`node_histories`.`node_version_id` = `node_versions`.`node_version_id`)))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `node_latest`  AS SELECT `nodes`.`node_id` AS `node_id`, `node_histories`.`node_version_id` AS `node_version_id`, `node_histories`.`node_history_id` AS `node_history_id`, `node_histories`.`parent_id` AS `parent_id`, `node_types`.`node_type_id` AS `node_type_id`, `node_types`.`class` AS `class`, `node_types`.`type` AS `type`, `node_histories`.`content` AS `content`, `node_histories`.`concept_id` AS `concept_id`, `node_histories`.`x` AS `x`, `node_histories`.`y` AS `y`, `node_histories`.`appeared_at` AS `appeared_at` FROM (((`nodes` join `node_versions` on((`node_versions`.`node_id` = `nodes`.`node_id`))) join `node_histories` on((`node_histories`.`node_version_id` = `node_versions`.`node_version_id`))) join `node_types` on((`node_histories`.`node_type_id` = `node_types`.`node_type_id`))) WHERE ((`node_versions`.`appeared_at` = (select max(`node_versions`.`appeared_at`) from `node_versions` where ((`node_versions`.`node_id` = `nodes`.`node_id`) AND (`nodes`.`deleted` = 0)))) AND (`node_histories`.`appeared_at` = (select max(`node_histories`.`appeared_at`) from `node_histories` where (`node_histories`.`node_version_id` = `node_versions`.`node_version_id`))))  ;
 
 -- --------------------------------------------------------
 
@@ -1641,7 +1641,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `object_nodes_summary`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `object_nodes_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(`onode`.`object_node_id`) AS `total_active_objects`, sum((case when (`onode`.`status` = 'inProgress') then 1 else 0 end)) AS `inProgress`, sum((case when (`onode`.`status` = 'paused') then 1 else 0 end)) AS `paused`, sum((case when (`onode`.`status` = 'completed') then 1 else 0 end)) AS `completed`, sum((case when ((`onode`.`purpose` is not null) and (`onode`.`purpose` <> '')) then 1 else 0 end)) AS `with_purpose`, sum((case when ((`onode`.`evaluation_good` is not null) and (`onode`.`evaluation_good` <> '')) then 1 else 0 end)) AS `with_eval_good`, sum((case when ((`onode`.`evaluation_bad` is not null) and (`onode`.`evaluation_bad` <> '')) then 1 else 0 end)) AS `with_eval_bad`, sum((case when ((`onode`.`attribution` is not null) and (`onode`.`attribution` <> '')) then 1 else 0 end)) AS `with_attribution`, sum((case when ((`onode`.`attribution_bad` is not null) and (`onode`.`attribution_bad` <> '')) then 1 else 0 end)) AS `with_attr_bad`, round(((sum((case when (`onode`.`status` = 'completed') then 1 else 0 end)) / count(`onode`.`object_node_id`)) * 100),1) AS `completion_rate` FROM ((`users` `u` join `nodes` `n` on((`u`.`user_id` = `n`.`user_id`))) join `object_nodes` `onode` on((`n`.`node_id` = `onode`.`node_id`))) WHERE ((`n`.`deleted` = 0) AND (`onode`.`deleted` = 0)) GROUP BY `u`.`user_id`, `u`.`name` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `object_nodes_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(`onode`.`object_node_id`) AS `total_active_objects`, sum((case when (`onode`.`status` = 'inProgress') then 1 else 0 end)) AS `inProgress`, sum((case when (`onode`.`status` = 'paused') then 1 else 0 end)) AS `paused`, sum((case when (`onode`.`status` = 'completed') then 1 else 0 end)) AS `completed`, sum((case when ((`onode`.`purpose` is not null) and (`onode`.`purpose` <> '')) then 1 else 0 end)) AS `with_purpose`, sum((case when ((`onode`.`evaluation_good` is not null) and (`onode`.`evaluation_good` <> '')) then 1 else 0 end)) AS `with_eval_good`, sum((case when ((`onode`.`evaluation_bad` is not null) and (`onode`.`evaluation_bad` <> '')) then 1 else 0 end)) AS `with_eval_bad`, sum((case when ((`onode`.`attribution` is not null) and (`onode`.`attribution` <> '')) then 1 else 0 end)) AS `with_attribution`, sum((case when ((`onode`.`attribution_bad` is not null) and (`onode`.`attribution_bad` <> '')) then 1 else 0 end)) AS `with_attr_bad`, round(((sum((case when (`onode`.`status` = 'completed') then 1 else 0 end)) / count(`onode`.`object_node_id`)) * 100),1) AS `completion_rate` FROM ((`users` `u` join `nodes` `n` on((`u`.`user_id` = `n`.`user_id`))) join `object_nodes` `onode` on((`n`.`node_id` = `onode`.`node_id`))) WHERE ((`n`.`deleted` = 0) AND (`onode`.`deleted` = 0)) GROUP BY `u`.`user_id`, `u`.`name``name`  ;
 
 -- --------------------------------------------------------
 
@@ -1650,7 +1650,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `paragraph_content_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `paragraph_content_latest`  AS SELECT `pc`.`paragraph_content_id` AS `paragraph_content_id`, `pcv`.`paragraph_content_version_id` AS `paragraph_content_version_id`, `ph`.`paragraph_content_history_id` AS `paragraph_content_history_id`, `pcv`.`paragraph_content_par_id` AS `paragraph_content_par_id`, `pcv`.`paragraph_content_bro_id` AS `paragraph_content_bro_id`, `pcv`.`node_id` AS `node_id`, `pcv`.`concept_id` AS `concept_id`, `pcv`.`content` AS `content`, `pcv`.`node_type_id` AS `node_type_id`, `pcv`.`appeared_at` AS `appeared_at` FROM ((`paragraph_contents` `pc` join `paragraph_content_versions` `pcv` on((`pc`.`paragraph_content_id` = `pcv`.`paragraph_content_id`))) join `paragraph_content_histories` `ph` on((`pcv`.`paragraph_content_version_id` = `ph`.`paragraph_content_version_id`))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `paragraph_content_latest`  AS SELECT `pc`.`paragraph_content_id` AS `paragraph_content_id`, `pcv`.`paragraph_content_version_id` AS `paragraph_content_version_id`, `ph`.`paragraph_content_history_id` AS `paragraph_content_history_id`, `pcv`.`paragraph_content_par_id` AS `paragraph_content_par_id`, `pcv`.`paragraph_content_bro_id` AS `paragraph_content_bro_id`, `pcv`.`node_id` AS `node_id`, `pcv`.`concept_id` AS `concept_id`, `pcv`.`content` AS `content`, `pcv`.`node_type_id` AS `node_type_id`, `pcv`.`appeared_at` AS `appeared_at` FROM ((`paragraph_contents` `pc` join `paragraph_content_versions` `pcv` on((`pc`.`paragraph_content_id` = `pcv`.`paragraph_content_id`))) join `paragraph_content_histories` `ph` on((`pcv`.`paragraph_content_version_id` = `ph`.`paragraph_content_version_id`)))  ;
 
 -- --------------------------------------------------------
 
@@ -1659,7 +1659,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `paragraph_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `paragraph_latest`  AS SELECT `p`.`paragraph_id` AS `paragraph_id`, `pv`.`paragraph_version_id` AS `paragraph_version_id`, `ph`.`paragraph_history_id` AS `paragraph_history_id`, `pv`.`paragraph_bro_id` AS `paragraph_bro_id`, `pv`.`title` AS `title`, `pv`.`content` AS `content`, `pv`.`appeared_at` AS `appeared_at` FROM ((`paragraphes` `p` join `paragraph_versions` `pv` on((`p`.`paragraph_id` = `pv`.`paragraph_id`))) join `paragraph_histories` `ph` on((`pv`.`paragraph_version_id` = `ph`.`paragraph_version_id`))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `paragraph_latest`  AS SELECT `p`.`paragraph_id` AS `paragraph_id`, `pv`.`paragraph_version_id` AS `paragraph_version_id`, `ph`.`paragraph_history_id` AS `paragraph_history_id`, `pv`.`paragraph_bro_id` AS `paragraph_bro_id`, `pv`.`title` AS `title`, `pv`.`content` AS `content`, `pv`.`appeared_at` AS `appeared_at` FROM ((`paragraphes` `p` join `paragraph_versions` `pv` on((`p`.`paragraph_id` = `pv`.`paragraph_id`))) join `paragraph_histories` `ph` on((`pv`.`paragraph_version_id` = `ph`.`paragraph_version_id`)))  ;
 
 -- --------------------------------------------------------
 
@@ -1668,7 +1668,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `section_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `section_latest`  AS SELECT `s`.`section_id` AS `section_id`, `sv`.`section_bro_id` AS `section_bro_id`, `sv`.`title` AS `title`, `sv`.`appeared_at` AS `appeared_at` FROM ((`sections` `s` join `section_versions` `sv` on((`s`.`section_id` = `sv`.`section_id`))) join `section_histories` `sh` on((`sv`.`section_version_id` = `sh`.`section_version_id`))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `section_latest`  AS SELECT `s`.`section_id` AS `section_id`, `sv`.`section_bro_id` AS `section_bro_id`, `sv`.`title` AS `title`, `sv`.`appeared_at` AS `appeared_at` FROM ((`sections` `s` join `section_versions` `sv` on((`s`.`section_id` = `sv`.`section_id`))) join `section_histories` `sh` on((`sv`.`section_version_id` = `sh`.`section_version_id`)))  ;
 
 -- --------------------------------------------------------
 
@@ -1677,7 +1677,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `trigger_candidates`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `trigger_candidates`  AS SELECT `nv`.`node_version_id` AS `activity_id`, '自己内対話' AS `activity_type`, (select `map_node_links`.`map_id` from `map_node_links` where (`map_node_links`.`node_id` = `nv`.`node_id`)) AS `map_id`, `nv`.`node_id` AS `node_id`, `nv`.`content` AS `content`, (select `latest_nv`.`concept_id` from `node_versions` `latest_nv` where (`latest_nv`.`node_id` = `nv`.`node_id`) order by `latest_nv`.`appeared_at` desc limit 1) AS `concept_id`, `nv`.`appeared_at` AS `appeared_at`, `nv`.`disappeared_at` AS `disappeared_at`, (case when exists(select 1 from `triggers` `t` where (`t`.`activity_id` = `nv`.`node_version_id`)) then 1 else 0 end) AS `trigger_on` FROM `node_versions` AS `nv` WHERE (not((`nv`.`concept_id` like ''))) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `trigger_candidates`  AS SELECT `nv`.`node_version_id` AS `activity_id`, '自己内対話' AS `activity_type`, (select `map_node_links`.`map_id` from `map_node_links` where (`map_node_links`.`node_id` = `nv`.`node_id`)) AS `map_id`, `nv`.`node_id` AS `node_id`, `nv`.`content` AS `content`, (select `latest_nv`.`concept_id` from `node_versions` `latest_nv` where (`latest_nv`.`node_id` = `nv`.`node_id`) order by `latest_nv`.`appeared_at` desc limit 1) AS `concept_id`, `nv`.`appeared_at` AS `appeared_at`, `nv`.`disappeared_at` AS `disappeared_at`, (case when exists(select 1 from `triggers` `t` where (`t`.`activity_id` = `nv`.`node_version_id`)) then 1 else 0 end) AS `trigger_on` FROM `node_versions` AS `nv` WHERE (not((`nv`.`concept_id` like '')))  ;
 
 -- --------------------------------------------------------
 
@@ -1685,8 +1685,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 -- ビュー用の構造 `user_final_lesson_summary`
 --
 DROP TABLE IF EXISTS `user_final_lesson_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_final_lesson_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(distinct `oll`.`object_le_id`) AS `node_lesson_count`, count(distinct `ojll`.`object_journal_lesson-learned_id`) AS `journal_lesson_count` FROM (((((((`users` `u` left join `nodes` `n` on(((`u`.`user_id` = `n`.`user_id`) and (`n`.`deleted` = 0)))) left join `object_nodes` `onode` on(((`n`.`node_id` = `onode`.`node_id`) and (`onode`.`deleted` = 0)))) left join `object_lesson-learneds` `oll` on(((`onode`.`object_node_id` = `oll`.`object_node_id`) and (`oll`.`deleted` = 0)))) left join `maps` `m` on(((`u`.`user_id` = `m`.`user_id`) and (`m`.`deleted` = 0)))) left join `object_journals` `oj` on(((`m`.`map_id` = `oj`.`map_id`) and (`oj`.`delete` = 0)))) left join `object_journal_reflections` `ojr` on(((`oj`.`object_journal_id` = `ojr`.`object_journal_id`) and (`ojr`.`deleted` = 0)))) left join `object_journal_lesson-learneds` `ojll` on(((`ojr`.`object_journal_reflection_id` = `ojll`.`object_journal_reflection_id`) and (`ojll`.`deleted` = 0)))) GROUP BY `u`.`user_id`, `u`.`name` ;
+-- テーブル forest_platform.user_final_lesson_summary の構造の読み取りエラー: #1267 - 照合順序 (utf8mb4_general_ci,IMPLICIT) と (utf8mb4_unicode_ci,IMPLICIT) の混在は操作 &#039;=&#039; では不正です。
 
 -- --------------------------------------------------------
 
@@ -1695,7 +1694,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `user_journal_node_summary`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_journal_node_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(distinct `n`.`node_id`) AS `total_node_count`, count(distinct `ojn`.`object_journal_id`) AS `total_journal_count` FROM ((`users` `u` left join `nodes` `n` on(((`u`.`user_id` = `n`.`user_id`) and (`n`.`deleted` = 0)))) left join `object_journal_nodes` `ojn` on(((`n`.`node_id` = `ojn`.`node_id`) and (`ojn`.`deleted` = '0')))) GROUP BY `u`.`user_id`, `u`.`name` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_journal_node_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(distinct `n`.`node_id`) AS `total_node_count`, count(distinct `ojn`.`object_journal_id`) AS `total_journal_count` FROM ((`users` `u` left join `nodes` `n` on(((`u`.`user_id` = `n`.`user_id`) and (`n`.`deleted` = 0)))) left join `object_journal_nodes` `ojn` on(((`n`.`node_id` = `ojn`.`node_id`) and (`ojn`.`deleted` = '0')))) GROUP BY `u`.`user_id`, `u`.`name``name`  ;
 
 -- --------------------------------------------------------
 
@@ -1703,8 +1702,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 -- ビュー用の構造 `user_journal_record_summary`
 --
 DROP TABLE IF EXISTS `user_journal_record_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_journal_record_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(distinct `oj`.`object_journal_id`) AS `journal_count`, count(distinct `ojn`.`object_journal_node_id`) AS `journal_node_count` FROM (((`users` `u` left join `maps` `m` on(((`u`.`user_id` = `m`.`user_id`) and (`m`.`deleted` = 0)))) left join `object_journals` `oj` on(((`m`.`map_id` = `oj`.`map_id`) and (`oj`.`delete` = 0)))) left join `object_journal_nodes` `ojn` on(((`oj`.`object_journal_id` = `ojn`.`object_journal_id`) and (`ojn`.`deleted` = '0')))) GROUP BY `u`.`user_id`, `u`.`name` ;
+-- テーブル forest_platform.user_journal_record_summary の構造の読み取りエラー: #1267 - 照合順序 (utf8mb4_unicode_ci,IMPLICIT) と (utf8mb4_general_ci,IMPLICIT) の混在は操作 &#039;=&#039; では不正です。
 
 -- --------------------------------------------------------
 
@@ -1713,7 +1711,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `user_lesson_learned_summary`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_lesson_learned_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(distinct `oll`.`object_le_id`) AS `node_lesson_count`, count(distinct `ojll`.`object_journal_lesson-learned_id`) AS `journal_lesson_count` FROM (((((`users` `u` left join `nodes` `n` on(((`u`.`user_id` = `n`.`user_id`) and (`n`.`deleted` = 0)))) left join `object_nodes` `onode` on(((`n`.`node_id` = `onode`.`node_id`) and (`onode`.`deleted` = 0)))) left join `object_lesson-learneds` `oll` on((((convert(`onode`.`object_node_id` using utf8mb4) collate utf8mb4_unicode_ci) = `oll`.`object_node_id`) and (`oll`.`deleted` = 0)))) left join `object_journal_nodes` `ojn` on(((`n`.`node_id` = `ojn`.`node_id`) and (`ojn`.`deleted` = '0')))) left join `object_journal_lesson-learneds` `ojll` on(((`ojn`.`object_journal_id` = (`ojll`.`object_journal_reflection_id` collate utf8mb4_general_ci)) and (`ojll`.`deleted` = 0)))) GROUP BY `u`.`user_id`, `u`.`name` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_lesson_learned_summary`  AS SELECT `u`.`user_id` AS `user_id`, `u`.`name` AS `name`, count(distinct `oll`.`object_le_id`) AS `node_lesson_count`, count(distinct `ojll`.`object_journal_lesson-learned_id`) AS `journal_lesson_count` FROM (((((`users` `u` left join `nodes` `n` on(((`u`.`user_id` = `n`.`user_id`) and (`n`.`deleted` = 0)))) left join `object_nodes` `onode` on(((`n`.`node_id` = `onode`.`node_id`) and (`onode`.`deleted` = 0)))) left join `object_lesson-learneds` `oll` on((((convert(`onode`.`object_node_id` using utf8mb4) collate utf8mb4_unicode_ci) = `oll`.`object_node_id`) and (`oll`.`deleted` = 0)))) left join `object_journal_nodes` `ojn` on(((`n`.`node_id` = `ojn`.`node_id`) and (`ojn`.`deleted` = '0')))) left join `object_journal_lesson-learneds` `ojll` on(((convert(`ojn`.`object_journal_id` using utf8mb4) = (`ojll`.`object_journal_reflection_id` collate utf8mb4_general_ci)) and (`ojll`.`deleted` = 0)))) GROUP BY `u`.`user_id`, `u`.`name``name`  ;
 
 -- --------------------------------------------------------
 
@@ -1722,7 +1720,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `view_changed_content_vs_latest`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_changed_content_vs_latest`  AS SELECT `nv`.`node_id` AS `node_id`, `nv`.`node_version_id` AS `latest_node_version_id`, `nv`.`content` AS `version_content`, `nh`.`node_version_id` AS `history_node_version_id`, `nh`.`content` AS `history_content`, `nh`.`appeared_at` AS `updated_at` FROM (`node_versions` `nv` join `node_histories` `nh` on((`nh`.`node_version_id` = `nv`.`node_version_id`))) WHERE ((`nv`.`appeared_at` = (select max(`v2`.`appeared_at`) from `node_versions` `v2` where (`v2`.`parent_id` = `nv`.`parent_id`))) AND (`nh`.`content` <> `nv`.`content`)) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_changed_content_vs_latest`  AS SELECT `nv`.`node_id` AS `node_id`, `nv`.`node_version_id` AS `latest_node_version_id`, `nv`.`content` AS `version_content`, `nh`.`node_version_id` AS `history_node_version_id`, `nh`.`content` AS `history_content`, `nh`.`appeared_at` AS `updated_at` FROM (`node_versions` `nv` join `node_histories` `nh` on((`nh`.`node_version_id` = `nv`.`node_version_id`))) WHERE ((`nv`.`appeared_at` = (select max(`v2`.`appeared_at`) from `node_versions` `v2` where (`v2`.`parent_id` = `nv`.`parent_id`))) AND (`nh`.`content` <> `nv`.`content`))  ;
 
 --
 -- ダンプしたテーブルのインデックス
@@ -2293,10 +2291,16 @@ ALTER TABLE `users`
 --
 
 --
+-- テーブルの AUTO_INCREMENT `knowledge_explorer_fragment_links`
+--
+ALTER TABLE `knowledge_explorer_fragment_links`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- テーブルの AUTO_INCREMENT `knowledge_fragment_positions`
 --
 ALTER TABLE `knowledge_fragment_positions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- ダンプしたテーブルの制約
