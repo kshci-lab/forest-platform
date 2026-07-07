@@ -840,6 +840,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
             </div>
             <!--履歴 yoshioka -->
 
+            <?php if (false): // OK-Core separated: legacy organizational knowledge UI is disabled in Forest-Core. ?>
 	            <!-- 0817川 組織知マップ -->
 	            <div id="tab05">
 	                <div id="layout">
@@ -1065,6 +1066,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                </div>
 	            </div>
 	        </div>
+            <?php endif; ?>
 
 
         <!-- メインメニュー　Finish -->

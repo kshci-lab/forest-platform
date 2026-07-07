@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- ホスト: localhost:8889
--- 生成日時: 2026-07-06 01:44:58
+-- 生成日時: 2026-07-07 05:30:52
 -- サーバのバージョン： 5.7.24
 -- PHP のバージョン: 8.3.1
 
@@ -160,21 +160,6 @@ CREATE TABLE `comment_destinations` (
 -- --------------------------------------------------------
 
 --
--- テーブルの構造 `discussion_history`
---
-
-CREATE TABLE `discussion_history` (
-  `discussion_history_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `posted_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `content` varchar(255) NOT NULL,
-  `knowledge_fragment_id` varchar(255) NOT NULL,
-  `fragment_source_type` varchar(32) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
 -- テーブルの構造 `discussion_participants`
 --
 
@@ -237,30 +222,6 @@ CREATE TABLE `experience_knowledges` (
   `remarked_utterance_id` varchar(255) DEFAULT NULL,
   `thought_experience_node_id` varchar(255) DEFAULT NULL,
   `experience_type` varchar(45) DEFAULT NULL,
-  `used_remarked_utterance` tinyint(4) NOT NULL,
-  `selected_contents` longtext NOT NULL,
-  `knowledge_fragment_content` varchar(255) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `stage1` varchar(255) NOT NULL,
-  `stage2` varchar(255) DEFAULT NULL,
-  `stage3` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `deleted` tinyint(4) NOT NULL,
-  `discussed` enum('YET','UNDERWAY','DONE') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- テーブルの構造 `externalized_contents`
---
-
-CREATE TABLE `externalized_contents` (
-  `externalized_contents_id` int(11) NOT NULL,
-  `remarked_utterance_id` varchar(255) NOT NULL,
-  `thought_experience_node_id` varchar(255) DEFAULT NULL,
-  `externalized_type` varchar(45) DEFAULT NULL,
   `used_remarked_utterance` tinyint(4) NOT NULL,
   `selected_contents` longtext NOT NULL,
   `knowledge_fragment_content` varchar(255) NOT NULL,
@@ -507,46 +468,6 @@ CREATE TABLE `kgroup_user_link` (
 -- --------------------------------------------------------
 
 --
--- テーブルの構造 `knowledge_explorer`
---
-
-CREATE TABLE `knowledge_explorer` (
-  `knowledge_node_id` int(11) NOT NULL,
-  `parent_node_id` int(11) DEFAULT NULL,
-  `node_title` varchar(255) NOT NULL,
-  `knowledge_fragment_id` varchar(255) DEFAULT NULL,
-  `comment` text,
-  `tacto_when` text,
-  `tacto_what` text,
-  `tacto_why` text,
-  `organizational_basis` text,
-  `node_type` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_by` int(11) NOT NULL,
-  `deleted` tinyint(4) NOT NULL,
-  `sort_order` int(11) DEFAULT NULL,
-  `knowledge_group_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- テーブルの構造 `knowledge_explorer_fragment_links`
---
-
-CREATE TABLE `knowledge_explorer_fragment_links` (
-  `id` int(11) NOT NULL,
-  `knowledge_node_id` int(11) NOT NULL,
-  `fragment_source_type` enum('experience','discussion','SRL') NOT NULL,
-  `fragment_source_id` int(11) NOT NULL,
-  `display_order` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
 -- テーブルの構造 `knowledge_fragment`
 --
 
@@ -555,21 +476,6 @@ CREATE TABLE `knowledge_fragment` (
   `knowledge_fragment_content` varchar(255) NOT NULL,
   `externalized_contents_id` int(11) NOT NULL,
   `discussed` enum('YET','UNDERWAY','DONE','') DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- テーブルの構造 `knowledge_fragment_positions`
---
-
-CREATE TABLE `knowledge_fragment_positions` (
-  `id` int(11) NOT NULL,
-  `group_id` int(11) NOT NULL DEFAULT '0',
-  `externalized_contents_id` int(11) NOT NULL,
-  `pos_x` float NOT NULL,
-  `pos_y` float NOT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -1777,13 +1683,6 @@ ALTER TABLE `comment_destinations`
   ADD KEY `com_comdes_id` (`comment_id`);
 
 --
--- テーブルのインデックス `discussion_history`
---
-ALTER TABLE `discussion_history`
-  ADD PRIMARY KEY (`discussion_history_id`),
-  ADD KEY `user_id` (`user_id`);
-
---
 -- テーブルのインデックス `discussion_participants`
 --
 ALTER TABLE `discussion_participants`
@@ -1813,12 +1712,6 @@ ALTER TABLE `document_titles`
 --
 ALTER TABLE `experience_knowledges`
   ADD PRIMARY KEY (`experience_knowledge_id`);
-
---
--- テーブルのインデックス `externalized_contents`
---
-ALTER TABLE `externalized_contents`
-  ADD PRIMARY KEY (`externalized_contents_id`);
 
 --
 -- テーブルのインデックス `feedbacks`
@@ -1904,31 +1797,10 @@ ALTER TABLE `kgroup_user_link`
   ADD KEY `knogrogroli_gro_id` (`group_id`);
 
 --
--- テーブルのインデックス `knowledge_explorer`
---
-ALTER TABLE `knowledge_explorer`
-  ADD PRIMARY KEY (`knowledge_node_id`);
-
---
--- テーブルのインデックス `knowledge_explorer_fragment_links`
---
-ALTER TABLE `knowledge_explorer_fragment_links`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_knowledge_fragment` (`knowledge_node_id`,`fragment_source_type`,`fragment_source_id`),
-  ADD KEY `idx_knowledge_node_id` (`knowledge_node_id`),
-  ADD KEY `idx_fragment_lookup` (`fragment_source_type`,`fragment_source_id`);
-
---
 -- テーブルのインデックス `knowledge_fragment`
 --
 ALTER TABLE `knowledge_fragment`
   ADD PRIMARY KEY (`knowledge_fragment_id`);
-
---
--- テーブルのインデックス `knowledge_fragment_positions`
---
-ALTER TABLE `knowledge_fragment_positions`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- テーブルのインデックス `knowledge_groups`
@@ -2285,22 +2157,6 @@ ALTER TABLE `triggers`
 ALTER TABLE `users`
   ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `users_sso_sub_unique` (`sso_sub`);
-
---
--- ダンプしたテーブルの AUTO_INCREMENT
---
-
---
--- テーブルの AUTO_INCREMENT `knowledge_explorer_fragment_links`
---
-ALTER TABLE `knowledge_explorer_fragment_links`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- テーブルの AUTO_INCREMENT `knowledge_fragment_positions`
---
-ALTER TABLE `knowledge_fragment_positions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- ダンプしたテーブルの制約
