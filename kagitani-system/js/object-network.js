@@ -1660,10 +1660,12 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                             try {
                                 var when = '';
                                 var lessonText = application || '';
+                                var whyImportantText = '';
                                 if (res && res.success && Array.isArray(res.items) && res.items.length) {
                                     var it = res.items[0];
                                     lessonText = it.lesson_learned || it.application || lessonText || '';
                                     when = it.opportunity || '';
+                                    whyImportantText = it.why_important || '';
                                 }
                                 // reflectionData を更新（title はundefinedのまま）
                                 try { 
@@ -1676,7 +1678,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                             completionReasonGood: attribution || '',
                                             completionReasonBad: attribution_bad || '',
                                             challengesAndLearnings: lessonText || '',
-                                            whenApplicable: when || ''
+                                            whenApplicable: when || '',
+                                            whyImportant: whyImportantText || ''
                                         }
                                     }); 
                                 } catch(e) {}
@@ -4473,9 +4476,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 });
                 
                 // 後方互換性のため、全教訓を結合した文字列も作成
+                let whyImportantText = '';
                 if (lessonsArray.length > 0) {
                     challengesAndLearnings = lessonsArray.map(l => l.lesson).join('\n\n');
                     whenApplicable = lessonsArray[0].opportunity || '';
+                    whyImportantText = lessonsArray[0].why_important || '';
                 }
             } catch (e) {
                 console.warn('Failed to collect lessons from tabs', e);
@@ -4562,6 +4567,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         if (failurePoints) titleParts.push(`【失敗点】${failurePoints}`);
                         if (completionReasonBad) titleParts.push(`【失敗の理由】${completionReasonBad}`);
                         if (challengesAndLearnings) titleParts.push(`【今後の教訓】${challengesAndLearnings}`);
+                        if (typeof whyImportantText !== 'undefined' && whyImportantText) titleParts.push(`【教訓が大切な理由】${whyImportantText}`);
                         if (whenApplicable) titleParts.push(`【適用場面】${whenApplicable}`);
                         const titleText = titleParts.join('<br>');
 
@@ -4581,7 +4587,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                     completionReasonGood: completionReasonGood || '',
                                     completionReasonBad: completionReasonBad || '',
                                     challengesAndLearnings: challengesAndLearnings || '',
-                                    whenApplicable: whenApplicable || ''
+                                    whenApplicable: whenApplicable || '',
+                                    whyImportant: (typeof whyImportantText !== 'undefined') ? whyImportantText : ''
                                 }
                             });
                             console.log('既存の内省タグを更新しました:', reflectionTagId);
@@ -4604,7 +4611,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                     completionReasonGood: completionReasonGood || '',
                                     completionReasonBad: completionReasonBad || '',
                                     challengesAndLearnings: challengesAndLearnings || '',
-                                    whenApplicable: whenApplicable || ''
+                                    whenApplicable: whenApplicable || '',
+                                    whyImportant: (typeof whyImportantText !== 'undefined') ? whyImportantText : ''
                                 }
                             };
                             this.nodes.add(reflectionTag);
@@ -4994,6 +5002,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         let completionReasonGood = reflectionData.completionReasonGood || '';
         let completionReasonBad = reflectionData.completionReasonBad || '';
         let lessonContent = reflectionData.challengesAndLearnings || '';
+        let whyImportant = reflectionData.whyImportant || '';
 
         // 対応する親ノードからも取得を試みる（フォールバック）
         if (!successContent && !failureContent && !lessonContent) {
@@ -5052,13 +5061,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                         res.items.forEach(function(item, index) {
                             var opp = item.opportunity || '';
                             var lesson = item.lesson_learned || item.application || '';
-                            if (opp || lesson) {
+                            var why = item.why_important || '';
+                            if (opp || lesson || why) {
                                 if (index > 0) combinedHtml += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #eee;"></div>';
                                 combinedHtml += '<div style="display:flex;align-items:stretch;">';
                                 combinedHtml += '<div style="display:flex;align-items:center;padding-right:8px;color:#f9a825;font-size:20px;">→</div>';
                                 combinedHtml += '<div style="flex:1;">';
                                 if (opp) combinedHtml += '<div style="font-weight:600;color:#333;">' + opp + '</div>';
                                 if (lesson) combinedHtml += '<div style="color:#555;margin-top:2px;">' + lesson + '</div>';
+                                if (why) combinedHtml += '<div style="color:#2c7a7b;margin-top:2px;font-size:0.9em;"><span style="opacity:0.8;margin-right:2px;">💡</span>' + why + '</div>';
                                 combinedHtml += '</div></div>';
                             }
                         });
@@ -5075,8 +5086,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                             whenApplicableEl.style.display = reflectionData.whenApplicable ? 'block' : 'none';
                         }
                         if (lessonContentEl) {
-                            lessonContentEl.textContent = lessonContent || '';
-                            lessonContentEl.style.display = lessonContent ? 'block' : 'none';
+                            let fbHtml = '';
+                            if (lessonContent) fbHtml += '<div style="color:#555;margin-top:2px;">' + lessonContent + '</div>';
+                            if (whyImportant) fbHtml += '<div style="color:#2c7a7b;margin-top:2px;font-size:0.9em;"><span style="opacity:0.8;margin-right:2px;">💡</span>' + whyImportant + '</div>';
+                            if (fbHtml) {
+                                lessonContentEl.innerHTML = fbHtml;
+                                lessonContentEl.style.display = 'block';
+                            } else {
+                                lessonContentEl.style.display = 'none';
+                            }
                         }
                     }
                 } catch(e) {
@@ -5090,8 +5108,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     whenApplicableEl.style.display = reflectionData.whenApplicable ? 'block' : 'none';
                 }
                 if (lessonContentEl) {
-                    lessonContentEl.textContent = lessonContent || '';
-                    lessonContentEl.style.display = lessonContent ? 'block' : 'none';
+                    let fbHtml = '';
+                    if (lessonContent) fbHtml += '<div style="color:#555;margin-top:2px;">' + lessonContent + '</div>';
+                    if (whyImportant) fbHtml += '<div style="color:#2c7a7b;margin-top:2px;font-size:0.9em;"><span style="opacity:0.8;margin-right:2px;">💡</span>' + whyImportant + '</div>';
+                    if (fbHtml) {
+                        lessonContentEl.innerHTML = fbHtml;
+                        lessonContentEl.style.display = 'block';
+                    } else {
+                        lessonContentEl.style.display = 'none';
+                    }
                 }
             }
         });
