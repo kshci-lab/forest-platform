@@ -1389,6 +1389,9 @@ class RecordThinkingProcess{
                         document.getElementById(activity_id).style.borderWidth = 3;
                     }
                 }
+            },
+            error: function(xhr, status, error){
+                console.error("trigger record failed", status, error, xhr.responseText);
             }
         });
     }

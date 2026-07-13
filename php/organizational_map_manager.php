@@ -95,7 +95,7 @@ if (!empty($user_ids_in_latest_group)) {
     }
     $return_data['users'] = $users;
 
-    // ユーザーごとに共有したprocessノードや experience_knowledges を取得（user_idも含める）
+    // ユーザーごとに共有したprocessノードや knowledge fragment を取得（user_idも含める）
     $user_ids_escaped = array_map(function($id) use ($mysqli) {
         return $mysqli->real_escape_string($id);
     }, $user_ids_in_latest_group);
@@ -113,7 +113,40 @@ if (!empty($user_ids_in_latest_group)) {
     $organi_map_node = [];
     if ($result_organi_map_node) {
         while ($row = $result_organi_map_node->fetch_assoc()) {
+            $row['source_type'] = 'experience';
+            $row['source_id'] = isset($row['experience_knowledge_id']) ? (int)$row['experience_knowledge_id'] : null;
+            $row['display_node_id'] = 'experience:' . (string)$row['source_id'];
             $organi_map_node[] = $row;
+        }
+    }
+
+    if ($resT = $mysqli->query("SHOW TABLES LIKE 'externalized_contents'")) {
+        $hasExternalized = ($resT->num_rows > 0);
+        $resT->free();
+        if ($hasExternalized) {
+            $contentCol = 'knowledge_fragment_content';
+            if ($resCol = $mysqli->query("SHOW COLUMNS FROM `externalized_contents` LIKE 'knowledge_fragments_content'")) {
+                if ($resCol->num_rows > 0) { $contentCol = 'knowledge_fragments_content'; }
+                $resCol->free();
+            }
+            $sql_externalized = "SELECT ec.externalized_contents_id, ec.user_id, ec.selected_contents, ec.`{$contentCol}` AS knowledge_fragment_content, ec.stage1, ec.stage2, ec.stage3, ec.updated_at
+                FROM externalized_contents ec
+                WHERE ec.user_id IN ($user_ids_in_sql)
+                    AND ec.deleted = 0
+                    AND ec.`{$contentCol}` IS NOT NULL
+                    AND LENGTH(TRIM(ec.`{$contentCol}`)) > 0
+                ORDER BY ec.updated_at DESC, ec.externalized_contents_id DESC";
+            if ($result_externalized = $mysqli->query($sql_externalized)) {
+                while ($row = $result_externalized->fetch_assoc()) {
+                    $row['source_type'] = 'externalized';
+                    $row['source_id'] = isset($row['externalized_contents_id']) ? (int)$row['externalized_contents_id'] : null;
+                    $row['display_node_id'] = 'externalized:' . (string)$row['source_id'];
+                    $row['experience_type'] = 'discussion';
+                    $row['thought_experience_node_id'] = null;
+                    $organi_map_node[] = $row;
+                }
+                $result_externalized->free();
+            }
         }
     }
     $return_data = array_merge($return_data, ['enode' => $organi_map_node]);

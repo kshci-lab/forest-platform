@@ -5,3 +5,8 @@ kii-system/css/.DS_Store
 kii-system/.DS_Store
 kii-system/.DS_Store
 .DS_Store
+vendor/
+.composer/
+composer.phar
+certs/cacert.pem
+php/sso_local.php

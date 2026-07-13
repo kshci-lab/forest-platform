@@ -18,6 +18,10 @@ if($limit <= 0 || $limit > 500){ $limit = 100; }
 // optional fragment filter (knowledge_fragment_id)
 // Accept single id or comma-separated ids.
 $fragmentRaw = isset($_GET['fragment_id']) ? trim((string)$_GET['fragment_id']) : '';
+$fragmentSourceType = isset($_GET['fragment_source_type']) ? trim((string)$_GET['fragment_source_type']) : '';
+$fragmentSourceType = strtolower($fragmentSourceType);
+if ($fragmentSourceType === 'externalized') { $fragmentSourceType = 'discussion'; }
+if (!in_array($fragmentSourceType, ['experience', 'discussion', 'srl'], true)) { $fragmentSourceType = ''; }
 $fragmentIds = [];
 if ($fragmentRaw !== '') {
   foreach (explode(',', $fragmentRaw) as $p) {
@@ -48,6 +52,12 @@ $sql = "SELECT dh.discussion_history_id, dh.user_id, dh.posted_time, dh.content,
 // apply fragment filter if provided (support CSV stored values)
 $types = '';
 $params = [];
+$whereParts = [];
+$hasSourceTypeCol = false;
+if($resSourceCol = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE 'fragment_source_type'")){
+  $hasSourceTypeCol = ($resSourceCol->num_rows > 0);
+  $resSourceCol->free();
+}
 if(count($fragmentIds) > 0){
   // Determine column type of knowledge_fragment_id (int vs varchar)
   $colType = '';
@@ -72,7 +82,25 @@ if(count($fragmentIds) > 0){
     $types .= str_repeat('i', count($fragmentIds));
     foreach($fragmentIds as $fid){ $params[] = $fid; }
   }
-  $sql .= " WHERE (" . implode(' OR ', $conds) . ") ";
+  $whereParts[] = "(" . implode(' OR ', $conds) . ")";
+}
+if($fragmentSourceType !== ''){
+  if($hasSourceTypeCol){
+    if($fragmentSourceType === 'experience'){
+      $whereParts[] = "(dh.fragment_source_type = ? OR dh.fragment_source_type IS NULL OR dh.fragment_source_type = '')";
+    } else {
+      $whereParts[] = "dh.fragment_source_type = ?";
+    }
+    $types .= 's';
+    $params[] = $fragmentSourceType;
+  } elseif($fragmentSourceType !== 'experience'){
+    echo json_encode(['status'=>'ok','items'=>[]]);
+    $mysqli->close();
+    exit;
+  }
+}
+if(count($whereParts) > 0){
+  $sql .= " WHERE " . implode(' AND ', $whereParts) . " ";
 }
 
 $sql .= " ORDER BY dh.discussion_history_id ASC LIMIT ?";

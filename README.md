@@ -5,6 +5,27 @@
 3. localhost:8888/index.html　にアクセス
 4. connect_db.php　でデータベースの名前を設定．
 
+### ブランチ切り替え後のローカル準備
+`vendor/` と `php/sso_local.php` はGit管理外です。ブランチ切り替えや作業環境の作り直し後にSSOログインでエラーが出る場合は、プロジェクト直下で以下を実行してください。
+
+```sh
+sh scripts/setup-local.sh
+```
+
+Windows では PowerShell で以下を実行してください。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-local.ps1
+```
+
+Windows で `composer` コマンドが未導入でも、このスクリプトは必要に応じて `composer.phar` をプロジェクト直下に取得して続行します。
+
+このスクリプトはComposer依存関係をインストールし、`certs/cacert.pem` を取得し、`php/sso_local.php` が存在しない場合だけ `php/sso_local.example.php` から作成します。作成後は `php/sso_local.php` に各自のSSO設定を入れてください。
+
+`php/sso_local.php` は秘密情報を含むためGitHubには上げません。共有するのは `php/sso_local.example.php` だけにしてください。
+
+Windows の MAMP 環境で `cURL error 60: SSL certificate problem: unable to get local issuer certificate` が出る主な原因は、PHP/cURL が信頼する CA 証明書バンドルを見つけられないことです。`scripts/setup-local.sh` と `scripts/setup-local.ps1` は `certs/cacert.pem` を取得し、SSO 通信はそれを自動利用します。Mac ではローカルの TLS 構成によってはこの問題が表に出ないことがありますが、システムまたは PHP が適切な CA ストアを使えない構成なら同様に発生しえます。
+
 ## 起動方法（アプリケーションサーバ）
 1.　https://ks.mi.s.osakafu-u.ac.jp/software/masakado
   にアクセス

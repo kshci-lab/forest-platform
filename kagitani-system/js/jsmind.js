@@ -425,7 +425,7 @@ function testSpecificNodeInProgress(nodeId) {
                 addbrother : 13, // Enter
                 editnode   : 113,// F2
                 delnode    : 46, // Delete
-                toggle     : 32, // Space
+                // toggle     : 32, // Space
                 left       : 37, // Left
                 up         : 38, // Up
                 right      : 39, // Right
@@ -3453,6 +3453,11 @@ var jm = jsMind.show(options, mind);
         handler : function(e){
             if(this.jm.view.is_editing()){return;}
             var evt = e || event;
+            var target = evt.target || evt.srcElement;
+            if(target && (
+                target.isContentEditable ||
+                /^(INPUT|TEXTAREA|SELECT)$/i.test(target.tagName)
+            )){return true;}
             if(!this.opts.enable){return true;}
             var kc = evt.keyCode;
             if(kc in this._mapping){
