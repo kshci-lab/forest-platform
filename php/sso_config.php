@@ -33,11 +33,19 @@ $config = array(
     'scope' => getenv('HCIMLAB_SSO_SCOPE') ?: 'openid profile email lab',
 );
 
-$localConfigPath = __DIR__ . '/sso_local.php';
-if (file_exists($localConfigPath)) {
-    $localConfig = require $localConfigPath;
-    if (is_array($localConfig)) {
-        $config = array_merge($config, $localConfig);
+$isProduction = false;
+if (!empty($_SERVER['DOCUMENT_ROOT']) && strpos($_SERVER['DOCUMENT_ROOT'], '/home/ubuntu/') !== false) {
+    $isProduction = true;
+}
+if (!empty($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'archive.kshci-lab.net') !== false) {
+    $isProduction = true;
+}
+
+$envConfigPath = $isProduction ? __DIR__ . '/sso_production.php' : __DIR__ . '/sso_local.php';
+if (file_exists($envConfigPath)) {
+    $envConfig = require $envConfigPath;
+    if (is_array($envConfig)) {
+        $config = array_merge($config, $envConfig);
     }
 }
 
