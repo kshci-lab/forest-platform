@@ -4,6 +4,10 @@ session_start();
 require_once __DIR__ . '/../php/hcimlab_sso.php';
 require_once __DIR__ . '/../php/connect_db.php';
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 try {
     if (isset($_GET['error'])) {
         $description = isset($_GET['error_description']) ? $_GET['error_description'] : $_GET['error'];

@@ -22,6 +22,31 @@ function hcimlab_sso_require_dependencies()
     require_once $autoload;
 }
 
+function hcimlab_sso_http_client()
+{
+    hcimlab_sso_require_dependencies();
+    $config = hcimlab_sso_config();
+    $options = array(
+        'timeout' => 30.0,
+        'connect_timeout' => 5.0,
+        'curl' => array(
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 30,
+        ),
+    );
+
+    $caBundle = isset($config['ca_bundle']) ? trim((string)$config['ca_bundle']) : '';
+    if ($caBundle !== '') {
+        if (!is_file($caBundle)) {
+            throw new RuntimeException('SSL CA bundle not found: ' . $caBundle);
+        }
+        $options['verify'] = $caBundle;
+    }
+
+    return new \GuzzleHttp\Client($options);
+}
+
 function hcimlab_sso_provider()
 {
     hcimlab_sso_require_dependencies();
@@ -42,18 +67,7 @@ function hcimlab_sso_provider()
         'pkceMethod' => 'S256',
     ));
 
-    if (class_exists('\\GuzzleHttp\\Client')) {
-        $httpClient = new \GuzzleHttp\Client(array(
-            'curl' => array(
-                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
-                CURLOPT_CONNECTTIMEOUT => 2,
-                CURLOPT_TIMEOUT => 30,
-            ),
-            'timeout' => 30.0,
-            'connect_timeout' => 2.0,
-        ));
-        $provider->setHttpClient($httpClient);
-    }
+    $provider->setHttpClient(hcimlab_sso_http_client());
 
     return $provider;
 }
