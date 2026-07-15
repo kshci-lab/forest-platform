@@ -1093,7 +1093,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/add_node.js"></script>
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
-        <script type="text/javascript" src="../js/thinking-process-network.js"></script>
+        <script type="text/javascript" src="../js/thinking-process-network.js?v=20260715-appeared-at-y20"></script>
 	        <script type="text/javascript" src="../js/organizational-map.js"></script>
 	        <script type="text/javascript" src="js/organizational-combination-tab.js"></script>
 	        <script type="text/javascript" src="js/past_sheet.js"></script>

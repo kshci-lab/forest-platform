@@ -356,7 +356,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     // //オントロジーノードを選択不可に
     selectdelete(params) {
-        if (this.nodes.get(params.nodes[0]).shape == "ellipse") {
+        const selectedNode = this.nodes.get(params.nodes[0]);
+        if (!selectedNode) {
+            return;
+        }
+        if (selectedNode.shape == "ellipse" || selectedNode.group == "versionTime") {
             // 選択を解除
             this.ownNetwork.setSelection({ nodes: [] });
         }
@@ -560,6 +564,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             id: `${node_id}`,
             label: node_label,
             group: node_type,
+            appeared_at: appeared_at,
             color: node_color,
             shape: node_shape,
             font: { color: text_color },
@@ -569,6 +574,52 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // console.log(newNode);
         
         defaultThinkingProcess.nodes.add(newNode);
+        if(appeared_at){
+            defaultThinkingProcess.nodes.add({
+                id: `${node_id}_appeared_at`,
+                label: appeared_at,
+                group: "versionTime",
+                shape: "text",
+                color: {
+                    background: "rgba(255,255,255,0)",
+                    border: "rgba(255,255,255,0)",
+                    highlight: {
+                        background: "rgba(255,255,255,0)",
+                        border: "rgba(255,255,255,0)"
+                    },
+                    hover: {
+                        background: "rgba(255,255,255,0)",
+                        border: "rgba(255,255,255,0)"
+                    }
+                },
+                font: { color: "#4d403c", size: 13 },
+                borderWidth: 0,
+                borderWidthSelected: 0,
+                labelHighlightBold: false,
+                shadow: false,
+                fixed: {y: y_fixed },
+                x: node_x,
+                y: node_y + 20,
+                margin: {
+                    top: 2,
+                    right: 6,
+                    bottom: 2,
+                    left: 6
+                },
+                chosen: false,
+                physics: false
+            });
+            setTimeout(() => {
+                const versionNodeBoundingBox = defaultThinkingProcess.ownNetwork.getBoundingBox(`${node_id}`);
+                if(versionNodeBoundingBox && Number.isFinite(versionNodeBoundingBox.bottom) && defaultThinkingProcess.nodes.get(`${node_id}_appeared_at`)){
+                    defaultThinkingProcess.nodes.update({
+                        id: `${node_id}_appeared_at`,
+                        x: (versionNodeBoundingBox.right + versionNodeBoundingBox.left)/2,
+                        y: versionNodeBoundingBox.bottom + 20
+                    });
+                }
+            }, 0);
+        }
         return defaultThinkingProcess.nodes;
     }
 
@@ -724,6 +775,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     doubleclick (params) {
         const clickedNodeId = params.nodes[0];
         if (clickedNodeId !== undefined) {
+            if(this.nodes.get(clickedNodeId).group == "versionTime"){
+                return;
+            }
             // ユーザーに新しいラベルを尋ね、それをノードの中身に設定
             const newLabel = prompt('新しいラベルを入力してください:', this.nodes.get(clickedNodeId).label.split('\n').join(''));
             // 編集したラベルを反映
@@ -740,6 +794,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             console.log(defaultThinkingProcess.nodes.get(selectNodeId));
             const node_group = defaultThinkingProcess.nodes.get(selectNodeId).group;
             console.log(node_group);
+            if(node_group == "versionTime"){
+                this.ownNetwork.setSelection({ nodes: [] });
+                return;
+            }
             if(node_group == "versions" || node_group == "versionsBro"){
                 this.deleteNodeVersion(selectNodeId);
                 return;
@@ -835,7 +893,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 if(edgesToRemove.length > 0){
                     this.edges.remove(edgesToRemove);
                 }
-                this.nodes.remove({id: nodeVersionId});
+                this.nodes.remove([{id: nodeVersionId}, {id: `${nodeVersionId}_appeared_at`}]);
 
                 if(response.previous_node_version_id && response.next_node_version_id){
                     this.addVersionEdge(response.previous_node_version_id, response.next_node_version_id);
@@ -1096,6 +1154,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }else{
             const movedNodeId = params.nodes[0];
             if (movedNodeId !== undefined) {
+                if(this.nodes.get(movedNodeId).group == "versionTime"){
+                    this.ownNetwork.setSelection({ nodes: [] });
+                    return;
+                }
                 //なぜか更新したら色変わってしまうから一時的に
                 let node_color = this.nodes.get(movedNodeId).color;
                 // let border_color = '#ffdb4f'; 
@@ -1114,6 +1176,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 // }
                 this.nodes.update({ id: movedNodeId, color: node_color, x: params.pointer.x, y: params.pointer.y });
                 const nodeBoundingBox = this.ownNetwork.getBoundingBox(movedNodeId);
+                if(this.nodes.get(`${movedNodeId}_appeared_at`)){
+                    this.nodes.update({
+                        id: `${movedNodeId}_appeared_at`,
+                        x: (nodeBoundingBox.right + nodeBoundingBox.left)/2,
+                        y: nodeBoundingBox.bottom + 20
+                    });
+                }
                 //次に追加したノードの座標指定
                 this.latest_selected_node_info.x = (nodeBoundingBox.right + nodeBoundingBox.left)/2;
                 this.latest_selected_node_info.y = nodeBoundingBox.bottom + 10;
