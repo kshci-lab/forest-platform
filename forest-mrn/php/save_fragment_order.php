@@ -13,14 +13,23 @@ function respond_json($status, $payload = []) {
 }
 
 if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
-  respond_json('error', ['message' => 'DB接続失敗']);
+  respond_json('error', ['message' => 'DB connection failed']);
 }
 @$mysqli->set_charset('utf8mb4');
 
-$raw = isset($_POST['order']) ? (string)$_POST['order'] : '';
-$ids = json_decode($raw, true);
-if (!is_array($ids)) {
-  respond_json('error', ['message' => 'order JSON が不正です']);
+$groupId = isset($_POST['group_id']) ? intval($_POST['group_id'], 10) : 0;
+if ($groupId < 0) { $groupId = 0; }
+
+$rawOrder = isset($_POST['order']) ? (string)$_POST['order'] : '';
+$ids = ($rawOrder !== '') ? json_decode($rawOrder, true) : [];
+if ($rawOrder !== '' && !is_array($ids)) {
+  respond_json('error', ['message' => 'invalid order JSON']);
+}
+
+$rawPositions = isset($_POST['positions']) ? (string)$_POST['positions'] : '';
+$positions = ($rawPositions !== '') ? json_decode($rawPositions, true) : [];
+if ($rawPositions !== '' && !is_array($positions)) {
+  respond_json('error', ['message' => 'invalid positions JSON']);
 }
 
 $orderedIds = [];
@@ -30,20 +39,40 @@ foreach ($ids as $id) {
     $orderedIds[] = $value;
   }
 }
-if (!$orderedIds) {
-  respond_json('error', ['message' => '保存対象がありません']);
+
+$positionItems = [];
+foreach ($positions as $item) {
+  if (!is_array($item)) { continue; }
+  $id = isset($item['id']) ? intval($item['id'], 10) : 0;
+  if ($id <= 0) { continue; }
+  $positionItems[$id] = [
+    'x' => isset($item['x']) ? floatval($item['x']) : 0.0,
+    'y' => isset($item['y']) ? floatval($item['y']) : 0.0
+  ];
+}
+
+if (!$orderedIds && !$positionItems) {
+  respond_json('error', ['message' => 'no target fragments']);
 }
 
 $createSql = "CREATE TABLE IF NOT EXISTS knowledge_fragment_positions (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  group_id INT NOT NULL DEFAULT 0,
   externalized_contents_id INT NOT NULL,
   pos_x FLOAT NOT NULL DEFAULT 0,
   pos_y FLOAT NOT NULL DEFAULT 0,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY ux_externalized (externalized_contents_id)
+  UNIQUE KEY ux_group_externalized (group_id, externalized_contents_id)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci";
 if (!$mysqli->query($createSql)) {
-  respond_json('error', ['message' => 'テーブル作成失敗: '.$mysqli->error]);
+  respond_json('error', ['message' => 'failed to prepare positions table: '.$mysqli->error]);
+}
+
+if ($res = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment_positions LIKE 'group_id'")) {
+  if ($res->num_rows === 0) {
+    @$mysqli->query("ALTER TABLE knowledge_fragment_positions ADD COLUMN group_id INT NOT NULL DEFAULT 0 AFTER id");
+  }
+  $res->free();
 }
 
 if ($res = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment_positions LIKE 'id'")) {
@@ -51,61 +80,52 @@ if ($res = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment_positions LIKE '
     $row = $res->fetch_assoc();
     $extra = isset($row['Extra']) ? (string)$row['Extra'] : '';
     if (stripos($extra, 'auto_increment') === false) {
-      $mysqli->query("ALTER TABLE knowledge_fragment_positions MODIFY id INT NOT NULL AUTO_INCREMENT PRIMARY KEY");
+      @$mysqli->query("ALTER TABLE knowledge_fragment_positions MODIFY id INT NOT NULL AUTO_INCREMENT PRIMARY KEY");
     }
   }
   $res->free();
 }
 
-$updStmt = $mysqli->prepare("UPDATE knowledge_fragment_positions SET pos_y = ?, pos_x = 0 WHERE externalized_contents_id = ?");
-$insStmt = $mysqli->prepare("INSERT INTO knowledge_fragment_positions (externalized_contents_id, pos_x, pos_y) VALUES (?, 0, ?)");
-$insWithIdStmt = $mysqli->prepare("INSERT INTO knowledge_fragment_positions (id, externalized_contents_id, pos_x, pos_y) VALUES (?, ?, 0, ?)");
-if (!$updStmt || !$insStmt || !$insWithIdStmt) {
-  respond_json('error', ['message' => '保存SQLの準備に失敗しました']);
+if ($res = $mysqli->query("SHOW INDEX FROM knowledge_fragment_positions WHERE Key_name = 'ux_externalized'")) {
+  if ($res->num_rows > 0) { @$mysqli->query("ALTER TABLE knowledge_fragment_positions DROP INDEX ux_externalized"); }
+  $res->free();
+}
+if ($res = $mysqli->query("SHOW INDEX FROM knowledge_fragment_positions WHERE Key_name = 'ux_group_externalized'")) {
+  if ($res->num_rows === 0) {
+    @$mysqli->query("ALTER TABLE knowledge_fragment_positions ADD UNIQUE KEY ux_group_externalized (group_id, externalized_contents_id)");
+  }
+  $res->free();
+}
+
+$orderStmt = $mysqli->prepare(
+  "INSERT INTO knowledge_fragment_positions (group_id, externalized_contents_id, pos_x, pos_y)
+   VALUES (?, ?, 0, ?)
+   ON DUPLICATE KEY UPDATE pos_y = VALUES(pos_y)"
+);
+$posStmt = $mysqli->prepare(
+  "INSERT INTO knowledge_fragment_positions (group_id, externalized_contents_id, pos_x, pos_y)
+   VALUES (?, ?, ?, ?)
+   ON DUPLICATE KEY UPDATE pos_x = VALUES(pos_x), pos_y = VALUES(pos_y)"
+);
+if (!$orderStmt || !$posStmt) {
+  respond_json('error', ['message' => 'failed to prepare save SQL']);
 }
 
 $saved = 0;
 foreach ($orderedIds as $index => $extId) {
   $posY = (float)$index;
-  $didSave = false;
-
-  $updStmt->bind_param('di', $posY, $extId);
-  if ($updStmt->execute() && $updStmt->affected_rows > 0) {
-    $saved++;
-    $didSave = true;
-  }
-
-  if (!$didSave) {
-    $insStmt->bind_param('id', $extId, $posY);
-    if ($insStmt->execute()) {
-      $saved++;
-      $didSave = true;
-    } else {
-      $updStmt->bind_param('di', $posY, $extId);
-      if ($updStmt->execute()) {
-        $saved++;
-        $didSave = true;
-      }
-    }
-  }
-
-  if (!$didSave) {
-    $nextId = 1;
-    if ($resNext = $mysqli->query("SELECT COALESCE(MAX(id),0)+1 AS next_id FROM knowledge_fragment_positions")) {
-      if ($rowNext = $resNext->fetch_assoc()) {
-        $nextId = max(1, intval($rowNext['next_id'], 10));
-      }
-      $resNext->free();
-    }
-    $insWithIdStmt->bind_param('iid', $nextId, $extId, $posY);
-    if ($insWithIdStmt->execute()) {
-      $saved++;
-    }
-  }
+  $orderStmt->bind_param('iid', $groupId, $extId, $posY);
+  if ($orderStmt->execute()) { $saved++; }
 }
 
-$updStmt->close();
-$insStmt->close();
-$insWithIdStmt->close();
+foreach ($positionItems as $extId => $pos) {
+  $x = (float)$pos['x'];
+  $y = (float)$pos['y'];
+  $posStmt->bind_param('iidd', $groupId, $extId, $x, $y);
+  if ($posStmt->execute()) { $saved++; }
+}
+
+$orderStmt->close();
+$posStmt->close();
 
 respond_json('ok', ['items_saved' => $saved]);

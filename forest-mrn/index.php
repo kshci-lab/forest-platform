@@ -17,7 +17,7 @@ if( (isset($_POST["sheetbtn"])) ||   //シート選択ボタンが押された
 
 if(isset($_POST["logout"])){ //logoutボタンが押された
     // alert("本当にログアウトしますか？");
-    
+
     // 時間があれば確認ダイアログを作る
     header("Location: ../logout.php");
     exit;
@@ -93,7 +93,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
     </head>
     <body id="all">
-        
+
         <!---        タイトルメニューStart                 -->
         <div id="main_title">
             <form name="return" method="POST">
@@ -146,7 +146,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                  <li class="active"><a href="#tab03" >リフレクション</a></li>
                  <li class="active"><a href="#record_tab" >履歴</a></li> -->
             <!-- <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  hatakeyama -->
-            <li class="active"><a href="#tab05">組織知マップ</a></li> 
+            <li class="active"><a href="#tab05">組織知マップ</a></li>
 
             <div class="checkbox_mode">
                 <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
@@ -163,16 +163,16 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     </select>
                     <input type="button" class="button3" value="実行" onclick="ModeChangeButtonClick();" />
                 </form>
-                            
+
             </div>
 
         </ul>
 
-        
-        
+
+
         <!-- タブメニュー　Finish -->
 
-        
+
 
         <!--メインメニュー　Start  -->
         <div class="tabcontent">
@@ -213,7 +213,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <button class="button4" id="map-snapshot-button" onclick="MapSnapShot();">
                                         マップver更新
                                     </button>
-                                    
+
                                     【Screenshot】
                                     <button class="button4" style="width:80px" onclick="screen_shot();">
                                         screenshot
@@ -227,14 +227,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         screenshot
                                         </button> -->
                                     <!-- <label><input type="checkbox" name="Difference" id="Difference" onClick="Difference();">以前のマップとの差分</label> -->
-                                    
+
                                     <div id="comment_balloon2"class="comment two" hidden><!--hatakeyama -->
                                         <p>緑にハイライトされたノードは合理性を考えるべきノードです．<br/>このノードの考えを変えた際には，関連したノードも考え直す必要はないか考えてみましょう！</p>
                                     </div>
                                     <div id="comment_balloon3"class="comment three" hidden><!--hatakeyama-->
                                         <p>何度もバージョン更新を行っている重要なノードです．<br/>定期的に考えを確認しましょう！</p>
                                     </div>
-                                    
+
                                     <!-- ここから清水さん１ -->
                                     <div id ="presen_menu">
                                         <!-- 【Slide】 -->
@@ -267,7 +267,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                             </button> -->
                                     </div>
                                 </div>
-                                    
+
                                 <!-- presen_menu fin -->
 
                                 <!--  <div id ="presen_menu"> -->
@@ -323,10 +323,10 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         <!-- <li><a href="javascript:void(0);" onClick="SetPurpose()">スライドを作成する</a></li> -->
                                         <!-- <li><a href="javascript:void(0);" onClick="NodeAppend()">資料に追加する</a></li> -->
                                         <!--  -->
-                                        
+
                                         <li>
                                             ノードの変更
-                                        </li> 
+                                        </li>
                                         <li>
                                             <button class="button_conmenu" onclick="add_Qnode();">
                                                 問いノードを追加
@@ -354,7 +354,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         </li>
                                         <li>
                                             ノードを資料へ追加
-                                        </li> 
+                                        </li>
                                         <li>
                                             <button class="button_conmenu" onclick="ItemAddDocument()">
                                                 項目として追加する
@@ -362,7 +362,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         </li>
                                         <li>
                                             <button class="button_conmenu" onclick="NodeAppendLogic()">
-                                                内容として追加する 
+                                                内容として追加する
                                             </button>
                                         </li>
                                         <!-- <li>
@@ -370,7 +370,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                                 ノードの更新をマップ全体に波及させる
                                             </button>
                                         </li>hatakeyama -->
-                                       
+
                                     </ul>
                                 </div>
                             </div>
@@ -390,7 +390,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                     <li><a href="javascript:void(0);" onClick="ItemVersionUpdate()">バージョンを更新</a></li>
                                 </ul>
                             </div>
-                            
+
                             <div id="document_area_conmenu2" >
                                 <select  id="Slides" class='cp_ipselect cp_sl05'>
                                 </select><a id="SlideName">大枠</a><br>
@@ -399,7 +399,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <input id="ImageOntologyDecide"type="button" value="決定" onclick="AddOntologyInfo();">
                                 <input type="button" value="キャンセル" onclick="CancelButton_Click('document_area_conmenu2')">
                             </div>
-                            
+
                             <div id="document_area_conmenu3" >
                                 <div id="first_choice_node">
                                     <select id="first_logic_node" class='cp_ipselect cp_sl05'>
@@ -419,7 +419,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 <input id="DecideLogicRelationButton" type="button" value="決定" onclick="DecideNodeLogicRelation_Click();">
                                 <input id="DecideLogicRelationButton" type="button" value="キャンセル" onclick="CancelButton_Click('document_area_conmenu3')">
                             </div>
-                            
+
                             <div id="document_area_conmenu4" >
                                 <div id="first_choice">
                                     <select id="first_logic" class='cp_ipselect cp_sl05'>
@@ -489,7 +489,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 </div>
                             </div>
                             <!--  ここから大槻修正　-->
-                            
+
                             <!--  ここまで大槻修正　-->
 
                             <!-- 思考過程表出化マップ　By川 -->
@@ -572,7 +572,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     <!--system fin-->
                 </div>
                 <!--layout fin-->
-            
+
 
             <!-- 　　　tab02メニュー　　　　　-->
             <!--  過去のマインドマップを表示する　-->
@@ -599,7 +599,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
                  <!--サイドメニュー　start-->
                 <div id="side_menu">
-                    
+
                     <div class="Menu">Menu</div>
 
 
@@ -668,11 +668,11 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                     </div><!--document fin -->
 
                     <!-- マインドマップ編集のサイドメニュー -->
-                    
+
                     <div id="mind">
-                        
+
                         <!--チェックメニュー　Start  -->
-                        
+
 
                         <!--ここから大槻修正-->
                         <div id = "feedback_area" style="display: none">
@@ -750,10 +750,10 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 </form>
                                 </div> -->
                         </div>
-                        
+
                     </div> <!-- mind fin -->
 
-                    
+
                 </div>
                 <!--サイドメニュー　finish-->
             </div>
@@ -771,7 +771,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                 </select>
                                 <input id="past_time_select_button" type="button" value="選択完了">
                             </div>
-                            
+
                             <!-- <form id ="reco_peri" class="ref_peri" method="post" acion="">
                                 <input id="od" name="start_date" type="datetime-local"/>
                                 <span><input id="pastmap_btn" type="button" onclick="GetPastMap($('#reco_period').val());" value="過去のマップを表示" /></span>
@@ -874,6 +874,18 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                                         id="organizational_ZoomIn" value="拡大" />
                                 <input type="button" class="Organizational_network_button"
                                         id="organizational_ZoomOut" value="縮小" />
+                                <div class="filter-toolbar">
+                                    <div class="source-filter" data-filter-scope="cooperation" aria-label="共同化フィルター">
+                                        <span class="filter-heading">産出機会</span>
+                                        <button type="button" class="source-filter-btn is-active" data-source-filter="experience">experience</button>
+                                        <button type="button" class="source-filter-btn is-active" data-source-filter="discussion">discussion</button>
+                                        <!-- <button type="button" class="source-filter-btn is-active" data-source-filter="SRL">SRL</button> -->
+                                    </div>
+                                    <div class="display-filter" data-filter-scope="cooperation" aria-label="共同化表示フィルター">
+                                        <span class="filter-heading">知</span>
+                                        <button type="button" class="display-filter-btn" data-display-filter="hide-organizational-knowledge">組織知</button>
+                                    </div>
+                                </div>
                                 <!-- <div class="checkbox_organizational">
                                     <input type="checkbox" id="checkbox_organizational" class="checkbox_organizational" name="check_organizational" onclick="ShowRelatedOrganizational('brother')">
                                     <label for="checkbox_organizational" data-on-label="On" data-off-label="Off"></label>
@@ -911,7 +923,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                        </div>
 
 	                    <div id="process_others_network_container" oncontextmenu="return false;" >
-                    
+
                         <div id="othersProcessnetwork_area">
                             <div id="buttoncluster">
                                 <input type="button" class="area_close" onclick="closeOthersThinkingProcessMap()"
@@ -943,6 +955,12 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                                <div id="knowledge_fragments_workspace" class="knowledge_fragments_workspace">
 	                                                    <div class="overlay-title">
 	                                                        知識フラグメント一覧
+                                                            <div class="source-filter" data-filter-scope="fragments" aria-label="知識フラグメントフィルター">
+                                                                <span class="filter-heading">産出機会</span>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="experience">experience</button>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="discussion">discussion</button>
+                                                                <!-- <button type="button" class="source-filter-btn is-active" data-source-filter="SRL">SRL</button> -->
+                                                            </div>
 	                                                        <div class="kfrag-action-group">
 	                                                            <button type="button" id="kfrag-reset" class="kfrag-action-btn">Reset</button>
 	                                                            <button type="button" id="kfrag-undo" class="kfrag-action-btn" disabled>Undo</button>
@@ -981,7 +999,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                                </div>
 
 	                                                <div id="knowledge_register_area" class="knowledge_register_area">
-	                                                    <div class="overlay-title">知識登録</div>
+	                                                    <div class="overlay-title">組織知登録</div>
 	                                                    <form id="knowledge_register_form" class="knowledge_register_form" onsubmit="return false;">
 	                                                        <div class="kra-row kra-top">
 	                                                            <label for="kra_area_select" class="kra-label">追加する領域:</label>
@@ -992,11 +1010,29 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                                            </select>
 	                                                        </div>
 	                                                        <div class="kra-row kra-body">
-	                                                            <textarea id="kra_knowledge_content" class="kra-control" rows="4" maxlength="255" placeholder="ここに内容を記入"></textarea>
+	                                                            <div class="kra-section-title">知の内容</div>
+	                                                            <label for="kra_knowledge_content" class="kra-label">要約（一言で表すとどのような知か）:</label>
+	                                                            <textarea id="kra_knowledge_content" class="kra-control" rows="2" maxlength="255" placeholder="例：研究内容を定期的に言語化することは，未整理の検討要素に気づく契機となる。"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_tacto_when" class="kra-label">When（どのような場面で有効か）:</label>
+	                                                            <textarea id="kra_tacto_when" class="kra-control kra-structured-control" rows="2" placeholder="例：研究目的や支援機能の位置づけが曖昧になっているとき"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_tacto_what" class="kra-label">What（何を考える／行うとよいか）:</label>
+	                                                            <textarea id="kra_tacto_what" class="kra-control kra-structured-control" rows="2" placeholder="例：研究内容を一連の流れとして言語化する"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_tacto_why" class="kra-label">Why（なぜそれが有効か）:</label>
+	                                                            <textarea id="kra_tacto_why" class="kra-control kra-structured-control" rows="2" placeholder="例：自分では明確でなかった検討要素や論理の不足に気づけるため"></textarea>
+	                                                        </div>
+	                                                        <div class="kra-row">
+	                                                            <label for="kra_organizational_basis" class="kra-label">組織知化の根拠（なぜこの KF 群を根拠に組織知として登録したのか）:</label>
+	                                                            <textarea id="kra_organizational_basis" class="kra-control kra-structured-control" rows="3" placeholder="例：複数のKFに共通して，研究内容を全体像として捉え直す重要性が示されていたため"></textarea>
 	                                                        </div>
 	                                                        <div class="kra-row kra-comment">
-	                                                            <label for="kra_comment_input" class="kra-label">コメント:</label>
-	                                                            <textarea id="kra_comment_input" class="kra-control" rows="2" maxlength="255" placeholder="任意のコメント(適用場面・記述理由など)"></textarea>
+	                                                            <label for="kra_comment_input" class="kra-label">補足コメント（適用上の注意，例外，今後の検討，登録者メモなど）:</label>
+	                                                            <textarea id="kra_comment_input" class="kra-control" rows="2" placeholder="例：研究段階や説明相手によって，整理の粒度を変える必要がある"></textarea>
 	                                                        </div>
 	                                                        <div class="kra-actions">
 	                                                            <button type="submit" class="button4-seci kra-submit" id="kra-submit">登録</button>
@@ -1012,6 +1048,14 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                                            <div class="overlay-knowledge-tree">
 	                                                <div class="overlay-title overlay-title-with-action">
 	                                                    産出した知
+                                                        <div class="filter-toolbar">
+                                                            <div class="source-filter" data-filter-scope="knowledge-tree" aria-label="産出した知フィルター">
+                                                                <span class="filter-heading">産出機会</span>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="experience">experience</button>
+                                                                <button type="button" class="source-filter-btn is-active" data-source-filter="discussion">discussion</button>
+                                                                <!-- <button type="button" class="source-filter-btn is-active" data-source-filter="SRL">SRL</button> -->
+                                                            </div>
+                                                        </div>
 	                                                    <button type="button" id="kt-add-node" class="kt-add-node-btn" aria-label="項目を追加">＋</button>
 	                                                </div>
 	                                                <div id="overlay_knowledge_tree" class="overlay_knowledge_tree"></div>
@@ -1022,8 +1066,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 	                            </div><!-- /org-tabpanel-combination -->
 	                </div>
 	            </div>
-	        </div>    
-        
+	        </div>
+
 
         <!-- メインメニュー　Finish -->
 
@@ -1072,16 +1116,16 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/ont_rationality.js"></script>
         <script type="text/javascript" src="js/ont_scenario_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_audience_model.js"></script>
-        <script type="text/javascript" src="js/upload.js"></script>     
+        <script type="text/javascript" src="js/upload.js"></script>
         <script type="text/javascript" src="js/ui_language.js"></script>
         <!-- 2022.shimizu -->
         <script type="text/javascript" src="js/html2canvas.min.js"></script>
         <script type="text/javascript" src="js/add_OntologyArea.js"></script>
-        <!--  ここから大槻修正　--> 
+        <!--  ここから大槻修正　-->
         <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css" rel="stylesheet" type="text/css" /> -->
-        <script type="text/javascript" src="./js/network.js"></script>  
-        <script type="text/javascript" src="./js/readxmldata.js"></script>  
-        
+        <script type="text/javascript" src="./js/network.js"></script>
+        <script type="text/javascript" src="./js/readxmldata.js"></script>
+
         <!--  ここまで大槻修正　-->
     </body>
 </html>

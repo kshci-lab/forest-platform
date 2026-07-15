@@ -10,6 +10,16 @@ require_once __DIR__ . '/connect_db.php';
 
 function h($s){ return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
 
+function table_exists(mysqli $mysqli, string $table): bool {
+    $escaped = $mysqli->real_escape_string($table);
+    if ($res = $mysqli->query("SHOW TABLES LIKE '{$escaped}'")) {
+        $exists = ($res->num_rows > 0);
+        $res->free();
+        return $exists;
+    }
+    return false;
+}
+
 if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
     // 500を返すとjQueryがfailになるため、HTMLで説明を返す
     echo '<div class="error">DB接続失敗</div>';
@@ -25,6 +35,28 @@ $kfragId = null; // externalized_contents_id と同一
 if($extId > 0){
     $kfragId = $extId;
 } elseif($nodeId > 0){
+    if(table_exists($mysqli, 'knowledge_explorer_fragment_links')){
+        $sql = "SELECT fragment_source_type, fragment_source_id
+                  FROM knowledge_explorer_fragment_links
+                 WHERE knowledge_node_id = ?
+              ORDER BY COALESCE(display_order, 999999), id";
+        if($stmt = $mysqli->prepare($sql)){
+            $stmt->bind_param('i', $nodeId);
+            if($stmt->execute() && ($res = $stmt->get_result())){
+                while($row = $res->fetch_assoc()){
+                    $sourceType = isset($row['fragment_source_type']) ? (string)$row['fragment_source_type'] : '';
+                    $sourceId = isset($row['fragment_source_id']) ? intval($row['fragment_source_id'], 10) : 0;
+                    if($sourceType === 'externalized' && $sourceId > 0){
+                        $kfragId = $sourceId;
+                        break;
+                    }
+                }
+                $res->free();
+            }
+            $stmt->close();
+        }
+    }
+
     // knowledge_explorer の列名差異に対応しつつ、node_id からフラグメントIDを逆引き
     $table = 'knowledge_explorer';
     $colNodeId = null; $colKfragId = null; $colExtId = null;
@@ -41,7 +73,7 @@ if($extId > 0){
             }
             $cols->free();
         }
-        if($colNodeId !== null){
+        if($colNodeId !== null && (!$kfragId || $kfragId<=0)){
             if($colExtId !== null && (!$kfragId || $kfragId<=0)){
                 $sql = "SELECT `$colExtId` AS ext_id FROM `$table` WHERE `$colNodeId` = ? LIMIT 1";
                 if($stmt = $mysqli->prepare($sql)){

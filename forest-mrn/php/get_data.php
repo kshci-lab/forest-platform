@@ -1,14 +1,31 @@
 <?php
 
+	mysqli_report(MYSQLI_REPORT_OFF);
+
 	session_start();
 
 	require "connect_db.php";
 
+	function table_column_exists($mysqli, $table, $column){
+		$table_escaped = $mysqli->real_escape_string($table);
+		$column_escaped = $mysqli->real_escape_string($column);
+		if($result = $mysqli->query("SHOW COLUMNS FROM `".$table_escaped."` LIKE '".$column_escaped."'")){
+			$exists = ($result->num_rows > 0);
+			$result->free();
+			return $exists;
+		}
+		return false;
+	}
+
 	if($_POST["val"] == "rationality"){
 		$map_id = $_SESSION["MAPID"];
 		$rationality_id = $_POST["rationality_id"];
+		$has_map_id = table_column_exists($mysqli, "rationality_nodes", "map_id");
 
-		$sql = "SELECT * FROM rationality_nodes WHERE rationality_id = '".$rationality_id."' AND map_id = '".$map_id."'";
+		$sql = "SELECT * FROM rationality_nodes WHERE rationality_id = '".$mysqli->real_escape_string($rationality_id)."'";
+		if($has_map_id){
+			$sql .= " AND map_id = '".$mysqli->real_escape_string($map_id)."'";
+		}
 
 		$i = 0;
 		$node_id_array = array();
@@ -29,7 +46,11 @@
 
 	}else if($_POST["val"] == "rationality_all"){
 		$map_id = $_SESSION["MAPID"];
-		$sql = "SELECT rationality_id, node_id FROM rationality_nodes WHERE map_id = '".$map_id."'";
+		$has_map_id = table_column_exists($mysqli, "rationality_nodes", "map_id");
+		$sql = "SELECT rationality_id, node_id FROM rationality_nodes";
+		if($has_map_id){
+			$sql .= " WHERE map_id = '".$mysqli->real_escape_string($map_id)."'";
+		}
 		$rationality_nodes = array();
 
 		if($result = $mysqli->query($sql)){

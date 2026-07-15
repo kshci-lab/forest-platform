@@ -1534,6 +1534,8 @@ function send_map_reason(){
  function check_edit_reason(id){
 
      $("#reason").html("");
+     var reason = document.getElementById("reason");
+     if(!reason) return;
      
       //ノード修正理由があれば取得
       GetNodeReason(id).then(function (res) {

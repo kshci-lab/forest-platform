@@ -32,31 +32,27 @@ if (isset($_SESSION['USERID']) && isset($mysqli) && $mysqli instanceof mysqli) {
 }
 
 if (isset($mysqli) && $mysqli instanceof mysqli) {
-  // forest-mrn: experience_knowledges から取得する
-  $table = 'experience_knowledges';
-  $hasTable = false;
-  if ($resT = $mysqli->query("SHOW TABLES LIKE '".$mysqli->real_escape_string($table)."'")) {
+  if ($resT = $mysqli->query("SHOW TABLES LIKE 'experience_knowledges'")) {
     $hasTable = ($resT->num_rows > 0);
     $resT->free();
-  }
-  if ($hasTable) {
-    // deleted=0 のみ表示
-    $sql = "SELECT ek.experience_knowledge_id,
-                   ek.knowledge_fragment_content AS content,
-                   ek.stage1, ek.stage2, ek.stage3,
-                   ek.selected_contents,
-                   ek.user_id,
-                   COALESCE(u.name,'') AS user_name,
-                   ek.discussed
-              FROM experience_knowledges ek
-              LEFT JOIN users u ON u.user_id = ek.user_id
-             WHERE ek.deleted = 0
-               AND ek.knowledge_fragment_content IS NOT NULL
-               AND LENGTH(TRIM(ek.knowledge_fragment_content)) > 0
-             ORDER BY ek.updated_at DESC, ek.experience_knowledge_id DESC";
-    if ($stmt = $mysqli->prepare($sql)) {
-      if ($stmt->execute()) {
-        if ($result = $stmt->get_result()) {
+    if ($hasTable) {
+      $sql = "SELECT ek.experience_knowledge_id AS source_id,
+                     ek.knowledge_fragment_content AS content,
+                     ek.stage1, ek.stage2, ek.stage3,
+                     ek.selected_contents,
+                     ek.user_id,
+                     COALESCE(u.name,'') AS user_name,
+                     ek.discussed,
+                     ek.updated_at,
+                     'experience' AS source_type
+                FROM experience_knowledges ek
+                LEFT JOIN users u ON u.user_id = ek.user_id
+               WHERE ek.deleted = 0
+                 AND ek.knowledge_fragment_content IS NOT NULL
+                 AND LENGTH(TRIM(ek.knowledge_fragment_content)) > 0
+               ORDER BY ek.updated_at DESC, ek.experience_knowledge_id DESC";
+      if ($stmt = $mysqli->prepare($sql)) {
+        if ($stmt->execute() && ($result = $stmt->get_result())) {
           while ($row = $result->fetch_assoc()) {
             $__val = isset($row['content']) ? (string)$row['content'] : '';
             if (trim($__val) === '') { continue; }
@@ -72,16 +68,80 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
               'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
               'user_name' => $__user_name,
               'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
-              // JS互換: data-ext-id を使っているので、ここに experience_knowledge_id を入れる
-              'experience_knowledge_id' => isset($row['experience_knowledge_id']) ? (int)$row['experience_knowledge_id'] : null
+              'source_type' => 'experience',
+              'source_id' => isset($row['source_id']) ? (int)$row['source_id'] : null,
+              'updated_at' => isset($row['updated_at']) ? (string)$row['updated_at'] : ''
             ];
           }
           $result->free();
         }
+        $stmt->close();
       }
-      $stmt->close();
     }
   }
+  if ($resT = $mysqli->query("SHOW TABLES LIKE 'externalized_contents'")) {
+    $hasTable = ($resT->num_rows > 0);
+    $resT->free();
+    if ($hasTable) {
+      $contentCol = 'knowledge_fragment_content';
+      if ($resCol = $mysqli->query("SHOW COLUMNS FROM `externalized_contents` LIKE 'knowledge_fragments_content'")) {
+        if ($resCol->num_rows > 0) { $contentCol = 'knowledge_fragments_content'; }
+        $resCol->free();
+      }
+      $sql = "SELECT ec.externalized_contents_id AS source_id,
+                     ec.`{$contentCol}` AS content,
+                     ec.stage1, ec.stage2, ec.stage3,
+                     ec.selected_contents,
+                     ec.user_id,
+                     COALESCE(u.name,'') AS user_name,
+                     ec.discussed,
+                     ec.updated_at,
+                     'discussion' AS source_type
+                FROM externalized_contents ec
+                LEFT JOIN users u ON u.user_id = ec.user_id
+               WHERE ec.deleted = 0
+                 AND ec.`{$contentCol}` IS NOT NULL
+                 AND LENGTH(TRIM(ec.`{$contentCol}`)) > 0
+               ORDER BY ec.updated_at DESC, ec.externalized_contents_id DESC";
+      if ($stmt = $mysqli->prepare($sql)) {
+        if ($stmt->execute() && ($result = $stmt->get_result())) {
+          while ($row = $result->fetch_assoc()) {
+            $__val = isset($row['content']) ? (string)$row['content'] : '';
+            if (trim($__val) === '') { continue; }
+            $__user_name = $__current_user_name;
+            if (isset($row['user_name']) && trim((string)$row['user_name']) !== '') {
+              $__user_name = (string)$row['user_name'];
+            }
+            $__kfrag_list[] = [
+              'content' => $__val,
+              'stage1' => isset($row['stage1']) ? (string)$row['stage1'] : '',
+              'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
+              'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
+              'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
+              'user_name' => $__user_name,
+              'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
+              'source_type' => 'discussion',
+              'source_id' => isset($row['source_id']) ? (int)$row['source_id'] : null,
+              'updated_at' => isset($row['updated_at']) ? (string)$row['updated_at'] : ''
+            ];
+          }
+          $result->free();
+        }
+        $stmt->close();
+      }
+    }
+  }
+}
+
+if (!empty($__kfrag_list)) {
+  usort($__kfrag_list, function($a, $b) {
+    $at = isset($a['updated_at']) ? strtotime((string)$a['updated_at']) : 0;
+    $bt = isset($b['updated_at']) ? strtotime((string)$b['updated_at']) : 0;
+    if ($at !== $bt) { return ($at > $bt) ? -1 : 1; }
+    $ai = isset($a['source_id']) ? intval($a['source_id'], 10) : 0;
+    $bi = isset($b['source_id']) ? intval($b['source_id'], 10) : 0;
+    return ($ai > $bi) ? -1 : 1;
+  });
 }
 
 if (!empty($__kfrag_list)) {
@@ -94,21 +154,41 @@ if (!empty($__kfrag_list)) {
 
 if (!empty($__kfrag_list) && isset($mysqli) && $mysqli instanceof mysqli) {
   $orderMap = [];
+  $canvasMap = [];
+  $groupIdForPositions = isset($_GET['group_id']) ? intval($_GET['group_id'], 10) : 0;
+  if ($groupIdForPositions < 0) { $groupIdForPositions = 0; }
   if ($resP = $mysqli->query("SHOW TABLES LIKE 'knowledge_fragment_positions'")) {
     $hasPositions = ($resP->num_rows > 0);
     $resP->free();
     if ($hasPositions) {
+      $hasGroupIdInPositions = false;
+      if ($resG = $mysqli->query("SHOW COLUMNS FROM `knowledge_fragment_positions` LIKE 'group_id'")) {
+        $hasGroupIdInPositions = ($resG->num_rows > 0);
+        $resG->free();
+      }
       $idsForOrder = [];
       foreach ($__kfrag_list as $item) {
-        $idForOrder = isset($item['experience_knowledge_id']) ? intval($item['experience_knowledge_id'], 10) : 0;
+        if (!isset($item['source_type']) || $item['source_type'] !== 'experience') { continue; }
+        $idForOrder = isset($item['source_id']) ? intval($item['source_id'], 10) : 0;
         if ($idForOrder > 0) { $idsForOrder[] = $idForOrder; }
       }
       $idsForOrder = array_values(array_unique($idsForOrder));
       if ($idsForOrder) {
         $in = implode(',', array_map('intval', $idsForOrder));
-        if ($resO = $mysqli->query("SELECT externalized_contents_id, pos_y FROM knowledge_fragment_positions WHERE externalized_contents_id IN ($in)")) {
+        if ($hasGroupIdInPositions) {
+          $groupWhere = ($groupIdForPositions > 0) ? " AND group_id IN (0,".intval($groupIdForPositions).")" : " AND group_id = 0";
+          $sqlPos = "SELECT externalized_contents_id, group_id, pos_x, pos_y FROM knowledge_fragment_positions WHERE externalized_contents_id IN ($in)$groupWhere ORDER BY group_id ASC";
+        } else {
+          $sqlPos = "SELECT externalized_contents_id, 0 AS group_id, pos_x, pos_y FROM knowledge_fragment_positions WHERE externalized_contents_id IN ($in)";
+        }
+        if ($resO = $mysqli->query($sqlPos)) {
           while ($rowO = $resO->fetch_assoc()) {
-            $orderMap[intval($rowO['externalized_contents_id'], 10)] = floatval($rowO['pos_y']);
+            $posId = intval($rowO['externalized_contents_id'], 10);
+            $orderMap[$posId] = floatval($rowO['pos_y']);
+            $canvasMap[$posId] = [
+              'x' => isset($rowO['pos_x']) ? floatval($rowO['pos_x']) : 0.0,
+              'y' => isset($rowO['pos_y']) ? floatval($rowO['pos_y']) : 0.0
+            ];
           }
           $resO->free();
         }
@@ -118,12 +198,13 @@ if (!empty($__kfrag_list) && isset($mysqli) && $mysqli instanceof mysqli) {
   if (!empty($orderMap)) {
     $indexMap = [];
     foreach ($__kfrag_list as $idx => $item) {
-      $idForIndex = isset($item['experience_knowledge_id']) ? intval($item['experience_knowledge_id'], 10) : 0;
+      if (!isset($item['source_type']) || $item['source_type'] !== 'experience') { continue; }
+      $idForIndex = isset($item['source_id']) ? intval($item['source_id'], 10) : 0;
       if ($idForIndex > 0) { $indexMap[$idForIndex] = $idx; }
     }
     usort($__kfrag_list, function($a, $b) use ($orderMap, $indexMap) {
-      $aid = isset($a['experience_knowledge_id']) ? intval($a['experience_knowledge_id'], 10) : 0;
-      $bid = isset($b['experience_knowledge_id']) ? intval($b['experience_knowledge_id'], 10) : 0;
+      $aid = (isset($a['source_type']) && $a['source_type'] === 'experience' && isset($a['source_id'])) ? intval($a['source_id'], 10) : 0;
+      $bid = (isset($b['source_type']) && $b['source_type'] === 'experience' && isset($b['source_id'])) ? intval($b['source_id'], 10) : 0;
       $ap = array_key_exists($aid, $orderMap) ? $orderMap[$aid] : PHP_INT_MAX;
       $bp = array_key_exists($bid, $orderMap) ? $orderMap[$bid] : PHP_INT_MAX;
       if ($ap == $bp) {
@@ -149,18 +230,28 @@ if (!empty($__kfrag_list) && isset($mysqli) && $mysqli instanceof mysqli) {
             $__s2 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage2']) ? (string)$__kfrag_raw['stage2'] : '';
             $__s3 = is_array($__kfrag_raw) && isset($__kfrag_raw['stage3']) ? (string)$__kfrag_raw['stage3'] : '';
             $__uname = is_array($__kfrag_raw) && isset($__kfrag_raw['user_name']) ? (string)$__kfrag_raw['user_name'] : $__current_user_name;
+            $__sourceType = is_array($__kfrag_raw) && isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience';
+            $__selectedLabel = ($__sourceType === 'discussion') ? 'discussion' : '経験';
+            $__stage1Label = ($__sourceType === 'discussion') ? '【discussionの振り返り】' : '【経験の振り返り】';
             // PHPでは配列は新しい順(new->old)で格納されています。表示順はこのままに、番号は古い->1 に合わせる。
             $num = isset($__kfrag_raw['display_num']) ? intval($__kfrag_raw['display_num'], 10) : ($totalK - $i);
   ?>
-    <div class="fragment-node-wrapper"<?php
-      $extId = isset($__kfrag_raw['experience_knowledge_id']) ? intval($__kfrag_raw['experience_knowledge_id'],10) : 0;
-      if($extId>0){ echo ' data-ext-id="'.$extId.'"'; }
+    <div class="fragment-node-wrapper" data-source-type="<?php echo htmlspecialchars(isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience', ENT_QUOTES, 'UTF-8'); ?>"<?php
+      $sourceType = isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience';
+      $sourceId = isset($__kfrag_raw['source_id']) ? intval($__kfrag_raw['source_id'],10) : 0;
+      if($sourceType === 'experience' && $sourceId>0){ echo ' data-ext-id="'.$sourceId.'"'; }
+      if($sourceId>0){ echo ' data-source-id="'.$sourceId.'"'; }
+      if($sourceType === 'experience' && $sourceId>0 && isset($canvasMap) && isset($canvasMap[$sourceId])){
+        echo ' data-canvas-x="'.htmlspecialchars((string)$canvasMap[$sourceId]['x'], ENT_QUOTES, 'UTF-8').'"';
+        echo ' data-canvas-y="'.htmlspecialchars((string)$canvasMap[$sourceId]['y'], ENT_QUOTES, 'UTF-8').'"';
+      }
     ?>>
       <div class="fragment-number-badge" aria-hidden="true"><?php echo intval($num,10); ?></div>
-      <div class="knowledge_fragment" data-kfrag-num="<?php echo intval($num,10); ?>"<?php 
-      $disc = isset($__kfrag_raw['discussed']) ? trim($__kfrag_raw['discussed']) : ''; 
+      <div class="knowledge_fragment" data-source-type="<?php echo htmlspecialchars($sourceType, ENT_QUOTES, 'UTF-8'); ?>" data-kfrag-num="<?php echo intval($num,10); ?>"<?php
+      $disc = isset($__kfrag_raw['discussed']) ? trim($__kfrag_raw['discussed']) : '';
       if($disc!==''){ echo ' data-discussed="'.htmlspecialchars($disc,ENT_QUOTES,'UTF-8').'"'; }
-      if($extId>0){ echo ' data-ext-id="'.$extId.'"'; }
+      if($sourceType === 'experience' && $sourceId>0){ echo ' data-ext-id="'.$sourceId.'"'; }
+      if($sourceId>0){ echo ' data-source-id="'.$sourceId.'"'; }
     ?>>
         <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>
         <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>
@@ -168,9 +259,9 @@ if (!empty($__kfrag_list) && isset($mysqli) && $mysqli instanceof mysqli) {
           <?php 
             $__sel = is_array($__kfrag_raw) && isset($__kfrag_raw['selected_contents']) ? trim((string)$__kfrag_raw['selected_contents']) : '';
             if ($__sel !== '') { ?>
-              <div class="selected-utterance">経験: <?php echo nl2br(htmlspecialchars($__sel, ENT_QUOTES, 'UTF-8')); ?></div>
+              <div class="selected-utterance"><?php echo htmlspecialchars($__selectedLabel, ENT_QUOTES, 'UTF-8'); ?>: <?php echo nl2br(htmlspecialchars($__sel, ENT_QUOTES, 'UTF-8')); ?></div>
           <?php } ?>
-          <div class="qa-item"><div class="qa-q">【経験の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s1, ENT_QUOTES, 'UTF-8')); ?></div></div>
+          <div class="qa-item"><div class="qa-q"><?php echo htmlspecialchars($__stage1Label, ENT_QUOTES, 'UTF-8'); ?></div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s1, ENT_QUOTES, 'UTF-8')); ?></div></div>
           <div class="qa-item"><div class="qa-q">【活動文脈固有の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s2, ENT_QUOTES, 'UTF-8')); ?></div></div>
           <div class="qa-item"><div class="qa-q">【研究固有の振り返り】</div><div class="qa-a"><?php echo nl2br(htmlspecialchars($__s3, ENT_QUOTES, 'UTF-8')); ?></div></div>
         </div>

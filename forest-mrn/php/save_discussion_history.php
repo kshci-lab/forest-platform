@@ -74,6 +74,12 @@ if (isset($_POST['knowledge_fragment_id']) && $_POST['knowledge_fragment_id'] !=
     }
 }
 
+$fragment_source_type = isset($_POST['fragment_source_type']) ? strtolower(trim((string)$_POST['fragment_source_type'])) : '';
+if ($fragment_source_type === 'externalized') { $fragment_source_type = 'discussion'; }
+if (!in_array($fragment_source_type, ['experience', 'discussion', 'srl'], true)) {
+    $fragment_source_type = ($knowledge_fragment_id !== null && $knowledge_fragment_id !== '') ? 'experience' : '';
+}
+
 $table = 'discussion_history';
 // テーブル存在チェック
 $tbl = $mysqli->query("SHOW TABLES LIKE '".$mysqli->real_escape_string($table)."'");
@@ -118,6 +124,21 @@ $hasKFragCol = false;
 if ($resCol = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE 'knowledge_fragment_id'")) {
     $hasKFragCol = ($resCol->num_rows > 0);
     $resCol->free();
+}
+
+$hasSourceTypeCol = false;
+if ($resSourceCol = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE 'fragment_source_type'")) {
+    $hasSourceTypeCol = ($resSourceCol->num_rows > 0);
+    $resSourceCol->free();
+}
+if (!$hasSourceTypeCol) {
+    $alterSourceSql = "ALTER TABLE `$table` ADD COLUMN fragment_source_type VARCHAR(32) NULL DEFAULT NULL";
+    if ($mysqli->query($alterSourceSql)) {
+        $hasSourceTypeCol = true;
+        error_log("save_discussion_history: added column fragment_source_type to $table");
+    } else {
+        error_log("save_discussion_history: failed to add fragment_source_type column: " . $mysqli->error);
+    }
 }
 if (!$hasKFragCol) {
     // try to add column (non-blocking; report to error log on failure)
@@ -168,14 +189,28 @@ if ($hasKFragCol) {
     }
 }
 
-// Build INSERT with optional knowledge_fragment_id
-$sqlIns = "INSERT INTO `$table` (discussion_history_id, user_id, content" . ($hasKFragCol ? ", knowledge_fragment_id" : "") . ") VALUES (?,?,?" . ($hasKFragCol ? ",?" : "") . ")"; // posted_time は DEFAULT
+// Build INSERT with optional knowledge_fragment_id / fragment_source_type
+$sqlIns = "INSERT INTO `$table` (discussion_history_id, user_id, content"
+    . ($hasKFragCol ? ", knowledge_fragment_id" : "")
+    . ($hasSourceTypeCol ? ", fragment_source_type" : "")
+    . ") VALUES (?,?,?"
+    . ($hasKFragCol ? ",?" : "")
+    . ($hasSourceTypeCol ? ",?" : "")
+    . ")"; // posted_time は DEFAULT
 if(!$stmt = $mysqli->prepare($sqlIns)) {
     _dbg('prepare failed: ' . $mysqli->error . ' SQL: ' . $sqlIns);
     echo json_encode(['status'=>'error','message'=>'prepare失敗']);
     exit;
 }
-if($hasKFragCol){
+if($hasKFragCol && $hasSourceTypeCol){
+    if (!isset($kfragIsVarchar)) { $kfragIsVarchar = false; }
+    if ($kfragIsVarchar) {
+        $stmt->bind_param('iisss', $nextId, $user_id, $content, $knowledge_fragment_id, $fragment_source_type);
+    } else {
+        $kfragInt = ($knowledge_fragment_id === null || $knowledge_fragment_id === '') ? 0 : (int)$knowledge_fragment_id;
+        $stmt->bind_param('iisis', $nextId, $user_id, $content, $kfragInt, $fragment_source_type);
+    }
+} elseif($hasKFragCol){
     if (!isset($kfragIsVarchar)) { $kfragIsVarchar = false; }
     if ($kfragIsVarchar) {
         // bind knowledge_fragment_id as string
@@ -185,6 +220,8 @@ if($hasKFragCol){
         $kfragInt = ($knowledge_fragment_id === null || $knowledge_fragment_id === '') ? 0 : (int)$knowledge_fragment_id;
         $stmt->bind_param('iisi', $nextId, $user_id, $content, $kfragInt);
     }
+} elseif($hasSourceTypeCol) {
+    $stmt->bind_param('iiss', $nextId, $user_id, $content, $fragment_source_type);
 } else {
     $stmt->bind_param('iis', $nextId, $user_id, $content);
 }
@@ -196,7 +233,7 @@ if(!$stmt->execute()) {
     exit;
 }
 $stmt->close();
-error_log('save_discussion_history: inserted discussion_history_id=' . $nextId . ' user_id=' . $user_id . ' kfrag=' . var_export($knowledge_fragment_id,true));
+error_log('save_discussion_history: inserted discussion_history_id=' . $nextId . ' user_id=' . $user_id . ' kfrag=' . var_export($knowledge_fragment_id,true) . ' source=' . var_export($fragment_source_type,true));
 
 // 投稿日時取得（DBの値を正確に返すため SELECT または NOW() を利用）
 $posted = null;

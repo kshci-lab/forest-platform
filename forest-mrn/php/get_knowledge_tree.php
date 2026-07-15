@@ -32,6 +32,26 @@ function __resolve_knowledge_tree_group_id(mysqli $mysqli): string {
     return $groupId;
 }
 
+function __split_knowledge_tree_ids($value): array {
+    if ($value === null || $value === '') { return []; }
+    $parts = preg_split('/\s*,\s*/', (string)$value);
+    $ids = [];
+    foreach ($parts as $part) {
+        $id = intval(trim((string)$part), 10);
+        if ($id > 0 && !in_array($id, $ids, true)) { $ids[] = $id; }
+    }
+    return $ids;
+}
+
+function __normalize_knowledge_tree_source_type($value): string {
+    $type = strtolower(trim((string)$value));
+    if ($type === 'discussion') { return 'discussion'; }
+    if ($type === 'srl') { return 'SRL'; }
+    if (in_array($type, ['experience', 'discussion'], true)) { return $type; }
+    if ((string)$value === 'SRL') { return 'SRL'; }
+    return '';
+}
+
 // テーブル存在チェック
 $table = 'knowledge_explorer';
 $tbl = $mysqli->query("SHOW TABLES LIKE '".$mysqli->real_escape_string($table)."'");
@@ -66,6 +86,10 @@ $tbl->close();
 $ensureCols = [
     ['name' => 'deleted', 'sql' => "ALTER TABLE `$table` ADD COLUMN `deleted` TINYINT(1) NOT NULL DEFAULT 0"],
     ['name' => 'comment', 'sql' => "ALTER TABLE `$table` ADD COLUMN `comment` TEXT NULL DEFAULT NULL"],
+    ['name' => 'tacto_when', 'sql' => "ALTER TABLE `$table` ADD COLUMN `tacto_when` TEXT NULL DEFAULT NULL"],
+    ['name' => 'tacto_what', 'sql' => "ALTER TABLE `$table` ADD COLUMN `tacto_what` TEXT NULL DEFAULT NULL"],
+    ['name' => 'tacto_why', 'sql' => "ALTER TABLE `$table` ADD COLUMN `tacto_why` TEXT NULL DEFAULT NULL"],
+    ['name' => 'organizational_basis', 'sql' => "ALTER TABLE `$table` ADD COLUMN `organizational_basis` TEXT NULL DEFAULT NULL"],
     ['name' => 'updated_by', 'sql' => "ALTER TABLE `$table` ADD COLUMN `updated_by` INT(11) NULL DEFAULT NULL"],
     // store as CSV string to support multiple fragments (fukushima-system behavior)
     ['name' => 'knowledge_fragment_id', 'sql' => "ALTER TABLE `$table` ADD COLUMN `knowledge_fragment_id` VARCHAR(255) NULL DEFAULT NULL"],
@@ -85,6 +109,21 @@ foreach($ensureCols as $c){
         @$mysqli->query($c['sql']);
     }
 }
+
+// If text-like fields use legacy VARCHAR sizes, try to widen them for structured organizational knowledge.
+try{
+    foreach(['comment', 'tacto_when', 'tacto_what', 'tacto_why', 'organizational_basis'] as $textCol){
+        $colType = '';
+        if($resCol = $mysqli->query("SHOW COLUMNS FROM `$table` LIKE '".$mysqli->real_escape_string($textCol)."'")){
+            $rowCol = $resCol->fetch_assoc();
+            if($rowCol && isset($rowCol['Type'])){ $colType = strtolower((string)$rowCol['Type']); }
+            $resCol->free();
+        }
+        if($colType && strpos($colType,'text') === false){
+            @$mysqli->query("ALTER TABLE `$table` MODIFY COLUMN `$textCol` TEXT NULL DEFAULT NULL");
+        }
+    }
+}catch(Throwable $e){ }
 
 // If knowledge_fragment_id exists but is not VARCHAR/TEXT, try to widen it to VARCHAR for CSV support.
 try{
@@ -110,6 +149,11 @@ $colKFragId = null;   // knowledge_fragment_id（外部化IDと同一扱い）
 $colExtContentsId = null; // externalized_contents_id（外部化のPK）
 $colSort = null; // sort_order
 $colGroup = null; // knowledge_group_id
+$colTactoWhen = null;
+$colTactoWhat = null;
+$colTactoWhy = null;
+$colOrganizationalBasis = null;
+$colLegacyKfCommonPoints = null;
 $hasDeleted = false;
 $idIsAutoInc = false;
 if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
@@ -127,6 +171,11 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
         if($colExtContentsId===null && in_array($lf, ['externalized_contents_id','externalizedcontent_id','externalized_id'])){ $colExtContentsId = $f; }
         if($colSort===null && in_array($lf, ['sort_order'])){ $colSort = $f; }
         if($colGroup===null && in_array($lf, ['knowledge_group_id','group_id'])){ $colGroup = $f; }
+        if($colTactoWhen===null && $lf === 'tacto_when'){ $colTactoWhen = $f; }
+        if($colTactoWhat===null && $lf === 'tacto_what'){ $colTactoWhat = $f; }
+        if($colTactoWhy===null && $lf === 'tacto_why'){ $colTactoWhy = $f; }
+        if($colOrganizationalBasis===null && $lf === 'organizational_basis'){ $colOrganizationalBasis = $f; }
+        if($colLegacyKfCommonPoints===null && $lf === 'kf_common_points'){ $colLegacyKfCommonPoints = $f; }
         if($lf === 'deleted'){ $hasDeleted = true; }
         if($f === $colId && isset($c['Extra']) && stripos($c['Extra'], 'auto_increment') !== false){ $idIsAutoInc = true; }
     }
@@ -258,6 +307,13 @@ if($resAll = $mysqli->query($sqlAll)){
         $commentVal = null; $updatedVal = null;
         if($colComment && array_key_exists($colComment,$row)) { $commentVal = $row[$colComment]; }
         elseif(array_key_exists('comment',$row)) { $commentVal = $row['comment']; }
+        $tactoWhenVal = ($colTactoWhen && array_key_exists($colTactoWhen,$row)) ? $row[$colTactoWhen] : null;
+        $tactoWhatVal = ($colTactoWhat && array_key_exists($colTactoWhat,$row)) ? $row[$colTactoWhat] : null;
+        $tactoWhyVal = ($colTactoWhy && array_key_exists($colTactoWhy,$row)) ? $row[$colTactoWhy] : null;
+        $organizationalBasisVal = ($colOrganizationalBasis && array_key_exists($colOrganizationalBasis,$row)) ? $row[$colOrganizationalBasis] : null;
+        if(($organizationalBasisVal === null || trim((string)$organizationalBasisVal) === '') && $colLegacyKfCommonPoints && array_key_exists($colLegacyKfCommonPoints,$row)){
+            $organizationalBasisVal = $row[$colLegacyKfCommonPoints];
+        }
         if($colUpdated && array_key_exists($colUpdated,$row)) { $updatedVal = $row[$colUpdated]; }
         elseif(array_key_exists('updated_at',$row)) { $updatedVal = $row['updated_at']; }
         $updatedById = null; $updatedByName = null;
@@ -287,6 +343,10 @@ if($resAll = $mysqli->query($sqlAll)){
             'parent_id'=>$pid,
             'node_title'=>$title,
             'comment'=> $commentVal !== null ? $commentVal : null,
+            'tacto_when'=> $tactoWhenVal !== null ? $tactoWhenVal : null,
+            'tacto_what'=> $tactoWhatVal !== null ? $tactoWhatVal : null,
+            'tacto_why'=> $tactoWhyVal !== null ? $tactoWhyVal : null,
+            'organizational_basis'=> $organizationalBasisVal !== null ? $organizationalBasisVal : null,
             'updated_at'=> $updatedVal !== null ? $updatedVal : null,
             'updated_by'=> $updatedById !== null ? (int)$updatedById : null,
             'updated_by_name'=> $updatedByName !== null ? $updatedByName : null,
@@ -304,6 +364,64 @@ if($resAll = $mysqli->query($sqlAll)){
         ['node_id'=>2, 'parent_id'=>null, 'node_title'=>'研究方略関連', 'comment'=>null, 'updated_at'=>null],
         ['node_id'=>3, 'parent_id'=>null, 'node_title'=>'その他', 'comment'=>null, 'updated_at'=>null]
     ];
+}
+
+$linkTypesByNode = [];
+$linkIdsByNode = [];
+if (!empty($nodes)) {
+    $nodeIds = [];
+    foreach ($nodes as $node) {
+        $nidForLink = isset($node['node_id']) ? intval($node['node_id'], 10) : 0;
+        if ($nidForLink > 0) { $nodeIds[] = $nidForLink; }
+    }
+    $nodeIds = array_values(array_unique($nodeIds));
+    if ($nodeIds) {
+        if ($resLinkTable = $mysqli->query("SHOW TABLES LIKE 'knowledge_explorer_fragment_links'")) {
+            $hasLinkTable = ($resLinkTable->num_rows > 0);
+            $resLinkTable->free();
+            if ($hasLinkTable) {
+                $inNodeIds = implode(',', array_map('intval', $nodeIds));
+                $sqlLinks = "SELECT knowledge_node_id, fragment_source_type, fragment_source_id
+                               FROM knowledge_explorer_fragment_links
+                              WHERE knowledge_node_id IN ($inNodeIds)
+                           ORDER BY COALESCE(display_order, 999999), id";
+                if ($resLinks = $mysqli->query($sqlLinks)) {
+                    while ($linkRow = $resLinks->fetch_assoc()) {
+                        $linkNodeId = isset($linkRow['knowledge_node_id']) ? intval($linkRow['knowledge_node_id'], 10) : 0;
+                        $sourceType = __normalize_knowledge_tree_source_type(isset($linkRow['fragment_source_type']) ? $linkRow['fragment_source_type'] : '');
+                        $sourceId = isset($linkRow['fragment_source_id']) ? intval($linkRow['fragment_source_id'], 10) : 0;
+                        if ($linkNodeId <= 0 || $sourceType === '' || $sourceId <= 0) { continue; }
+                        if (!isset($linkTypesByNode[$linkNodeId])) { $linkTypesByNode[$linkNodeId] = []; }
+                        if (!isset($linkIdsByNode[$linkNodeId])) { $linkIdsByNode[$linkNodeId] = []; }
+                        if (!in_array($sourceType, $linkTypesByNode[$linkNodeId], true)) { $linkTypesByNode[$linkNodeId][] = $sourceType; }
+                        if (!isset($linkIdsByNode[$linkNodeId][$sourceType])) { $linkIdsByNode[$linkNodeId][$sourceType] = []; }
+                        if (!in_array($sourceId, $linkIdsByNode[$linkNodeId][$sourceType], true)) { $linkIdsByNode[$linkNodeId][$sourceType][] = $sourceId; }
+                    }
+                    $resLinks->free();
+                }
+            }
+        }
+    }
+    foreach ($nodes as &$node) {
+        $nidForLink = isset($node['node_id']) ? intval($node['node_id'], 10) : 0;
+        $types = isset($linkTypesByNode[$nidForLink]) ? $linkTypesByNode[$nidForLink] : [];
+        $idsByType = isset($linkIdsByNode[$nidForLink]) ? $linkIdsByNode[$nidForLink] : [];
+        if (empty($types)) {
+            if (!empty($node['externalized_contents_id'])) {
+                $types[] = 'discussion';
+                $idsByType['discussion'] = [(int)$node['externalized_contents_id']];
+            } elseif (!empty($node['knowledge_fragment_id'])) {
+                $fallbackIds = __split_knowledge_tree_ids($node['knowledge_fragment_id']);
+                if ($fallbackIds) {
+                    $types[] = 'experience';
+                    $idsByType['experience'] = $fallbackIds;
+                }
+            }
+        }
+        $node['fragment_source_types'] = array_values(array_unique($types));
+        $node['fragment_source_ids'] = $idsByType;
+    }
+    unset($node);
 }
 $mysqli->close();
 

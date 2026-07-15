@@ -1,5 +1,17 @@
 <?php
 
+function hcimlab_sso_env_or_default($name, $default = null)
+{
+    $value = getenv($name);
+    return $value === false ? $default : $value;
+}
+
+function hcimlab_sso_default_ca_bundle()
+{
+    $defaultPath = __DIR__ . '/../certs/cacert.pem';
+    return file_exists($defaultPath) ? $defaultPath : '';
+}
+
 function hcimlab_sso_detect_base_url()
 {
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -22,15 +34,16 @@ function hcimlab_sso_detect_base_url()
     return $scheme . '://' . $host . $basePath;
 }
 
-$baseUrl = getenv('HCIMLAB_SSO_BASE_URL') ?: hcimlab_sso_detect_base_url();
+$baseUrl = hcimlab_sso_env_or_default('HCIMLAB_SSO_BASE_URL', hcimlab_sso_detect_base_url());
 
 $config = array(
-    'idp_url' => getenv('HCIMLAB_SSO_IDP_URL') ?: 'https://kshci-lab.net/software/hcimlab_auth',
-    'client_id' => getenv('HCIMLAB_SSO_CLIENT_ID') ?: '',
-    'client_secret' => getenv('HCIMLAB_SSO_CLIENT_SECRET') ?: '',
+    'idp_url' => hcimlab_sso_env_or_default('HCIMLAB_SSO_IDP_URL', 'https://kshci-lab.net/software/hcimlab_auth'),
+    'client_id' => hcimlab_sso_env_or_default('HCIMLAB_SSO_CLIENT_ID', ''),
+    'client_secret' => hcimlab_sso_env_or_default('HCIMLAB_SSO_CLIENT_SECRET', ''),
     'base_url' => rtrim($baseUrl, '/'),
-    'redirect_uri' => getenv('HCIMLAB_SSO_REDIRECT_URI') ?: rtrim($baseUrl, '/') . '/auth/callback',
-    'scope' => getenv('HCIMLAB_SSO_SCOPE') ?: 'openid profile email lab',
+    'redirect_uri' => hcimlab_sso_env_or_default('HCIMLAB_SSO_REDIRECT_URI', rtrim($baseUrl, '/') . '/auth/callback'),
+    'scope' => hcimlab_sso_env_or_default('HCIMLAB_SSO_SCOPE', 'openid profile email lab'),
+    'ca_bundle' => hcimlab_sso_env_or_default('HCIMLAB_SSO_CA_BUNDLE', hcimlab_sso_default_ca_bundle()),
 );
 
 $localConfigPath = __DIR__ . '/sso_local.php';
