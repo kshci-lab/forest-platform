@@ -243,8 +243,7 @@
                                 }
                                 document.body.removeChild(modal);
                             });
-
-                            // Add close button directly to modal
+                            // Add buttons directly to modal
                             modal.appendChild(closeIconBtn);
 
                             // Two-column layout: Activity Process (left) + Reflections (right) + Divider
@@ -268,12 +267,78 @@
                             } else {
                                 dateStr = (startDate || '') + '〜' + (endDate || '');
                             }
+                            var headingWrapper = document.createElement('div');
+                            headingWrapper.style.display = 'flex';
+                            headingWrapper.style.alignItems = 'center';
+                            headingWrapper.style.margin = '0 0 16px 0';
+                            headingWrapper.style.gap = '12px';
+
                             var periodHeading = document.createElement('h3');
                             periodHeading.className = 'jr-period-heading';
-                            periodHeading.style.margin = '0 0 16px 0';
+                            periodHeading.style.margin = '0'; // removed bottom margin, it's on the wrapper now
                             periodHeading.style.fontSize = '18px';
                             periodHeading.textContent = dateStr + ((getCurrentLang() === 'ja') ? 'に行ったこと' : ' activities');
-                            activityContent.appendChild(periodHeading);
+                            
+                            var printBtn = document.createElement('button');
+                            printBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>';
+                            printBtn.title = (getCurrentLang() === 'ja') ? 'PDFとして保存 / 印刷' : 'Save as PDF / Print';
+                            printBtn.style.background = 'transparent';
+                            printBtn.style.border = 'none';
+                            printBtn.style.color = '#a0aec0';
+                            printBtn.style.cursor = 'pointer';
+                            printBtn.style.padding = '4px';
+                            printBtn.style.lineHeight = '1';
+                            printBtn.style.transition = 'color 0.2s ease, transform 0.1s ease';
+                            printBtn.className = 'jr-no-print';
+                            printBtn.addEventListener('mouseenter', function() { printBtn.style.color = '#4a5568'; });
+                            printBtn.addEventListener('mouseleave', function() { printBtn.style.color = '#a0aec0'; });
+                            printBtn.addEventListener('mousedown', function() { printBtn.style.transform = 'scale(0.95)'; });
+                            printBtn.addEventListener('mouseup', function() { printBtn.style.transform = 'scale(1)'; });
+                            
+                            printBtn.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                document.body.classList.add('jr-printing');
+                                
+                                // 画面上で一瞬だけ完全に展開させて、正確な高さを取得する
+                                document.body.classList.add('jr-measuring');
+                                
+                                // reflowを強制
+                                var currentHeight = modalContent.offsetHeight;
+                                
+                                document.body.classList.remove('jr-measuring');
+                                
+                                // A4横の有効な高さ（ヘッダーやbodyの余白を考慮し、安全のため580px程度にする）
+                                var targetHeight = 580;
+                                var scaleRatio = 1;
+                                
+                                if (currentHeight > targetHeight) {
+                                    scaleRatio = targetHeight / currentHeight;
+                                    
+                                    // zoomが使えるブラウザ（Chrome等）はレイアウト自体を縮小する
+                                    if (typeof modalContent.style.zoom !== "undefined") {
+                                        modalContent.style.zoom = scaleRatio;
+                                    } else {
+                                        modalContent.style.transform = 'scale(' + scaleRatio + ')';
+                                        modalContent.style.transformOrigin = 'top center';
+                                        modalContent.style.width = (100 / scaleRatio) + '%';
+                                    }
+                                }
+
+                                window.print();
+
+                                setTimeout(function() {
+                                    document.body.classList.remove('jr-printing');
+                                    modalContent.style.zoom = '';
+                                    modalContent.style.transform = '';
+                                    modalContent.style.transformOrigin = '';
+                                    modalContent.style.width = '100%';
+                                }, 1000);
+                            });
+
+                            headingWrapper.appendChild(periodHeading);
+                            headingWrapper.appendChild(printBtn);
+                            
+                            activityContent.appendChild(headingWrapper);
                             
                             leftColumn.appendChild(activityContent);
                             twoColumnLayout.appendChild(leftColumn);
@@ -861,6 +926,17 @@
                                     if (focusVal) taTop.value = focusVal;
                                     content.appendChild(labelTop);
                                     content.appendChild(taTop);
+                                    
+                                    var labelWhy = document.createElement('label');
+                                    labelWhy.textContent = (getCurrentLang() === 'ja') ? 'なぜその教訓が大切だと考えますか？' : 'Why do you think this lesson is important?';
+                                    labelWhy.className = 'jr-label';
+                                    var taWhy = document.createElement('textarea');
+                                    taWhy.rows = 2;
+                                    taWhy.placeholder = (getCurrentLang() === 'ja') ? 'なぜこれを教訓として記述しようとしたのか，大切だと感じたのかを考えてみましょう' : 'Think about why you decided to document this as a lesson and why you felt it was important.';
+                                    taWhy.className = 'jr-textarea wr-lesson-why';
+                                    // if whyVal is needed, add to arguments of createLessonContentLocal. For now it's not passed, so leave empty.
+                                    content.appendChild(labelWhy);
+                                    content.appendChild(taWhy);
                                     
                                     var labelBottom = document.createElement('label');
                                     labelBottom.textContent = (getCurrentLang() === 'ja') ? 'その教訓は次にどのような時に活かせそうですか？' : 'When could this lesson be applied next?';

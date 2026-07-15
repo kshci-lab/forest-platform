@@ -776,3 +776,218 @@
   display: block;
   animation: jr-fade-in 0.2s ease;
 }
+
+/* --- 印刷用スタイル (PDFエクスポート) --- */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0; /* ブラウザ標準のヘッダー・フッター（日付、タイトルなど）を非表示にするためマージンを0に */
+  }
+  
+  body.jr-printing {
+    margin: 0 !important;
+    padding: 15mm !important; /* @pageのマージンを0にした代わりの余白を設ける */
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body.jr-printing > *:not(.jr-floating-window) {
+    display: none !important;
+  }
+
+  body.jr-printing .jr-floating-window {
+    position: static !important;
+    left: 0 !important;
+    top: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body.jr-printing .jr-modal-content {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body.jr-printing .jr-two-column-layout {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 24px !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  body.jr-printing .jr-left-column,
+  body.jr-printing .jr-right-column {
+    width: 50% !important;
+    flex: 1 !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 10px 0 !important;
+    border: none !important;
+  }
+
+  html,
+  body.jr-printing {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body.jr-printing .jr-activity-content,
+  body.jr-printing .jr-reflection-body,
+  body.jr-printing .jr-tab-content-container,
+  body.jr-printing .jr-lesson-tab-content-container,
+  body.jr-printing .jr-item-wrap {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* --- 複数タブがある場合に縦に並べる（内省・教訓） --- */
+  body.jr-printing .jr-tab-container,
+  body.jr-printing .jr-lesson-tab-container,
+  body.jr-printing .jr-save-btn {
+    display: none !important; /* タブボタン行や保存ボタンを非表示 */
+  }
+
+  body.jr-printing .jr-tab-content,
+  body.jr-printing .jr-lesson-tab-content {
+    display: block !important; /* すべてのタブコンテンツを表示 */
+    margin-bottom: 24px !important;
+    opacity: 1 !important;
+    height: auto !important;
+  }
+
+  /* 内省の連番見出しを自動生成 */
+  body.jr-printing .jr-tab-content-container {
+    counter-reset: reflection-counter;
+  }
+  body.jr-printing .jr-tab-content::before {
+    counter-increment: reflection-counter;
+    content: "内省 #" counter(reflection-counter);
+    display: block;
+    font-weight: bold;
+    font-size: 16px;
+    color: #00473E;
+    border-bottom: 2px solid #00473E;
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+  }
+
+  /* 教訓の連番見出しを自動生成 */
+  body.jr-printing .jr-lesson-tab-content-container {
+    counter-reset: lesson-counter;
+  }
+  body.jr-printing .jr-lesson-tab-content::before {
+    counter-increment: lesson-counter;
+    content: "教訓 #" counter(lesson-counter);
+    display: block;
+    font-weight: bold;
+    font-size: 15px;
+    color: #6b4c13;
+    border-bottom: 2px solid #c9a227;
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+  }
+
+  body.jr-printing .jr-reflection-card {
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    margin-bottom: 20px !important;
+  }
+
+  body.jr-printing .jr-col-divider,
+  body.jr-printing .jr-history-toggle,
+  body.jr-printing button.jr-no-print,
+  body.jr-printing button[style*="absolute"] {
+    display: none !important;
+  }
+  
+  body.jr-printing textarea,
+  body.jr-printing input[type="text"] {
+    border: 1px solid #eee !important;
+    background: transparent !important;
+    resize: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* 高さ計測用のテンポラリクラス */
+body.jr-measuring .jr-floating-window,
+body.jr-measuring .jr-modal-content,
+body.jr-measuring .jr-two-column-layout,
+body.jr-measuring .jr-left-column,
+body.jr-measuring .jr-right-column,
+body.jr-measuring .jr-activity-content,
+body.jr-measuring .jr-reflection-body,
+body.jr-measuring .jr-tab-content-container,
+body.jr-measuring .jr-lesson-tab-content-container,
+body.jr-measuring .jr-item-wrap {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  position: static !important;
+}
+
+/* 高さ計測用：複数タブがある場合に縦に並べる（内省・教訓） */
+body.jr-measuring .jr-tab-container,
+body.jr-measuring .jr-lesson-tab-container,
+body.jr-measuring .jr-save-btn {
+  display: none !important;
+}
+
+body.jr-measuring .jr-tab-content,
+body.jr-measuring .jr-lesson-tab-content {
+  display: block !important;
+  margin-bottom: 24px !important;
+  opacity: 1 !important;
+  height: auto !important;
+}
+
+body.jr-measuring .jr-tab-content-container {
+  counter-reset: reflection-counter;
+}
+body.jr-measuring .jr-tab-content::before {
+  counter-increment: reflection-counter;
+  content: "内省 #" counter(reflection-counter);
+  display: block;
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+}
+
+body.jr-measuring .jr-lesson-tab-content-container {
+  counter-reset: lesson-counter;
+}
+body.jr-measuring .jr-lesson-tab-content::before {
+  counter-increment: lesson-counter;
+  content: "教訓 #" counter(lesson-counter);
+  display: block;
+  font-weight: bold;
+  font-size: 15px;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+}
