@@ -22,44 +22,6 @@ function hcimlab_sso_require_dependencies()
     require_once $autoload;
 }
 
-function hcimlab_sso_http_json($url, array $headers = array())
-{
-    $headerLines = array_merge(array('Accept: application/json'), $headers);
-    $context = stream_context_create(array(
-        'http' => array(
-            'method' => 'GET',
-            'header' => implode("\r\n", $headerLines),
-            'timeout' => 10,
-        ),
-    ));
-    $body = @file_get_contents($url, false, $context);
-    if ($body === false) {
-        throw new RuntimeException('Failed to fetch ' . $url);
-    }
-    $json = json_decode($body, true);
-    if (!is_array($json)) {
-        throw new RuntimeException('Invalid JSON response from ' . $url);
-    }
-    return $json;
-}
-
-function hcimlab_sso_discovery()
-{
-    static $metadata = null;
-    if ($metadata !== null) {
-        return $metadata;
-    }
-
-    $config = hcimlab_sso_config();
-    $metadata = hcimlab_sso_http_json(rtrim($config['idp_url'], '/') . '/.well-known/openid-configuration');
-    foreach (array('issuer', 'authorization_endpoint', 'token_endpoint', 'userinfo_endpoint', 'jwks_uri') as $key) {
-        if (empty($metadata[$key])) {
-            throw new RuntimeException('OIDC discovery metadata is missing ' . $key);
-        }
-    }
-    return $metadata;
-}
-
 function hcimlab_sso_provider()
 {
     hcimlab_sso_require_dependencies();
@@ -68,25 +30,48 @@ function hcimlab_sso_provider()
         throw new RuntimeException('HCIMLAB_SSO_CLIENT_ID is not configured.');
     }
 
-    $metadata = hcimlab_sso_discovery();
-    return new GenericProvider(array(
+    $idpUrl = rtrim($config['idp_url'], '/');
+    $provider = new GenericProvider(array(
         'clientId' => $config['client_id'],
         'clientSecret' => $config['client_secret'],
         'redirectUri' => $config['redirect_uri'],
-        'urlAuthorize' => $metadata['authorization_endpoint'],
-        'urlAccessToken' => $metadata['token_endpoint'],
-        'urlResourceOwnerDetails' => $metadata['userinfo_endpoint'],
+        'urlAuthorize' => $idpUrl . '/oauth/authorize',
+        'urlAccessToken' => $idpUrl . '/oauth/token',
+        'urlResourceOwnerDetails' => $idpUrl . '/oauth/userinfo',
         'scopes' => $config['scope'],
         'pkceMethod' => 'S256',
     ));
+
+    if (class_exists('\\GuzzleHttp\\Client')) {
+        $httpClient = new \GuzzleHttp\Client(array(
+            'curl' => array(
+                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_TIMEOUT => 30,
+            ),
+            'timeout' => 30.0,
+            'connect_timeout' => 2.0,
+        ));
+        $provider->setHttpClient($httpClient);
+    }
+
+    return $provider;
 }
 
 function hcimlab_sso_verify_id_token($idToken, $expectedNonce)
 {
     hcimlab_sso_require_dependencies();
     $config = hcimlab_sso_config();
-    $metadata = hcimlab_sso_discovery();
-    $jwks = hcimlab_sso_http_json($metadata['jwks_uri']);
+    $idpUrl = rtrim($config['idp_url'], '/');
+    $provider = hcimlab_sso_provider();
+
+    $request = $provider->getRequest('GET', $idpUrl . '/oauth/jwks');
+    $response = $provider->getResponse($request);
+    $jwks = json_decode((string) $response->getBody(), true);
+    if (!is_array($jwks)) {
+        throw new RuntimeException('Invalid JWKS response.');
+    }
+
     $keys = JWK::parseKeySet($jwks);
 
     JWT::$leeway = 60;
@@ -96,7 +81,7 @@ function hcimlab_sso_verify_id_token($idToken, $expectedNonce)
         throw new RuntimeException('Invalid id_token claims.');
     }
 
-    if (!isset($claims['iss']) || $claims['iss'] !== $metadata['issuer']) {
+    if (!isset($claims['iss']) || $claims['iss'] !== $idpUrl) {
         throw new RuntimeException('Invalid id_token issuer.');
     }
 
