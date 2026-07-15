@@ -173,8 +173,8 @@ $trigger_from_params = array(&$trigger_from_rewire_node_version_id, &$target_nod
 if (!execute_stmt(
     $mysqli,
     "UPDATE triggers
-        SET node_version_from = ?
-      WHERE node_version_from = ?
+        SET `from` = ?
+      WHERE `from` = ?
         AND deleted = 0",
     'ss',
     $trigger_from_params
@@ -187,8 +187,8 @@ $trigger_to_params = array(&$trigger_to_rewire_node_version_id, &$target_node_ve
 if (!execute_stmt(
     $mysqli,
     "UPDATE triggers
-        SET node_version_to = ?
-      WHERE node_version_to = ?
+        SET `to` = ?
+      WHERE `to` = ?
         AND deleted = 0",
     'ss',
     $trigger_to_params

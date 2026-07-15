@@ -232,7 +232,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 		        smooth: false // falseにするとエッジが直線になる
             },
             interaction: {
-                multiselect: false,
+                multiselect: true,
                 zoomView: false // グラフの拡大縮小を無効にする
             },
         };
@@ -650,11 +650,21 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         t_title.innerHTML = "<div id='" + trigger_id + "' class='trigger_title' timestamp='" + t_time + "'><b>"+t_type+"</b></br>" + t_label + " </div>";
-        if(!node_x){
-            node_x = (defaultThinkingProcess.nodes.get(from_node).x + defaultThinkingProcess.nodes.get(to_node).x ) /2; //ノードがversionの間に来るように
+        const fromNodeForPosition = defaultThinkingProcess.nodes.get(from_node);
+        const toNodeForPosition = defaultThinkingProcess.nodes.get(to_node);
+        if(node_x == null || !Number.isFinite(Number(node_x))){
+            const fromBox = defaultThinkingProcess.ownNetwork.getBoundingBox(from_node);
+            const toBox = defaultThinkingProcess.ownNetwork.getBoundingBox(to_node);
+            const fromX = fromNodeForPosition && Number.isFinite(fromNodeForPosition.x) ? fromNodeForPosition.x : (fromBox.left + fromBox.right) / 2;
+            const toX = toNodeForPosition && Number.isFinite(toNodeForPosition.x) ? toNodeForPosition.x : (toBox.left + toBox.right) / 2;
+            node_x = (Number.isFinite(fromX) && Number.isFinite(toX)) ? (fromX + toX) / 2 : 0;
         }
-        if(!node_y){
-            node_y = Math.floor(Math.random()*200)-100;
+        if(node_y == null || !Number.isFinite(Number(node_y))){
+            const fromBox = defaultThinkingProcess.ownNetwork.getBoundingBox(from_node);
+            const toBox = defaultThinkingProcess.ownNetwork.getBoundingBox(to_node);
+            const fromY = fromNodeForPosition && Number.isFinite(fromNodeForPosition.y) ? fromNodeForPosition.y : (fromBox.top + fromBox.bottom) / 2;
+            const toY = toNodeForPosition && Number.isFinite(toNodeForPosition.y) ? toNodeForPosition.y : (toBox.top + toBox.bottom) / 2;
+            node_y = (Number.isFinite(fromY) && Number.isFinite(toY)) ? (fromY + toY) / 2 : Math.floor(Math.random()*200)-100;
         }
 
         //triggerとなった活動ごとにアイコンを変更
@@ -678,39 +688,52 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         // trigger_fromの設定
-        if(defaultThinkingProcess.edges.get(edge_id).group == "trigger_from"){
+        const targetEdge = edge_id ? defaultThinkingProcess.edges.get(edge_id) : null;
+        if(targetEdge && targetEdge.group == "trigger_from"){
             // エッジの先がtrigger_nodeならその先のversion_nodeに繋ぐ
             //　trigge自身を指す新しいエッジを追加
             const newEdge = {
                 from: from_node,
                 to: trigger_id,
-                arrows: 'dynamic',
+                arrows: 'to',
                 color: color,
                 group: "trigger_from",
-                smooth: true,
+                smooth: false,
                 fixed: true,
             };
             defaultThinkingProcess.edges.add(newEdge);
 
-        }else{
+        }else if(targetEdge && targetEdge.group == "versionEdges"){
             // 既存のversionEdgeをtrigger自身を指すようにエッジを繋ぎかえ
-            const update_edge = defaultThinkingProcess.edges.get(edge_id);
-            update_edge.arrows = 'dynamic';
+            const update_edge = targetEdge;
+            update_edge.arrows = 'to';
             update_edge.color = color;
             update_edge.to = trigger_id;
             update_edge.group = "trigger_from";
-            update_edge.smooth = true;
+            update_edge.smooth = false;
             defaultThinkingProcess.edges.update(update_edge);
+        }else{
+            const newEdge = {
+                id: `${trigger_id}_from`,
+                from: from_node,
+                to: trigger_id,
+                arrows: 'to',
+                color: color,
+                group: "trigger_from",
+                smooth: false,
+                fixed: true,
+            };
+            defaultThinkingProcess.edges.add(newEdge);
         }
 
         //　trigger_toの設定
         const newEdge = {
             from: trigger_id,
             to: to_node,
-            arrows: 'dynamic',
+            arrows: 'to',
             color: color,
             group: "trigger_to",
-            smooth: true,
+            smooth: false,
             fixed: true,
         };
         defaultThinkingProcess.edges.add(newEdge);
@@ -1187,7 +1210,11 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 this.latest_selected_node_info.x = (nodeBoundingBox.right + nodeBoundingBox.left)/2;
                 this.latest_selected_node_info.y = nodeBoundingBox.bottom + 10;
                 
-                defaultRecordThinkingProcess.update_Node("point" ,movedNodeId, (nodeBoundingBox.right + nodeBoundingBox.left)/2, (nodeBoundingBox.bottom + nodeBoundingBox.top)/2)
+                if(this.nodes.get(movedNodeId).group == "trigger"){
+                    defaultRecordThinkingProcess.update_trigger_point(movedNodeId, (nodeBoundingBox.right + nodeBoundingBox.left)/2, (nodeBoundingBox.bottom + nodeBoundingBox.top)/2);
+                }else{
+                    defaultRecordThinkingProcess.update_Node("point" ,movedNodeId, (nodeBoundingBox.right + nodeBoundingBox.left)/2, (nodeBoundingBox.bottom + nodeBoundingBox.top)/2)
+                }
                 // const ontology_index = this.OntologyConnectNodeId.indexOf(movedNodeId);
                 // if(ontology_index !== -1){
                 //     const nodeBoundingBox = this.ownNetwork.getBoundingBox(movedNodeId);
@@ -1341,6 +1368,28 @@ class RecordThinkingProcess{
     }
 
     //ノードの削除(完了)
+    update_trigger_point (trigger_id, x, y){
+        $.ajax({
+            url: "../php/thinking_edit_processmap_maneger.php",
+            type: "POST",
+            data: {
+                trigger_id : trigger_id,
+                x : x,
+                y : y,
+                purpose : 'update',
+                update_thing : 'trigger_point'
+            },
+            success:function(e){
+                if(e){
+                    console.log(e);
+                }
+            },
+            error: function(xhr, status, error){
+                console.error("trigger point update failed", status, error, xhr.responseText);
+            }
+        });
+    }
+
     delete_db_Node (id){
         $.ajax({
             url: "../php/thinking_edit_processmap_maneger.php",
@@ -1439,8 +1488,8 @@ class RecordThinkingProcess{
             type: "POST",
             data: {trigger_id : trigger_id,
                 activity_id : activity_id,
-                node_version_from : from,
-                node_version_to : to,
+                from : from,
+                to : to,
                 activity_time : time,
                 activity_type : activity_type,
                 content : content,
@@ -1633,12 +1682,21 @@ const displayTriggerData = (mode, process_display_option) => {
             });
             // triggerの候補一覧
             renderTriggerCandidateList(target_area, trigger_list_info.trigger_candidate);
+            trigger_list_info.pnode.map((n) => {
+                defaultThinkingProcess.addReloadNode(n.process_node_id, n.content, n.process_node_type, n.node_x, n.node_y);
+            });
+            trigger_list_info.pedge.map((n) => {
+                defaultThinkingProcess.addReloadEdge(n.process_edge_id, n.edge_start, n.edge_end, n.label);
+            });
             // triggerノードの表示
             trigger_list_info.trigger.forEach((u) => {
                 j++;
                 if(u){
                     let from_node = u.node_version_from;
                     let to_node = u.node_version_to;
+                    if(!defaultThinkingProcess.nodes.get(from_node) || !defaultThinkingProcess.nodes.get(to_node)){
+                        return;
+                    }
                     let edge_ids = defaultThinkingProcess.ownNetwork.getConnectedEdges(from_node);
                     let num = 0;
                     for(i = 0; i<edge_ids.length; i++){
@@ -1649,17 +1707,10 @@ const displayTriggerData = (mode, process_display_option) => {
                             }
                         }
                     }
-                    let edge_id = edge_ids[num];
+                    let edge_id = edge_ids.length > 0 ? edge_ids[num] : null;
                     defaultThinkingProcess.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, u.x, u.y);
                 }
             });
-            trigger_list_info.pnode.map((n) => {
-                defaultThinkingProcess.addReloadNode(n.process_node_id, n.content, n.process_node_type, n.node_x, n.node_y);
-            });
-            trigger_list_info.pedge.map((n) => {
-                defaultThinkingProcess.addReloadEdge(n.process_edge_id, n.edge_start, n.edge_end, n.label);
-            });
-
             const nodes = this.nodes;
             const edges = this.edges;
 
@@ -1946,11 +1997,48 @@ function inputTrigger(triggerData){
         return;
     }
 
-    const selected_node_id = defaultThinkingProcess.ownNetwork.getSelection().nodes[0];
+    const selected_node_ids = defaultThinkingProcess.ownNetwork.getSelection().nodes;
+    const selected_node_id = selected_node_ids[0];
     const selected_edge_id = defaultThinkingProcess.ownNetwork.getSelection().edges;
     let edge_id =selected_edge_id;
     let num = 0 ;
-    let selected_node_group = defaultThinkingProcess.nodes.get(selected_node_id).group;
+    let selected_node_group = selected_node_id ? defaultThinkingProcess.nodes.get(selected_node_id).group : "";
+
+    if(selected_edge_id.length == 1){
+        const selectedEdge = defaultThinkingProcess.edges.get(selected_edge_id[0]);
+        const connect_node_ids = defaultThinkingProcess.ownNetwork.getConnectedNodes(selected_edge_id[0]);
+        let from_node = connect_node_ids[0];
+        let to_node = connect_node_ids[1];
+        if(!from_node || !to_node){
+            alert('triggerを追加するedgeを選択してください');
+            return;
+        }
+        const fromNode = defaultThinkingProcess.nodes.get(from_node);
+        const toNode = defaultThinkingProcess.nodes.get(to_node);
+        const trigger_x = (fromNode && toNode && Number.isFinite(fromNode.x) && Number.isFinite(toNode.x)) ? (fromNode.x + toNode.x) / 2 : null;
+        const trigger_y = (fromNode && toNode && Number.isFinite(fromNode.y) && Number.isFinite(toNode.y)) ? (fromNode.y + toNode.y) / 2 : null;
+        defaultThinkingProcess.edges.remove({id: selected_edge_id[0]});
+        if(selectedEdge && selectedEdge.group !== "versionEdges" && selectedEdge.group !== "trigger_from" && selectedEdge.group !== "trigger_to"){
+            defaultRecordThinkingProcess.delete_db_Edge(selected_edge_id[0], from_node, to_node);
+        }
+        defaultThinkingProcess.addTriggerNode("New", trigger_id, null, from_node, to_node, activity_id, t_label, t_type, t_time, trigger_x, trigger_y);
+        return;
+    }
+
+    if(selected_node_ids.length >= 2){
+        const from_node = selected_node_ids[0];
+        const to_node = selected_node_ids[1];
+        if(defaultThinkingProcess.nodes.get(from_node).group == "versionTime" || defaultThinkingProcess.nodes.get(to_node).group == "versionTime"){
+            alert('時刻表示以外のノードを選択してください');
+            return;
+        }
+        const fromNode = defaultThinkingProcess.nodes.get(from_node);
+        const toNode = defaultThinkingProcess.nodes.get(to_node);
+        const trigger_x = (fromNode && toNode && Number.isFinite(fromNode.x) && Number.isFinite(toNode.x)) ? (fromNode.x + toNode.x) / 2 : null;
+        const trigger_y = (fromNode && toNode && Number.isFinite(fromNode.y) && Number.isFinite(toNode.y)) ? (fromNode.y + toNode.y) / 2 : null;
+        defaultThinkingProcess.addTriggerNode("New", trigger_id, null, from_node, to_node, activity_id, t_label, t_type, t_time, trigger_x, trigger_y);
+        return;
+    }
 
     if(selected_node_id && selected_node_group == "versions" || selected_node_group == "versionsBro"){ 
         //versionのノードが選択されている時，それにつながるedge_idを取得し，右側のedge_idにつながるnode_idを取得する

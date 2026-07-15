@@ -35,8 +35,8 @@
 		}else if($record_thing === 'trigger'){
 			$trigger_id = isset($_POST["trigger_id"]) ? trim((string)$_POST["trigger_id"]) : '';
 			$activity_id = isset($_POST["activity_id"]) ? trim((string)$_POST["activity_id"]) : '';
-			$node_version_from = isset($_POST["node_version_from"]) ? trim((string)$_POST["node_version_from"]) : '';
-			$node_version_to = isset($_POST["node_version_to"]) ? trim((string)$_POST["node_version_to"]) : '';
+			$node_version_from = isset($_POST["from"]) ? trim((string)$_POST["from"]) : (isset($_POST["node_version_from"]) ? trim((string)$_POST["node_version_from"]) : '');
+			$node_version_to = isset($_POST["to"]) ? trim((string)$_POST["to"]) : (isset($_POST["node_version_to"]) ? trim((string)$_POST["node_version_to"]) : '');
 			$activity_time = isset($_POST["activity_time"]) ? trim((string)$_POST["activity_time"]) : '';
 			$activity_type = isset($_POST["activity_type"]) ? trim((string)$_POST["activity_type"]) : '';
 			$content = isset($_POST["content"]) ? (string)$_POST["content"] : '';
@@ -58,12 +58,12 @@
 			if($activity_time === ''){
 				$activity_time = null;
 			}
-			$sql = "INSERT INTO triggers (trigger_id, activity_id, node_version_from, node_version_to, activity_time, activity_type, content, add_time, x, y, deleted)
+			$sql = "INSERT INTO triggers (trigger_id, activity_id, `from`, `to`, activity_time, activity_type, content, add_time, x, y, deleted)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
 					ON DUPLICATE KEY UPDATE
 						activity_id = VALUES(activity_id),
-						node_version_from = VALUES(node_version_from),
-						node_version_to = VALUES(node_version_to),
+						`from` = VALUES(`from`),
+						`to` = VALUES(`to`),
 						activity_time = VALUES(activity_time),
 						activity_type = VALUES(activity_type),
 						content = VALUES(content),
@@ -97,7 +97,22 @@
 		}
 	}else if($purpose === 'update'){
 		$update_thing = $_POST['update_thing'];
-		if($update_thing === 'node'){
+		if($update_thing === 'trigger_point'){
+			$trigger_id = isset($_POST["trigger_id"]) ? trim((string)$_POST["trigger_id"]) : '';
+			$x = isset($_POST["x"]) && is_numeric($_POST["x"]) ? (int)$_POST["x"] : 0;
+			$y = isset($_POST["y"]) && is_numeric($_POST["y"]) ? (int)$_POST["y"] : 0;
+			if($trigger_id !== ''){
+				if($stmt = $mysqli->prepare("UPDATE triggers SET x = ?, y = ? WHERE trigger_id = ? AND deleted = 0")){
+					$stmt->bind_param('iis', $x, $y, $trigger_id);
+					if(!$stmt->execute()){
+						echo "Error trigger point update: " . $stmt->error;
+					}
+					$stmt->close();
+				}else{
+					echo "Error trigger point prepare: " . $mysqli->error;
+				}
+			}
+		}else if($update_thing === 'node'){
 			$select_update = $_POST['select_update'];   //ノードの変更するもの(座標(point),内容(label))
 			$node_id = $_POST["node_id"]; //ノードID
 			$node_update_thing1 = $_POST['node_update_thing1'];
