@@ -3,6 +3,10 @@
 session_start();
 require_once __DIR__ . '/../php/hcimlab_sso.php';
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 try {
     $provider = hcimlab_sso_provider();
     $nonce = bin2hex(random_bytes(16));

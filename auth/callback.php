@@ -4,14 +4,24 @@ session_start();
 require_once __DIR__ . '/../php/hcimlab_sso.php';
 require_once __DIR__ . '/../php/connect_db.php';
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 try {
     if (isset($_GET['error'])) {
         $description = isset($_GET['error_description']) ? $_GET['error_description'] : $_GET['error'];
         throw new RuntimeException('SSO authorization failed: ' . $description);
     }
 
-    if (empty($_GET['state']) || empty($_SESSION['HCIMLAB_SSO_STATE']) || !hash_equals($_SESSION['HCIMLAB_SSO_STATE'], $_GET['state'])) {
-        throw new RuntimeException('Invalid SSO state.');
+    $state = isset($_SESSION['HCIMLAB_SSO_STATE']) ? $_SESSION['HCIMLAB_SSO_STATE'] : null;
+    $pkce  = isset($_SESSION['HCIMLAB_SSO_PKCE']) ? $_SESSION['HCIMLAB_SSO_PKCE'] : null;
+    $nonce = isset($_SESSION['HCIMLAB_SSO_NONCE']) ? $_SESSION['HCIMLAB_SSO_NONCE'] : null;
+
+    unset($_SESSION['HCIMLAB_SSO_STATE'], $_SESSION['HCIMLAB_SSO_PKCE'], $_SESSION['HCIMLAB_SSO_NONCE']);
+
+    if (empty($_GET['state']) || empty($state) || !hash_equals($state, $_GET['state'])) {
+        throw new RuntimeException('Invalid SSO state. Please try logging in again.');
     }
 
     if (empty($_GET['code'])) {
@@ -19,7 +29,7 @@ try {
     }
 
     $provider = hcimlab_sso_provider();
-    $provider->setPkceCode($_SESSION['HCIMLAB_SSO_PKCE']);
+    $provider->setPkceCode($pkce);
     $token = $provider->getAccessToken('authorization_code', array(
         'code' => $_GET['code'],
     ));
@@ -29,7 +39,7 @@ try {
         throw new RuntimeException('SSO token response does not contain id_token.');
     }
 
-    $claims = hcimlab_sso_verify_id_token($values['id_token'], $_SESSION['HCIMLAB_SSO_NONCE']);
+    $claims = hcimlab_sso_verify_id_token($values['id_token'], $nonce);
     $userinfo = $provider->getResourceOwner($token)->toArray();
     if (isset($userinfo['sub']) && (string)$userinfo['sub'] !== (string)$claims['sub']) {
         throw new RuntimeException('UserInfo sub does not match id_token sub.');
@@ -47,12 +57,15 @@ try {
     $_SESSION['HCIMLAB_SSO_REFRESH_TOKEN'] = $token->getRefreshToken();
     $_SESSION['HCIMLAB_SSO_TOKEN_EXPIRES'] = $token->getExpires();
 
-    unset($_SESSION['HCIMLAB_SSO_STATE'], $_SESSION['HCIMLAB_SSO_PKCE'], $_SESSION['HCIMLAB_SSO_NONCE'], $_SESSION['SSO_ERROR']);
+    unset($_SESSION['SSO_ERROR']);
 
     $config = hcimlab_sso_config();
     header('Location: ' . rtrim($config['base_url'], '/') . '/select_mode.php');
     exit;
 } catch (Throwable $e) {
-    unset($_SESSION['HCIMLAB_SSO_STATE'], $_SESSION['HCIMLAB_SSO_PKCE'], $_SESSION['HCIMLAB_SSO_NONCE']);
-    hcimlab_sso_redirect_to_login($e->getMessage());
+    $msg = $e->getMessage();
+    if ($e instanceof \League\OAuth2\Client\Provider\Exception\IdentityProviderException) {
+        $msg .= " | Response: " . json_encode($e->getResponseBody());
+    }
+    hcimlab_sso_redirect_to_login($msg);
 }

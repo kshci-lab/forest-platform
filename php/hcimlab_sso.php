@@ -1,6 +1,5 @@
 <?php
 
-use GuzzleHttp\Client;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use League\OAuth2\Client\Provider\GenericProvider;
@@ -23,72 +22,29 @@ function hcimlab_sso_require_dependencies()
     require_once $autoload;
 }
 
-function hcimlab_sso_http_json($url, array $headers = array())
-{
-    hcimlab_sso_require_dependencies();
-    $response = hcimlab_sso_http_client()->request('GET', $url, array(
-        'headers' => array_merge(array('Accept' => 'application/json'), hcimlab_sso_header_pairs($headers)),
-    ));
-    $json = json_decode((string)$response->getBody(), true);
-    if (!is_array($json)) {
-        throw new RuntimeException('Invalid JSON response from ' . $url);
-    }
-    return $json;
-}
-
-function hcimlab_sso_header_pairs(array $headers)
-{
-    $result = array();
-    foreach ($headers as $header) {
-        $parts = explode(':', $header, 2);
-        if (count($parts) === 2) {
-            $result[trim($parts[0])] = trim($parts[1]);
-        }
-    }
-    return $result;
-}
-
-function hcimlab_sso_http_options()
-{
-    $config = hcimlab_sso_config();
-    $options = array(
-        'timeout' => 10,
-    );
-
-    if (!empty($config['ca_bundle'])) {
-        if (!file_exists($config['ca_bundle'])) {
-            throw new RuntimeException('SSL CA bundle not found: ' . $config['ca_bundle']);
-        }
-        $options['verify'] = $config['ca_bundle'];
-    }
-
-    return $options;
-}
-
 function hcimlab_sso_http_client()
 {
-    static $client = null;
-    if ($client === null) {
-        $client = new Client(hcimlab_sso_http_options());
-    }
-    return $client;
-}
-
-function hcimlab_sso_discovery()
-{
-    static $metadata = null;
-    if ($metadata !== null) {
-        return $metadata;
-    }
-
+    hcimlab_sso_require_dependencies();
     $config = hcimlab_sso_config();
-    $metadata = hcimlab_sso_http_json(rtrim($config['idp_url'], '/') . '/.well-known/openid-configuration');
-    foreach (array('issuer', 'authorization_endpoint', 'token_endpoint', 'userinfo_endpoint', 'jwks_uri') as $key) {
-        if (empty($metadata[$key])) {
-            throw new RuntimeException('OIDC discovery metadata is missing ' . $key);
+    $options = array(
+        'timeout' => 30.0,
+        'connect_timeout' => 5.0,
+        'curl' => array(
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 30,
+        ),
+    );
+
+    $caBundle = isset($config['ca_bundle']) ? trim((string)$config['ca_bundle']) : '';
+    if ($caBundle !== '') {
+        if (!is_file($caBundle)) {
+            throw new RuntimeException('SSL CA bundle not found: ' . $caBundle);
         }
+        $options['verify'] = $caBundle;
     }
-    return $metadata;
+
+    return new \GuzzleHttp\Client($options);
 }
 
 function hcimlab_sso_provider()
@@ -99,30 +55,37 @@ function hcimlab_sso_provider()
         throw new RuntimeException('HCIMLAB_SSO_CLIENT_ID is not configured.');
     }
 
-    $metadata = hcimlab_sso_discovery();
-    return new GenericProvider(
-        array(
-            'clientId' => $config['client_id'],
-            'clientSecret' => $config['client_secret'],
-            'redirectUri' => $config['redirect_uri'],
-            'urlAuthorize' => $metadata['authorization_endpoint'],
-            'urlAccessToken' => $metadata['token_endpoint'],
-            'urlResourceOwnerDetails' => $metadata['userinfo_endpoint'],
-            'scopes' => $config['scope'],
-            'pkceMethod' => 'S256',
-        ),
-        array(
-            'httpClient' => hcimlab_sso_http_client(),
-        )
-    );
+    $idpUrl = rtrim($config['idp_url'], '/');
+    $provider = new GenericProvider(array(
+        'clientId' => $config['client_id'],
+        'clientSecret' => $config['client_secret'],
+        'redirectUri' => $config['redirect_uri'],
+        'urlAuthorize' => $idpUrl . '/oauth/authorize',
+        'urlAccessToken' => $idpUrl . '/oauth/token',
+        'urlResourceOwnerDetails' => $idpUrl . '/oauth/userinfo',
+        'scopes' => $config['scope'],
+        'pkceMethod' => 'S256',
+    ));
+
+    $provider->setHttpClient(hcimlab_sso_http_client());
+
+    return $provider;
 }
 
 function hcimlab_sso_verify_id_token($idToken, $expectedNonce)
 {
     hcimlab_sso_require_dependencies();
     $config = hcimlab_sso_config();
-    $metadata = hcimlab_sso_discovery();
-    $jwks = hcimlab_sso_http_json($metadata['jwks_uri']);
+    $idpUrl = rtrim($config['idp_url'], '/');
+    $provider = hcimlab_sso_provider();
+
+    $request = $provider->getRequest('GET', $idpUrl . '/oauth/jwks');
+    $response = $provider->getResponse($request);
+    $jwks = json_decode((string) $response->getBody(), true);
+    if (!is_array($jwks)) {
+        throw new RuntimeException('Invalid JWKS response.');
+    }
+
     $keys = JWK::parseKeySet($jwks);
 
     JWT::$leeway = 60;
@@ -132,7 +95,7 @@ function hcimlab_sso_verify_id_token($idToken, $expectedNonce)
         throw new RuntimeException('Invalid id_token claims.');
     }
 
-    if (!isset($claims['iss']) || $claims['iss'] !== $metadata['issuer']) {
+    if (!isset($claims['iss']) || $claims['iss'] !== $idpUrl) {
         throw new RuntimeException('Invalid id_token issuer.');
     }
 
