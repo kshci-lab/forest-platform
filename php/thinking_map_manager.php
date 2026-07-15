@@ -298,8 +298,12 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $return_data = array_merge($return_data, ['node_versions' => $node_versions]);
 
     // triggerを取得
-    $result_trigger = $mysqli->query("SELECT * FROM triggers
-                            WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."') AND deleted = 0");
+    $result_trigger = $mysqli->query("SELECT t.*, t.`from` AS node_version_from, t.`to` AS node_version_to FROM triggers t
+                            WHERE (
+                                t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."')
+                                OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                                OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                            ) AND t.deleted = 0");
     $trigger = [];
     while ($row = $result_trigger->fetch_assoc()) {
         array_push($trigger, $row);
@@ -366,8 +370,12 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $return_data = array_merge($return_data, ['brother_num' => $brother_num]);
 
     // triggerを取得
-    $result_trigger = $mysqli->query("SELECT * FROM triggers
-                            WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."') AND deleted = 0");
+    $result_trigger = $mysqli->query("SELECT t.*, t.`from` AS node_version_from, t.`to` AS node_version_to FROM triggers t
+                            WHERE (
+                                t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."')
+                                OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                                OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                            ) AND t.deleted = 0");
     $trigger = [];
     while ($row = $result_trigger->fetch_assoc()) {
         array_push($trigger, $row);
@@ -405,7 +413,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
             $node_id_for_query = $row_node_id['node_id'];
         }
     }else if($selected_node_group === 'trigger'){
-        $result_node_id = $mysqli->query("SELECT nv.node_id FROM triggers t INNER JOIN node_versions nv ON t.node_version_from = nv.node_version_id WHERE t.trigger_id = '".$selected_node_id."' AND t.deleted = 0 LIMIT 1");
+        $result_node_id = $mysqli->query("SELECT nv.node_id FROM triggers t INNER JOIN node_versions nv ON t.`from` = nv.node_version_id WHERE t.trigger_id = '".$selected_node_id."' AND t.deleted = 0 LIMIT 1");
         if($result_node_id && $row_node_id = $result_node_id->fetch_assoc()){
             $node_id_for_query = $row_node_id['node_id'];
         }
@@ -457,11 +465,19 @@ if($process_mode === "all" || $process_mode === "allRE" ){
 
     // triggerを取得
     if($node_id_for_query !== null){
-        $result_trigger = $mysqli->query("SELECT * FROM triggers
-                                WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$node_id_for_query."' AND deleted = 0) AND deleted = 0");
+        $result_trigger = $mysqli->query("SELECT t.*, t.`from` AS node_version_from, t.`to` AS node_version_to FROM triggers t
+                                WHERE (
+                                    t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                                    OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                                    OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                                ) AND t.deleted = 0");
     }else{
-        $result_trigger = $mysqli->query("SELECT * FROM triggers
-                                WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0) AND deleted = 0");
+        $result_trigger = $mysqli->query("SELECT t.*, t.`from` AS node_version_from, t.`to` AS node_version_to FROM triggers t
+                                WHERE (
+                                    t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0)
+                                    OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0)
+                                    OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0)
+                                ) AND t.deleted = 0");
     }
     $trigger = [];
     while ($row = $result_trigger->fetch_assoc()) {
