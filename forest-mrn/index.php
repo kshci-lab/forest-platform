@@ -1108,6 +1108,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="plugins/Modaal-master/dist/js/modaal.js"></script>
         <script type="text/javascript" src="plugins/Modaal-master/dist/js/modaal.min.js"></script>
         <!-- <script src="plugins/Modaal-master/dist/css/modaal.css"></script> -->
+        <script type="text/javascript" src="js/inquiry_filter.js"></script>
         <script type="text/javascript" src="js/ont_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_inquiry_verp.js"></script>
         <script type="text/javascript" src="js/ont_choose_inquiry.js"></script>

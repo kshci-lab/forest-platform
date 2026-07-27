@@ -23,6 +23,7 @@ function recommend_xmlLoad(){
 // hozo.xmlのパースが成功した場合に，<W_CONCEPTS>のそれぞれに指定関数を適用
 function recommend_parse_xml(xml,status){
 	if(status!='success')return;
+	xml = window.filterForestInquiryOntology(xml);
 	$(xml).find('W_CONCEPTS').each(recommend_disp);
 }
 
