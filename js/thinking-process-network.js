@@ -2082,7 +2082,7 @@ function inputTrigger(triggerData){
         // document.getElementById("trigger_content").reset();   
         return;
     }else{
-        alert('追加したい箇所のノードまたはエッジを選択してください');
+        alert('追加したい箇所のエッジを選択してください');
         return;
     }
 }
