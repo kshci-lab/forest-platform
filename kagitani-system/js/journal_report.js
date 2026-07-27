@@ -111,7 +111,17 @@
                                                 return r.content || '';
                                             });
                                         } catch (e) { console.error('build contentArr error', e); }
-                                        var dispText = (goalContents[i] ? (typeof goalContents[i] === 'object' ? (goalContents[i].content || goalContents[i].node_id || '') : goalContents[i]) : '');
+                                        var dispText = '';
+                                        if (goalContents && goalContents.length > 0) {
+                                            var foundContent = goalContents.find(function(c) {
+                                                return typeof c === 'object' && String(c.node_id) === String(nodeId);
+                                            });
+                                            if (foundContent) {
+                                                dispText = foundContent.content || foundContent.node_id || '';
+                                            } else {
+                                                dispText = (goalContents[i] ? (typeof goalContents[i] === 'object' ? (goalContents[i].content || goalContents[i].node_id || '') : goalContents[i]) : '');
+                                            }
+                                        }
                                         resolve({ display: dispText, answer_content: objRes.answer_content || '', answer_histories: objRes.answer_histories || [], content: contentArr, object_node_ids: objRes.object_node_ids || [], object_node_history_ids: objRes.object_node_history_ids || [], histories: objRes.histories || [], node_children: objRes.node_children || {}, node_parents: objRes.node_parents || {} });
                                     },
                                     error: function (xhr, status, err) {
@@ -324,7 +334,32 @@
                                     }
                                 }
 
+                                var originalTitle = document.title;
+                                var uid = window.USER_USERNAME || window.USERID || 'unknown';
+                                var mapping = {
+                                    'ikejima': '01',
+                                    'kagitani': '02',
+                                    'kawa': '03',
+                                    'shimaoka': '04',
+                                    'tanaka': '05',
+                                    'ikeda': '06',
+                                    'egawa': '07',
+                                    'sakanaka': '08',
+                                    'shiraki': '09',
+                                    'nakajima': '10',
+                                    'yamauchi': '11'
+                                };
+                                var numStr = mapping[uid] || '00';
+                                var d = new Date();
+                                var yyyy = d.getFullYear();
+                                var mm = String(d.getMonth() + 1).padStart(2, '0');
+                                var dd = String(d.getDate()).padStart(2, '0');
+                                var dateStr = yyyy + '-' + mm + '-' + dd;
+                                document.title = dateStr + '_' + numStr + '_' + uid + '_自己調整さん';
+
                                 window.print();
+                                
+                                document.title = originalTitle;
 
                                 setTimeout(function() {
                                     document.body.classList.remove('jr-printing');

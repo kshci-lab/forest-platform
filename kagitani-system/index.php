@@ -236,8 +236,16 @@ try {
             console.log('最新 node_id:', <?php echo json_encode($latest_map_id, JSON_UNESCAPED_UNICODE); ?>);
         }catch(e){/* ignore */}
     })();
-    // グローバル変数としてMAPIDを設定
+    // グローバル変数としてMAPID等を設定
     window.MAPID = <?php echo json_encode(isset($_SESSION['MAPID']) ? $_SESSION['MAPID'] : null, JSON_UNESCAPED_UNICODE); ?>;
+    window.USERID = <?php echo json_encode(isset($_SESSION['USERID']) ? $_SESSION['USERID'] : '', JSON_UNESCAPED_UNICODE); ?>;
+    window.USER_USERNAME = <?php 
+        $username = '';
+        if (isset($_SESSION['HCIMLAB_SSO_CLAIMS'])) {
+            $username = isset($_SESSION['HCIMLAB_SSO_CLAIMS']['username']) ? $_SESSION['HCIMLAB_SSO_CLAIMS']['username'] : (isset($_SESSION['HCIMLAB_SSO_CLAIMS']['preferred_username']) ? $_SESSION['HCIMLAB_SSO_CLAIMS']['preferred_username'] : '');
+        }
+        echo json_encode($username, JSON_UNESCAPED_UNICODE);
+    ?>;
 </script>
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
