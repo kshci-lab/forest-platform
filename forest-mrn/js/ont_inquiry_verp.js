@@ -29,6 +29,7 @@ function p_xmlLoad(){
 function p_parse_xml(xml,status){
 
 	if(status!='success')return;
+	xml = window.filterForestInquiryOntology(xml);
 	$(xml).find('W_CONCEPTS').each(p_disp);
 
 }
