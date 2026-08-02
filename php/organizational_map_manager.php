@@ -138,9 +138,9 @@ if (!empty($user_ids_in_latest_group)) {
                 ORDER BY ec.updated_at DESC, ec.externalized_contents_id DESC";
             if ($result_externalized = $mysqli->query($sql_externalized)) {
                 while ($row = $result_externalized->fetch_assoc()) {
-                    $row['source_type'] = 'externalized';
+                    $row['source_type'] = 'discussion';
                     $row['source_id'] = isset($row['externalized_contents_id']) ? (int)$row['externalized_contents_id'] : null;
-                    $row['display_node_id'] = 'externalized:' . (string)$row['source_id'];
+                    $row['display_node_id'] = 'discussion:' . (string)$row['source_id'];
                     $row['experience_type'] = 'discussion';
                     $row['thought_experience_node_id'] = null;
                     $organi_map_node[] = $row;

@@ -3,6 +3,8 @@
 // Input: node_id (knowledge_explorer node) or typed fragment ids.
 // Output: HTML snippet for one or more knowledge fragments.
 header('Content-Type: text/html; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 mysqli_report(MYSQLI_REPORT_OFF);
@@ -57,6 +59,15 @@ function add_links(array &$links, string $sourceType, array $ids): void {
     }
 }
 
+function normalize_detail_source_type($value): string {
+    $normalized = strtolower(trim((string)$value));
+    if ($normalized === 'externalized') { return 'discussion'; }
+    if ($normalized === 'srl') { return 'SRL'; }
+    if (in_array($normalized, ['experience', 'discussion'], true)) { return $normalized; }
+    if ((string)$value === 'SRL') { return 'SRL'; }
+    return '';
+}
+
 if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
     echo '<div class="error">DB接続失敗</div>';
     exit;
@@ -65,6 +76,7 @@ if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
 
 $nodeId = isset($_GET['node_id']) ? intval($_GET['node_id'], 10) : 0;
 $links = [];
+$storedNodeLinks = [];
 
 if (!$links && $nodeId > 0 && table_exists($mysqli, 'knowledge_explorer_fragment_links')) {
     $sql = "SELECT fragment_source_type, fragment_source_id
@@ -77,7 +89,10 @@ if (!$links && $nodeId > 0 && table_exists($mysqli, 'knowledge_explorer_fragment
             while ($row = $res->fetch_assoc()) {
                 $sourceType = isset($row['fragment_source_type']) ? (string)$row['fragment_source_type'] : '';
                 $sourceId = isset($row['fragment_source_id']) ? intval($row['fragment_source_id'], 10) : 0;
-                add_links($links, $sourceType, [$sourceId]);
+                $normalizedType = normalize_detail_source_type($sourceType);
+                if ($normalizedType !== '' && $sourceId > 0) {
+                    $storedNodeLinks[] = ['type' => $normalizedType, 'id' => $sourceId];
+                }
             }
             $res->free();
         }
@@ -97,6 +112,7 @@ if (!$links && $nodeId > 0 && table_exists($mysqli, 'knowledge_explorer')) {
     $colNodeId = null;
     $colKfragId = null;
     $colExtId = null;
+    $colNodeType = null;
     if ($cols = $mysqli->query("SHOW COLUMNS FROM `knowledge_explorer`")) {
         while ($c = $cols->fetch_assoc()) {
             $f = isset($c['Field']) ? $c['Field'] : '';
@@ -104,6 +120,7 @@ if (!$links && $nodeId > 0 && table_exists($mysqli, 'knowledge_explorer')) {
             if ($colNodeId === null && in_array($lf, ['node_id','id','knowledge_node_id','knowledge_explorer_id'], true)) { $colNodeId = $f; }
             if ($colKfragId === null && in_array($lf, ['knowledge_fragment_id','knowledgefragment_id','kfrag_id'], true)) { $colKfragId = $f; }
             if ($colExtId === null && in_array($lf, ['externalized_contents_id','externalizedcontent_id','externalized_id'], true)) { $colExtId = $f; }
+            if ($colNodeType === null && $lf === 'node_type') { $colNodeType = $f; }
         }
         $cols->free();
     }
@@ -111,14 +128,36 @@ if (!$links && $nodeId > 0 && table_exists($mysqli, 'knowledge_explorer')) {
         $selects = [];
         if ($colKfragId !== null) { $selects[] = "`$colKfragId` AS kfrag_id"; }
         if ($colExtId !== null) { $selects[] = "`$colExtId` AS ext_id"; }
+        if ($colNodeType !== null) { $selects[] = "`$colNodeType` AS node_type"; }
         if ($selects) {
             $sql = "SELECT ".implode(',', $selects)." FROM `knowledge_explorer` WHERE `$colNodeId` = ? LIMIT 1";
             if ($stmt = $mysqli->prepare($sql)) {
                 $stmt->bind_param('i', $nodeId);
                 if ($stmt->execute() && ($res = $stmt->get_result())) {
                     if ($row = $res->fetch_assoc()) {
-                        if (isset($row['kfrag_id'])) { add_links($links, 'experience', split_fragment_ids($row['kfrag_id'])); }
-                        if (isset($row['ext_id'])) { add_links($links, 'discussion', split_fragment_ids($row['ext_id'])); }
+                        $authoritativeIds = isset($row['kfrag_id']) ? split_fragment_ids($row['kfrag_id']) : [];
+                        $storedTypes = [];
+                        foreach ($storedNodeLinks as $storedLink) {
+                            if (!in_array($storedLink['type'], $storedTypes, true)) { $storedTypes[] = $storedLink['type']; }
+                        }
+                        $preferredType = normalize_detail_source_type(isset($row['node_type']) ? $row['node_type'] : '');
+                        if ($preferredType === '' && count($storedTypes) === 1) { $preferredType = $storedTypes[0]; }
+                        if ($preferredType === '') { $preferredType = 'experience'; }
+                        foreach ($authoritativeIds as $authoritativeId) {
+                            $matchingTypes = [];
+                            foreach ($storedNodeLinks as $storedLink) {
+                                if ($storedLink['id'] === $authoritativeId && !in_array($storedLink['type'], $matchingTypes, true)) {
+                                    $matchingTypes[] = $storedLink['type'];
+                                }
+                            }
+                            $resolvedType = in_array($preferredType, $matchingTypes, true)
+                                ? $preferredType
+                                : ($matchingTypes ? $matchingTypes[0] : $preferredType);
+                            add_links($links, $resolvedType, [$authoritativeId]);
+                        }
+                        if (!$authoritativeIds && isset($row['ext_id']) && intval($row['ext_id'], 10) > 0) {
+                            add_links($links, 'discussion', split_fragment_ids($row['ext_id']));
+                        }
                     }
                     $res->free();
                 }

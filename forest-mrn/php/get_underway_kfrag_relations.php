@@ -2,6 +2,7 @@
 header('Content-Type: application/json; charset=UTF-8');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
+mysqli_report(MYSQLI_REPORT_OFF);
 
 require_once __DIR__ . '/connect_db.php';
 
@@ -28,8 +29,17 @@ function has_column_underway(mysqli $mysqli, string $table, string $column): boo
     return false;
 }
 
+function has_table_underway(mysqli $mysqli, string $table): bool {
+    if ($res = $mysqli->query("SHOW TABLES LIKE '".$mysqli->real_escape_string($table)."'")) {
+        $ok = ($res->num_rows > 0);
+        $res->free();
+        return $ok;
+    }
+    return false;
+}
+
 function get_underway_rows(mysqli $mysqli, string $table, string $idColumn, string $sourceType): array {
-    if (!has_column_underway($mysqli, $table, $idColumn) || !has_column_underway($mysqli, $table, 'discussed')) {
+    if (!has_table_underway($mysqli, $table) || !has_column_underway($mysqli, $table, $idColumn) || !has_column_underway($mysqli, $table, 'discussed')) {
         return [];
     }
     $rows = [];
@@ -49,7 +59,7 @@ function get_underway_rows(mysqli $mysqli, string $table, string $idColumn, stri
 function load_latest_targets(mysqli $mysqli, int $fragmentId, string $sourceType): array {
     $table = 'discussion_history';
     $fragmentIds = [];
-    if (!has_column_underway($mysqli, $table, 'knowledge_fragment_id')) {
+    if (!has_table_underway($mysqli, $table) || !has_column_underway($mysqli, $table, 'knowledge_fragment_id')) {
         return [];
     }
     $hasSourceType = has_column_underway($mysqli, $table, 'fragment_source_type');

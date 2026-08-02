@@ -2,6 +2,8 @@
 // get_knowledge_tree.php
 // knowledge_explorer テーブルから階層表示用ノード一覧を取得（トップレベル3種を保証）
 header('Content-Type: application/json; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 // 環境側で MYSQLI_REPORT_STRICT が有効だと mysqli_* が例外を投げて 500 になりやすいので、このAPI内では例外化を無効化
@@ -149,6 +151,7 @@ $colKFragId = null;   // knowledge_fragment_id（外部化IDと同一扱い）
 $colExtContentsId = null; // externalized_contents_id（外部化のPK）
 $colSort = null; // sort_order
 $colGroup = null; // knowledge_group_id
+$colNodeType = null; // node_type
 $colTactoWhen = null;
 $colTactoWhat = null;
 $colTactoWhy = null;
@@ -171,6 +174,7 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
         if($colExtContentsId===null && in_array($lf, ['externalized_contents_id','externalizedcontent_id','externalized_id'])){ $colExtContentsId = $f; }
         if($colSort===null && in_array($lf, ['sort_order'])){ $colSort = $f; }
         if($colGroup===null && in_array($lf, ['knowledge_group_id','group_id'])){ $colGroup = $f; }
+        if($colNodeType===null && $lf === 'node_type'){ $colNodeType = $f; }
         if($colTactoWhen===null && $lf === 'tacto_when'){ $colTactoWhen = $f; }
         if($colTactoWhat===null && $lf === 'tacto_what'){ $colTactoWhat = $f; }
         if($colTactoWhy===null && $lf === 'tacto_why'){ $colTactoWhy = $f; }
@@ -183,12 +187,18 @@ if ($resCols = $mysqli->query("SHOW COLUMNS FROM $table")) {
 }
 // 少なくともタイトルが無いと表示不能
 $selectedGroupId = __resolve_knowledge_tree_group_id($mysqli);
+$includeUnassigned = isset($_GET['include_unassigned']) && (string)$_GET['include_unassigned'] === '1';
 $groupWhere = '';
 $groupWhereAlias = '';
 if($colGroup !== null && $selectedGroupId !== ''){
     $escapedGroupId = $mysqli->real_escape_string($selectedGroupId);
-    $groupWhere = " AND `$colGroup` = '$escapedGroupId'";
-    $groupWhereAlias = " AND ke.`$colGroup` = '$escapedGroupId'";
+    if($includeUnassigned){
+        $groupWhere = " AND (`$colGroup` = '$escapedGroupId' OR `$colGroup` IS NULL)";
+        $groupWhereAlias = " AND (ke.`$colGroup` = '$escapedGroupId' OR ke.`$colGroup` IS NULL)";
+    } else {
+        $groupWhere = " AND `$colGroup` = '$escapedGroupId'";
+        $groupWhereAlias = " AND ke.`$colGroup` = '$escapedGroupId'";
+    }
 }
 if($colTitle === null){
     // 最低限のフォールバック: DBスキーマが未整備でもトップレベルだけ返す
@@ -338,6 +348,10 @@ if($resAll = $mysqli->query($sqlAll)){
         if($colGroup && array_key_exists($colGroup,$row) && $row[$colGroup] !== null){
             $groupVal = (int)$row[$colGroup];
         }
+        $nodeTypeVal = null;
+        if($colNodeType && array_key_exists($colNodeType,$row) && $row[$colNodeType] !== null){
+            $nodeTypeVal = trim((string)$row[$colNodeType]);
+        }
         $nodes[] = [
             'node_id'=>$nid,
             'parent_id'=>$pid,
@@ -352,6 +366,7 @@ if($resAll = $mysqli->query($sqlAll)){
             'updated_by_name'=> $updatedByName !== null ? $updatedByName : null,
             'sort_order'=> $sortVal !== null ? $sortVal : null,
             'knowledge_group_id'=> $groupVal !== null ? $groupVal : null,
+            'node_type'=> $nodeTypeVal !== null && $nodeTypeVal !== '' ? $nodeTypeVal : null,
             'knowledge_fragment_id'=> $kfragVal !== null ? $kfragVal : null,
             'externalized_contents_id'=> $extIdVal !== null ? $extIdVal : null
         ];
@@ -364,6 +379,57 @@ if($resAll = $mysqli->query($sqlAll)){
         ['node_id'=>2, 'parent_id'=>null, 'node_title'=>'研究方略関連', 'comment'=>null, 'updated_at'=>null],
         ['node_id'=>3, 'parent_id'=>null, 'node_title'=>'その他', 'comment'=>null, 'updated_at'=>null]
     ];
+}
+
+// Older produced knowledge can belong to a group while its parent still points
+// to an unassigned legacy root. Remap that parent to the same-titled root in
+// the selected group so the group-scoped tree remains connected and renderable.
+if($selectedGroupId !== '' && $colId !== null && $colParent !== null && $colTitle !== null && !empty($nodes)){
+    $nodeIdsInResponse = [];
+    $groupRootsByTitle = [];
+    foreach($nodes as $node){
+        $responseNodeId = isset($node['node_id']) ? (int)$node['node_id'] : 0;
+        if($responseNodeId > 0){ $nodeIdsInResponse[$responseNodeId] = true; }
+        if($responseNodeId > 0 && (!isset($node['parent_id']) || $node['parent_id'] === null)){
+            $rootTitle = isset($node['node_title']) ? trim((string)$node['node_title']) : '';
+            if($rootTitle !== '' && (!isset($groupRootsByTitle[$rootTitle]) || $responseNodeId > $groupRootsByTitle[$rootTitle])){
+                $groupRootsByTitle[$rootTitle] = $responseNodeId;
+            }
+        }
+    }
+
+    $orphanParentIds = [];
+    foreach($nodes as $node){
+        $parentId = isset($node['parent_id']) && $node['parent_id'] !== null ? (int)$node['parent_id'] : 0;
+        if($parentId > 0 && !isset($nodeIdsInResponse[$parentId])){ $orphanParentIds[$parentId] = true; }
+    }
+
+    if(!empty($orphanParentIds) && !empty($groupRootsByTitle)){
+        $parentTitles = [];
+        $parentIdList = implode(',', array_map('intval', array_keys($orphanParentIds)));
+        $sqlParents = "SELECT `$colId` AS legacy_parent_id, `$colTitle` AS legacy_parent_title FROM `$table` WHERE `$colId` IN ($parentIdList)";
+        if($resParents = $mysqli->query($sqlParents)){
+            while($parentRow = $resParents->fetch_assoc()){
+                $legacyParentId = isset($parentRow['legacy_parent_id']) ? (int)$parentRow['legacy_parent_id'] : 0;
+                $legacyParentTitle = isset($parentRow['legacy_parent_title']) ? trim((string)$parentRow['legacy_parent_title']) : '';
+                if($legacyParentId > 0 && $legacyParentTitle !== ''){ $parentTitles[$legacyParentId] = $legacyParentTitle; }
+            }
+            $resParents->free();
+        }
+        foreach($nodes as &$node){
+            $parentId = isset($node['parent_id']) && $node['parent_id'] !== null ? (int)$node['parent_id'] : 0;
+            if($parentId <= 0 || isset($nodeIdsInResponse[$parentId]) || !isset($parentTitles[$parentId])){ continue; }
+            $parentTitle = $parentTitles[$parentId];
+            $legacyRootTitleAliases = [
+                '議論方略関連' => '研究方略関連'
+            ];
+            if(!isset($groupRootsByTitle[$parentTitle]) && isset($legacyRootTitleAliases[$parentTitle])){
+                $parentTitle = $legacyRootTitleAliases[$parentTitle];
+            }
+            if(isset($groupRootsByTitle[$parentTitle])){ $node['parent_id'] = $groupRootsByTitle[$parentTitle]; }
+        }
+        unset($node);
+    }
 }
 
 $linkTypesByNode = [];
@@ -404,19 +470,32 @@ if (!empty($nodes)) {
     }
     foreach ($nodes as &$node) {
         $nidForLink = isset($node['node_id']) ? intval($node['node_id'], 10) : 0;
-        $types = isset($linkTypesByNode[$nidForLink]) ? $linkTypesByNode[$nidForLink] : [];
-        $idsByType = isset($linkIdsByNode[$nidForLink]) ? $linkIdsByNode[$nidForLink] : [];
-        if (empty($types)) {
-            if (!empty($node['externalized_contents_id'])) {
-                $types[] = 'discussion';
-                $idsByType['discussion'] = [(int)$node['externalized_contents_id']];
-            } elseif (!empty($node['knowledge_fragment_id'])) {
-                $fallbackIds = __split_knowledge_tree_ids($node['knowledge_fragment_id']);
-                if ($fallbackIds) {
-                    $types[] = 'experience';
-                    $idsByType['experience'] = $fallbackIds;
+        $storedTypes = isset($linkTypesByNode[$nidForLink]) ? $linkTypesByNode[$nidForLink] : [];
+        $storedIdsByType = isset($linkIdsByNode[$nidForLink]) ? $linkIdsByNode[$nidForLink] : [];
+        $authoritativeIds = __split_knowledge_tree_ids(isset($node['knowledge_fragment_id']) ? $node['knowledge_fragment_id'] : null);
+        $types = [];
+        $idsByType = [];
+
+        if ($authoritativeIds) {
+            $preferredType = __normalize_knowledge_tree_source_type(isset($node['node_type']) ? $node['node_type'] : '');
+            if ($preferredType === '' && count($storedTypes) === 1) { $preferredType = $storedTypes[0]; }
+            if ($preferredType === '') { $preferredType = 'experience'; }
+
+            foreach ($authoritativeIds as $authoritativeId) {
+                $matchingTypes = [];
+                foreach ($storedIdsByType as $storedType => $storedIds) {
+                    if (in_array($authoritativeId, $storedIds, true)) { $matchingTypes[] = $storedType; }
                 }
+                $resolvedType = in_array($preferredType, $matchingTypes, true)
+                    ? $preferredType
+                    : ($matchingTypes ? $matchingTypes[0] : $preferredType);
+                if (!isset($idsByType[$resolvedType])) { $idsByType[$resolvedType] = []; }
+                if (!in_array($authoritativeId, $idsByType[$resolvedType], true)) { $idsByType[$resolvedType][] = $authoritativeId; }
+                if (!in_array($resolvedType, $types, true)) { $types[] = $resolvedType; }
             }
+        } elseif (!empty($node['externalized_contents_id'])) {
+            $types[] = 'discussion';
+            $idsByType['discussion'] = [(int)$node['externalized_contents_id']];
         }
         $node['fragment_source_types'] = array_values(array_unique($types));
         $node['fragment_source_ids'] = $idsByType;
