@@ -1136,6 +1136,11 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 this.nodes.remove({ id: selectedNode.id });
                 this.selectId = null;
                 this.selectedOrganizationalNode = null;
+                if (response.ok_core && response.ok_core.status === 'QUEUED') {
+                    alert('削除は保存されました。OK-Coreへの通知を再送対象として保存しました。');
+                } else if (response.ok_core && response.ok_core.status === 'FAILED') {
+                    alert('削除は保存されましたが、OK-Core同期の設定またはデータを確認してください。');
+                }
             } else {
                 alert((response && response.message) ? response.message : '組織知の削除に失敗しました');
             }
@@ -1215,7 +1220,13 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 });
                 this.nodes.update(updatedNode);
                 this.selectedOrganizationalNode = this.nodes.get(selectedNode.id);
-                alert('組織知を更新しました。');
+                if (response.ok_core && response.ok_core.status === 'QUEUED') {
+                    alert('組織知を更新しました。OK-Coreへの同期を再送対象として保存しました。');
+                } else if (response.ok_core && response.ok_core.status === 'FAILED') {
+                    alert('組織知を更新しましたが、OK-Core同期の設定またはデータを確認してください。');
+                } else {
+                    alert('組織知を更新しました。');
+                }
             } else {
                 alert((response && response.message) ? response.message : '組織知の更新に失敗しました');
             }

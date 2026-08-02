@@ -1071,13 +1071,21 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     }
 
                     if (data && data.status === 'ok') {
-                        if (data.ok_core && data.ok_core.status !== 'ok') {
-                            console.warn('OK-Core sync failed:', data.ok_core);
-                            alert('Forest-Coreには保存されましたが、OK-Coreへの同期に失敗しました: ' + (data.ok_core.message || 'unknown error'));
+                        const delivery = data.ok_core || {};
+                        if (delivery.status === 'SENT') {
+                            alert('OK-CoreへKFを共有しました。');
                             return;
                         }
-                        alert('OK-CoreへKFを共有しました。');
+                        if (delivery.status === 'QUEUED') {
+                            console.warn('OK-Core sync queued:', delivery);
+                            alert('KFは保存されました。OK-Coreが一時的に応答しないため、再送対象として保存しました。');
+                            return;
+                        }
+                        console.warn('OK-Core sync needs attention:', delivery);
+                        alert('KFは保存されましたが、OK-Core同期の設定またはデータを確認してください: ' + (delivery.message || 'unknown error'));
+                        return;
                     }
+                    alert('KFの保存に失敗しました: ' + ((data && data.message) || 'unknown error'));
                 },
                 error: function(xhr, status, err) {
                     console.error('save fragment error:', status, err, xhr.responseText);

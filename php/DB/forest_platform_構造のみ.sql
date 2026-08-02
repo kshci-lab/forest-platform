@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- ホスト: localhost:8889
--- 生成日時: 2026-07-07 05:30:52
+-- 生成日時: 2026-07-31 02:48:09
 -- サーバのバージョン： 5.7.24
 -- PHP のバージョン: 8.3.1
 
@@ -463,6 +463,30 @@ CREATE TABLE `kgroup_user_link` (
   `role` varchar(45) NOT NULL DEFAULT 'others',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted` tinyint(4) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- テーブルの構造 `knowledge_explorer`
+--
+
+CREATE TABLE `knowledge_explorer` (
+  `node_id` int(11) NOT NULL,
+  `parent_id` int(11) DEFAULT NULL,
+  `node_title` varchar(255) NOT NULL,
+  `knowledge_group_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `comment` text,
+  `tacto_when` text,
+  `tacto_what` text,
+  `tacto_why` text,
+  `organizational_basis` text,
+  `updated_by` int(11) DEFAULT NULL,
+  `knowledge_fragment_id` varchar(255) DEFAULT NULL,
+  `sort_order` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -1376,8 +1400,8 @@ CREATE TABLE `shared_nodes` (
 CREATE TABLE `triggers` (
   `trigger_id` varchar(45) NOT NULL,
   `activity_id` varchar(45) DEFAULT NULL,
-  `node_version_from` varchar(45) NOT NULL,
-  `node_version_to` varchar(45) DEFAULT NULL,
+  `from` varchar(45) NOT NULL,
+  `to` varchar(45) DEFAULT NULL,
   `activity_time` timestamp NULL DEFAULT NULL,
   `activity_type` varchar(100) DEFAULT NULL,
   `content` varchar(999) DEFAULT NULL,
@@ -1797,6 +1821,13 @@ ALTER TABLE `kgroup_user_link`
   ADD KEY `knogrogroli_gro_id` (`group_id`);
 
 --
+-- テーブルのインデックス `knowledge_explorer`
+--
+ALTER TABLE `knowledge_explorer`
+  ADD PRIMARY KEY (`node_id`),
+  ADD KEY `parent_id` (`parent_id`);
+
+--
 -- テーブルのインデックス `knowledge_fragment`
 --
 ALTER TABLE `knowledge_fragment`
@@ -2148,15 +2179,25 @@ ALTER TABLE `shared_nodes`
 --
 ALTER TABLE `triggers`
   ADD PRIMARY KEY (`trigger_id`),
-  ADD KEY `node_tri_f_id` (`node_version_from`),
-  ADD KEY `node_tri_t_id` (`node_version_to`);
+  ADD KEY `node_tri_f_id` (`from`),
+  ADD KEY `node_tri_t_id` (`to`);
 
 --
 -- テーブルのインデックス `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `users_sso_sub_unique` (`sso_sub`);
+  ADD UNIQUE KEY `sso_sub` (`sso_sub`);
+
+--
+-- ダンプしたテーブルの AUTO_INCREMENT
+--
+
+--
+-- テーブルの AUTO_INCREMENT `knowledge_explorer`
+--
+ALTER TABLE `knowledge_explorer`
+  MODIFY `node_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- ダンプしたテーブルの制約

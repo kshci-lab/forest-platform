@@ -1,6 +1,7 @@
 <?php
 session_start();
 require("connect_db.php");
+require_once __DIR__ . '/kf_sync_service.php';
 
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Asia/Tokyo');
@@ -52,58 +53,33 @@ $stage1 = implode("\n", $stage1_items);
 $stage2 = implode("\n", $stage2_items);
 $stage3 = implode("\n", $stage3_items);
 
-$check_sql = "SELECT experience_knowledge_id
-    FROM experience_knowledges
-    WHERE experience_knowledge_id = ?
-        AND user_id = ?
-        AND deleted = 0";
-
-if (!($check_stmt = $mysqli->prepare($check_sql))) {
-    echo json_encode(['status' => 'error', 'message' => '更新対象の確認に失敗しました'], JSON_UNESCAPED_UNICODE);
-    exit;
+try {
+    $result = kf_sync_update_fragment(
+        $mysqli,
+        $experience_knowledge_id,
+        $user_id,
+        $knowledge_fragment_title,
+        $stage1,
+        $stage2,
+        $stage3,
+        $timestamp,
+        isset($_SESSION['HCIMLAB_SSO_SUB']) ? (string)$_SESSION['HCIMLAB_SSO_SUB'] : ''
+    );
+    echo json_encode([
+        'status' => 'ok',
+        'knowledge_fragment_title' => $knowledge_fragment_title,
+        'stage1' => $stage1,
+        'stage2' => $stage2,
+        'stage3' => $stage3,
+        'source_revision' => $result['source_revision'],
+        'outbox_id' => $result['outbox_id'],
+        'ok_core' => $result['ok_core']
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $error) {
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => $error->getMessage()
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
-
-$check_stmt->bind_param('ii', $experience_knowledge_id, $user_id);
-$check_stmt->execute();
-$check_stmt->store_result();
-
-if ($check_stmt->num_rows < 1) {
-    $check_stmt->close();
-    echo json_encode(['status' => 'error', 'message' => '更新できる組織知が見つかりませんでした'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$check_stmt->close();
-
-$sql = "UPDATE experience_knowledges
-    SET knowledge_fragment_content = ?,
-        stage1 = ?,
-        stage2 = ?,
-        stage3 = ?,
-        updated_at = ?
-    WHERE experience_knowledge_id = ?
-        AND user_id = ?
-        AND deleted = 0";
-
-if (!($stmt = $mysqli->prepare($sql))) {
-    echo json_encode(['status' => 'error', 'message' => '更新処理の準備に失敗しました'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$stmt->bind_param('sssssii', $knowledge_fragment_title, $stage1, $stage2, $stage3, $timestamp, $experience_knowledge_id, $user_id);
-
-if (!$stmt->execute()) {
-    $stmt->close();
-    echo json_encode(['status' => 'error', 'message' => '組織知の更新に失敗しました'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$stmt->close();
-echo json_encode([
-    'status' => 'ok',
-    'knowledge_fragment_title' => $knowledge_fragment_title,
-    'stage1' => $stage1,
-    'stage2' => $stage2,
-    'stage3' => $stage3
-], JSON_UNESCAPED_UNICODE);
 ?>

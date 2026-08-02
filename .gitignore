@@ -10,3 +10,4 @@ vendor/
 composer.phar
 certs/cacert.pem
 php/sso_local.php
+php/ok_core_api_local.php

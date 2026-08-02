@@ -94,6 +94,7 @@
 			}
 		}
 	}else if($purpose === 'share_fragment'){
+		header('Content-Type: application/json; charset=UTF-8');
 		$process_node_id = isset($_POST['process_node_id']) ? $_POST['process_node_id'] : '';
 		$selected_contents = isset($_POST['selected_contents']) ? $_POST['selected_contents'] : '';
 		$thought_experience_node_id = isset($_POST['thought_experience_node_id']) ? $_POST['thought_experience_node_id'] : '';
@@ -130,86 +131,42 @@
 			}
 		}
 
-		$stage1 = $mysqli->real_escape_string(implode("\n", $stage1_items));
-		$stage2 = $mysqli->real_escape_string(implode("\n", $stage2_items));
-		$stage3 = $mysqli->real_escape_string(implode("\n", $stage3_items));
+		$stage1 = implode("\n", $stage1_items);
+		$stage2 = implode("\n", $stage2_items);
+		$stage3 = implode("\n", $stage3_items);
+		$user_id_int = intval($user_id);
 
-		// knowledge_fragment_content は現在の title を入れる
-		$kf_content = $knowledge_fragment_title === NULL ? NULL : $mysqli->real_escape_string($knowledge_fragment_title);
+		try {
+			$result = kf_sync_create_fragment($mysqli, [
+				'user_id' => $user_id_int,
+				'sso_sub' => isset($_SESSION['HCIMLAB_SSO_SUB']) ? (string)$_SESSION['HCIMLAB_SSO_SUB'] : '',
+				'map_id' => isset($map_id) ? intval($map_id) : 0,
+				'group_id' => intval($group_id),
+				'selected_contents' => $selected_contents,
+				'knowledge_fragment_content' => $knowledge_fragment_title === NULL ? '' : $knowledge_fragment_title,
+				'stage1' => $stage1,
+				'stage2' => $stage2,
+				'stage3' => $stage3,
+				'thought_experience_node_id' => $thought_experience_node_id,
+				'experience_type' => $experience_type,
+				'timestamp' => $timestamp
+			]);
 
-		// 値準備
-		$selected_sql = "'" . $mysqli->real_escape_string($selected_contents) . "'";
-		$kf_sql = $kf_content === NULL ? "''" : "'" . $mysqli->real_escape_string($kf_content) . "'";
-		$stage1_sql = "'" . $mysqli->real_escape_string($stage1) . "'";
-		$stage2_sql = $stage2 === '' ? "NULL" : "'" . $mysqli->real_escape_string($stage2) . "'";
-		$stage3_sql = $stage3 === '' ? "NULL" : "'" . $mysqli->real_escape_string($stage3) . "'";
-		$user_id_int = isset($user_id) ? intval($user_id) : null;
-		$user_sql = $user_id_int === null ? 'NULL' : $user_id_int;
-		$thought_node_sql = ($thought_experience_node_id === '' || $thought_experience_node_id === null) ? "NULL" : "'" . $mysqli->real_escape_string($thought_experience_node_id) . "'";
-		$experience_type_sql = $experience_type === '' ? "NULL" : "'" . $mysqli->real_escape_string($experience_type) . "'";
-
-		// PHP側で整数IDを生成して挿入する（競合を避けるためトランザクションで最後のIDをロックして +1）
-		if(!$mysqli->begin_transaction()){
-			// begin_transaction が使えない場合は普通にINSERTしてinsert_idを使う
-			$insert_sql = "INSERT INTO experience_knowledges (remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, experience_type, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) 
-							VALUES (NULL, 0, $thought_node_sql, $experience_type_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
-			$mysqli->query($insert_sql);
-			if($mysqli->error){
-				echo "Error experience_knowledges insert: " . $mysqli->error;
-				exit;
-			}
-			$ec_id = (int)$mysqli->insert_id;
-		}else{
-			// ロックして現在最大のID取得
-			$maxres = $mysqli->query("SELECT experience_knowledge_id FROM experience_knowledges ORDER BY experience_knowledge_id DESC LIMIT 1 FOR UPDATE");
-			if($maxres && $row = $maxres->fetch_assoc()){
-				$new_id = intval($row['experience_knowledge_id']) + 1;
-			}else{
-				$new_id = 1;
-			}
-
-			$insert_sql = "INSERT INTO experience_knowledges (experience_knowledge_id, remarked_utterance_id, used_remarked_utterance, thought_experience_node_id, experience_type, selected_contents, knowledge_fragment_content, user_id, stage1, stage2, stage3, created_at, updated_at, deleted, discussed) 
-							VALUES (" . $new_id . ", NULL, 0, $thought_node_sql, $experience_type_sql, $selected_sql, $kf_sql, " . ($user_sql === 'NULL' ? 'NULL' : $user_sql) . ", $stage1_sql, $stage2_sql, $stage3_sql, '$timestamp', '$timestamp', 0, 'YET')";
-			$mysqli->query($insert_sql);
-			if($mysqli->error){
-				$mysqli->rollback();
-				echo "Error experience_knowledges insert: " . $mysqli->error;
-				exit;
-			}
-			$mysqli->commit();
-			$ec_id = $new_id;
+			echo json_encode([
+				'status' => 'ok',
+				'experience_knowledge_id' => $result['experience_knowledge_id'],
+				'context_package_id' => $result['context_package_id'],
+				'source_revision' => $result['source_revision'],
+				'outbox_id' => $result['outbox_id'],
+				'ok_core' => $result['ok_core']
+			], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		} catch (Throwable $error) {
+			http_response_code(500);
+			echo json_encode([
+				'status' => 'error',
+				'message' => $error->getMessage()
+			], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 		}
-
-		if($group_id !== ''){
-			$shared_id = rand();
-			$group_id_sql = $mysqli->real_escape_string($group_id);
-			$mysqli->query("INSERT INTO shared_nodes (id, experience_knowledge_id, knowledge_group_id, created_at, updated_at, deleted) 
-				VALUES ('$shared_id', '$ec_id', '$group_id_sql', '$timestamp', '$timestamp', 0)");
-			if($mysqli->error){
-				echo "Error shared_nodes insert: " . $mysqli->error;
-				exit;
-			}
-		}
-
-		$ok_core_result = ok_core_import_experience_kf($mysqli, [
-			'experience_knowledge_id' => $ec_id,
-			'user_id' => $user_id_int,
-			'group_id' => $group_id,
-			'selected_contents' => $selected_contents,
-			'knowledge_fragment_content' => $knowledge_fragment_title === NULL ? '' : $knowledge_fragment_title,
-			'stage1' => $stage1,
-			'stage2' => $stage2,
-			'stage3' => $stage3,
-			'thought_experience_node_id' => $thought_experience_node_id,
-			'experience_type' => $experience_type,
-			'timestamp' => $timestamp
-		]);
-
-		echo json_encode([
-			'status'=>'ok',
-			'experience_knowledge_id'=>$ec_id,
-			'ok_core' => $ok_core_result
-		]);
 		exit;
 	}
 

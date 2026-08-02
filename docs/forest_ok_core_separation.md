@@ -49,7 +49,7 @@ Each project should have its own:
 - database
 - URL / redirect URI
 
-They should share identity only through HCIMLab SSO and exchange KF data through a bridge/API boundary.
+They share identity through HCIMLab SSO and exchange KF data only through authenticated HTTP APIs.
 
 ## Current milestone status
 
@@ -58,15 +58,21 @@ Functional separation is complete for the current local setup:
 - Forest-Core login uses `http://localhost:8888/forest-platform/auth/callback`.
 - OK-Core login uses `http://localhost:8888/OK-Core/auth/callback`.
 - Forest-Core can produce an experience KF from "学びを入力".
-- Sharing the KF from Forest-Core imports it into the OK-Core `experience_knowledges` table.
-- OK-Core displays the imported KF in its KF list.
+- Sharing a KF stores its source record, context package, and Outbox event in the Forest DB.
+- Forest sends the event to the authenticated OK-Core API instead of connecting to the OK-Core DB.
+- OK-Core stores the normalized snapshot in `knowledge_fragments`, stage tables, and `kf_group_shares`.
+- Failed network deliveries remain in `kf_sync_outbox` and can be retried.
+- Forest provides the authenticated `/api/v1/kf-context-packages/{id}` endpoint.
 - The dormant legacy organizational knowledge UI in `forest-mrn/index.php` is disabled and no longer executes its embedded KF list include.
 
 ## Remaining cleanup
 
-The remaining work is cleanup/hardening rather than the core separation path:
+The direct DB bridge and Outbox milestone is complete. Remaining work:
 
 - Physically remove legacy organizational knowledge files from Forest-Core after one more regression check.
-- Replace the temporary direct DB bridge with an authenticated OK-Core import API when Forest-Core and OK-Core move to separate deployment environments.
-- Add an export/import audit table so each Forest-Core KF can record its OK-Core import result and retry status.
+- Schedule `scripts/retry-ok-core-outbox.php` and add administrator notification for terminal failures.
+- Add the OK-Core backend action that fetches the latest source context with its read token.
+- Rotate local development tokens before deployment.
 - Keep Forest-Core's local research activity DB and OK-Core's organizational knowledge DB backed up separately.
+
+Implementation and debugging details are in `docs/forest_ok_core_api_sync.md`.

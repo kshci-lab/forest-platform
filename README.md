@@ -26,6 +26,27 @@ Windows で `composer` コマンドが未導入でも、このスクリプトは
 
 Windows の MAMP 環境で `cURL error 60: SSL certificate problem: unable to get local issuer certificate` が出る主な原因は、PHP/cURL が信頼する CA 証明書バンドルを見つけられないことです。`scripts/setup-local.sh` と `scripts/setup-local.ps1` は `certs/cacert.pem` を取得し、SSO 通信はそれを自動利用します。Mac ではローカルの TLS 構成によってはこの問題が表に出ないことがありますが、システムまたは PHP が適切な CA ストアを使えない構成なら同様に発生しえます。
 
+## OK-Core API同期
+
+KF共有はOK-Core DBへの直接接続ではなく、認証付きAPIとOutboxを使用します。
+
+初回は `docs/migrations/2026_07_31_ok_core_api_outbox.sql` をforest DBへ適用し、OK-Coreが発行したトークンを設定します。
+
+```powershell
+& powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\configure-ok-core-api-local.ps1 `
+  -Token '<OK-Coreが発行したトークン>'
+```
+
+再送:
+
+```powershell
+& 'C:\MAMP\bin\php\php8.3.1\php.exe' `
+  .\scripts\retry-ok-core-outbox.php 20
+```
+
+詳しいデータフローと工程別デバッグは `docs/forest_ok_core_api_sync.md` を参照してください。
+
 ## 起動方法（アプリケーションサーバ）
 1.　https://ks.mi.s.osakafu-u.ac.jp/software/masakado
   にアクセス
