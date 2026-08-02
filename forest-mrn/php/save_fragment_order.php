@@ -43,9 +43,15 @@ foreach ($ids as $id) {
 $positionItems = [];
 foreach ($positions as $item) {
   if (!is_array($item)) { continue; }
-  $id = isset($item['id']) ? intval($item['id'], 10) : 0;
-  if ($id <= 0) { continue; }
-  $positionItems[$id] = [
+  $sourceId = isset($item['source_id']) ? intval($item['source_id'], 10) : (isset($item['id']) ? intval($item['id'], 10) : 0);
+  $sourceType = isset($item['source_type']) ? strtolower(trim((string)$item['source_type'])) : 'experience';
+  if ($sourceType === 'externalized') { $sourceType = 'discussion'; }
+  if (!in_array($sourceType, ['experience', 'discussion', 'srl'], true)) { $sourceType = 'experience'; }
+  if ($sourceType === 'srl') { $sourceType = 'SRL'; }
+  if ($sourceId <= 0) { continue; }
+  $positionItems[$sourceType.':'.$sourceId] = [
+    'source_type' => $sourceType,
+    'source_id' => $sourceId,
     'x' => isset($item['x']) ? floatval($item['x']) : 0.0,
     'y' => isset($item['y']) ? floatval($item['y']) : 0.0
   ];
@@ -75,6 +81,21 @@ if ($res = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment_positions LIKE '
   $res->free();
 }
 
+if ($res = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment_positions LIKE 'fragment_source_type'")) {
+  if ($res->num_rows === 0) {
+    @$mysqli->query("ALTER TABLE knowledge_fragment_positions ADD COLUMN fragment_source_type VARCHAR(32) NOT NULL DEFAULT 'experience' AFTER group_id");
+  }
+  $res->free();
+}
+if ($res = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment_positions LIKE 'fragment_source_id'")) {
+  if ($res->num_rows === 0) {
+    @$mysqli->query("ALTER TABLE knowledge_fragment_positions ADD COLUMN fragment_source_id INT NOT NULL DEFAULT 0 AFTER fragment_source_type");
+  }
+  $res->free();
+}
+@$mysqli->query("UPDATE knowledge_fragment_positions SET fragment_source_type = 'experience' WHERE fragment_source_type IS NULL OR fragment_source_type = ''");
+@$mysqli->query("UPDATE knowledge_fragment_positions SET fragment_source_id = externalized_contents_id WHERE fragment_source_id = 0");
+
 if ($res = $mysqli->query("SHOW COLUMNS FROM knowledge_fragment_positions LIKE 'id'")) {
   if ($res->num_rows > 0) {
     $row = $res->fetch_assoc();
@@ -91,20 +112,24 @@ if ($res = $mysqli->query("SHOW INDEX FROM knowledge_fragment_positions WHERE Ke
   $res->free();
 }
 if ($res = $mysqli->query("SHOW INDEX FROM knowledge_fragment_positions WHERE Key_name = 'ux_group_externalized'")) {
+  if ($res->num_rows > 0) { @$mysqli->query("ALTER TABLE knowledge_fragment_positions DROP INDEX ux_group_externalized"); }
+  $res->free();
+}
+if ($res = $mysqli->query("SHOW INDEX FROM knowledge_fragment_positions WHERE Key_name = 'ux_group_source'")) {
   if ($res->num_rows === 0) {
-    @$mysqli->query("ALTER TABLE knowledge_fragment_positions ADD UNIQUE KEY ux_group_externalized (group_id, externalized_contents_id)");
+    @$mysqli->query("ALTER TABLE knowledge_fragment_positions ADD UNIQUE KEY ux_group_source (group_id, fragment_source_type, fragment_source_id)");
   }
   $res->free();
 }
 
 $orderStmt = $mysqli->prepare(
-  "INSERT INTO knowledge_fragment_positions (group_id, externalized_contents_id, pos_x, pos_y)
-   VALUES (?, ?, 0, ?)
+  "INSERT INTO knowledge_fragment_positions (group_id, fragment_source_type, fragment_source_id, externalized_contents_id, pos_x, pos_y)
+   VALUES (?, 'experience', ?, ?, 0, ?)
    ON DUPLICATE KEY UPDATE pos_y = VALUES(pos_y)"
 );
 $posStmt = $mysqli->prepare(
-  "INSERT INTO knowledge_fragment_positions (group_id, externalized_contents_id, pos_x, pos_y)
-   VALUES (?, ?, ?, ?)
+  "INSERT INTO knowledge_fragment_positions (group_id, fragment_source_type, fragment_source_id, externalized_contents_id, pos_x, pos_y)
+   VALUES (?, ?, ?, ?, ?, ?)
    ON DUPLICATE KEY UPDATE pos_x = VALUES(pos_x), pos_y = VALUES(pos_y)"
 );
 if (!$orderStmt || !$posStmt) {
@@ -114,14 +139,16 @@ if (!$orderStmt || !$posStmt) {
 $saved = 0;
 foreach ($orderedIds as $index => $extId) {
   $posY = (float)$index;
-  $orderStmt->bind_param('iid', $groupId, $extId, $posY);
+  $orderStmt->bind_param('iiid', $groupId, $extId, $extId, $posY);
   if ($orderStmt->execute()) { $saved++; }
 }
 
-foreach ($positionItems as $extId => $pos) {
+foreach ($positionItems as $pos) {
+  $sourceType = (string)$pos['source_type'];
+  $sourceId = (int)$pos['source_id'];
   $x = (float)$pos['x'];
   $y = (float)$pos['y'];
-  $posStmt->bind_param('iidd', $groupId, $extId, $x, $y);
+  $posStmt->bind_param('isiidd', $groupId, $sourceType, $sourceId, $sourceId, $x, $y);
   if ($posStmt->execute()) { $saved++; }
 }
 

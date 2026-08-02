@@ -37,10 +37,9 @@
   function normalizeSourceType(type){
     var raw = String(type || '').trim();
     var lower = raw.toLowerCase();
-    if(lower === 'discussion') return 'discussion';
+    if(lower === 'discussion' || lower === 'externalized') return 'discussion';
     if(lower === 'srl') return 'SRL';
     if(lower === 'experience') return 'experience';
-    if(lower === 'discussion') return 'discussion';
     return '';
   }
 
@@ -182,7 +181,13 @@
     });
 
     if(activeId === 'org-tab-combination'){
-      try{ initCombinationOverlay(); }catch(e){ /* no-op */ }
+      var initializedNow = false;
+      try{ initializedNow = initCombinationOverlay(); }catch(e){ /* no-op */ }
+      if(!initializedNow){
+        var combinationWorkspace = document.getElementById('knowledge_fragments_workspace');
+        reloadFragmentsForGroup(combinationWorkspace);
+        loadKnowledgeTree();
+      }
       bindSourceFilters();
       applyFragmentSourceFilter();
       applyKnowledgeTreeSourceFilter();
@@ -199,7 +204,7 @@
 
   var _combinationInited = false;
   function initCombinationOverlay(){
-    if(_combinationInited) return;
+    if(_combinationInited) return false;
     _combinationInited = true;
 
     var workspace = document.getElementById('knowledge_fragments_workspace');
@@ -212,10 +217,10 @@
 
     bindDiscussedControls();
     bindKnowledgeRegister();
+    bindGroupSelectSync(workspace);
     loadKnowledgeTree();
     bindKnowledgeTreeContextMenu();
     bindKnowledgeTreeAddNode();
-    bindGroupSelectSync(workspace);
     bindDiscussion();
     bindSourceFilters();
     applyFragmentSourceFilter();
@@ -224,6 +229,7 @@
       // Whether restored or not, load discussion once with the current selection state.
       loadDiscussion();
     });
+    return true;
   }
 
   function getKfragViewMode(){
@@ -408,7 +414,10 @@
       applyCanvasLayout(workspace, false);
     } else {
       var list = qs('.knowledge-fragment-list', workspace);
-      if(list) list.style.minHeight = '';
+      if(list){
+        list.style.minHeight = '';
+        list.style.removeProperty('--kfrag-canvas-content-height');
+      }
       qsa('.fragment-node-wrapper', workspace).forEach(function(w){
         w.style.position = '';
         w.style.left = '';
@@ -1157,14 +1166,26 @@
     if(redoBtn) redoBtn.disabled = (_kfragRedo.length === 0);
   }
 
+  function getFragmentCanvasIdentity(wrapper){
+    if(!wrapper) return null;
+    var sourceType = normalizeSourceType(wrapper.getAttribute('data-source-type') || 'experience') || 'experience';
+    var sourceId = String(wrapper.getAttribute('data-source-id') || wrapper.getAttribute('data-ext-id') || '').trim();
+    if(!sourceId) return null;
+    return {
+      key: sourceType + ':' + sourceId,
+      sourceType: sourceType,
+      sourceId: sourceId
+    };
+  }
+
   function snapshotPositions(workspace){
     var snap = {};
     qsa('.fragment-node-wrapper', workspace).forEach(function(w){
-      var id = w.getAttribute('data-ext-id');
-      if(!id) return;
+      var identity = getFragmentCanvasIdentity(w);
+      if(!identity) return;
       var left = parseFloat(w.style.left || w.getAttribute('data-canvas-x') || '0') || 0;
       var top = parseFloat(w.style.top || w.getAttribute('data-canvas-y') || '0') || 0;
-      snap[id] = { left: left, top: top };
+      snap[identity.key] = { left: left, top: top };
     });
     return snap;
   }
@@ -1172,10 +1193,10 @@
   function applyPositions(workspace, snap){
     if(!snap) return;
     qsa('.fragment-node-wrapper', workspace).forEach(function(w){
-      var id = w.getAttribute('data-ext-id');
-      if(!id || !snap[id]) return;
-      var left = parseFloat(snap[id].left || 0) || 0;
-      var top = parseFloat(snap[id].top || 0) || 0;
+      var identity = getFragmentCanvasIdentity(w);
+      if(!identity || !snap[identity.key]) return;
+      var left = parseFloat(snap[identity.key].left || 0) || 0;
+      var top = parseFloat(snap[identity.key].top || 0) || 0;
       w.setAttribute('data-canvas-x', String(left));
       w.setAttribute('data-canvas-y', String(top));
       if(workspace.classList.contains('is-canvas-mode')){
@@ -1249,17 +1270,20 @@
       var h = w.offsetHeight || 128;
       maxBottom = Math.max(maxBottom, pos.top + h + 24);
     });
-    list.style.minHeight = Math.max(260, maxBottom) + 'px';
+    list.style.minHeight = '';
+    list.style.setProperty('--kfrag-canvas-content-height', Math.max(260, maxBottom) + 'px');
     if(forceReset) saveFragmentCanvasPositions(workspace);
   }
 
   function getCanvasPositions(workspace){
     var out = [];
     qsa('.fragment-node-wrapper', workspace).forEach(function(w){
-      var id = w.getAttribute('data-ext-id');
-      if(!id) return;
+      var identity = getFragmentCanvasIdentity(w);
+      if(!identity) return;
       out.push({
-        id: id,
+        id: identity.sourceId,
+        source_id: identity.sourceId,
+        source_type: identity.sourceType,
         x: parseFloat(w.getAttribute('data-canvas-x') || w.style.left || '0') || 0,
         y: parseFloat(w.getAttribute('data-canvas-y') || w.style.top || '0') || 0
       });
@@ -1948,19 +1972,87 @@
     }
   }
 
+  function prepareKnowledgeTreeNodes(nodes, groupId){
+    var scoped = (nodes || []).filter(function(node){
+      return node && String(node.knowledge_group_id) === String(groupId);
+    }).map(function(node){
+      var copy = {};
+      Object.keys(node).forEach(function(key){ copy[key] = node[key]; });
+      return copy;
+    });
+
+    var directChildCounts = {};
+    scoped.forEach(function(node){
+      if(node.parent_id === null || typeof node.parent_id === 'undefined') return;
+      var parentKey = String(node.parent_id);
+      directChildCounts[parentKey] = (directChildCounts[parentKey] || 0) + 1;
+    });
+
+    var selectedRootByTitle = {};
+    var duplicateRootMap = {};
+    scoped.forEach(function(node){
+      if(node.parent_id !== null && typeof node.parent_id !== 'undefined') return;
+      var titleKey = String(node.node_title || '').trim();
+      var current = selectedRootByTitle[titleKey];
+      if(!current){
+        selectedRootByTitle[titleKey] = node;
+        return;
+      }
+      var currentChildren = directChildCounts[String(current.node_id)] || 0;
+      var candidateChildren = directChildCounts[String(node.node_id)] || 0;
+      var useCandidate = candidateChildren > currentChildren ||
+        (candidateChildren === currentChildren && Number(node.node_id || 0) > Number(current.node_id || 0));
+      if(useCandidate){
+        duplicateRootMap[String(current.node_id)] = String(node.node_id);
+        selectedRootByTitle[titleKey] = node;
+      } else {
+        duplicateRootMap[String(node.node_id)] = String(current.node_id);
+      }
+    });
+
+    function resolveRootId(id){
+      var resolved = String(id);
+      var seen = {};
+      while(duplicateRootMap[resolved] && !seen[resolved]){
+        seen[resolved] = true;
+        resolved = duplicateRootMap[resolved];
+      }
+      return resolved;
+    }
+
+    var selectedRootIds = {};
+    Object.keys(selectedRootByTitle).forEach(function(title){
+      selectedRootIds[String(selectedRootByTitle[title].node_id)] = true;
+    });
+    return scoped.filter(function(node){
+      if(node.parent_id === null || typeof node.parent_id === 'undefined'){
+        return !!selectedRootIds[String(node.node_id)];
+      }
+      node.parent_id = Number(resolveRootId(node.parent_id));
+      return true;
+    });
+  }
+
   function loadKnowledgeTree(){
     var el = document.getElementById('overlay_knowledge_tree');
     if(!el) return;
+    var gid = getSelectedGroupId();
+    loadKnowledgeTree._requestSerial = (loadKnowledgeTree._requestSerial || 0) + 1;
+    var requestSerial = loadKnowledgeTree._requestSerial;
+    if(!gid){
+      el.textContent = '組織を選択してください';
+      try{ syncAreaSelectFromRoots([]); }catch(_){ }
+      return;
+    }
     el.textContent = '読み込み中...';
 
-    var gid = getSelectedGroupId();
-    var url = 'php/get_knowledge_tree.php';
-    if(gid) url += '?group_id=' + encodeURIComponent(gid);
+    var url = 'php/get_knowledge_tree.php?group_id=' + encodeURIComponent(gid);
 
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
+      if(requestSerial !== loadKnowledgeTree._requestSerial || String(getSelectedGroupId()) !== String(gid)) return;
       if(xhr.status !== 200){
         el.textContent = '読み込みに失敗しました';
         return;
@@ -1971,8 +2063,9 @@
         el.textContent = 'データ形式が不正です';
         return;
       }
-      try{ syncAreaSelectFromRoots(data.nodes); }catch(_){ }
-      renderKnowledgeTree(el, data.nodes);
+      var groupNodes = prepareKnowledgeTreeNodes(data.nodes, gid);
+      try{ syncAreaSelectFromRoots(groupNodes); }catch(_){ }
+      renderKnowledgeTree(el, groupNodes);
     };
     xhr.send(null);
   }

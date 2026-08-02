@@ -67,7 +67,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="../css/ui.css">
         <link rel="stylesheet" type="text/css" href="../css/style.css">
 	        <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
-	        <link rel="stylesheet" type="text/css" href="../css/organizational-map.css" />
+	        <link rel="stylesheet" type="text/css" href="../css/organizational-map.css?v=20260802-kfrag-scroll" />
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
@@ -1094,8 +1094,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
         <script type="text/javascript" src="../js/thinking-process-network.js?v=20260715-trigger-position-save"></script>
-	        <script type="text/javascript" src="../js/organizational-map.js"></script>
-	        <script type="text/javascript" src="js/organizational-combination-tab.js"></script>
+	        <script type="text/javascript" src="../js/organizational-map.js?v=20260802-produced-knowledge-visibility"></script>
+	        <script type="text/javascript" src="js/organizational-combination-tab.js?v=20260802-kfrag-position-save"></script>
 	        <script type="text/javascript" src="js/past_sheet.js"></script>
         <script type="text/javascript" src="js/record_presentation.js"></script>
         <script type="text/javascript" src="js/presentation.js"></script>

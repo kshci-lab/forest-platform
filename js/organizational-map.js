@@ -439,10 +439,9 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
     normalizeSourceType(type){
         const raw = String(type || '').trim();
         const lower = raw.toLowerCase();
-        if (lower === 'discussion') return 'discussion';
+        if (lower === 'discussion' || lower === 'externalized') return 'discussion';
         if (lower === 'srl') return 'SRL';
         if (lower === 'experience') return 'experience';
-        if (lower === 'discussion') return 'discussion';
         return '';
     }
 
@@ -658,7 +657,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         const sourceTypes = this.parseSourceTypes(nodeInfo.fragment_source_types, fragmentIds.length ? 'experience' : '');
         const children = childMap[String(nodeInfo.node_id)] || [];
         const isRootNode = (nodeInfo.parent_id === null || typeof nodeInfo.parent_id === 'undefined');
-        if (isRootNode || children.length > 0) return false;
+        const hasKnowledgeLink = fragmentIds.length > 0 || sourceTypes.length > 0;
+        if (isRootNode || (children.length > 0 && !hasKnowledgeLink)) return false;
 
         const nodeId = `kt_${nodeInfo.node_id}`;
         let addedNode = false;
@@ -744,10 +744,10 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         return addedCount;
     }
 
-    loadProducedKnowledgeNodes(groupId, allowGroupFallback = true){
+    loadProducedKnowledgeNodes(groupId){
         let url = 'php/get_knowledge_tree.php';
         if (groupId) {
-            url += '?group_id=' + encodeURIComponent(groupId);
+            url += '?group_id=' + encodeURIComponent(groupId) + '&include_unassigned=1';
         }
         $.ajax({
             url: url,
@@ -773,19 +773,12 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 if (addedCount === 0) {
                     addedCount = this.syncProducedKnowledgeFromDom();
                 }
-                if (addedCount === 0 && groupId && allowGroupFallback) {
-                    this.loadProducedKnowledgeNodes('', false);
-                    return;
-                }
                 this.applySourceFilter(this.activeSourceTypes);
                 this.refreshProducedKnowledgeView(addedCount);
             },
             error: (xhr, status, error) => {
                 console.warn('knowledge_tree 読み込み失敗', status, error);
                 const addedCount = this.syncProducedKnowledgeFromDom();
-                if (addedCount === 0 && groupId && allowGroupFallback) {
-                    this.loadProducedKnowledgeNodes('', false);
-                }
                 this.applySourceFilter(this.activeSourceTypes);
             }
         });
