@@ -19,6 +19,9 @@
     }
   };
   var kfragRelationVisible = false;
+  var DISCUSSION_POLL_INTERVAL_MS = 5000;
+  var _discussionPollTimer = null;
+  var _discussionRequestSerial = 0;
   var KFRAG_VIEW_STORAGE_KEY = 'forest_combination_kfrag_view_mode';
   var KFRAG_ZOOM_STORAGE_KEY = 'forest_combination_kfrag_canvas_zoom';
 
@@ -222,6 +225,7 @@
     bindKnowledgeTreeContextMenu();
     bindKnowledgeTreeAddNode();
     bindDiscussion();
+    startDiscussionPolling();
     bindSourceFilters();
     applyFragmentSourceFilter();
     applyKnowledgeTreeSourceFilter();
@@ -3114,19 +3118,50 @@
           return;
         }
         input.value = '';
-        loadDiscussion();
+        loadDiscussion({ forceScroll: true });
       };
       xhr.send(fd);
     }, false);
   }
 
-  function loadDiscussion(){
+  function isCombinationDiscussionVisible(){
+    var panel = document.getElementById('org-tabpanel-combination');
+    if(!panel || panel.hasAttribute('hidden')) return false;
+    if(typeof document.hidden !== 'undefined' && document.hidden) return false;
+    return true;
+  }
+
+  function startDiscussionPolling(){
+    if(_discussionPollTimer !== null) return;
+    _discussionPollTimer = window.setInterval(function(){
+      if(isCombinationDiscussionVisible()) loadDiscussion({ silent: true });
+    }, DISCUSSION_POLL_INTERVAL_MS);
+    document.addEventListener('visibilitychange', function(){
+      if(isCombinationDiscussionVisible()) loadDiscussion({ silent: true });
+    }, false);
+  }
+
+  function buildDiscussionSignature(items){
+    return (items || []).map(function(item){
+      return [
+        item.discussion_history_id || '',
+        item.user_id || '',
+        item.posted_time || '',
+        item.content || ''
+      ].join('\u001f');
+    }).join('\u001e');
+  }
+
+  function loadDiscussion(options){
+    options = options || {};
+    var silent = !!options.silent;
     var list = document.getElementById('discussion_message_list');
     var form = document.getElementById('discussion_post_form');
     if(!list) return;
     var sourceType = getActiveFragmentSourceType() || 'experience';
     var ids = getSelectedFragmentSourceIds();
     if(ids.length === 0){
+      if(silent) return;
       // No selection -> placeholder + hide form
       list.innerHTML = '';
       var ph = document.createElement('div');
@@ -3138,25 +3173,36 @@
       return;
     }
     if(form) form.style.display = 'block';
-    list.textContent = '読み込み中...';
+    if(!silent) list.textContent = '読み込み中...';
+
+    var requestSerial = ++_discussionRequestSerial;
+    var requestSelectionKey = sourceType + ':' + ids.join(',');
+    var wasNearBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 40;
+    var previousScrollTop = list.scrollTop;
 
     var url = 'php/get_discussion_history.php?limit=200';
     url += '&fragment_id=' + encodeURIComponent(ids.join(','));
     url += '&fragment_source_type=' + encodeURIComponent(sourceType);
+    url += '&_ts=' + Date.now();
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
+      var currentSelectionKey = (getActiveFragmentSourceType() || 'experience') + ':' + getSelectedFragmentSourceIds().join(',');
+      if(requestSerial !== _discussionRequestSerial || currentSelectionKey !== requestSelectionKey) return;
       if(xhr.status !== 200){
-        list.textContent = '読み込みに失敗しました';
+        if(!silent) list.textContent = '読み込みに失敗しました';
         return;
       }
       var data = null;
       try{ data = JSON.parse(xhr.responseText || '{}'); }catch(e){ data = null; }
       if(!data || data.status !== 'ok' || !Array.isArray(data.items)){
-        list.textContent = 'データ形式が不正です';
+        if(!silent) list.textContent = 'データ形式が不正です';
         return;
       }
+      var signature = buildDiscussionSignature(data.items);
+      if(silent && list.getAttribute('data-discussion-signature') === signature) return;
+      list.setAttribute('data-discussion-signature', signature);
       list.innerHTML = '';
       if(data.items.length === 0){
         var empty2 = document.createElement('div');
@@ -3185,7 +3231,10 @@
         }
         list.appendChild(card);
       });
-      try{ list.scrollTop = list.scrollHeight; }catch(e){}
+      try{
+        if(options.forceScroll || !silent || wasNearBottom) list.scrollTop = list.scrollHeight;
+        else list.scrollTop = previousScrollTop;
+      }catch(e){}
     };
     xhr.send(null);
   }

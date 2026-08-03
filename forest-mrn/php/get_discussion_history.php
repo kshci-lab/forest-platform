@@ -2,6 +2,8 @@
 // get_discussion_history.php
 // Returns last N discussion_history rows (default 100) ordered by discussion_history_id ASC
 header('Content-Type: application/json; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 error_reporting(E_ALL); ini_set('display_errors', 1);
 
 require_once __DIR__ . '/connect_db.php';

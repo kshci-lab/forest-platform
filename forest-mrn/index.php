@@ -1095,7 +1095,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
         <script type="text/javascript" src="../js/thinking-process-network.js?v=20260715-trigger-position-save"></script>
 	        <script type="text/javascript" src="../js/organizational-map.js?v=20260802-produced-knowledge-visibility"></script>
-	        <script type="text/javascript" src="js/organizational-combination-tab.js?v=20260802-kfrag-position-save"></script>
+	        <script type="text/javascript" src="js/organizational-combination-tab.js?v=20260803-discussion-polling"></script>
 	        <script type="text/javascript" src="js/past_sheet.js"></script>
         <script type="text/javascript" src="js/record_presentation.js"></script>
         <script type="text/javascript" src="js/presentation.js"></script>
