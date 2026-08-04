@@ -77,21 +77,22 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     */
 
 
-    $result_t_candidate = $mysqli->query("SELECT DISTINCT activity_id, activity_type, concept_id, content, appeared_at, trigger_on FROM trigger_candidates
-                                                        WHERE map_id = '$map_id' AND (concept_id IN ($conIDs) OR concept_id = '$selected_conID') ORDER BY appeared_at DESC");
+    // $result_t_candidate = $mysqli->query("SELECT DISTINCT activity_id, activity_type, concept_id, content, appeared_at, trigger_on FROM trigger_candidates
+    //                                                     WHERE map_id = '$map_id' AND (concept_id IN ($conIDs) OR concept_id = '$selected_conID') ORDER BY appeared_at DESC");
     $t_candidate = [];
     $t_candidate_concept = [];
 
-    if ($result_t_candidate) {
-        // concept名を取り出し
-        while ($row = $result_t_candidate->fetch_assoc()) {
-            $conID = $row["concept_id"];
-            $conLABEL = $xml_data->xpath('W_CONCEPTS/CONCEPT[@id="'.$conID.'"]/LABEL/text()');
-            $row['concept_label'] = !empty($conLABEL) ? (string)$conLABEL[0] : '';
-            array_push($t_candidate, $row);
-        }
-        $return_data = array_merge($return_data, ['trigger_candidate' => $t_candidate]);
-    }
+    // if ($result_t_candidate) {
+    //     // concept名を取り出し
+    //     while ($row = $result_t_candidate->fetch_assoc()) {
+    //         $conID = $row["concept_id"];
+    //         $conLABEL = $xml_data->xpath('W_CONCEPTS/CONCEPT[@id="'.$conID.'"]/LABEL/text()');
+    //         $row['concept_label'] = !empty($conLABEL) ? (string)$conLABEL[0] : '';
+    //         array_push($t_candidate, $row);
+    //     }
+    //     $return_data = array_merge($return_data, ['trigger_candidate' => $t_candidate]);
+    // }
+    $return_data = array_merge($return_data, ['trigger_candidate' => $t_candidate]);
 
     /*
         * 目標手段階層マップのノードデータの取得    	
@@ -276,12 +277,12 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $return_data = array_merge($return_data, ['node_versions' => $node_versions]);
 
     // triggerを取得
-    $result_trigger = $mysqli->query("SELECT * FROM triggers
-                            WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."') AND deleted = 0");
+    // $result_trigger = $mysqli->query("SELECT * FROM triggers
+    //                         WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."') AND deleted = 0");
     $trigger = [];
-    while ($row = $result_trigger->fetch_assoc()) {
-        array_push($trigger, $row);
-    }
+    // while ($row = $result_trigger->fetch_assoc()) {
+    //     array_push($trigger, $row);
+    // }
     $return_data = array_merge($return_data, ['trigger' => $trigger]);
 
 
@@ -343,12 +344,12 @@ if($process_mode === "all" || $process_mode === "allRE" ){
     $return_data = array_merge($return_data, ['brother_num' => $brother_num]);
 
     // triggerを取得
-    $result_trigger = $mysqli->query("SELECT * FROM triggers
-                            WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."') AND deleted = 0");
+    // $result_trigger = $mysqli->query("SELECT * FROM triggers
+    //                         WHERE node_version_from IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."') AND deleted = 0");
     $trigger = [];
-    while ($row = $result_trigger->fetch_assoc()) {
-        array_push($trigger, $row);
-    }
+    // while ($row = $result_trigger->fetch_assoc()) {
+    //     array_push($trigger, $row);
+    // }
     $return_data = array_merge($return_data, ['trigger' => $trigger]);
 
 

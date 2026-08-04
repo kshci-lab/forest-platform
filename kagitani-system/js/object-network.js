@@ -7261,35 +7261,35 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                 from_id = v.node_version_id;
                 // 複数表示しないため、node_x の増加は不要
             }
-            // triggerの候補一覧
-            trigger_list_info.trigger_candidate.forEach((u) => {
-                if(u){
-                    const trigger_dom = makeTriggerInList(u.activity_id, u.activity_type, u.concept_label, u.content, u.appeared_at, u.trigger_on);
-                    target_area.append(trigger_dom); // 挿入
-                }
-            });
-            // triggerノードの表示
-            trigger_list_info.trigger.forEach((u) => {
-                j++;
-                if(u){
-                    let from_node = u.node_version_from;
-                    let to_node = u.node_version_to;
-                    let edge_ids = processInstance.ownNetwork.getConnectedEdges(from_node);
-                    let num = 0;
-                    for(i = 0; i<edge_ids.length; i++){
-                        if(processInstance.edges.get(edge_ids[i]).group == "versionEdges" || processInstance.edges.get(edge_ids[i]).group == "trigger_from"){
-                            //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
-                            if(processInstance.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
-                                num = i;
-                            }
-                        }
-                    }
-                    let edge_id = edge_ids[num];
-                    const triggerX = u.x ? parseFloat(u.x) + offsetX : null;
-                    const triggerY = u.y ? parseFloat(u.y) : null;
-                    processInstance.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, triggerX, triggerY);
-                }
-            });
+            // triggerの候補一覧 (不要になったためコメントアウト)
+            // trigger_list_info.trigger_candidate.forEach((u) => {
+            //     if(u){
+            //         const trigger_dom = makeTriggerInList(u.activity_id, u.activity_type, u.concept_label, u.content, u.appeared_at, u.trigger_on);
+            //         target_area.append(trigger_dom); // 挿入
+            //     }
+            // });
+            // triggerノードの表示 (不要になったためコメントアウト)
+            // trigger_list_info.trigger.forEach((u) => {
+            //     j++;
+            //     if(u){
+            //         let from_node = u.node_version_from;
+            //         let to_node = u.node_version_to;
+            //         let edge_ids = processInstance.ownNetwork.getConnectedEdges(from_node);
+            //         let num = 0;
+            //         for(i = 0; i<edge_ids.length; i++){
+            //             if(processInstance.edges.get(edge_ids[i]).group == "versionEdges" || processInstance.edges.get(edge_ids[i]).group == "trigger_from"){
+            //                 //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
+            //                 if(processInstance.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
+            //                     num = i;
+            //                 }
+            //             }
+            //         }
+            //         let edge_id = edge_ids[num];
+            //         const triggerX = u.x ? parseFloat(u.x) + offsetX : null;
+            //         const triggerY = u.y ? parseFloat(u.y) : null;
+            //         processInstance.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, triggerX, triggerY);
+            //     }
+            // });
             console.log("onodeの中身:", trigger_list_info.onode);
             console.log("pedgeの中身:", trigger_list_info.pedge);
             console.log("datesの中身:", trigger_list_info.dates);
