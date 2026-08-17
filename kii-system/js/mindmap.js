@@ -118,7 +118,7 @@ function get_selected_nodeid(){
 // この関数が動くのはadd_node.js
 // 引数の情報はadd_node.js内でノードを全検索している
 // 引数strはcontentのこと＝ノードに記述してある内容のこと
-function show_node(id,pid,str,cid,type,cname, sid, eid, is_edited){
+function show_node(id,pid,str,cid,type,cname, sid, eid, is_edited, has_reflection){
 
     var i;
     //add_nodeでデータを格納
@@ -138,6 +138,9 @@ function show_node(id,pid,str,cid,type,cname, sid, eid, is_edited){
             jmnode[i].setAttribute("end_char_id",eid);
             if(is_edited){
                 jmnode[i].setAttribute("edited-node", "true");
+            }
+            if(has_reflection){
+                jmnode[i].setAttribute("paper-reading-reflection", "true");
             }
 
         }
@@ -1621,7 +1624,7 @@ function isTextSelected() {
 
   var mm_menu_s = document.getElementById('mindmap_conmenu_someone');  //他者のマインドマップメニュー
   var mm_menu_m = document.getElementById('mindmap_conmenu_my');  //独自コンテキストメニュー
-  var mm_area_s = document.getElementById('jsmind_container2');     //対象エリア
+  var mm_area_s = document.getElementById('jsmind_container_cr2'); //対象エリア
   var mm_area_m = document.getElementById('jsmind_container3');     //対象エリア
 
   var oq_menu = document.getElementById('other_conmenu');
@@ -1638,6 +1641,11 @@ function isTextSelected() {
 
   // 他者のマインドマップ上で右クリック時に独自コンテキストメニューを表示する
   mm_area_s.addEventListener('contextmenu',function(e){
+    var targetNode = e.target.closest ? e.target.closest('jmnode') : null;
+    if (!targetNode || !_jm2) {
+      return;
+    }
+    _jm2.select_node(targetNode.getAttribute('nodeid'));
     oq_menu.style.left = (e.pageX - document.body.scrollLeft + 10) + 'px';
     oq_menu.style.top = (e.pageY - document.body.scrollTop + 10) + 'px';
     oq_menu.classList.add('on');

@@ -1,5 +1,159 @@
 var parent_map_id = null
 var text = null;
+var otherMindmapInstances = {};
+var activeOtherMindmapId = null;
+
+function getOtherMindmapViewId(mapId) {
+    return "other_mindmap_" + String(mapId).replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+function resetOtherMindmapViews() {
+    otherMindmapInstances = {};
+    activeOtherMindmapId = null;
+    _jm2 = null;
+    $("#jsmind_container_cr2").children(".other-mindmap-view, .jsmind-inner").remove();
+}
+
+function orderOtherMindmapNodes(nodes, rootNodeIds) {
+    var nodeById = {};
+    var childrenByParent = {};
+    var ordered = [];
+    var visited = {};
+
+    nodes.forEach(function(node) {
+        nodeById[String(node.id)] = node;
+    });
+
+    nodes.forEach(function(node) {
+        var parentId = node.parent_id == null ? "root" : String(node.parent_id);
+        if (parentId === "" || parentId === "root" || !nodeById[parentId]) {
+            parentId = "root";
+        }
+        node.parent_id = parentId;
+        if (!childrenByParent[parentId]) {
+            childrenByParent[parentId] = [];
+        }
+        childrenByParent[parentId].push(node);
+    });
+
+    var queue = [];
+    (rootNodeIds || []).forEach(function(nodeId) {
+        var rootNode = nodeById[String(nodeId)];
+        if (rootNode && queue.indexOf(rootNode) === -1) {
+            rootNode.parent_id = "root";
+            queue.push(rootNode);
+        }
+    });
+    (childrenByParent.root || []).forEach(function(node) {
+        if (queue.indexOf(node) === -1) {
+            queue.push(node);
+        }
+    });
+
+    while (queue.length > 0) {
+        var current = queue.shift();
+        var currentId = String(current.id);
+        if (visited[currentId]) {
+            continue;
+        }
+        visited[currentId] = true;
+        ordered.push(current);
+
+        (childrenByParent[currentId] || []).forEach(function(child) {
+            queue.push(child);
+        });
+    }
+
+    nodes.forEach(function(node) {
+        if (!visited[String(node.id)]) {
+            console.warn("Detached mind map node was attached to root:", node.id);
+            node.parent_id = "root";
+            ordered.push(node);
+        }
+    });
+
+    return ordered;
+}
+
+function restoreOtherMindmap(nodes, rootNodeIds, containerId, mapId) {
+    var container = document.getElementById(containerId);
+    if (!container) {
+        throw new Error("Other mind map container was not found.");
+    }
+
+    var orderedNodes = orderOtherMindmapNodes(nodes, rootNodeIds);
+    var mindData = [{
+        id: "root",
+        topic: "*",
+        isroot: true,
+        readonly: true
+    }];
+
+    orderedNodes.forEach(function(node) {
+        mindData.push({
+            id: String(node.id),
+            parentid: node.parent_id === "root" ? "root" : String(node.parent_id),
+            parent_id: node.parent_id === "root" ? "root" : String(node.parent_id),
+            topic: node.topic == null ? "" : String(node.topic),
+            concept_id: node.concept_id,
+            type: node.type,
+            class: node.class,
+            start_char_id: node.start_char_id,
+            end_char_id: node.end_char_id,
+            parent_map_id: mapId,
+            readonly: true
+        });
+    });
+
+    container.innerHTML = "";
+    var instance = new jsMind({
+        container: containerId,
+        editable: false
+    });
+    instance.show({
+        meta: {
+            name: "jsMind remote",
+            author: "forest-platform",
+            version: "1.0"
+        },
+        format: "node_array",
+        data: mindData
+    });
+
+    var dataById = {};
+    orderedNodes.forEach(function(node) {
+        dataById[String(node.id)] = node;
+    });
+    container.querySelectorAll("jmnode").forEach(function(element) {
+        var node = dataById[String(element.getAttribute("nodeid"))];
+        if (!node) {
+            return;
+        }
+        element.setAttribute("parent_id", node.parent_id);
+        element.setAttribute("parent_map_id", mapId);
+        if (node.concept_id != null) {
+            element.setAttribute("concept_id", node.concept_id);
+        }
+        if (node.type != null) {
+            element.setAttribute("type", node.type);
+        }
+        if (node.start_char_id != null) {
+            element.setAttribute("start_char_id", node.start_char_id);
+        }
+        if (node.end_char_id != null) {
+            element.setAttribute("end_char_id", node.end_char_id);
+        }
+    });
+
+    Object.keys(instance.mind.nodes).forEach(function(nodeId) {
+        instance.view.init_nodes_size(instance.mind.nodes[nodeId]);
+    });
+    instance.layout.layout();
+    instance.view.show(true);
+
+    past_array = orderedNodes;
+    return instance;
+}
 
 function get_other_nodeid(){
     var element = document.getElementById("result");
@@ -100,6 +254,10 @@ function get_other_nodeid(){
 async function add_Anode_from_other(node_class, node_type){
 
     var selected_node = _jm.get_selected_node();
+    var selected_other_node = _jm2 ? _jm2.get_selected_node() : null;
+    if (!selected_node || !selected_other_node) {
+        return;
+    }
     console.log(selected_node)
 
     for(key in selected_node){
@@ -114,12 +272,12 @@ async function add_Anode_from_other(node_class, node_type){
 
     var nodeid = jsMind.util.uuid.newid();//idの生成
 
-    var topic = document.getElementsByClassName(" selected")[1].innerHTML;
-    console.log(document.getElementsByClassName(" selected")[1]);
+    var topic = selected_other_node.topic;
+    console.log(selected_other_node);
     var node = _jm.add_node(selected_node, nodeid, topic);
     console.log(node);
 
-    var jmnode = document.getElementsByTagName("jmnode");
+    var jmnode = document.querySelectorAll("#jsmind_container jmnode");
     console.log(jmnode);
 
     for(var i=0; i<jmnode.length; i++){
@@ -169,7 +327,7 @@ async function add_Anode_from_other(node_class, node_type){
                   });
                 };
                 // get_typeid の非同期処理が完了するまで待つ
-                var node_type_id = await get_Typeid("", type_name);
+                var node_type_id = await get_Typeid("", node_type);
               } catch (error) {
                 console.log("エラーが発生しました:", error);
               }
@@ -225,18 +383,17 @@ async function add_Anode_from_other(node_class, node_type){
 function show_selected_sheet(onoff){
 
     if (onoff == "on"){
-        $('#jsmind_container').css('height','calc(50% - 42.5px)');
-        $('#jsmind_container2').css('height','calc(50% - 42.5px)');
-        $('#jsmind_container2').css('display','flex');
-        $('#jsmind_container2_menu').css('display','block');
+        $('#jsmind_area').addClass('comparison-open');
+        $('#jsmind_container').css('height','');
+        $('#jsmind_container_cr2').css('display','block');
     }
     else{
         reset_annotation();
 
+        $('#jsmind_area').removeClass('comparison-open');
         $('#jsmind_container').css('height','100%');
-        $('#jsmind_container2').css('height','100%');
-        $('#jsmind_container2').css('display','none');
-        $('#jsmind_container2_menu').css('display','none');
+        resetOtherMindmapViews();
+        $('#jsmind_container_cr2').css('display','none');
         $('#mindmap_tab').empty().append('<span id="all_annotation"></span>');
     }
 }
@@ -249,7 +406,106 @@ function reset_annotation() {
     });
 }
 
-function show_other_mindmap(button=null, map_id, parent_id=null){
+function show_other_mindmap(button, map_id, parent_id){
+    reset_annotation();
+
+	var buttonMapId = button ? button.getAttribute("data-map_id") : null;
+	if (buttonMapId != null && buttonMapId !== "") {
+		map_id = buttonMapId;
+	}
+    parent_map_id = map_id;
+    if (map_id == null || map_id === "null" || map_id === "") {
+        return;
+    }
+
+    show_selected_sheet("on");
+    $("#mindmap_tab [data-map_id]").removeAttr("aria-current");
+    if (button) {
+        button.setAttribute("aria-current", "true");
+    }
+
+    var allAnnotationButton = document.getElementById("all_annotation");
+    if (allAnnotationButton) {
+        allAnnotationButton.onclick = function() {
+            show_other_mindmap(this, map_id, null);
+        };
+    }
+
+    var mapKey = String(map_id);
+    var viewId = getOtherMindmapViewId(mapKey);
+    var comparisonArea = document.getElementById("jsmind_container_cr2");
+    var mapView = document.getElementById(viewId);
+
+    $(comparisonArea).children(".other-mindmap-view").hide();
+    if (!mapView) {
+        mapView = document.createElement("div");
+        mapView.id = viewId;
+        mapView.className = "other-mindmap-view";
+        mapView.setAttribute("data-map-id", mapKey);
+        comparisonArea.appendChild(mapView);
+    }
+    mapView.style.display = "block";
+    activeOtherMindmapId = mapKey;
+
+    if (otherMindmapInstances[mapKey]) {
+        _jm2 = otherMindmapInstances[mapKey];
+        jump_node();
+    } else {
+        $(mapView).text("Loading...");
+        if (button) {
+            button.disabled = true;
+        }
+
+        $.ajax({
+            url: "php/open_data2.php",
+            type: "POST",
+            dataType: "json",
+            data: {
+                val: "all",
+                mapid: map_id
+            },
+            success: function(response) {
+                if (!response || response.success !== true || !Array.isArray(response.nodes)) {
+                    $(mapView).text("Failed to load mind map.");
+                    return;
+                }
+
+                var instance = restoreOtherMindmap(
+                    response.nodes,
+                    response.root_node_ids || [],
+                    viewId,
+                    mapKey
+                );
+                otherMindmapInstances[mapKey] = instance;
+                mouseoverNode(mapView.querySelectorAll("jmnode"));
+
+                if (activeOtherMindmapId === mapKey) {
+                    _jm2 = instance;
+                    jump_node();
+                } else if (otherMindmapInstances[activeOtherMindmapId]) {
+                    _jm2 = otherMindmapInstances[activeOtherMindmapId];
+                }
+            },
+            error: function(xhr) {
+                console.error("Failed to load the other mind map:", xhr.responseText);
+                $(mapView).text("Failed to load mind map.");
+            },
+            complete: function() {
+                if (button) {
+                    button.disabled = false;
+                }
+            }
+        });
+    }
+
+    if (parent_id != null && parent_id !== "null" && parent_id !== "") {
+        Rebuild_paper3("paper_area", map_id, parent_id);
+    } else {
+        Rebuild_paper2("paper_area", map_id);
+    }
+}
+
+function show_other_mindmap_legacy(button=null, map_id, parent_id=null){
     reset_annotation();
 
     cid = $("#concept_content").attr("concept_id");
@@ -342,6 +598,7 @@ function hightlight(char){
     }
 }
 
+/* Legacy confirmation text retained for reference.
 function confirmAndExecute(mode) {
     // アラートを表示し、"はい"がクリックされたらchange_othermode関数を実行
     if (confirm("移行しますか？")) {
@@ -350,6 +607,14 @@ function confirmAndExecute(mode) {
 }
 
 
+
+*/
+
+function confirmAndExecute(mode) {
+    if (confirm("Move this node?")) {
+        change_othermode(mode);
+    }
+}
 
 function change_othermode(mode) {
 
@@ -459,8 +724,13 @@ function update_summary(data){
 
 function jump_node() {
     // 対象となる要素を取得
-    var area = document.getElementById("jsmind_container2");
-    conceptid = document.getElementById("concept_content").getAttribute("concept_id");
+    var area = activeOtherMindmapId == null ? null :
+        document.getElementById(getOtherMindmapViewId(activeOtherMindmapId));
+    var conceptContent = document.getElementById("concept_content");
+    if (!area || !conceptContent) {
+        return;
+    }
+    conceptid = conceptContent.getAttribute("concept_id");
     var elements = area.querySelectorAll("jmnode[concept_id='"+conceptid+"']");
     
     console.log(conceptid)
@@ -525,6 +795,10 @@ function submit_strat() {
         },
         success: function (question) {
             console.log(question);
+            var result = typeof question === "string" ? JSON.parse(question) : question;
+            if (result && result.success) {
+                ni.attr("paper-reading-reflection", "true");
+            }
         },
         error: function (xhr, status, error) {
             console.error("AJAX リクエストが失敗しました:", error);

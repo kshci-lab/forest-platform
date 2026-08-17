@@ -141,6 +141,7 @@ require "connect_db.php";
         $s_id = $_SESSION["MAPID"];
         $i = 0;
         $node_id_array = array();
+        $data_array = array();
 
         $sql = "SELECT * FROM node_latest WHERE (node_type_id = 1 OR node_type_id = 2 OR node_type_id = 3) AND node_id IN (SELECT node_id FROM map_node_links WHERE map_id = '".$s_id."')";
 
@@ -154,31 +155,42 @@ require "connect_db.php";
                 ];
                 $i++;
             }
-            echo json_encode($data_array);
         }
+
+        echo json_encode($data_array);
 
     }
 
     else if($_POST["val"] == "get_other_question"){
-        $c_array = $_POST["array"];
-    
         $data_array = array();
         $i = 0;
-        
-       $sql = "SELECT DISTINCT concept_id, content 
-                    FROM node_latest 
-                    WHERE (node_type_id = 1 OR node_type_id = 2) AND node_id IN (SELECT node_id FROM map_node_links WHERE map_id IN (SELECT map_id FROM maps WHERE paper_id = ".$paper_id.") )";
 
-        if ($result = $mysqli->query($sql)) {
+        $sql = "SELECT DISTINCT nl.concept_id, nl.content, ml.map_id
+                    FROM node_latest nl
+                    JOIN map_node_links ml ON nl.node_id = ml.node_id
+                    JOIN maps m ON ml.map_id = m.map_id
+                    WHERE (nl.node_type_id = 1 OR nl.node_type_id = 2)
+                        AND m.paper_id = ?
+                        AND ml.map_id <> ?
+                        AND (ml.disappeared_at IS NULL OR ml.disappeared_at = '')";
+
+        if ($stmt = $mysqli->prepare($sql)) {
+            $stmt->bind_param("ii", $paper_id, $map_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
             while ($row = mysqli_fetch_assoc($result)) {
                 $data_array[$i] = [
                     "content" => $row["content"],
-                    "concept_id" => $row["concept_id"]
+                    "concept_id" => $row["concept_id"],
+                    "map_id" => $row["map_id"]
                 ];
                 $i++;
             }
-            echo json_encode($data_array);
+            $stmt->close();
         }
+
+        echo json_encode($data_array);
     }
       
 

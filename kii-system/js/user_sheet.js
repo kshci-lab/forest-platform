@@ -30,6 +30,7 @@ $('#user_list').change(function() { // セレクトボックスから選ばれ�
 
 
 // なぜかarea_idを引数にしとかないと狂う
+/* Legacy rebuild functions retained for reference.
 function Rebuild_paper2(area_id,map){
   $.ajax({
       url: "php/paper_rebuild.php",
@@ -114,6 +115,63 @@ function Rebuild_paper3(area_id,map, parent_id){
   });
 }
 
+*/
+
+function rebuildPaperForOtherMap(areaId, map, parentId) {
+  $.ajax({
+    url: "php/paper_rebuild.php",
+    type: "POST",
+    success: function(paper) {
+      var area = document.getElementById(areaId);
+      if (!area) {
+        return;
+      }
+
+      $("#" + areaId).empty();
+      var span = document.createElement("span");
+      span.setAttribute("id", "rebuild");
+      span.innerHTML = paper;
+      area.appendChild(span);
+
+      var requestData = {
+        val: parentId == null ? "all" : "one",
+        map: map
+      };
+      if (parentId != null) {
+        requestData.parent_id = parentId;
+      }
+
+      $.ajax({
+        url: "php/annotation_user_rebuild.php",
+        type: "POST",
+        data: requestData,
+        success: function(annotation) {
+          try {
+            annotations_s = JSON.parse(annotation);
+            addHightlightSentences2(annotations_s, "user_s");
+          } catch (error) {
+            console.error("Failed to parse annotations.", error);
+          }
+        },
+        error: function(xhr) {
+          console.error("Failed to rebuild annotations.", xhr.responseText);
+        }
+      });
+    },
+    error: function(xhr) {
+      console.error("Failed to rebuild paper.", xhr.responseText);
+    }
+  });
+}
+
+function Rebuild_paper2(areaId, map) {
+  rebuildPaperForOtherMap(areaId, map, null);
+}
+
+function Rebuild_paper3(areaId, map, parentId) {
+  rebuildPaperForOtherMap(areaId, map, parentId);
+}
+
 let addHightlightChar2 = (char_object_id,type) => {
   // ある文字にハイライトを反映する関数
   //const object_elm = document.getElementById(char_object_id)
@@ -141,12 +199,15 @@ let addHightlightSentences2 = (hightlight_list,type) => {
 
 
 // 他者のマインドマップを表示する関数
-function OpenPastSheet(array){
+function OpenPastSheet(array, containerId){
+
+  containerId = containerId || 'jsmind_container2';
+
+  $("#" + containerId).empty();
 
   // 他者のマインドマップ表示部分を呼び出されるたびに初期化
   if (_jm2 != null) {
-    console.log(_jm2);
-    $("#jsmind_container2").empty();
+  console.log(_jm2);
   }
 
   console.log("更新");
@@ -156,9 +217,9 @@ function OpenPastSheet(array){
 
   // テーマ設定
   var options = {
-    container:'jsmind_container2',
+    container:containerId,
     // theme:'past_sheet',
-    // editable:true
+    editable:false
   }
 
   var mind2 = {
@@ -181,14 +242,22 @@ function OpenPastSheet(array){
     let id = obj.id;
     let cid = obj.concept_id;
     let type = obj.type;
-    let jmnode = document.getElementsByTagName("jmnode");
+    let jmnode = document.querySelectorAll("#" + containerId + " jmnode");
 
-    for(i=0; i<jmnode.length; i++){
+    for(var i=0; i<jmnode.length; i++){
 
         if(id == jmnode[i].getAttribute("nodeid")){
 
-            jmnode[i].setAttribute("concept_id",cid);
-            jmnode[i].setAttribute("type",type);
+            if (obj.synthetic_root === true) {
+              jmnode[i].style.visibility = "hidden";
+              jmnode[i].setAttribute("aria-hidden", "true");
+            }
+            if (cid != null) {
+              jmnode[i].setAttribute("concept_id",cid);
+            }
+            if (type != null) {
+              jmnode[i].setAttribute("type",type);
+            }
         }
     }
   });
@@ -197,6 +266,7 @@ function OpenPastSheet(array){
 
   past_array = array;
   // ChangeNodesColor(array);
+  return _jm2;
 }
 
 
@@ -381,6 +451,7 @@ function CopyCurrentMap(){
 // window.setTimeout(CopyCurrentMap, 1000);
 
 
+/* Legacy change_toi implementation retained for reference.
 function change_toi(){
 
   let past_array_toi = past_array.filter((p_array) => {
@@ -441,6 +512,33 @@ function change_toi(){
 
 }
 
+
+*/
+
+function change_toi() {
+  var pastToi = past_array.filter(function(node) {
+    return node.type === "toi" || node.type === "toi_deep";
+  });
+  var currentToi = now_array.filter(function(node) {
+    return node.type === "toi" || node.type === "toi_deep";
+  });
+
+  pastToi.forEach(function(pastNode) {
+    var stillExists = currentToi.some(function(currentNode) {
+      return pastNode.concept_id === currentNode.concept_id;
+    });
+    if (stillExists) {
+      return;
+    }
+
+    var nodes = document.getElementsByTagName("jmnode");
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].getAttribute("nodeid") === String(pastNode.id)) {
+        nodes[i].setAttribute("type", "toi_s");
+      }
+    }
+  });
+}
 
 function show_annotation(){
     // checkboxの状態を取得

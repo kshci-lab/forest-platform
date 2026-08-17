@@ -26,6 +26,25 @@
 		return;
 	}
 
+	if (isset($_POST["val"]) && $_POST["val"] === "reflection_nodes") {
+		$i = 0;
+		$array = array();
+		$sql_reflections = "SELECT DISTINCT reflection.node_id
+			FROM paper_reading_reflections reflection
+			INNER JOIN map_node_links link ON link.node_id = reflection.node_id
+			WHERE link.map_id = '$id'";
+
+		if ($result_reflections = $mysqli->query($sql_reflections)) {
+			while ($row = mysqli_fetch_assoc($result_reflections)) {
+				$array[$i] = $row["node_id"];
+				$i += 1;
+			}
+		}
+
+		echo json_encode($array);
+		return;
+	}
+
 	$n_sql = "SELECT * FROM node_latest WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$id')";
 	$a_sql = "SELECT * FROM paper_annotations WHERE node_id IN(SELECT node_id FROM map_node_links WHERE map_id = '$id') AND deleted = 0";
 

@@ -13,6 +13,74 @@
 		return;
 	}
 
+	if ($val === "all") {
+		header('Content-Type: application/json; charset=utf-8');
+
+		$nodes = array();
+		$node_ids = array();
+		$sql = "SELECT latest.node_id, latest.parent_id, latest.content,
+				latest.concept_id, latest.type, latest.class,
+				annotation.start_char_id, annotation.end_char_id
+			FROM node_latest latest
+			INNER JOIN map_node_links link ON link.node_id = latest.node_id
+			LEFT JOIN paper_annotations annotation
+				ON annotation.annotation_id = (
+					SELECT pa.annotation_id
+					FROM paper_annotations pa
+					WHERE pa.node_id = latest.node_id AND pa.deleted = 0
+					ORDER BY pa.created_at DESC, pa.annotation_id DESC
+					LIMIT 1
+				)
+			WHERE link.map_id = ?
+			ORDER BY latest.appeared_at ASC, latest.node_id ASC";
+		$stmt = $mysqli->prepare($sql);
+
+		if (!$stmt) {
+			http_response_code(500);
+			echo json_encode(array('success' => false, 'error' => $mysqli->error));
+			return;
+		}
+
+		$stmt->bind_param('s', $map_id);
+		$stmt->execute();
+		$result = $stmt->get_result();
+
+		while ($row = $result->fetch_assoc()) {
+			$node_ids[$row['node_id']] = true;
+			$nodes[] = $row;
+		}
+		$stmt->close();
+
+		$root_node_ids = array();
+		$response_nodes = array();
+		foreach ($nodes as $node) {
+			$parent_id = $node['parent_id'];
+			if ($parent_id === '' || $parent_id === null || $parent_id === 'root' || !isset($node_ids[$parent_id])) {
+				$parent_id = 'root';
+				$root_node_ids[] = $node['node_id'];
+			}
+
+			$response_nodes[] = array(
+				'id' => $node['node_id'],
+				'parent_id' => $parent_id,
+				'topic' => $node['content'],
+				'concept_id' => $node['concept_id'],
+				'type' => $node['type'],
+				'class' => $node['class'],
+				'start_char_id' => $node['start_char_id'],
+				'end_char_id' => $node['end_char_id']
+			);
+		}
+
+		echo json_encode(array(
+			'success' => true,
+			'map_id' => $map_id,
+			'root_node_ids' => $root_node_ids,
+			'nodes' => $response_nodes
+		));
+		return;
+	}
+
 	$node_columns = array(
 		"id" => "node_id",
 		"concept_id" => "concept_id",

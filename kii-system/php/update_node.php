@@ -184,20 +184,124 @@
 	}
 
 	else if ($_POST["update"] == "summary") {
-		echo "ok";
-		//2024 kawa_check
-		$sql = "UPDATE maps SET summary = '".$_POST["summary"]."' WHERE map_id = '".$_SESSION["MAPID"]."'";
-		$result = $mysqli->query($sql);
-		echo $sql;
+		header('Content-Type: application/json; charset=utf-8');
+		$map_id = isset($_SESSION['MAPID']) ? (int)$_SESSION['MAPID'] : 0;
+		$summary = isset($_POST['summary']) ? trim($_POST['summary']) : '';
+
+		if ($map_id === 0) {
+			http_response_code(400);
+			echo json_encode(array('success' => false, 'error' => 'Map is not selected.'));
+			exit;
+		}
+
+		$sql = "INSERT INTO paper_summaries
+					(map_id, rq, e_1_strong, e_1_weak, e_2_strong, e_2_weak,
+					 e_3_strong, e_3_weak, summary)
+				VALUES (?, '', '', '', '', '', '', '', ?)
+				ON DUPLICATE KEY UPDATE
+					summary = VALUES(summary),
+					updated_at = CURRENT_TIMESTAMP";
+		$stmt = $mysqli->prepare($sql);
+
+		if (!$stmt) {
+			http_response_code(500);
+			echo json_encode(array('success' => false, 'error' => $mysqli->error));
+			exit;
+		}
+
+		$stmt->bind_param('is', $map_id, $summary);
+		if (!$stmt->execute()) {
+			http_response_code(500);
+			echo json_encode(array('success' => false, 'error' => $stmt->error));
+			$stmt->close();
+			exit;
+		}
+
+		$stmt->close();
+		echo json_encode(array('success' => true));
+		exit;
 	}
 	// else if ($_POST["update"] == "annotated") {
 
 	// 	$sql = "UPDATE node_histories SET start_char_id = '".$_POST["start_char_id"]."', end_char_id = '".$_POST["end_char_id"]."'WHERE node_id = '".$_POST["id"]."'";
 	// 	$result = $mysqli->query($sql);
 	// 	echo $sql;
-	// }else if($_POST["update"] == "micro_strat"){
-	// 	$sql = "UPDATE node_histories SET type = '".$_POST['type']."', reflection = '".$_POST['content']."', updated_at = '".$updated_at."' WHERE node_id = '".$_POST['nodeid']."'";
-	// 	$result = $mysqli->query($sql);
-	// }
+	else if($_POST["update"] == "micro_strat"){
+		header('Content-Type: application/json; charset=utf-8');
+
+		$node_id = isset($_POST['nodeid']) ? trim($_POST['nodeid']) : '';
+		$reflection_type = isset($_POST['type']) ? trim($_POST['type']) : '';
+		$content = isset($_POST['content']) ? trim($_POST['content']) : '';
+
+		if ($node_id === '' || $reflection_type === '' || $content === '') {
+			http_response_code(400);
+			echo json_encode(array(
+				'success' => false,
+				'error' => 'Missing required reflection data.'
+			));
+			exit;
+		}
+
+		$sql = "INSERT INTO paper_reading_reflections
+					(node_id, reflection_type, content, created_at, updated_at)
+				VALUES (?, ?, ?, ?, ?)
+				ON DUPLICATE KEY UPDATE
+					reflection_type = VALUES(reflection_type),
+					content = VALUES(content),
+					updated_at = VALUES(updated_at)";
+
+		$stmt = $mysqli->prepare($sql);
+		if (!$stmt) {
+			http_response_code(500);
+			echo json_encode(array(
+				'success' => false,
+				'error' => $mysqli->error
+			));
+			exit;
+		}
+
+		$stmt->bind_param(
+			'sssss',
+			$node_id,
+			$reflection_type,
+			$content,
+			$updated_at,
+			$updated_at
+		);
+		// Store one paper-reading reflection for each node.
+		if (!$stmt->execute()) {
+			http_response_code(500);
+			echo json_encode(array(
+				'success' => false,
+				'error' => $stmt->error
+			));
+			$stmt->close();
+			exit;
+		}
+
+		$reflection_id = (int)$stmt->insert_id;
+		$stmt->close();
+
+		if ($reflection_id === 0) {
+			$id_stmt = $mysqli->prepare(
+				"SELECT reflection_id FROM paper_reading_reflections WHERE node_id = ?"
+			);
+			if ($id_stmt) {
+				$id_stmt->bind_param('s', $node_id);
+				$id_stmt->execute();
+				$id_result = $id_stmt->get_result();
+				if ($id_row = $id_result->fetch_assoc()) {
+					$reflection_id = (int)$id_row['reflection_id'];
+				}
+				$id_stmt->close();
+			}
+		}
+
+		echo json_encode(array(
+			'success' => true,
+			'reflection_id' => $reflection_id
+		));
+		exit;
+	}
 
 ?>

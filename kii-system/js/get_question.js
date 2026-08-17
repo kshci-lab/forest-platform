@@ -27,12 +27,9 @@ function get_question(){
         type: "POST",
         data: { val : "get_my_conceptid"},
         success: function(concept_id){
-            
-            if(concept_id =="[]"){
-                console.log('fin');
-                return;
-            }
-            conceptid_array = JSON.parse(concept_id);
+
+            var parsedConceptIds = JSON.parse(concept_id || "[]");
+            var conceptid_array = Array.isArray(parsedConceptIds) ? parsedConceptIds : [];
             console.log(conceptid_array);
             
             
@@ -45,19 +42,20 @@ function get_question(){
                       },
                 success: function(question){
                     console.log(question);
-                    result = JSON.parse(question);
-                    var questionArray = result;
-                    console.log(result);
+                    var parsedQuestions = JSON.parse(question || "[]");
+                    var questionArray = Array.isArray(parsedQuestions) ? parsedQuestions : [];
+                    console.log(questionArray);
+
+                    var ownConceptIds = {};
                     for (var i = 0; i < conceptid_array.length; i++){
-                        for (var j = 0; j < questionArray.length; j++){
-                            
-                            if (questionArray[j]["concept_id"] == conceptid_array[i]["concept_id"]){
-                                
-                                questionArray.splice(j, 1);
-                               
-                            }
+                        if (conceptid_array[i] && conceptid_array[i]["concept_id"]){
+                            ownConceptIds[conceptid_array[i]["concept_id"]] = true;
                         }
                     }
+
+                    questionArray = questionArray.filter(function(questionItem){
+                        return questionItem && !ownConceptIds[questionItem["concept_id"]];
+                    });
                     console.log(questionArray);
                     var arrayDisplay = document.getElementById("result");
                     

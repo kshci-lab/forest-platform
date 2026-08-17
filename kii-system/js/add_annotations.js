@@ -67,7 +67,7 @@ let removeHightlightHover = (char_object_id, type) => {
 
     if(object_elm !== null){
         object_elm.removeClass(type);
-        console.log(object_elm);
+        // console.log(object_elm);
     }
 };
 

@@ -219,6 +219,10 @@
                 this.root = new jm.node(nodeid, 0, topic, data, true);
                 this._put_node(this.root);
 
+                if (data && data.readonly === true) {
+                    return;
+                }
+
                 var newId = jm.util.uuid.newid();
 
                 $.ajax({
@@ -2651,6 +2655,29 @@
                 }
             }
             d.setAttribute('nodeid',node.id);
+            if (!node.isroot) {
+                if (node.data['class']) {
+                    d.className = node.data['class'];
+                }
+                if (node.data['type'] != null) {
+                    d.setAttribute('type', node.data['type']);
+                }
+                if (node.data['concept_id'] != null) {
+                    d.setAttribute('concept_id', node.data['concept_id']);
+                }
+                if (node.data['parent_id'] != null) {
+                    d.setAttribute('parent_id', node.data['parent_id']);
+                }
+                if (node.data['parent_map_id'] != null) {
+                    d.setAttribute('parent_map_id', node.data['parent_map_id']);
+                }
+                if (node.data['start_char_id'] != null) {
+                    d.setAttribute('start_char_id', node.data['start_char_id']);
+                }
+                if (node.data['end_char_id'] != null) {
+                    d.setAttribute('end_char_id', node.data['end_char_id']);
+                }
+            }
             d.style.visibility='hidden';
             this._reset_node_custom_style(d, node.data);
 

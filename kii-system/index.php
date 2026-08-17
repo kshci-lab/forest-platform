@@ -44,12 +44,133 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
             display: none !important;
             content: none !important;
           }
+
+          #jsmind_container jmnode[paper-reading-reflection="true"],
+          #jsmind_container jmnode[paper-reading-reflection="true"]:hover,
+          #jsmind_container jmnode[paper-reading-reflection="true"].selected {
+            border: 5px dotted rgb(0, 149, 255) !important;
+          }
+
+          #mindmap_tab [data-map_id][aria-current="true"] {
+            outline: 3px solid rgb(0, 149, 255);
+            outline-offset: 1px;
+          }
+
+          #jsmind_container_cr2 {
+            box-sizing: border-box;
+            display: none;
+            float: left;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            overflow: auto;
+            background: #fff;
+            border-top: 5px solid #B3E0D8;
+          }
+
+          #jsmind_area.comparison-open {
+            display: grid;
+            grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr);
+          }
+
+          #jsmind_area.comparison-open #jsmind_container {
+            grid-row: 1;
+            float: none;
+            width: 100%;
+            height: 100% !important;
+            min-height: 0;
+          }
+
+          #jsmind_area.comparison-open #jsmind_container_menu {
+            grid-row: 2;
+            box-sizing: border-box;
+            clear: both;
+            max-height: 85px;
+            overflow: auto;
+          }
+
+          #jsmind_area.comparison-open #jsmind_container_cr2 {
+            grid-row: 3;
+            float: none;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+          }
+
+          #jsmind_container_cr2 > .other-mindmap-view {
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            overflow: auto;
+          }
+
+          #paper_area > #rebuild {
+            display: block;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+          }
+
+          #paper_area #page-container {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding-bottom: 0 !important;
+            box-sizing: border-box !important;
+          }
+
+          #mind.side {
+            box-sizing: border-box;
+            gap: 8px;
+            overflow-y: auto;
+          }
+
+          #make_micro_strat_form {
+            box-sizing: border-box;
+            flex: 0 0 auto;
+            height: auto !important;
+            margin: 0 0 4px;
+            padding: 8px 0 12px;
+            overflow: visible;
+          }
+
+          #make_micro_strat_form #ref_guidance {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+          }
+
+          #make_micro_strat_form #ref_text {
+            box-sizing: border-box;
+            width: 100%;
+            height: 40px;
+            min-width: 0;
+          }
+
+          #make_micro_strat_form #submit_strat_button {
+            display: block;
+            min-height: 32px;
+            margin-top: 8px;
+          }
+
+          #make_micro_strat_form + .button8.other {
+            position: relative;
+            flex: 0 0 25px;
+            margin-top: 0;
+          }
         </style>
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="js/create_question.js"></script>
-        <script type="text/javascript" src="js/jsmind.js"></script>
+        <script type="text/javascript" src="js/jsmind.js?v=20260817-other-map-layout"></script>
         <script type="text/javascript" src="../js/vis-network.min.js"></script>
         <script type="text/javascript" src="../js/thinking-process-network.js"></script>
        
@@ -221,6 +342,8 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                   <div id="jsmind_container" oncontextmenu="return false;"></div>
                   <div id="jsmind_container_menu">
                     <div id="mindmap_tab"><span id="all_annotation"></span></div>
+                  </div>    
+                  <div id="jsmind_container_cr2">
                     <!--
                     <button class="button3" id="zoom-in-button" onclick="zoomIn2();">
                       拡大
@@ -229,9 +352,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
                       縮小
                     </button> 
                     -->
-
-                  </div>    
-                  <div id="jsmind_container_cr2"></div>
+                  </div>
                 </div>
                 <div id="document_area" oncontextmenu="return false;"></div>             
               </div>
@@ -761,9 +882,9 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <script type="text/javascript" src="js/add_annotations.js?v=20260518-annotation-save"></script>
         <script type="text/javascript" src="js/version.js"></script>
         <script type="text/javascript" src="js/node_change.js"></script>
-       <script type="text/javascript" src="js/add_node.js?v=20260601-other-map-fix"></script>
-       <script type="text/javascript" src="js/mindmap.js?v=20260601-other-map-fix"></script>
-        <script type="text/javascript" src="js/user_sheet.js"></script>
+       <script type="text/javascript" src="js/add_node.js?v=20260817-reflections"></script>
+       <script type="text/javascript" src="js/mindmap.js?v=20260817-other-map-switch"></script>
+        <script type="text/javascript" src="js/user_sheet.js?v=20260817-other-map-syntax"></script>
         <script type="text/javascript" src="js/document.js"></script>
         <script type="text/javascript" src="plugins/Sortable-master/Sortable.js"></script>
         <script type="text/javascript" src="plugins/Sortable-master/Sortable.min.js"></script>
@@ -774,10 +895,10 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <script type="text/javascript" src="js/ont_choose_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_rationality.js"></script>
         <script type="text/javascript" src="js/exe.js"></script>
-        <script type="text/javascript" src="js/creat_other_question.js"></script>
-        <script type="text/javascript" src="js/get_other_from_annotation.js?v=20260518-annotation-save"></script>
-        <script type="text/javascript" src="js/get_question.js"></script>
+        <script type="text/javascript" src="js/creat_other_question.js?v=20260817-other-map-layout"></script>
+        <script type="text/javascript" src="js/get_other_from_annotation.js?v=20260817-other-map-syntax"></script>
+        <script type="text/javascript" src="js/get_question.js?v=20260817-null-safe"></script>
         <script type="text/javascript" src="js/add_comment.js"></script>
-        <script type="text/javascript" src="js/reflection.js"></script>
+        <script type="text/javascript" src="js/reflection.js?v=20260817-summary"></script>
     </body>
 </html>

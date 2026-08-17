@@ -167,11 +167,27 @@ function getData(){
 	    data: { val : "end_char_id" },
 	    success: function(arr){
 			var parse = JSON.parse(arr);
-			s_id_array = parse;
-			showNode(s_id_array,"start_char_id");
+			e_id_array = parse;
+			showNode(e_id_array,"end_char_id");
 		},
 		error: function(){
 			console.log("ajaxエラー");
+	    }
+
+	});
+
+	$.ajax({
+
+	    url: "php/open_data.php",
+	    type: "POST",
+	    data: { val : "reflection_nodes" },
+	    success: function(arr){
+			var parse = JSON.parse(arr);
+	    	reflection_node_ids = parse;
+	    	showNode(reflection_node_ids,"reflection_nodes");
+		},
+		error: function(){
+			console.log("ajax error");
 	    }
 
 	});
@@ -206,6 +222,7 @@ var id_array = new Array();
 	s_id_array = new Array();
 	e_id_array = new Array();
 	edited_node_ids = new Array();
+	reflection_node_ids = new Array();
 
 function showNode(arr,mode){
 
@@ -257,8 +274,14 @@ function showNode(arr,mode){
 		count += 1;
 
 	}
+	else if(mode == "reflection_nodes"){
 
-	if(count >= 9){
+		reflection_node_ids = arr;
+		count += 1;
+
+	}
+
+	if(count >= 10){
 
 		var n = 1;
 
@@ -269,7 +292,8 @@ function showNode(arr,mode){
 				// rootを親に持つノードを表示
 				// mindmap.jsへ受け渡す
 				var isEdited = edited_node_ids.indexOf(id_array[i]) !== -1;
-				show_node(id_array[i],parent_id_array[i],content_array[i],concept_id_array[i],type_array[i],class_array[i],s_id_array[i], e_id_array[i], isEdited);
+				var hasReflection = reflection_node_ids.indexOf(id_array[i]) !== -1;
+				show_node(id_array[i],parent_id_array[i],content_array[i],concept_id_array[i],type_array[i],class_array[i],s_id_array[i], e_id_array[i], isEdited, hasReflection);
 				n++;
 				// console.log(content_array[i]);
 				// console.log("a");
@@ -293,7 +317,8 @@ function showNode(arr,mode){
 					if(parent_id_array[j] != "root"){
 						//mindmap.jsへ受け渡す
 						var isEdited = edited_node_ids.indexOf(id_array[j]) !== -1;
-						show_node(id_array[j],parent_id_array[j],content_array[j],concept_id_array[j],type_array[j],class_array[j], s_id_array[j], e_id_array[j], isEdited);
+						var hasReflection = reflection_node_ids.indexOf(id_array[j]) !== -1;
+						show_node(id_array[j],parent_id_array[j],content_array[j],concept_id_array[j],type_array[j],class_array[j], s_id_array[j], e_id_array[j], isEdited, hasReflection);
 						jmnode = document.getElementsByTagName("jmnode");
 						n++;
 
