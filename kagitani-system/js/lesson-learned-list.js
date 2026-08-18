@@ -12,6 +12,42 @@
     }
   }
 
+  function translateLessons(container) {
+    if (getCurrentLang() !== 'en' || typeof window.translateText !== 'function') return;
+
+    container.querySelectorAll('.ll-trans-label').forEach(async function (el) {
+      var orig = el.textContent.trim();
+      if (orig && orig !== 'When applying' && orig !== 'Use next time' && orig !== '実践するとき' && orig !== '次の機会に活用') {
+        var trans = await window.translateText(orig, 'en');
+        el.textContent = trans;
+      }
+    });
+
+    container.querySelectorAll('.ll-trans-source').forEach(async function (el) {
+      var orig = el.textContent.trim();
+      if (orig && orig !== 'Goal' && orig !== '目標') {
+        var trans = await window.translateText(orig, 'en');
+        el.textContent = trans;
+      }
+    });
+
+    container.querySelectorAll('.ll-trans-lesson').forEach(async function (el) {
+      var orig = el.textContent.trim();
+      if (orig) {
+        var trans = await window.translateText(orig, 'en');
+        el.textContent = trans;
+      }
+    });
+
+    container.querySelectorAll('.ll-trans-why').forEach(async function (el) {
+      var orig = el.textContent.trim();
+      if (orig) {
+        var trans = await window.translateText(orig, 'en');
+        el.textContent = trans;
+      }
+    });
+  }
+
   var lessonsDict = {
     ja: {
       closeLabel: '閉じる',
@@ -194,6 +230,7 @@
 
           // ラベル（色付きバッジ）- SRL整理マップはオレンジ
           const label = document.createElement('span');
+          label.className = 'll-trans-label';
           const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : t('mapFallbackOpportunity');
           label.style.cssText = 'display:inline-block;background:#f97316;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;';
           label.textContent = oppLabel;
@@ -219,6 +256,7 @@
                 : item.source_node_content;
             }
             const textSpan = document.createElement('span');
+            textSpan.className = 'll-trans-source';
             textSpan.textContent = sourceText;
             sourceInfo.appendChild(textSpan);
             leftWrap.appendChild(sourceInfo);
@@ -230,7 +268,7 @@
           const content = document.createElement('div');
           content.style.cssText = 'font-size:13px;line-height:1.4;color:#1f2937;font-weight:600;white-space:pre-wrap;';
           const applicationText = item.application || item.lesson_learned || item['lesson_learned'] || item['lesson'] || '';
-          content.innerHTML = escapeHtml(applicationText);
+          content.innerHTML = '<span class="ll-trans-lesson">' + escapeHtml(applicationText) + '</span>';
 
           card.appendChild(header);
           card.appendChild(content);
@@ -238,7 +276,7 @@
           if (item.why_important && String(item.why_important).trim() !== '') {
             const whyText = document.createElement('div');
             whyText.style.cssText = 'font-size:11px;color:#666;margin-top:4px;line-height:1.35;font-weight:400;white-space:pre-wrap;';
-            whyText.innerHTML = '<span style="opacity:0.8;margin-right:2px;">💡</span>' + escapeHtml(item.why_important);
+            whyText.innerHTML = '<span style="opacity:0.8;margin-right:2px;">💡</span><span class="ll-trans-why">' + escapeHtml(item.why_important) + '</span>';
             card.appendChild(whyText);
           }
 
@@ -253,6 +291,7 @@
 
           body.appendChild(card);
         });
+        translateLessons(body);
       })
       .catch(err => {
         body.innerHTML = '<div style="color:#dc2626;padding:8px 6px;font-size:13px">' + t('loadError') + '</div>';
@@ -301,6 +340,7 @@
 
           // ラベル（色付きバッジ）- SRLジャーナルは緑色
           const label = document.createElement('span');
+          label.className = 'll-trans-label';
           const oppLabel = (item.opportunity && String(item.opportunity).trim() !== '') ? item.opportunity : t('srlFallbackOpportunity');
           label.style.cssText = 'display:inline-block;background:#28a745;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;';
           label.textContent = oppLabel;
@@ -338,7 +378,7 @@
           const content = document.createElement('div');
           content.style.cssText = 'font-size:13px;line-height:1.4;color:#1f2937;font-weight:600;white-space:pre-wrap;';
           const lesson = item.lesson_learned || item['lesson_learned'] || item['lesson'] || '';
-          content.innerHTML = escapeHtml(lesson);
+          content.innerHTML = '<span class="ll-trans-lesson">' + escapeHtml(lesson) + '</span>';
 
           card.appendChild(header);
           card.appendChild(content);
@@ -346,7 +386,7 @@
           if (item.why_important && String(item.why_important).trim() !== '') {
             const whyText = document.createElement('div');
             whyText.style.cssText = 'font-size:11px;color:#666;margin-top:4px;line-height:1.35;font-weight:400;white-space:pre-wrap;';
-            whyText.innerHTML = '<span style="opacity:0.8;margin-right:2px;">💡</span>' + escapeHtml(item.why_important);
+            whyText.innerHTML = '<span style="opacity:0.8;margin-right:2px;">💡</span><span class="ll-trans-why">' + escapeHtml(item.why_important) + '</span>';
             card.appendChild(whyText);
           }
 
@@ -361,6 +401,7 @@
 
           body.appendChild(card);
         });
+        translateLessons(body);
       })
       .catch(err => {
         body.innerHTML = '<div style="color:#dc2626;padding:8px 6px;font-size:13px">' + t('loadError') + '</div>';
