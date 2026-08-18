@@ -1066,6 +1066,11 @@ display: none;
     overflow: visible; /* ドロップダウンメニューが見えるように */
 }
 
+/* 設定ドロップダウンメニューが開いているとき、親のタイトルバーのz-indexを引き上げて最前面にする */
+body:has(.hamburger-menu.active) #main_title {
+    z-index: 1000000 !important;
+}
+
 .settings-button {
     background: transparent;
     border: none;

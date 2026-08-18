@@ -16,6 +16,92 @@
             try { return (goalHelpers && typeof goalHelpers.getCurrentLang === 'function') ? goalHelpers.getCurrentLang() : ((document.getElementById('language-toggle') && document.getElementById('language-toggle').checked) ? 'en' : 'ja'); } catch (e) { return 'ja'; }
         }
 
+        function translateModalContent(modalEl) {
+            if (typeof window.translateText !== 'function') return;
+
+            modalEl.querySelectorAll('.jr-trans-query').forEach(async function (el) {
+                var orig = el.textContent.trim();
+                if (orig) {
+                    var trans = await window.translateText(orig, 'en');
+                    el.textContent = trans;
+                }
+            });
+
+            modalEl.querySelectorAll('.jr-trans-answer').forEach(async function (el) {
+                var orig = el.textContent.trim();
+                if (orig && orig !== 'New Node' && orig !== '未リンク') {
+                    var trans = await window.translateText(orig, 'en');
+                    el.textContent = trans;
+                }
+            });
+
+            modalEl.querySelectorAll('.jr-trans-node').forEach(async function (el) {
+                var orig = el.textContent.trim();
+                if (orig && orig !== '(内容なし)' && orig !== '(no content)') {
+                    var trans = await window.translateText(orig, 'en');
+                    el.textContent = trans;
+                }
+            });
+
+            modalEl.querySelectorAll('.jr-trans-purpose').forEach(async function (el) {
+                var orig = el.textContent.trim();
+                if (orig) {
+                    var trans = await window.translateText(orig, 'en');
+                    el.textContent = trans;
+                }
+            });
+
+            modalEl.querySelectorAll('.jr-trans-fallback').forEach(async function (el) {
+                var orig = el.textContent.trim();
+                if (orig && orig !== '(内容なし)' && orig !== '(no content)') {
+                    var trans = await window.translateText(orig, 'en');
+                    el.textContent = trans;
+                }
+            });
+
+            // 6. タイムライン詳細（ラベル変更や理由記述の中身）の翻訳
+            modalEl.querySelectorAll('.jr-trans-detail').forEach(async function (el) {
+                var orig = el.textContent.trim();
+                if (orig && isNaN(orig) && orig !== 'New Node' && orig !== '未リンク') {
+                    var trans = await window.translateText(orig, 'en');
+                    el.textContent = trans;
+                }
+            });
+
+            // 7. 過去の記録（History）プレビューの翻訳
+            modalEl.querySelectorAll('.jr-trans-history').forEach(async function (el) {
+                var orig = el.innerHTML.trim();
+                if (orig && orig !== '-' && orig !== '教訓はありません。' && orig !== 'No lessons.') {
+                    var trans = await window.translateText(orig, 'en');
+                    el.innerHTML = trans;
+                }
+            });
+
+            // 8. 入力フォーム（textarea）の値の翻訳とオリジナル値の退避
+            modalEl.querySelectorAll('.jr-textarea').forEach(async function (ta) {
+                var orig = ta.value.trim();
+                if (orig && orig !== 'New Node' && orig !== '未リンク') {
+                    if (!ta.dataset.originalValue) {
+                        ta.dataset.originalValue = ta.value;
+                    }
+                    var trans = await window.translateText(ta.dataset.originalValue, 'en');
+                    ta.value = trans;
+                    ta.dataset.translatedValue = trans;
+                    
+                    ta.style.height = 'auto';
+                    ta.style.height = ta.scrollHeight + 'px';
+                }
+                
+                if (!ta.dataset.hasInputListener) {
+                    ta.addEventListener('input', function() {
+                        delete ta.dataset.originalValue;
+                        delete ta.dataset.translatedValue;
+                    });
+                    ta.dataset.hasInputListener = 'true';
+                }
+            });
+        }
+
         function formatRow(label, detail, time) {
             var tr = document.createElement('tr');
 
@@ -313,7 +399,11 @@
                                 document.body.classList.add('jr-measuring');
                                 
                                 // reflowを強制
-                                var currentHeight = modalContent.offsetHeight;
+                                 modalContent.querySelectorAll('textarea').forEach(function(ta) {
+                                     ta.style.height = 'auto';
+                                     ta.style.height = ta.scrollHeight + 'px';
+                                 });
+                                 var currentHeight = modalContent.offsetHeight;
                                 
                                 document.body.classList.remove('jr-measuring');
                                 
@@ -556,9 +646,9 @@
                                                 var cls = changed ? 'jr-history-lesson-item jr-history-changed' : 'jr-history-lesson-item jr-history-unchanged';
                                                 
                                                 return '<div class="' + cls + '">'
-                                                    + '<div class="jr-history-lesson-text">' + (textDiff.html || '-') + '</div>'
-                                                    + (l.why_important ? '<div class="jr-history-lesson-why">' + whyDiff.html + '</div>' : '')
-                                                    + (l.opportunity ? '<div class="jr-history-lesson-opportunity">' + oppDiff.html + '</div>' : '')
+                                                    + '<div class="jr-history-lesson-text jr-trans-history">' + (textDiff.html || '-') + '</div>'
+                                                    + (l.why_important ? '<div class="jr-history-lesson-why jr-trans-history">' + whyDiff.html + '</div>' : '')
+                                                    + (l.opportunity ? '<div class="jr-history-lesson-opportunity jr-trans-history">' + oppDiff.html + '</div>' : '')
                                                     + '</div>';
                                             }).join('');
                                         } else {
@@ -572,28 +662,33 @@
                                         var badCls = badChanged ? 'jr-history-section jr-history-changed' : 'jr-history-section jr-history-unchanged';
 
                                         var lessonsCls = lessonsChanged ? 'jr-history-section jr-history-changed' : 'jr-history-section jr-history-unchanged';
-                                        // If there are no lessons and it didn't change (e.g. from 0 to 0), it's unchanged. If it went from 1 to 0, oldLessons > lessons so we should mark as changed.
                                         if (oldLessons.length > lessons.length) lessonsCls = 'jr-history-section jr-history-changed';
 
                                         var title = (getCurrentLang() === 'ja') ? ('内省 #' + (rIdx + 1)) : ('Reflection #' + (rIdx + 1));
+                                        var lessonTitle = (getCurrentLang() === 'ja') ? '教訓' : 'Lesson';
+                                        var goodTitle = (getCurrentLang() === 'ja') ? 'うまくいった点' : 'What went well?';
+                                        var goodReasonTitle = (getCurrentLang() === 'ja') ? '理由' : 'Why do you think so?';
+                                        var badTitle = (getCurrentLang() === 'ja') ? 'うまくいかなかった点' : 'What did not go well?';
+                                        var badReasonTitle = (getCurrentLang() === 'ja') ? '理由' : 'Why do you think so?';
+
                                         return '<details class="jr-history-card" ' + ((sIdx === 0 && rIdx === 0) ? 'open' : '') + '>'
                                             + '<summary class="jr-history-summary">' + title + '</summary>'
                                             + '<div class="jr-history-body">'
                                             + '<div class="' + lessonsCls + '">'
-                                            + '<div class="jr-history-section-title"><span class="jr-history-icon">💡</span>教訓</div>'
+                                            + '<div class="jr-history-section-title"><span class="jr-history-icon">💡</span>' + lessonTitle + '</div>'
                                             + '<div class="jr-history-lesson-list">' + lessonsHtml + '</div>'
                                             + '</div>'
                                             + '<div class="' + goodCls + '">'
-                                            + '<div class="jr-history-section-title good"><span class="jr-history-icon">😊</span>うまくいった点</div>'
-                                            + '<div class="jr-history-section-content">' + (goodDiff.html || '-') + '</div>'
-                                            + '<div class="jr-history-section-title good"><span class="jr-history-icon">✅</span>理由</div>'
-                                            + '<div class="jr-history-section-content">' + (goodReasonDiff.html || '-') + '</div>'
+                                            + '<div class="jr-history-section-title good"><span class="jr-history-icon">😊</span>' + goodTitle + '</div>'
+                                            + '<div class="jr-history-section-content jr-trans-history">' + (goodDiff.html || '-') + '</div>'
+                                            + '<div class="jr-history-section-title good"><span class="jr-history-icon">✅</span>' + goodReasonTitle + '</div>'
+                                            + '<div class="jr-history-section-content jr-trans-history">' + (goodReasonDiff.html || '-') + '</div>'
                                             + '</div>'
                                             + '<div class="' + badCls + '">'
-                                            + '<div class="jr-history-section-title bad"><span class="jr-history-icon">😔</span>うまくいかなかった点</div>'
-                                            + '<div class="jr-history-section-content">' + (badDiff.html || '-') + '</div>'
-                                            + '<div class="jr-history-section-title bad"><span class="jr-history-icon">🧭</span>理由</div>'
-                                            + '<div class="jr-history-section-content">' + (badReasonDiff.html || '-') + '</div>'
+                                            + '<div class="jr-history-section-title bad"><span class="jr-history-icon">😔</span>' + badTitle + '</div>'
+                                            + '<div class="jr-history-section-content jr-trans-history">' + (badDiff.html || '-') + '</div>'
+                                            + '<div class="jr-history-section-title bad"><span class="jr-history-icon">🧭</span>' + badReasonTitle + '</div>'
+                                            + '<div class="jr-history-section-content jr-trans-history">' + (badReasonDiff.html || '-') + '</div>'
                                             + '</div>'
                                             + '</div>'
                                             + '</details>';
@@ -628,6 +723,7 @@
                                             snapshots = [{ reflections: res.reflections }];
                                         }
                                         renderHistory(historyList, snapshots);
+                                        if (getCurrentLang() === "en") { translateModalContent(historyList); }
                                     },
                                     error: function () {
                                         historyList.innerHTML = '<div class="jr-history-empty">読み込みに失敗しました。</div>';
@@ -1714,6 +1810,7 @@
                                     // Activate the first lesson tab
                                     var firstLessonTab = wrap.querySelector('.jr-lesson-tab');
                                     if (firstLessonTab) firstLessonTab.click();
+                                    if (getCurrentLang() === "en") { translateModalContent(wrap); }
                                 } catch(e) { console.warn('populateWrapWithReflection failed', e); }
                             }
 
@@ -1885,7 +1982,7 @@
                                 
                                 // ラベルバッジ (案1)
                                 var labelBadge = document.createElement('div');
-                                labelBadge.textContent = '📍 目掛けた問い';
+                                labelBadge.textContent = (getCurrentLang() === 'ja') ? '📍 目掛けた問い' : '📍 Targeted Inquiry';
                                 labelBadge.style.fontSize = '11px';
                                 labelBadge.style.fontWeight = 'bold';
                                 labelBadge.style.color = theme.primary;
@@ -1898,7 +1995,7 @@
                                 qText.style.fontSize = '14px';
                                 qText.style.color = '#0f172a';
                                 qText.style.lineHeight = '1.4';
-                                qText.innerHTML = '<span style="color:' + theme.primary + '; font-size: 16px; margin-right: 4px; font-weight: 900;">Q.</span>' + (item.display || '');
+                                qText.innerHTML = '<span style="color:' + theme.primary + '; font-size: 16px; margin-right: 4px; font-weight: 900;">Q.</span><span class="jr-trans-query">' + escapeHtml(item.display || '') + '</span>';
 
                                 heading.appendChild(labelBadge);
                                 heading.appendChild(qText);
@@ -1913,7 +2010,11 @@
                                     // 「現状の答え」ラベルを追加
                                     var answerLabel = document.createElement('div');
                                     var hasUpdate = (item.answer_histories && item.answer_histories.length > 1);
-                                    answerLabel.textContent = hasUpdate ? '💡 現状の答え（更新あり）' : '💡 現状の答え';
+                                    if (getCurrentLang() === 'ja') {
+                                        answerLabel.textContent = hasUpdate ? '💡 現状の答え（更新あり）' : '💡 現状の答え';
+                                    } else {
+                                        answerLabel.textContent = hasUpdate ? '💡 Current Answer (Updated)' : '💡 Current Answer';
+                                    }
                                     answerLabel.style.fontSize = '11px';
                                     answerLabel.style.fontWeight = 'bold';
                                     answerLabel.style.color = '#d97706'; // Slightly darker orange/yellow
@@ -1940,6 +2041,7 @@
                                             // timeSpan.style.whiteSpace = 'nowrap';
                                             
                                             var contentSpan = document.createElement('span');
+                                            contentSpan.className = 'jr-trans-answer';
                                             contentSpan.textContent = hist.content;
                                             
                                             if (idx > 0) {
@@ -1957,6 +2059,7 @@
                                         });
                                     } else if (item.answer_content) {
                                         var answerDiv = document.createElement('div');
+                                        answerDiv.className = 'jr-trans-answer';
                                         answerDiv.textContent = item.answer_content;
                                         answerDiv.style.fontSize = '13px';
                                         answerDiv.style.color = '#334155';
@@ -1973,7 +2076,7 @@
                                 
                                 // 「活動プロセス」ラベルを追加
                                 var processLabel = document.createElement('div');
-                                processLabel.textContent = '🏃‍♂️ 問いに対する活動プロセス';
+                                processLabel.textContent = (getCurrentLang() === 'ja') ? '🏃‍♂️ 問いに対する活動プロセス' : '🏃‍♂️ Activity Process for Inquiry';
                                 processLabel.style.fontSize = '11px';
                                 processLabel.style.fontWeight = 'bold';
                                 processLabel.style.color = '#3b82f6'; // blue color
@@ -2182,6 +2285,7 @@
                                         }
                                         if (purposeText) {
                                             var chPurpose = document.createElement('div');
+                                            chPurpose.className = 'jr-trans-purpose';
                                             chPurpose.textContent = purposeText; // No "理由：" prefix
                                             chPurpose.style.fontSize = '11px'; // 12px -> 11px
                                             chPurpose.style.color = '#64748b';
@@ -2198,6 +2302,7 @@
                                         chMainRow.style.width = '100%';
 
                                         var chText = document.createElement('div');
+                                        chText.className = 'jr-trans-node';
                                         chText.textContent = contentHeading; // Removed bullet dot for cleaner card look
                                         chText.style.fontWeight = '600';
                                         chText.style.fontSize = '13px'; // Add font size constraint
@@ -2206,14 +2311,14 @@
                                         chMainRow.appendChild(chText);
 
                                         // ステータス判定
-                                        var currentStatus = "計画";
+                                        var currentStatus = (getCurrentLang() === 'ja') ? "計画" : "Plan";
                                         var statusClass = "jr-status-plan";
                                         if (grp && grp.length) {
                                             grp.forEach(function(h) {
                                                 var act = parseInt(h.activity, 10);
-                                                if (act === 5) { currentStatus = "開始"; statusClass = "jr-status-start"; }
-                                                else if (act === 6) { currentStatus = "中断"; statusClass = "jr-status-pause"; }
-                                                else if (act === 7) { currentStatus = "完了"; statusClass = "jr-status-done"; }
+                                                if (act === 5) { currentStatus = (getCurrentLang() === 'ja') ? "開始" : "Start"; statusClass = "jr-status-start"; }
+                                                else if (act === 6) { currentStatus = (getCurrentLang() === 'ja') ? "中断" : "Pause"; statusClass = "jr-status-pause"; }
+                                                else if (act === 7) { currentStatus = (getCurrentLang() === 'ja') ? "完了" : "Done"; statusClass = "jr-status-done"; }
                                             });
                                         }
 
@@ -2283,7 +2388,7 @@
                                             var lastDateStr = '';
                                             grp.forEach(function(h, idx) {
                                                 var act = (typeof h.activity !== 'undefined') ? parseInt(h.activity, 10) : 0;
-                                                var label = (getCurrentLang() === 'ja') ? (mapJa[act] || '') : '';
+                                                var label = (getCurrentLang() === 'ja') ? (mapJa[act] || '') : (mapEn[act] || '');
                                                 
                                                 var detail = '';
                                                 if (act === 1 || act === 2) {
@@ -2322,7 +2427,7 @@
                                                 
                                                 if (detail) {
                                                     var detailDiv = document.createElement('div');
-                                                    detailDiv.className = 'jr-timeline-detail';
+                                                    detailDiv.className = 'jr-timeline-detail jr-trans-detail';
                                                     detailDiv.textContent = detail; // 「内容：」という固定プレフィックスを削除しスマートに
                                                     textDiv.appendChild(detailDiv);
                                                 }
@@ -2393,7 +2498,7 @@
 
                                         nodeContentWrap.appendChild(ch);
                                         nodeContentWrap.appendChild(detailsDiv);
-                                        nodeWrap.appendChild(nodeContentWrap);
+nodeWrap.appendChild(nodeContentWrap);
                                         
                                         // Render children inside an indented container with continuous left border
                                         if (node.children.length > 0) {
@@ -2446,7 +2551,7 @@
                                     item.content.forEach(function (contentEntry) {
                                         var contentHeading = contentEntry && contentEntry.toString().trim() ? contentEntry.toString() : ((getCurrentLang() === 'ja') ? '(内容なし)' : '(no content)');
                                         var sh = document.createElement('div');
-                                        sh.textContent = '・ ' + contentHeading;
+                                        sh.innerHTML = '・ <span class="jr-trans-fallback">' + escapeHtml(contentHeading) + '</span>';
                                         sh.style.margin = '4px 0';
                                         fallbackWrap.appendChild(sh);
                                     });
@@ -2454,7 +2559,7 @@
                                 } else {
                                     // historiesもcontentもない場合でも、問いノード自体は表示し、活動がない旨を伝える
                                     var emptyMsg = document.createElement('div');
-                                    emptyMsg.textContent = 'この期間に記録された活動プロセスはありません。';
+                                    emptyMsg.textContent = (getCurrentLang() === "ja") ? "この期間に記録された活動プロセスはありません。" : "No activity processes recorded during this period.";
                                     emptyMsg.style.color = '#718096';
                                     emptyMsg.style.fontSize = '14px';
                                     emptyMsg.style.padding = '8px 14px';
@@ -2471,6 +2576,14 @@
 
                             // Helper to save a specific wrapper
                             function saveWrapper(wrap) {
+                                    function getValOrOriginal(el) {
+                                        if (!el) return "";
+                                        var v = (el.value || "").trim();
+                                        if (el.dataset.originalValue && v === el.dataset.translatedValue) {
+                                            return el.dataset.originalValue.trim();
+                                        }
+                                        return v;
+                                    }
                                 try {
                                     var object_journal_id = objectJournalId || null;
                                     if (!object_journal_id) {
@@ -2485,10 +2598,10 @@
                                         var agEl = w.querySelector('.wr-attribution-good');
                                         var abEl = w.querySelector('.wr-attribution-bad');
 
-                                        var successPoints = spEl ? (spEl.value || '').trim() : '';
-                                        var failurePoints = fbEl ? (fbEl.value || '').trim() : '';
-                                        var attributionGoodVal = agEl ? (agEl.value || '').trim() : '';
-                                        var attributionBadVal = abEl ? (abEl.value || '').trim() : '';
+                                        var successPoints = getValOrOriginal(spEl);
+                                        var failurePoints = getValOrOriginal(fbEl);
+                                        var attributionGoodVal = getValOrOriginal(agEl);
+                                        var attributionBadVal = getValOrOriginal(abEl);
 
                                         var lessonsArr = [];
                                         try {
@@ -2499,9 +2612,9 @@
                                                         var focusEl = tc.querySelector('.wr-lesson-focus');
                                                         var whyEl = tc.querySelector('.wr-lesson-why');
                                                         var whenEl = tc.querySelector('.wr-lesson-when');
-                                                        var fv = (focusEl && focusEl.value) ? focusEl.value.trim() : '';
-                                                        var whyV = (whyEl && whyEl.value) ? whyEl.value.trim() : '';
-                                                        var wv = (whenEl && whenEl.value) ? whenEl.value.trim() : '';
+                                                        var fv = getValOrOriginal(focusEl);
+                                                        var whyV = getValOrOriginal(whyEl);
+                                                        var wv = getValOrOriginal(whenEl);
                                                         if (fv || whyV || wv) lessonsArr.push({ lesson: fv, why_important: whyV, opportunity: wv });
                                                     } catch (e) { }
                                                 });
@@ -2634,6 +2747,7 @@
 
                             modal.appendChild(modalContent);
                             document.body.appendChild(modal);
+                            if (getCurrentLang() === "en") { translateModalContent(modal); }
                         }).catch(function (err) { console.error('journal_report: Promise.all error', err); });
                     },
                     error: function (xhr, status, error) { console.error('journal_report: get_object_journal_nodes.php error', error); }

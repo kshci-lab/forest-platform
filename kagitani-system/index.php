@@ -405,12 +405,12 @@ try {
                     </div>
                     <div class="srl-sidebar-tabs">
                         <button class="srl-tab is-active" type="button" data-tab="journal">
-                            <span>SRLジャーナル一覧</span>
+                            <span id="srlTabJournalText">SRLジャーナル一覧</span>
                             <span id="addCycleBtn" class="btn-add-cycle" title="SRLジャーナルを追加できます">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             </span>
                         </button>
-                        <button class="srl-tab" type="button" data-tab="lessons">教訓一覧</button>
+                        <button class="srl-tab" type="button" data-tab="lessons"><span id="srlTabLessonsText">教訓一覧</span></button>
                     </div>
                     <div class="srl-sidebar-body">
                         <div class="srl-tab-panel is-active" data-tab-panel="journal">
@@ -418,8 +418,8 @@ try {
                         </div>
                         <div class="srl-tab-panel" data-tab-panel="lessons">
                             <div class="srl-lessons-subtabs">
-                                <button class="srl-lessons-subtab is-active" type="button" data-subtab="srl" title="SRLジャーナルカードから生まれた教訓"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg>ジャーナルカードから</button>
-                                <button class="srl-lessons-subtab" type="button" data-subtab="map" title="SRL整理マップの手段ノードから生まれた教訓"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg>手段ノードから</button>
+                                <button class="srl-lessons-subtab is-active" type="button" data-subtab="srl" title="SRLジャーナルカードから生まれた教訓"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg><span id="srlLessonSubtabSrlText">ジャーナルカードから</span></button>
+                                <button class="srl-lessons-subtab" type="button" data-subtab="map" title="SRL整理マップの手段ノードから生まれた教訓"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M7 20h10"></path><path d="M10 20c5.5-2.5.8-6.4 3-10"></path><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"></path><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"></path></svg><span id="srlLessonSubtabMapText">手段ノードから</span></button>
                             </div>
                             <div class="srl-lessons-subpanel is-active" data-subpanel="srl">
                                 <div id="srlLessonsBodySrl"></div>
@@ -433,7 +433,7 @@ try {
                 </aside>
                 <aside id="inquirySidebar" class="inquiry-sidebar" aria-hidden="true">
                     <div class="inquiry-sidebar-header">
-                        <span class="inquiry-sidebar-title">問い一覧</span>
+                        <span class="inquiry-sidebar-title" id="inquirySidebarTitleText">問い一覧</span>
                         <button id="inquirySidebarClose" class="inquiry-sidebar-close" type="button" aria-label="Close">×</button>
                     </div>
                     <div class="inquiry-sidebar-body">
@@ -559,6 +559,29 @@ try {
                 'exportWeeklyGoalBtnText': '振り返る',
                 'editWeeklyGoalBtnText': '編集',
                 'deleteWeeklyGoalBtnText': '削除',
+                'showQuestionsBtn': 'すべて',
+                'inquiryAreaTitle': '【情報の表出化】',
+                'mediumGoalTitle': '中目標（半年〜1年目標）',
+                'addMediumGoalBtnText': '追加',
+                'mediumGoalTextPlaceholder': '中目標を入力',
+                // 新規追加
+                'srlTabJournalText': 'SRLジャーナル一覧',
+                'srlTabLessonsText': '教訓一覧',
+                'srlLessonSubtabSrlText': 'ジャーナルカードから',
+                'srlLessonSubtabMapText': '手段ノードから',
+                'inquirySidebarTitleText': '問い一覧',
+                'toggleInquirySidebarText': '問い一覧',
+                'process_removeEdgeText': 'エッジ削除',
+                'process_removeNodeText': 'ノード削除',
+                'process_zoomInText': '拡大',
+                'process_zoomOutText': '縮小',
+                'means-tooltip-title': '活動プロセス',
+                // goal_list.js用
+                'weeklyGoalCardTitle': 'クリックすると、ここに含まれるすべての問いのSRL整理マップを同時に開くことができます',
+                'openSrlMap': 'SRL整理マップを開けます',
+                'dragToSort': 'ドラッグして並び替え',
+                'reflectActivitySuffix': 'の活動を振り返る',
+                'loading': '読み込み中...'
             },
             en: {
                 'processMenuTitle': 'Node Actions',
@@ -571,24 +594,10 @@ try {
                 'reasonPurposeTitle': '[Reason/Purpose]',
                 'rationalityTitle': '[Rationality]',
                 'lang-label-ja': 'Japanese',
-                'showQuestionsBtnText': '問い一覧',
-                'inquiryAreaTitle': '【情報の表出化】',
-                'mediumGoalTitle': '中目標（半年〜1年目標）',
-                'addMediumGoalBtnText': '追加',
-                'mediumGoalTextPlaceholder': '中目標を入力',
-                'showQuestionsBtnText': 'Inquiry List',
-                'inquiryAreaTitle': '[Information Expression]',
-                'editWeeklyGoalBtnText': '編集',
-                'mediumGoalTitle': 'Medium Goal (6 months - 1 year)',
-                'addMediumGoalBtnText': 'Add',
-                'mediumGoalTextPlaceholder': 'Enter medium goal',
                 'lang-label-en': 'English',
                 'addWeeklyGoalBtn': 'Add SRL Journal',
                 'addWeeklyGoalMenuLabel': 'Add Weekly Goal',
                 'showThinkingProcessMapBtn': 'Goal Hierarchy Map',
-                'editWeeklyGoalBtnText': 'Edit',
-                'exportWeeklyGoalBtnText': 'Reflection',
-                'deleteWeeklyGoalBtnText': 'Delete',
                 'sheetbtn': 'Back to Sheet Selection',
                 'logout': 'Logout',
                 'addQNodeText': 'Add Q Node',
@@ -605,7 +614,7 @@ try {
                 'processZoomInText': 'Zoom+',
                 'processZoomOutText': 'Zoom-',
                 'returnToCurrentText': 'Return to Current',
-                'historyIndicatorText': '📅 History',
+                'historyIndicatorText': '📅 Viewing historical map...',
                 'nodeCountLabel': '📊 Node Count: ',
                 'nodeCountUnit': '',
                 'refreshNodeCountIcon': '🔄',
@@ -616,71 +625,351 @@ try {
                 'navigatorGreetingHeader': 'Hello!',
                 'navigatorGreetingSub': 'Welcome to the Goal Hierarchy Map',
                 'title_name': 'Self-Regulated Learning Activation System',
-                'weeklyGoalTitle': 'Weekly Goal',
+                'weeklyGoalTooltip': 'Weekly Goal for the next MT',
                 'weeklyGoalStartLabel': 'Start Date',
                 'weeklyGoalEndLabel': 'End Date',
                 'addWeeklyGoalBtnText': 'Add',
                 'show-lessons-btn': 'Lesson learnt',
+                'exportWeeklyGoalBtnText': 'Reflection',
+                'editWeeklyGoalBtnText': 'Edit',
+                'deleteWeeklyGoalBtnText': 'Delete',
+                'showQuestionsBtn': 'All',
+                'inquiryAreaTitle': '[Information Expression]',
+                'mediumGoalTitle': 'Medium Goal (6 months - 1 year)',
+                'addMediumGoalBtnText': 'Add',
+                'mediumGoalTextPlaceholder': 'Enter medium goal',
+                // 新規追加
+                'srlTabJournalText': 'SRL Journal List',
+                'srlTabLessonsText': 'Lesson List',
+                'srlLessonSubtabSrlText': 'From Journal Cards',
+                'srlLessonSubtabMapText': 'From Means Nodes',
+                'inquirySidebarTitleText': 'Inquiry List',
+                'toggleInquirySidebarText': 'Inquiry List',
+                'process_removeEdgeText': 'Delete Edge',
+                'process_removeNodeText': 'Delete Node',
+                'process_zoomInText': 'Zoom+',
+                'process_zoomOutText': 'Zoom-',
+                'means-tooltip-title': 'Activity Process',
+                // goal_list.js用
+                'weeklyGoalCardTitle': 'Click to open the SRL arrangement map for all inquiries in this card simultaneously',
+                'openSrlMap': 'Open SRL Map',
+                'dragToSort': 'Drag to sort',
+                'reflectActivitySuffix': ' Reflection',
+                'loading': 'Loading...'
             }
         };
-        function setLanguage(lang) {
-            window.currentLang = lang;
-                // 週目標日付範囲の表示も切り替え
-                const weeklyGoalsList = document.getElementById('weeklyGoalsList');
-                if (weeklyGoalsList) {
-                    const dateRanges = weeklyGoalsList.querySelectorAll('.weekly-goal-date-range');
-                    dateRanges.forEach(span => {
-                        const start = span.getAttribute('data-start');
-                        const end = span.getAttribute('data-end');
-                        function formatMD(input) {
-                            if (!input) return '';
-                            var m;
-                            m = String(input).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-                            if (m) return parseInt(m[2], 10) + '/' + parseInt(m[3], 10);
-                            m = String(input).match(/(\d{1,2})\/(\d{1,2})/);
-                            if (m) return parseInt(m[1], 10) + '/' + parseInt(m[2], 10);
-                            m = String(input).match(/(\d{1,2})月(\d{1,2})日/);
-                            if (m) return parseInt(m[1], 10) + '/' + parseInt(m[2], 10);
-                            return String(input);
-                        }
-                        var startText = formatMD(start);
-                        var endText = formatMD(end);
-                        span.textContent = (lang === 'ja') ? (startText + '〜' + endText) : (startText + ' - ' + endText);
-                    });
+
+        // 元の日本語テキストを退避しておくためのメモリ空間
+        window.originalMindmapTexts = window.originalMindmapTexts || {};
+        window.originalNetworkTexts = window.originalNetworkTexts || {};
+
+        // 無料のGoogle翻訳エンドポイントを利用して英訳する関数
+        async function translateText(text, targetLang) {
+            if (!text || text.trim() === "") return text;
+            try {
+                // targetLangが'en'なら日本語から英語へ、それ以外なら英語から日本語へ
+                const sourceLang = targetLang === 'en' ? 'ja' : 'en';
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+                console.log(`[翻訳リクエスト送信] "${text}" (${sourceLang} -> ${targetLang})`);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data && data[0]) {
+                    const translated = data[0].map(item => item[0]).join('');
+                    console.log(`[翻訳結果受信] "${text}" -> "${translated}"`);
+                    return translated;
                 }
-            Object.keys(langDict[lang]).forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    if (el.tagName === 'INPUT' && el.type === 'submit') {
-                        el.value = langDict[lang][id];
-                    } else {
-                        el.textContent = langDict[lang][id];
+                return text;
+            } catch (e) {
+                console.error("[翻訳APIエラー] 対象テキスト:", text, e);
+                return text;
+            }
+        }
+
+        // マインドマップ（jsMind）のノード翻訳
+        async function toggleMindmapLanguage(lang) {
+            console.log(`[toggleMindmapLanguage] 開始, 言語: ${lang}`);
+            
+            if (typeof _jm === 'undefined' || !_jm || !_jm.mind || !_jm.mind.nodes) {
+                console.warn("[toggleMindmapLanguage] jsMindインスタンス（_jm）が未ロード、またはノードが存在しません。");
+                return;
+            }
+            
+            window.originalMindmapMetadata = window.originalMindmapMetadata || {};
+            
+            const nodes = _jm.mind.nodes;
+            const promises = [];
+            const nodeIds = [];
+            
+            console.log("[toggleMindmapLanguage] 対象ノード数:", Object.keys(nodes).length);
+            
+            // 1. 現在のDOM状態から正しいクラス名や属性をキャッシュに退避
+            for (const id in nodes) {
+                const node = nodes[id];
+                const topic = typeof node.topic === 'string' ? node.topic : (node.topic ? String(node.topic) : "");
+                
+                // 元のテキストを退避
+                if (!window.originalMindmapTexts[id]) {
+                    window.originalMindmapTexts[id] = topic;
+                    console.log(`[Cache] マインドマップテキスト退避: ID=${id}, Text="${topic}"`);
+                }
+                
+                // 元のDOM属性を退避（初回のみ、または現在日本語でかつキャッシュがない場合）
+                const el = document.querySelector(`jmnode[nodeid="${id}"]`);
+                if (el && !window.originalMindmapMetadata[id]) {
+                    window.originalMindmapMetadata[id] = {
+                        className: el.className,
+                        concept_id: el.getAttribute("concept_id"),
+                        type: el.getAttribute("type"),
+                        parent_id: el.getAttribute("parent_id")
+                    };
+                    console.log(`[Cache] マインドマップメタデータ退避: ID=${id}, Class="${el.className}"`);
+                }
+            }
+            
+            // 2. 翻訳テキストの取得 or 元テキストの適用
+            for (const id in nodes) {
+                if (lang === 'en') {
+                    nodeIds.push(id);
+                    promises.push(translateText(window.originalMindmapTexts[id], 'en'));
+                } else {
+                    console.log(`[Restore] 日本語復元: ID=${id}, Text="${window.originalMindmapTexts[id]}"`);
+                    _jm.update_node(id, window.originalMindmapTexts[id]);
+                    
+                    // キャッシュされたメタデータの復元
+                    const meta = window.originalMindmapMetadata[id];
+                    if (meta) {
+                        const newEl = document.querySelector(`jmnode[nodeid="${id}"]`);
+                        if (newEl) {
+                            if (meta.className) newEl.className = meta.className;
+                            if (meta.concept_id) newEl.setAttribute("concept_id", meta.concept_id);
+                            if (meta.type) newEl.setAttribute("type", meta.type);
+                            if (meta.parent_id) newEl.setAttribute("parent_id", meta.parent_id);
+                        }
                     }
                 }
+            }
+            
+            // 3. 英語への一括適用
+            if (lang === 'en' && promises.length > 0) {
+                try {
+                    const results = await Promise.all(promises);
+                    console.log("[toggleMindmapLanguage] 翻訳結果を一括適用します。");
+                    for (let i = 0; i < nodeIds.length; i++) {
+                        const id = nodeIds[i];
+                        _jm.update_node(id, results[i]);
+                        
+                        // キャッシュされたメタデータの復元
+                        const meta = window.originalMindmapMetadata[id];
+                        if (meta) {
+                            const newEl = document.querySelector(`jmnode[nodeid="${id}"]`);
+                            if (newEl) {
+                                if (meta.className) newEl.className = meta.className;
+                                if (meta.concept_id) newEl.setAttribute("concept_id", meta.concept_id);
+                                if (meta.type) newEl.setAttribute("type", meta.type);
+                                if (meta.parent_id) newEl.setAttribute("parent_id", meta.parent_id);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("[toggleMindmapLanguage] 適用処理中にエラー発生:", e);
+                }
+            }
+            
+            // 4. コンパスアイコンなどの復活
+            if (typeof addIconsToObjectNodes === 'function') {
+                console.log("[toggleMindmapLanguage] アイコン追加処理を再実行します。");
+                addIconsToObjectNodes();
+            }
+        }
+
+        // 思考整理マップ（vis.js）のノード翻訳
+        async function toggleNetworkLanguage(lang) {
+            console.log(`[toggleNetworkLanguage] 開始, 言語: ${lang}`);
+            
+            if (typeof defaultThinkingProcess === 'undefined' || !defaultThinkingProcess || !defaultThinkingProcess.nodes) {
+                console.warn("[toggleNetworkLanguage] vis.jsインスタンス（defaultThinkingProcess）が未ロードです。");
+                return;
+            }
+            
+            const nodes = defaultThinkingProcess.nodes.get();
+            const promises = [];
+            const updates = [];
+            
+            console.log("[toggleNetworkLanguage] 対象ノード数:", nodes.length);
+            
+            for (const node of nodes) {
+                const id = node.id;
+                const label = typeof node.label === 'string' ? node.label : (node.label ? String(node.label) : "");
+                
+                if (!window.originalNetworkTexts[id]) {
+                    window.originalNetworkTexts[id] = label;
+                    console.log(`[Cache] vis.jsノード退避: ID=${id}, Text="${label}"`);
+                }
+                
+                if (lang === 'en') {
+                    promises.push((async () => {
+                        const translated = await translateText(window.originalNetworkTexts[id], 'en');
+                        updates.push({ 
+                            id: id, 
+                            label: translated, 
+                            color: node.color, 
+                            font: node.font, 
+                            borderWidth: node.borderWidth, 
+                            borderWidthSelected: node.borderWidthSelected 
+                        });
+                    })());
+                } else {
+                    updates.push({ 
+                        id: id, 
+                        label: window.originalNetworkTexts[id], 
+                        color: node.color, 
+                        font: node.font, 
+                        borderWidth: node.borderWidth, 
+                        borderWidthSelected: node.borderWidthSelected 
+                    });
+                }
+            }
+            
+            if (lang === 'en' && promises.length > 0) {
+                try {
+                    await Promise.all(promises);
+                    console.log("[toggleNetworkLanguage] 翻訳結果を一括適用します。 Updates:", updates);
+                    defaultThinkingProcess.nodes.update(updates);
+                } catch (e) {
+                    console.error("[toggleNetworkLanguage] 適用処理中にエラー発生:", e);
+                }
+            } else if (lang === 'ja' && updates.length > 0) {
+                console.log("[toggleNetworkLanguage] 日本語に一括復元します。");
+                defaultThinkingProcess.nodes.update(updates);
+            }
+        }
+
+        async function toggleWeeklyGoalsLanguage(lang) {
+            console.log(`[toggleWeeklyGoalsLanguage] 開始, 言語: ${lang}`);
+            const els = document.querySelectorAll('.goal-node-content');
+            if (els.length === 0) return;
+            
+            window.originalGoalNodeTexts = window.originalGoalNodeTexts || {};
+            const promises = [];
+            
+            els.forEach(el => {
+                const nodeId = el.getAttribute('data-node-id') || el.innerText;
+                const text = el.innerText.trim();
+                
+                if (!window.originalGoalNodeTexts[nodeId]) {
+                    window.originalGoalNodeTexts[nodeId] = text;
+                }
+                
+                if (lang === 'en') {
+                    promises.push((async () => {
+                        const translated = await translateText(window.originalGoalNodeTexts[nodeId], 'en');
+                        el.innerText = translated;
+                    })());
+                } else {
+                    el.innerText = window.originalGoalNodeTexts[nodeId];
+                }
             });
-            // Medium goal input placeholder
+            
+            if (lang === 'en' && promises.length > 0) {
+                try {
+                    await Promise.all(promises);
+                } catch (e) {
+                    console.error("[toggleWeeklyGoalsLanguage] 適用中にエラー:", e);
+                }
+            }
+        }
+        window.toggleWeeklyGoalsLanguage = toggleWeeklyGoalsLanguage;
+
+        function setLanguage(lang) {
+            window.currentLang = lang;
+            
+            // langDictの翻訳を適用
+            if (langDict[lang]) {
+                Object.keys(langDict[lang]).forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        if (el.tagName === 'INPUT' && el.type === 'submit') {
+                            el.value = langDict[lang][id];
+                        } else {
+                            el.textContent = langDict[lang][id];
+                        }
+                    }
+                });
+            }
+
+            // 個別のプレースホルダー切り替え
+            var questionSearchInput = document.getElementById('questionSearchInput');
+            if (questionSearchInput) {
+                questionSearchInput.placeholder = (lang === 'ja') ? '問いを絞り込む...' : 'Filter inquiries...';
+            }
             var mediumGoalInput = document.getElementById('mediumGoalText');
             if (mediumGoalInput) {
                 mediumGoalInput.placeholder = langDict[lang]['mediumGoalTextPlaceholder'];
             }
-            // 動的な週目標ボタンのテキストも切り替え
-            const weeklyGoalsList = document.getElementById('weeklyGoalsList');
-            if (weeklyGoalsList) {
-                // 編集ボタン
-                const editBtns = weeklyGoalsList.querySelectorAll('[id^="editWeeklyGoalBtnText"]');
-                editBtns.forEach(btn => {
-                    btn.textContent = langDict[lang]['editWeeklyGoalBtnText'];
-                });
-                // レポート出力ボタン
-                const exportBtns = weeklyGoalsList.querySelectorAll('[id^="exportWeeklyGoalBtnText"]');
-                exportBtns.forEach(btn => {
-                    btn.textContent = langDict[lang]['exportWeeklyGoalBtnText'];
-                });
-                // 削除ボタン
-                const deleteBtns = weeklyGoalsList.querySelectorAll('[id^="deleteWeeklyGoalBtnText"]');
-                deleteBtns.forEach(btn => {
-                    btn.textContent = langDict[lang]['deleteWeeklyGoalBtnText'];
-                });
+
+            // 個別のtitle（ツールチップ）属性の切り替え
+            var showQuestionsBtn = document.getElementById('showQuestionsBtn');
+            if (showQuestionsBtn) {
+                showQuestionsBtn.title = (lang === 'ja') ? 'すべての問いを表示' : 'Show all inquiries';
+            }
+            var addCycleBtn = document.getElementById('addCycleBtn');
+            if (addCycleBtn) {
+                addCycleBtn.title = (lang === 'ja') ? 'SRLジャーナルを追加できます' : 'Add SRL Journal';
+            }
+            var srlTabLessons = document.querySelector('[data-tab="lessons"]');
+            if (srlTabLessons) {
+                var subtabSrl = document.querySelector('[data-subtab="srl"]');
+                if (subtabSrl) {
+                    subtabSrl.title = (lang === 'ja') ? 'SRLジャーナルカードから生まれた教訓' : 'Lessons born from SRL Journal cards';
+                }
+                var subtabMap = document.querySelector('[data-subtab="map"]');
+                if (subtabMap) {
+                    subtabMap.title = (lang === 'ja') ? 'SRL整理マップの手段ノードから生まれた教訓' : 'Lessons born from means nodes in the SRL arrangement map';
+                }
+            }
+            var processCloseMapBtn = document.querySelector('.btn-close-map');
+            if (processCloseMapBtn) {
+                processCloseMapBtn.title = (lang === 'ja') ? 'マップを閉じる' : 'Close map';
+            }
+            var processRemoveEdgeBtn = document.getElementById('process_removeEdge');
+            if (processRemoveEdgeBtn) {
+                processRemoveEdgeBtn.title = (lang === 'ja') ? 'エッジ削除' : 'Delete Edge';
+            }
+            var processRemoveNodeBtn = document.getElementById('process_removeNode');
+            if (processRemoveNodeBtn) {
+                processRemoveNodeBtn.title = (lang === 'ja') ? 'ノード削除' : 'Delete Node';
+            }
+            var processZoomInBtn = document.getElementById('process_ZoomIn');
+            if (processZoomInBtn) {
+                processZoomInBtn.title = (lang === 'ja') ? '拡大' : 'Zoom In';
+            }
+            var processZoomOutBtn = document.getElementById('process_ZoomOut');
+            if (processZoomOutBtn) {
+                processZoomOutBtn.title = (lang === 'ja') ? '縮小' : 'Zoom Out';
+            }
+            var timelinePrevBtn = document.getElementById('timeline_prev_btn');
+            if (timelinePrevBtn) {
+                timelinePrevBtn.title = (lang === 'ja') ? '前の活動日へジャンプ' : 'Jump to previous activity date';
+            }
+            var timelineNextBtn = document.getElementById('timeline_next_btn');
+            if (timelineNextBtn) {
+                timelineNextBtn.title = (lang === 'ja') ? '次の活動日へジャンプ' : 'Jump to next activity date';
+            }
+            var timelineLabel = document.getElementById('timeline_label');
+            if (timelineLabel) {
+                var txt = timelineLabel.textContent.trim();
+                if (txt === '読み込み中...' || txt === 'Loading...') {
+                    timelineLabel.textContent = (lang === 'ja') ? '読み込み中...' : 'Loading...';
+                } else {
+                    if (lang === 'en') {
+                        txt = txt.replace(/\(活動:\s*(\d+)\s*件\)/g, '($1 activities)');
+                    } else {
+                        txt = txt.replace(/\((\d+)\s*activities\)/g, '(活動: $1件)');
+                    }
+                    timelineLabel.textContent = txt;
+                }
             }
             
             // 動的な右クリックメニューラベルを再設定
@@ -689,6 +978,7 @@ try {
             }
 
             console.log('言語切替完了: ' + (lang === 'ja' ? '日本語' : 'English'));
+            
             // 問い一覧（testxml）も言語切替
             if (window.setInquiryLang) {
                 window.setInquiryLang(lang);
@@ -699,6 +989,20 @@ try {
             if (window.updateLessonsTooltipLang) {
                 window.updateLessonsTooltipLang();
             }
+            
+            // 週目標カード（ジャーナルカード）の再描画をキック
+            if (window._goalListHelpers && typeof window._goalListHelpers.fetchWeeklyGoalsFromDB === 'function') {
+                try {
+                    window._goalListHelpers.fetchWeeklyGoalsFromDB();
+                } catch(e) {
+                    console.warn('[goal_list] fetchWeeklyGoalsFromDB failed during setLanguage', e);
+                }
+            }
+
+            // ノード記述（マインドマップ、思考整理マップ、週目標カード内問いノード）の翻訳切替を実行
+            toggleMindmapLanguage(lang);
+            toggleNetworkLanguage(lang);
+            toggleWeeklyGoalsLanguage(lang);
         }
         document.addEventListener('DOMContentLoaded', function() {
             var toggle = document.getElementById('language-toggle');
@@ -940,7 +1244,7 @@ try {
                                             <div class="icon-circle bg-sync-slate">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1"/><circle cx="3" cy="12" r="1"/><circle cx="3" cy="18" r="1"/></svg>
                                             </div>
-                                            <span class="toolbar-text">問い一覧</span>
+                                            <span class="toolbar-text" id="toggleInquirySidebarText">問い一覧</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1245,14 +1549,14 @@ try {
                                                     <div class="icon-circle bg-sync-red">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
                                                     </div>
-                                                    <span class="toolbar-text">エッジ削除</span>
+                                                    <span class="toolbar-text" id="process_removeEdgeText">エッジ削除</span>
                                                 </button>
 
                                                 <button class="toolbar-btn" id="process_removeNode" title="ノード削除">
                                                     <div class="icon-circle bg-sync-red">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                                     </div>
-                                                    <span class="toolbar-text">ノード削除</span>
+                                                    <span class="toolbar-text" id="process_removeNodeText">ノード削除</span>
                                                 </button>
                                             </div>
                                             
@@ -1286,14 +1590,14 @@ try {
                                                     <div class="icon-circle bg-sync-charcoal">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                                     </div>
-                                                    <span class="toolbar-text">拡大</span>
+                                                    <span class="toolbar-text" id="process_zoomInText">拡大</span>
                                                 </button>
                                                 
                                                 <button class="toolbar-btn" id="process_ZoomOut" title="縮小">
                                                     <div class="icon-circle bg-sync-charcoal">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                                     </div>
-                                                    <span class="toolbar-text">縮小</span>
+                                                    <span class="toolbar-text" id="process_zoomOutText">縮小</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -1341,7 +1645,7 @@ try {
                                     <!-- 手段ノード用カスタムツールチップ -->
                                     <div id="means-tooltip" class="reflection-tooltip means-tooltip-custom">
                                         <div class="reflection-section" style="margin-bottom: 0;">
-                                            <span class="reflection-text" style="color: #888; font-size: 11px;">活動プロセス</span>
+                                            <span class="reflection-text" id="means-tooltip-title" style="color: #888; font-size: 11px;">活動プロセス</span>
                                         </div>
                                         <div class="reflection-reason" id="means-process-content" style="white-space: pre-wrap; font-size: 12px; line-height: 1.4; color: #555; padding-left: 4px;">
                                             <!-- ここに履歴が挿入されます -->

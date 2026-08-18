@@ -3478,7 +3478,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         this.showFeedbackTooltip('initial-complete');
     }
     
-    showFeedbackTooltip(mode = 'edit') {
+    async showFeedbackTooltip(mode = 'edit') {
         const tooltip = document.getElementById("feedbackTooltip");
         if (!tooltip) {
             console.error("フィードバック用ツールチップの要素が見つかりませんでした。");
@@ -3617,13 +3617,35 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     
         // 現在のノードと目標ノード（topic-tag）のラベルを取得
         const selectedNode = this.nodes.get(this.selectId);
-        const selectedLabel = selectedNode ? selectedNode.label.replace(/\n/g, '') : 'この手段';
+        let selectedLabel = selectedNode ? selectedNode.label.replace(/\n/g, '') : 'この手段';
         
         let topicLabel = '目標';
         if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess) {
             const topicTagNodes = defaultThinkingProcess.nodes.get().filter(n => n.group === 'topic-tag');
             if (topicTagNodes.length > 0) {
                 topicLabel = topicTagNodes[0].label.replace(/\n/g, '');
+            }
+        }
+
+        const isEn = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked);
+        if (isEn && typeof window.translateText === 'function') {
+            try {
+                if (selectedLabel) {
+                    if (selectedLabel === 'この手段') {
+                        selectedLabel = 'this means';
+                    } else {
+                        selectedLabel = await window.translateText(selectedLabel, 'en');
+                    }
+                }
+                if (topicLabel) {
+                    if (topicLabel === '目標') {
+                        topicLabel = 'Goal';
+                    } else {
+                        topicLabel = await window.translateText(topicLabel, 'en');
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to translate selectedLabel/topicLabel for feedback-greeting', e);
             }
         }
 
@@ -3637,13 +3659,16 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             tooltip.dataset.initialSized = '1';
         }
         tooltip.classList.add('fl-card','fl-card--wide');
+        const greetingHtml = isEn
+            ? `Great job working on "${selectedLabel}" for "${topicLabel}"!<br><span style="font-size: 12px; font-weight: 400; color: #64748b;">Let's record any insights you noticed!</span>`
+            : `「${topicLabel}」に向けて「${selectedLabel}」お疲れ様でした！<br><span style="font-size: 12px; font-weight: 400; color: #64748b;">何か気づいたことがあれば記録してみましょう！</span>`;
+
         tooltip.innerHTML = `
     <div class="fl-header" style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin: -6px -6px 0 -6px; box-sizing: border-box;">
         <div class="feedback-greeting" style="font-size: 13px; color: #475569; line-height: 1.5; font-weight: 600; display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 20px;">✨</span>
             <div>
-                「${topicLabel}」に向けて「${selectedLabel}」お疲れ様でした！<br>
-                <span style="font-size: 12px; font-weight: 400; color: #64748b;">何か気づいたことがあれば記録してみましょう！</span>
+                ${greetingHtml}
             </div>
         </div>
         <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
@@ -4319,12 +4344,40 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
         const originalValues = {};
         const getAllTextareas = () => Array.from(tooltip.querySelectorAll('textarea'));
+
+        const translateFeedbackTextareas = async (tooltipEl) => {
+            const isEn = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked);
+            if (!isEn || typeof window.translateText !== 'function') return;
+
+            const textareas = Array.from(tooltipEl.querySelectorAll('textarea'));
+            const promises = textareas.map(async (ta) => {
+                const orig = ta.value.trim();
+                if (orig && orig !== 'New Node' && orig !== '未リンク') {
+                    if (!ta.dataset.originalValue) {
+                        ta.dataset.originalValue = ta.value;
+                    }
+                    const trans = await window.translateText(ta.dataset.originalValue, 'en');
+                    ta.value = trans;
+                    ta.dataset.translatedValue = trans;
+                }
+                
+                if (!ta.dataset.hasInputListener) {
+                    ta.addEventListener('input', function() {
+                        delete ta.dataset.originalValue;
+                        delete ta.dataset.translatedValue;
+                    });
+                    ta.dataset.hasInputListener = 'true';
+                }
+            });
+            await Promise.all(promises);
+        };
         
-        const snapshotOriginalValues = () => {
+        const snapshotOriginalValues = async () => {
+            await translateFeedbackTextareas(tooltip);
             getAllTextareas().forEach(ta => {
                 const id = ta.id || ta.name || Math.random().toString();
                 ta.dataset.trackerId = id;
-                originalValues[id] = ta.value;
+                originalValues[id] = ta.dataset.originalValue || ta.value;
             });
         };
         snapshotOriginalValues();
@@ -4336,7 +4389,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             let isChanged = false;
             let hasAnyText = false;
             getAllTextareas().forEach(ta => {
-                const val = ta.value.trim();
+                let val = ta.value.trim();
+                if (ta.dataset.originalValue && ta.value === ta.dataset.translatedValue) {
+                    val = ta.dataset.originalValue.trim();
+                }
                 if (val.length > 0) hasAnyText = true;
                 const id = ta.dataset.trackerId;
                 if (val !== (originalValues[id] || '').trim()) {
@@ -4434,12 +4490,20 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
             // Undo/Redo: 古いステータスを保存（保存ボタン押下時に取得）
             const oldNodeForUndo = this.nodes.get(this.selectId);
-            const oldStatusForUndo = oldNodeForUndo ? oldNodeForUndo.status : 'todo';
+            const oldStatusForUndo = oldNodeForUndo ? oldNodeForUndo.status : "todo";
+            const getValOrOriginal = (el) => {
+                if (!el) return "";
+                const v = el.value.trim();
+                if (el.dataset.originalValue && v === el.dataset.translatedValue) {
+                    return el.dataset.originalValue.trim();
+                }
+                return v;
+            };
             
-            const successPoints = (document.getElementById("successPoints") || {value:''}).value.trim();
-            const failurePoints = (document.getElementById("failurePoints") || {value:''}).value.trim();
-            const completionReasonGood = (document.getElementById("completionReasonGood") || {value:''}).value.trim();
-            const completionReasonBad = (document.getElementById("completionReasonBad") || {value:''}).value.trim();
+            const successPoints = getValOrOriginal(document.getElementById("successPoints"));
+            const failurePoints = getValOrOriginal(document.getElementById("failurePoints"));
+            const completionReasonGood = getValOrOriginal(document.getElementById("completionReasonGood"));
+            const completionReasonBad = getValOrOriginal(document.getElementById("completionReasonBad"));
             const completionReason = [completionReasonGood, completionReasonBad].filter(Boolean).join('\n\n');
             
             // タブ形式の教訓を収集（複数教訓対応）
@@ -4449,9 +4513,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             
             try {
                 // 最初の教訓（固定のID）
-                const firstLesson = (document.getElementById("challengesAndLearnings") || {value:''}).value.trim();
-                const firstWhy = (document.getElementById("whyImportant") || {value:''}).value.trim();
-                const firstWhen = (document.getElementById("whenApplicable") || {value:''}).value.trim();
+                const firstLesson = getValOrOriginal(document.getElementById("challengesAndLearnings"));
+                const firstWhy = getValOrOriginal(document.getElementById("whyImportant"));
+                const firstWhen = getValOrOriginal(document.getElementById("whenApplicable"));
                 if (firstLesson || firstWhy || firstWhen) {
                     lessonsArray.push({ lesson: firstLesson, why_important: firstWhy, opportunity: firstWhen });
                 }
@@ -4465,9 +4529,9 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     const focusEl = content.querySelector('.lesson-focus');
                     const whyEl = content.querySelector('.lesson-why');
                     const whenEl = content.querySelector('.lesson-when');
-                    const lessonText = focusEl ? focusEl.value.trim() : '';
-                    const whyText = whyEl ? whyEl.value.trim() : '';
-                    const whenText = whenEl ? whenEl.value.trim() : '';
+                    const lessonText = getValOrOriginal(focusEl);
+                    const whyText = getValOrOriginal(whyEl);
+                    const whenText = getValOrOriginal(whenEl);
                     const dbId = content.dataset.objectLeId || '';
                     
                     if (lessonText || whyText || whenText) {
@@ -7483,7 +7547,8 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                             bar.style.height = heightPercent + '%';
                             bar.style.backgroundColor = '#93c5fd';
                             bar.style.cursor = 'pointer';
-                            bar.title = `${timelineDates[i]} (活動: ${count}件)`;
+                            const isEn = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked);
+                            bar.title = isEn ? `${timelineDates[i]} (${count} activities)` : `${timelineDates[i]} (活動: ${count}件)`;
                             
                             // 選択中のバーか？
                             const selectedFullIdx = activeDayIndices[currentActiveIdx];
@@ -7533,7 +7598,8 @@ const displayTriggerData = (mode, display_target_area_id, targetNodeId, targetPr
                     const fullIdx = activeDayIndices[currentActiveIdx];
                     const date = timelineDates[fullIdx];
                     const count = timelineActivityCounts[fullIdx] || 0;
-                    label.textContent = `${date} (活動: ${count}件)`;
+                    const isEn = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked);
+                    label.textContent = isEn ? `${date} (${count} activities)` : `${date} (活動: ${count}件)`;
                     
                     // 全バーの色を更新
                     const bars = barchartEl.querySelectorAll('.timeline-bar-item');

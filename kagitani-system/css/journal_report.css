@@ -930,7 +930,7 @@
     border: 1px solid #eee !important;
     background: transparent !important;
     resize: none !important;
-    overflow: visible !important;
+    overflow: hidden !important;
   }
 }
 

@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return '<div class="jmnode question-item" draggable="true" data-goal-idx="' + idx + '" data-content-idx="' + cidx + '" data-node-id="' + nodeIdAttr + '" title="SRL整理マップを開けます">' +
                         '<div style="display:flex; align-items:center; gap:6px;">' +
                         '<span class="drag-handle" title="ドラッグして並び替え" style="cursor:grab; color:#ccc;">⋮⋮</span>' +
-                        '<span>' + contentText + '</span>' +
+                        '<span class="goal-node-content" data-node-id="' + nodeIdAttr + '">' + contentText + '</span>' +
                         '</div>' +
                         '<button onclick="deleteGoalNode(' + idx + ',' + cidx + ')" class="goal-delete-btn" title="削除" style="background:transparent;border:none;cursor:pointer;padding:0;">' +
                         '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><path d="M4 8h8" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>' +
@@ -501,6 +501,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '</div>';
         });
         weeklyListDiv.innerHTML = html;
+
+        // もし現在の言語が英語なら、生成された問いテキストを翻訳する
+        if (getCurrentLang() === 'en') {
+            if (typeof window.toggleWeeklyGoalsLanguage === 'function') {
+                window.toggleWeeklyGoalsLanguage('en');
+            }
+        }
 
         // ドラッグ＆ドロップによる並び替え処理
         var containers = weeklyListDiv.querySelectorAll('.goal-nodes-container');
