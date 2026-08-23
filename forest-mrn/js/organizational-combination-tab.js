@@ -19,6 +19,9 @@
     }
   };
   var kfragRelationVisible = false;
+  var DISCUSSION_POLL_INTERVAL_MS = 5000;
+  var _discussionPollTimer = null;
+  var _discussionRequestSerial = 0;
   var KFRAG_VIEW_STORAGE_KEY = 'forest_combination_kfrag_view_mode';
   var KFRAG_ZOOM_STORAGE_KEY = 'forest_combination_kfrag_canvas_zoom';
 
@@ -222,6 +225,7 @@
     bindKnowledgeTreeContextMenu();
     bindKnowledgeTreeAddNode();
     bindDiscussion();
+    startDiscussionPolling();
     bindSourceFilters();
     applyFragmentSourceFilter();
     applyKnowledgeTreeSourceFilter();
@@ -311,16 +315,17 @@
     zoomInBtn.setAttribute('data-kfrag-zoom-action', 'in');
     zoomInBtn.textContent = '+';
 
-    var zoomResetBtn = document.createElement('button');
-    zoomResetBtn.type = 'button';
-    zoomResetBtn.className = 'kfrag-zoom-btn';
-    zoomResetBtn.setAttribute('data-kfrag-zoom-action', 'reset');
-    zoomResetBtn.textContent = '100%';
+    var reloadBtn = document.createElement('button');
+    reloadBtn.type = 'button';
+    reloadBtn.className = 'kfrag-reload-btn';
+    reloadBtn.setAttribute('aria-label', '知識フラグメント一覧を再読み込み');
+    reloadBtn.setAttribute('title', '知識フラグメント一覧を再読み込み');
+    reloadBtn.innerHTML = '<span aria-hidden="true">&#8635;</span>';
 
     zoomGroup.appendChild(zoomOutBtn);
     zoomGroup.appendChild(zoomLabel);
     zoomGroup.appendChild(zoomInBtn);
-    zoomGroup.appendChild(zoomResetBtn);
+    zoomGroup.appendChild(reloadBtn);
     group.appendChild(zoomGroup);
 
     var relationBtn = document.createElement('button');
@@ -345,8 +350,19 @@
       var next = current;
       if(action === 'in') next = Math.min(1.8, Math.round((current + 0.1) * 10) / 10);
       else if(action === 'out') next = Math.max(0.5, Math.round((current - 0.1) * 10) / 10);
-      else next = 1;
+      else return;
       applyKfragCanvasZoom(workspace, next, true);
+    }, false);
+
+    reloadBtn.addEventListener('click', function(){
+      if(reloadBtn.disabled) return;
+      reloadBtn.disabled = true;
+      reloadBtn.classList.add('is-loading');
+      reloadFragmentsForGroup(workspace, function(success){
+        reloadBtn.disabled = false;
+        reloadBtn.classList.remove('is-loading');
+        if(!success) console.warn('knowledge fragment reload failed');
+      });
     }, false);
   }
 
@@ -1738,6 +1754,99 @@
     updateAdditionalHighlight(workspace);
   }
 
+  var experienceContextCard = null;
+
+  function hideExperienceContextMenu(){
+    var menu = document.getElementById('kfrag-experience-context-menu');
+    if(menu) menu.style.display = 'none';
+    experienceContextCard = null;
+  }
+
+  function openExperienceThinkingProcessMap(){
+    var card = experienceContextCard;
+    hideExperienceContextMenu();
+    if(!card) return;
+
+    var thoughtNodeId = String(card.getAttribute('data-thought-node-id') || '').trim();
+    var experienceType = String(card.getAttribute('data-experience-type') || 'process').trim() || 'process';
+    var node = {
+      id: thoughtNodeId,
+      thought_experience_node_id: thoughtNodeId,
+      group: experienceType,
+      user_id: String(card.getAttribute('data-user-id') || '').trim(),
+      source_type: 'experience',
+      source_record_id: String(card.getAttribute('data-source-id') || '').trim()
+    };
+
+    if(typeof defaultOrganizational !== 'undefined' && defaultOrganizational && typeof defaultOrganizational.openThinkingProcessMapForNode === 'function'){
+      defaultOrganizational.openThinkingProcessMapForNode(node, { floating: true });
+      return;
+    }
+    if(!thoughtNodeId){
+      alert('この知識フラグメントには思考過程表出化マップの参照情報がありません。');
+      return;
+    }
+    if(typeof showThinkingProcessMap === 'function'){
+      showThinkingProcessMap(node, { floating: true });
+    }
+  }
+
+  function ensureExperienceContextMenu(){
+    var menu = document.getElementById('kfrag-experience-context-menu');
+    if(menu) return menu;
+
+    menu = document.createElement('div');
+    menu.id = 'kfrag-experience-context-menu';
+    menu.className = 'kfrag-context-menu';
+    menu.setAttribute('role', 'menu');
+
+    var openButton = document.createElement('button');
+    openButton.type = 'button';
+    openButton.className = 'kfrag-context-menu-button';
+    openButton.textContent = '思考過程表出化マップを表示';
+    openButton.addEventListener('click', openExperienceThinkingProcessMap, false);
+
+    var cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'kfrag-context-menu-button is-cancel';
+    cancelButton.textContent = 'キャンセル';
+    cancelButton.addEventListener('click', hideExperienceContextMenu, false);
+
+    menu.appendChild(openButton);
+    menu.appendChild(cancelButton);
+    document.body.appendChild(menu);
+
+    document.addEventListener('mousedown', function(event){
+      if(menu.style.display !== 'none' && !menu.contains(event.target)) hideExperienceContextMenu();
+    }, true);
+    document.addEventListener('keydown', function(event){
+      if(event.key === 'Escape') hideExperienceContextMenu();
+    }, false);
+    window.addEventListener('resize', hideExperienceContextMenu, false);
+    return menu;
+  }
+
+  function bindExperienceContextMenu(workspace){
+    if(workspace.__experienceContextMenuBound) return;
+    workspace.__experienceContextMenuBound = true;
+    workspace.addEventListener('contextmenu', function(event){
+      var card = event.target && event.target.closest ? event.target.closest('.knowledge_fragment') : null;
+      if(!card || !workspace.contains(card)) return;
+      if(normalizeSourceType(card.getAttribute('data-source-type')) !== 'experience') return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      experienceContextCard = card;
+      var menu = ensureExperienceContextMenu();
+      menu.style.display = 'block';
+      var rect = menu.getBoundingClientRect();
+      var left = Math.min(event.clientX, Math.max(8, window.innerWidth - rect.width - 8));
+      var top = Math.min(event.clientY, Math.max(8, window.innerHeight - rect.height - 8));
+      menu.style.left = Math.max(8, left) + 'px';
+      menu.style.top = Math.max(8, top) + 'px';
+    }, false);
+  }
+
   function initFragmentWorkspace(workspace){
     // Ensure each .knowledge_fragment is contained by .fragment-node-wrapper
     // inside .knowledge-fragment-list. PHP emits this structure; JS keeps
@@ -1790,6 +1899,7 @@
     });
 
     bindFragmentReorder(workspace);
+    bindExperienceContextMenu(workspace);
     setKfragViewMode(workspace, getKfragViewMode(), false);
     updateFragmentDiscussedIndicators(workspace);
 
@@ -2908,9 +3018,7 @@
   // deleteKnowledgeNode: intentionally unused in the current UI (kept in PHP API for future use).
 
   function discussedLabel(status){
-    if(status === 'UNDERWAY') return '議論中';
-    if(status === 'DONE') return '議論完了';
-    return '議論開始';
+    return status === 'UNDERWAY' ? '議論完了' : '議論開始';
   }
 
   function updateDiscussedButton(){
@@ -2919,7 +3027,10 @@
     var s = (typeof window.activeKnowledgeFragmentDiscussed !== 'undefined' && window.activeKnowledgeFragmentDiscussed !== null)
       ? String(window.activeKnowledgeFragmentDiscussed).trim()
       : '';
-    btn.textContent = discussedLabel(s);
+    var label = discussedLabel(s);
+    btn.textContent = label;
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
     btn.disabled = (getActiveFragmentId() === null);
   }
 
@@ -2935,7 +3046,8 @@
         var cur = (typeof window.activeKnowledgeFragmentDiscussed !== 'undefined' && window.activeKnowledgeFragmentDiscussed !== null)
           ? String(window.activeKnowledgeFragmentDiscussed).trim()
           : 'YET';
-        var next = (cur === 'YET') ? 'UNDERWAY' : (cur === 'UNDERWAY') ? 'DONE' : 'YET';
+        var next = (cur === 'UNDERWAY') ? 'DONE' : 'UNDERWAY';
+        btn.disabled = true;
 
         // update all selected fragments
         var pending = ids.length;
@@ -2966,7 +3078,7 @@
               }
               window.activeKnowledgeFragmentDiscussed = next;
               // When discussion starts, freeze the current selection set.
-              // When it ends (DONE/YET), unlock and allow normal selection again.
+              // When it ends, unlock and allow normal selection again.
               if(next === 'UNDERWAY'){
                 window.kfrag_display_list = ids.slice();
               } else {
@@ -3086,6 +3198,35 @@
     var list = document.getElementById('discussion_message_list');
     if(!form || !input || !list) return;
 
+    var refreshBtn = document.getElementById('discussion-refresh-button');
+    if(refreshBtn && !refreshBtn.__discussionRefreshBound){
+      refreshBtn.__discussionRefreshBound = true;
+      refreshBtn.addEventListener('click', function(){
+        if(refreshBtn.disabled) return;
+        refreshBtn.disabled = true;
+        refreshBtn.classList.add('is-syncing');
+        refreshBtn.setAttribute('aria-label', 'ディスカッション履歴を同期中');
+        refreshBtn.setAttribute('title', '同期中');
+        loadDiscussion({
+          silent: true,
+          forceScroll: false,
+          onComplete: function(ok){
+            refreshBtn.disabled = false;
+            refreshBtn.classList.remove('is-syncing');
+            var label = ok ? 'ディスカッション履歴を同期しました' : 'ディスカッション履歴の同期に失敗しました';
+            refreshBtn.setAttribute('aria-label', label);
+            refreshBtn.setAttribute('title', label);
+            window.setTimeout(function(){
+              if(!refreshBtn.classList.contains('is-syncing')){
+                refreshBtn.setAttribute('aria-label', 'ディスカッション履歴を同期');
+                refreshBtn.setAttribute('title', 'ディスカッション履歴を同期');
+              }
+            }, 2000);
+          }
+        });
+      }, false);
+    }
+
     form.addEventListener('submit', function(){
       var text = input.value.trim();
       if(!text) return;
@@ -3114,19 +3255,56 @@
           return;
         }
         input.value = '';
-        loadDiscussion();
+        loadDiscussion({ forceScroll: true });
       };
       xhr.send(fd);
     }, false);
   }
 
-  function loadDiscussion(){
+  function isCombinationDiscussionVisible(){
+    var panel = document.getElementById('org-tabpanel-combination');
+    if(!panel || panel.hasAttribute('hidden')) return false;
+    if(typeof document.hidden !== 'undefined' && document.hidden) return false;
+    return true;
+  }
+
+  function startDiscussionPolling(){
+    if(_discussionPollTimer !== null) return;
+    _discussionPollTimer = window.setInterval(function(){
+      if(isCombinationDiscussionVisible()) loadDiscussion({ silent: true });
+    }, DISCUSSION_POLL_INTERVAL_MS);
+    document.addEventListener('visibilitychange', function(){
+      if(isCombinationDiscussionVisible()) loadDiscussion({ silent: true });
+    }, false);
+  }
+
+  function buildDiscussionSignature(items){
+    return (items || []).map(function(item){
+      return [
+        item.discussion_history_id || '',
+        item.user_id || '',
+        item.posted_time || '',
+        item.content || ''
+      ].join('\u001f');
+    }).join('\u001e');
+  }
+
+  function loadDiscussion(options){
+    options = options || {};
+    var silent = !!options.silent;
+    var completed = false;
+    function complete(ok){
+      if(completed) return;
+      completed = true;
+      if(typeof options.onComplete === 'function') options.onComplete(!!ok);
+    }
     var list = document.getElementById('discussion_message_list');
     var form = document.getElementById('discussion_post_form');
-    if(!list) return;
+    if(!list){ complete(false); return; }
     var sourceType = getActiveFragmentSourceType() || 'experience';
     var ids = getSelectedFragmentSourceIds();
     if(ids.length === 0){
+      if(silent){ complete(true); return; }
       // No selection -> placeholder + hide form
       list.innerHTML = '';
       var ph = document.createElement('div');
@@ -3135,34 +3313,49 @@
       list.appendChild(ph);
       if(form) form.style.display = 'none';
       updateDiscussedButton();
+      complete(true);
       return;
     }
     if(form) form.style.display = 'block';
-    list.textContent = '読み込み中...';
+    if(!silent) list.textContent = '読み込み中...';
+
+    var requestSerial = ++_discussionRequestSerial;
+    var requestSelectionKey = sourceType + ':' + ids.join(',');
+    var wasNearBottom = (list.scrollHeight - list.scrollTop - list.clientHeight) < 40;
+    var previousScrollTop = list.scrollTop;
 
     var url = 'php/get_discussion_history.php?limit=200';
     url += '&fragment_id=' + encodeURIComponent(ids.join(','));
     url += '&fragment_source_type=' + encodeURIComponent(sourceType);
+    url += '&_ts=' + Date.now();
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onreadystatechange = function(){
       if(xhr.readyState !== 4) return;
+      var currentSelectionKey = (getActiveFragmentSourceType() || 'experience') + ':' + getSelectedFragmentSourceIds().join(',');
+      if(requestSerial !== _discussionRequestSerial || currentSelectionKey !== requestSelectionKey){ complete(false); return; }
       if(xhr.status !== 200){
-        list.textContent = '読み込みに失敗しました';
+        if(!silent) list.textContent = '読み込みに失敗しました';
+        complete(false);
         return;
       }
       var data = null;
       try{ data = JSON.parse(xhr.responseText || '{}'); }catch(e){ data = null; }
       if(!data || data.status !== 'ok' || !Array.isArray(data.items)){
-        list.textContent = 'データ形式が不正です';
+        if(!silent) list.textContent = 'データ形式が不正です';
+        complete(false);
         return;
       }
+      var signature = buildDiscussionSignature(data.items);
+      if(silent && list.getAttribute('data-discussion-signature') === signature){ complete(true); return; }
+      list.setAttribute('data-discussion-signature', signature);
       list.innerHTML = '';
       if(data.items.length === 0){
         var empty2 = document.createElement('div');
         empty2.className = 'discussion-placeholder';
         empty2.textContent = '投稿はまだありません。';
         list.appendChild(empty2);
+        complete(true);
         return;
       }
       data.items.forEach(function(it){
@@ -3185,8 +3378,14 @@
         }
         list.appendChild(card);
       });
-      try{ list.scrollTop = list.scrollHeight; }catch(e){}
+      try{
+        if(options.forceScroll || !silent || wasNearBottom) list.scrollTop = list.scrollHeight;
+        else list.scrollTop = previousScrollTop;
+      }catch(e){}
+      complete(true);
     };
+    xhr.onerror = function(){ complete(false); };
+    xhr.ontimeout = function(){ complete(false); };
     xhr.send(null);
   }
 

@@ -97,6 +97,8 @@ if ($resT = $mysqli->query("SHOW TABLES LIKE 'experience_knowledges'")) {
                      ek.knowledge_fragment_content AS content,
                      ek.stage1, ek.stage2, ek.stage3,
                      ek.selected_contents,
+                     ek.thought_experience_node_id,
+                     ek.experience_type,
                      ek.updated_at AS updated_at,
                      ek.user_id,
                      COALESCE(u.name,'') AS user_name,
@@ -128,6 +130,9 @@ if ($resT = $mysqli->query("SHOW TABLES LIKE 'experience_knowledges'")) {
               'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
               'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
               'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
+              'thought_experience_node_id' => isset($row['thought_experience_node_id']) ? (string)$row['thought_experience_node_id'] : '',
+              'experience_type' => isset($row['experience_type']) ? (string)$row['experience_type'] : '',
+              'user_id' => isset($row['user_id']) ? (string)$row['user_id'] : '',
               'user_name' => $__user_name,
               'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
               'source_type' => 'experience',
@@ -143,6 +148,8 @@ if ($resT = $mysqli->query("SHOW TABLES LIKE 'experience_knowledges'")) {
                      ek.knowledge_fragment_content AS content,
                      ek.stage1, ek.stage2, ek.stage3,
                      ek.selected_contents,
+                     ek.thought_experience_node_id,
+                     ek.experience_type,
                      ek.updated_at,
                      ek.user_id,
                      COALESCE(u.name,'') AS user_name,
@@ -170,6 +177,9 @@ if ($resT = $mysqli->query("SHOW TABLES LIKE 'experience_knowledges'")) {
               'stage2' => isset($row['stage2']) ? (string)$row['stage2'] : '',
               'stage3' => isset($row['stage3']) ? (string)$row['stage3'] : '',
               'selected_contents' => isset($row['selected_contents']) ? (string)$row['selected_contents'] : '',
+              'thought_experience_node_id' => isset($row['thought_experience_node_id']) ? (string)$row['thought_experience_node_id'] : '',
+              'experience_type' => isset($row['experience_type']) ? (string)$row['experience_type'] : '',
+              'user_id' => isset($row['user_id']) ? (string)$row['user_id'] : '',
               'user_name' => $__user_name,
               'discussed' => isset($row['discussed']) ? (string)$row['discussed'] : '',
               'source_type' => 'experience',
@@ -400,6 +410,11 @@ $mysqli->close();
       $sourceType = isset($__kfrag_raw['source_type']) ? (string)$__kfrag_raw['source_type'] : 'experience';
       $sourceId = isset($__kfrag_raw['source_id']) ? intval($__kfrag_raw['source_id'],10) : 0;
       if($sourceId>0){ echo ' data-source-id="'.$sourceId.'"'; }
+      if($sourceType === 'experience'){
+        echo ' data-thought-node-id="'.htmlspecialchars(isset($__kfrag_raw['thought_experience_node_id']) ? (string)$__kfrag_raw['thought_experience_node_id'] : '', ENT_QUOTES, 'UTF-8').'"';
+        echo ' data-experience-type="'.htmlspecialchars(isset($__kfrag_raw['experience_type']) ? (string)$__kfrag_raw['experience_type'] : '', ENT_QUOTES, 'UTF-8').'"';
+        echo ' data-user-id="'.htmlspecialchars(isset($__kfrag_raw['user_id']) ? (string)$__kfrag_raw['user_id'] : '', ENT_QUOTES, 'UTF-8').'"';
+      }
       $canvasKey = $sourceType.':'.$sourceId;
       if($sourceId>0 && isset($canvasMap) && isset($canvasMap[$canvasKey])){
         echo ' data-canvas-x="'.htmlspecialchars((string)$canvasMap[$canvasKey]['x'], ENT_QUOTES, 'UTF-8').'"';
@@ -411,6 +426,11 @@ $mysqli->close();
       $disc = isset($__kfrag_raw['discussed']) ? trim($__kfrag_raw['discussed']) : '';
       if($disc!==''){ echo ' data-discussed="'.htmlspecialchars($disc,ENT_QUOTES,'UTF-8').'"'; }
       if($sourceId>0){ echo ' data-source-id="'.$sourceId.'"'; }
+      if($sourceType === 'experience'){
+        echo ' data-thought-node-id="'.htmlspecialchars(isset($__kfrag_raw['thought_experience_node_id']) ? (string)$__kfrag_raw['thought_experience_node_id'] : '', ENT_QUOTES, 'UTF-8').'"';
+        echo ' data-experience-type="'.htmlspecialchars(isset($__kfrag_raw['experience_type']) ? (string)$__kfrag_raw['experience_type'] : '', ENT_QUOTES, 'UTF-8').'"';
+        echo ' data-user-id="'.htmlspecialchars(isset($__kfrag_raw['user_id']) ? (string)$__kfrag_raw['user_id'] : '', ENT_QUOTES, 'UTF-8').'"';
+      }
     ?>>
         <div class="card-title"><?php echo htmlspecialchars($__uname, ENT_QUOTES, 'UTF-8'); ?> さん</div>
         <div class="card-body"><?php echo nl2br(htmlspecialchars($__tmp, ENT_QUOTES, 'UTF-8')); ?></div>

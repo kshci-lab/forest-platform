@@ -217,6 +217,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // this.ownNetwork = this.generateThinkingProcessNetworkCanvas(container, {}, {}); // デフォルトのマップを表示
 
         defaultRecordThinkingProcess = new RecordThinkingProcess();
+        this.containerId = container;
         this.nodes = new vis.DataSet();
         this.edges = new vis.DataSet();
         this.options = {
@@ -537,7 +538,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         return defaultThinkingProcess.nodes;
     }
 
-    addVersionNode(node_id, node_l, node_type, appeared_at, node_x, node_y){
+    addVersionNode(node_id, node_l, node_type, appeared_at, node_x, node_y, displayAsEmptyInitialVersion){
         const existingNode = defaultThinkingProcess.nodes.get(node_id);
         if (existingNode) {
             console.log(`Node with ID ${node_id} already exists. Skipping addition.`);
@@ -555,8 +556,20 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             node_label = node_l
         }
 
+        if(displayAsEmptyInitialVersion){
+            node_label = '';
+            node_color = {
+                background: '#ffffff',
+                border: '#aeb4ba',
+                highlight: { background: '#ffffff', border: '#7f8790' },
+                hover: { background: '#ffffff', border: '#7f8790' }
+            };
+        }
+
         if(node_type == "versionsBro"){
-            node_color = '#ffd7c9'; // ノードの背景色
+            if(!displayAsEmptyInitialVersion){
+                node_color = '#ffd7c9'; // ノードの背景色
+            }
             y_fixed = false;
         }
 
@@ -571,6 +584,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             fixed: {y: y_fixed },
             x: node_x, y: node_y, 
         };
+        if(displayAsEmptyInitialVersion){
+            newNode.borderWidth = 1;
+            newNode.shapeProperties = { borderDashes: [2, 4] };
+        }
         // console.log(newNode);
         
         defaultThinkingProcess.nodes.add(newNode);
@@ -634,8 +651,62 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             fixed: true,
         };
         defaultThinkingProcess.edges.add(newEdge);
+        defaultThinkingProcess.removeSupersededVersionEdges();
         return defaultThinkingProcess.edges;
 
+    }
+
+    removeSupersededVersionEdges(){
+        const versionNodeIds = {};
+        this.nodes.forEach((node) => {
+            if(node && (node.group === "versions" || node.group === "versionsBro")){
+                versionNodeIds[String(node.id)] = true;
+            }
+        });
+
+        const defaultVersionEdges = [];
+        const adjacency = {};
+        this.edges.forEach((edge) => {
+            if(!edge || edge.from == null || edge.to == null) return;
+            if(edge.group === "versionEdges"){
+                defaultVersionEdges.push(edge);
+                return;
+            }
+            const fromId = String(edge.from);
+            const toId = String(edge.to);
+            if(!adjacency[fromId]) adjacency[fromId] = [];
+            adjacency[fromId].push(toId);
+        });
+
+        const hasAlternatePath = (fromId, toId) => {
+            const queue = [{ id: String(fromId), includesOtherType: false }];
+            const visited = {};
+            while(queue.length > 0){
+                const current = queue.shift();
+                const visitKey = current.id + '|' + (current.includesOtherType ? '1' : '0');
+                if(visited[visitKey]) continue;
+                visited[visitKey] = true;
+
+                const nextIds = adjacency[current.id] || [];
+                for(let i = 0; i < nextIds.length; i++){
+                    const nextId = nextIds[i];
+                    const includesOtherType = current.includesOtherType || !versionNodeIds[nextId];
+                    if(nextId === String(toId) && includesOtherType) return true;
+                    const nextVisitKey = nextId + '|' + (includesOtherType ? '1' : '0');
+                    if(!visited[nextVisitKey]){
+                        queue.push({ id: nextId, includesOtherType: includesOtherType });
+                    }
+                }
+            }
+            return false;
+        };
+
+        const removeIds = defaultVersionEdges
+            .filter((edge) => hasAlternatePath(edge.from, edge.to))
+            .map((edge) => edge.id);
+        if(removeIds.length > 0){
+            this.edges.remove(removeIds);
+        }
     }
 
     addTriggerNode(flag, trigger_id, edge_id, from_node, to_node, activity_id, t_label, t_type, t_time, node_x, node_y){
@@ -765,11 +836,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             defaultRecordThinkingProcess.record_trigger(trigger_id, activity_id, from_node, to_node, t_time, t_type, t_label, node_x, node_y);
         }
 
+        defaultThinkingProcess.removeSupersededVersionEdges();
+
         return defaultThinkingProcess.edges, defaultThinkingProcess.nodes;
     }
 
     addReloadEdge(edge_id, edge_start, edge_end, edge_label) {
         this.edges.add({id: edge_id, from: edge_start, to: edge_end ,label: edge_label});
+        this.removeSupersededVersionEdges();
     }
 
     //未完成　ノード追加
@@ -794,15 +868,45 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
     }
 
+    showNetworkNotice(message) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+
+        let notice = container.querySelector('.process-network-notice');
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.className = 'process-network-notice';
+            notice.setAttribute('role', 'status');
+            notice.setAttribute('aria-live', 'polite');
+            container.appendChild(notice);
+        }
+        notice.textContent = message;
+        notice.classList.remove('is-visible');
+        void notice.offsetWidth;
+        notice.classList.add('is-visible');
+
+        if (this.networkNoticeTimer) clearTimeout(this.networkNoticeTimer);
+        this.networkNoticeTimer = setTimeout(function() {
+            notice.classList.remove('is-visible');
+        }, 2500);
+    }
+
     //ダブルクリック時編集(完了)
     doubleclick (params) {
         const clickedNodeId = params.nodes[0];
         if (clickedNodeId !== undefined) {
-            if(this.nodes.get(clickedNodeId).group == "versionTime"){
+            const clickedNode = this.nodes.get(clickedNodeId);
+            if (!clickedNode) return;
+            if(clickedNode.group == "versionTime"){
+                return;
+            }
+            if(this.containerId === "myProcessnetwork" && (clickedNode.group === "versions" || clickedNode.group === "versionsBro")){
+                this.ownNetwork.setSelection({ nodes: [] });
+                this.showNetworkNotice('バージョンノードは編集できません');
                 return;
             }
             // ユーザーに新しいラベルを尋ね、それをノードの中身に設定
-            const newLabel = prompt('新しいラベルを入力してください:', this.nodes.get(clickedNodeId).label.split('\n').join(''));
+            const newLabel = prompt('新しいラベルを入力してください:', clickedNode.label.split('\n').join(''));
             // 編集したラベルを反映
             if (newLabel !== null) {
                 this.editNode(clickedNodeId, newLabel);
@@ -1138,6 +1242,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         let edge_id = this.generateUniqueNumberText();
         this.edges.add({ id: edge_id ,from: E_start, to: E_end });
         defaultRecordThinkingProcess.record_Edge(edge_id, E_start, E_end);
+        this.removeSupersededVersionEdges();
     }
 
     //ドラッグ開始(完成)
@@ -1171,6 +1276,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 let edge_id = this.generateUniqueNumberText();
                 this.edges.add({id: edge_id, from: this.dragStartNodeId, to: this.dragEndNodeId });
                 defaultRecordThinkingProcess.record_Edge(edge_id, this.dragStartNodeId, this.dragEndNodeId);
+                this.removeSupersededVersionEdges();
             }
             this.dragStartNodeId = null;
             this.dragEndNodeId = null;
@@ -1655,6 +1761,28 @@ const renderTriggerCandidateList = (target_area, candidates) => {
 }
 
 // 思考過程表出化マップを表示
+const getEmptyInitialVersionIds = (nodeVersions) => {
+    const earliestByNode = {};
+    (Array.isArray(nodeVersions) ? nodeVersions : []).forEach((version) => {
+        if(!version || !version.node_version_id) return;
+        const nodeKey = version.node_id ? String(version.node_id) : '__selected_node__';
+        const current = earliestByNode[nodeKey];
+        const appearedAt = String(version.appeared_at || '');
+        if(!current || appearedAt < String(current.appeared_at || '')){
+            earliestByNode[nodeKey] = version;
+        }
+    });
+
+    const emptyIds = {};
+    Object.keys(earliestByNode).forEach((nodeKey) => {
+        const version = earliestByNode[nodeKey];
+        if(String(version.content || '').trim() === 'New Node'){
+            emptyIds[String(version.node_version_id)] = true;
+        }
+    });
+    return emptyIds;
+};
+
 const displayTriggerData = (mode, process_display_option) => {
     process_mode = mode;
     let node_x = 0;
@@ -1670,10 +1798,11 @@ const displayTriggerData = (mode, process_display_option) => {
             const concept_label = trigger_list_info['selected_concept'];
             conceptdisplay_area.html(concept_label);
             let j = 0;
+            const emptyInitialVersionIds = getEmptyInitialVersionIds(trigger_list_info.node_versions);
 
             // versionノードの表示
             trigger_list_info.node_versions.forEach((v) => {
-                defaultThinkingProcess.addVersionNode(v.node_version_id, v.content, "versions", v.appeared_at, node_x, node_y);
+                defaultThinkingProcess.addVersionNode(v.node_version_id, v.content, "versions", v.appeared_at, node_x, node_y, !!emptyInitialVersionIds[String(v.node_version_id)]);
                 if(from_id != ""){
                     defaultThinkingProcess.addVersionEdge(from_id, v.node_version_id);
                 }
@@ -1721,6 +1850,7 @@ const displayTriggerData = (mode, process_display_option) => {
         getProcessMapDataFromDB ((trigger_list_info) => {
             // versionノードの表示
             let bronum = trigger_list_info.brother_num;
+            const emptyInitialVersionIds = getEmptyInitialVersionIds(trigger_list_info.node_versions);
             trigger_list_info.node_versions.forEach((v) => {
                 console.log(bronum[v.node_id]);
                 if(v.broversion){
@@ -1734,7 +1864,7 @@ const displayTriggerData = (mode, process_display_option) => {
                 }
                 console.log(node_y);
                 // versionノードで時間軸が同じになるようにx座標を合わせる
-                defaultThinkingProcess.addVersionNode(v.node_version_id, v.content, "versionsBro", v.appeared_at, node_x, node_y);
+                defaultThinkingProcess.addVersionNode(v.node_version_id, v.content, "versionsBro", v.appeared_at, node_x, node_y, !!emptyInitialVersionIds[String(v.node_version_id)]);
                 if(from_id != ""){
                     defaultThinkingProcess.addVersionEdge(from_id, v.node_version_id);
                 }
@@ -2117,7 +2247,54 @@ function ShowRelatedProcess(mode){
     
 }
 
-function showThinkingProcessMap(others_node){
+function prepareFloatingThinkingProcessOverlay(container){
+    if(!container) return;
+    if(!container.__floatingOriginalParent){
+        container.__floatingOriginalParent = container.parentNode;
+        container.__floatingOriginalNextSibling = container.nextSibling;
+    }
+    if(container.parentNode !== document.body){
+        document.body.appendChild(container);
+    }
+    container.classList.add('is-floating-overlay');
+    container.style.removeProperty('width');
+    container.style.removeProperty('height');
+    container.style.removeProperty('min-height');
+    container.style.removeProperty('flex');
+    container.style.display = 'flex';
+
+    if(!container.style.left || !container.style.top){
+        var width = Math.min(960, Math.max(520, window.innerWidth * 0.72));
+        container.style.left = Math.max(16, Math.round((window.innerWidth - width) / 2)) + 'px';
+        container.style.top = Math.max(16, Math.round(window.innerHeight * 0.08)) + 'px';
+    }
+
+    if(container.__floatingDragBound) return;
+    container.__floatingDragBound = true;
+    var handle = container.querySelector('#buttoncluster');
+    if(!handle) return;
+    handle.addEventListener('mousedown', function(event){
+        if(event.button !== 0 || (event.target && event.target.closest('input, button, a, select, textarea'))) return;
+        event.preventDefault();
+        var rect = container.getBoundingClientRect();
+        var offsetX = event.clientX - rect.left;
+        var offsetY = event.clientY - rect.top;
+        function move(moveEvent){
+            var maxLeft = Math.max(8, window.innerWidth - container.offsetWidth - 8);
+            var maxTop = Math.max(8, window.innerHeight - 48);
+            container.style.left = Math.max(8, Math.min(maxLeft, moveEvent.clientX - offsetX)) + 'px';
+            container.style.top = Math.max(8, Math.min(maxTop, moveEvent.clientY - offsetY)) + 'px';
+        }
+        function stop(){
+            document.removeEventListener('mousemove', move, true);
+            document.removeEventListener('mouseup', stop, true);
+        }
+        document.addEventListener('mousemove', move, true);
+        document.addEventListener('mouseup', stop, true);
+    }, false);
+}
+
+function showThinkingProcessMap(others_node, options){
     // 重複呼び出しを短時間内に受けた場合は無視する（UIからの二重トリガ防止）
     try{
         const now = Date.now();
@@ -2135,10 +2312,17 @@ function showThinkingProcessMap(others_node){
         console.log("他者の思考過程表出化マップを表示");
         document.getElementById('feedback_area').style.display = "block";
         document.getElementById('xml_upload_area').style.display = "block";
-        $('#process_others_network_container').css('display','block');
+        var processContainer = document.getElementById('process_others_network_container');
+        var floatingDisplay = !!(options && options.floating);
+        if(floatingDisplay){
+            prepareFloatingThinkingProcessOverlay(processContainer);
+        }else{
+            $('#process_others_network_container').css('display','block');
+        }
         // organizational_container をフレックスレイアウトに変更して垂直分割対応
         // Use a definite pixel height to avoid a feedback loop where vis.js canvas height expands the container,
         // and the container expansion makes the canvas even larger.
+        if(!floatingDisplay){
         try{
             var oc = document.getElementById('organizational_container');
             if(oc && !oc.dataset.prevHeight){
@@ -2184,6 +2368,7 @@ function showThinkingProcessMap(others_node){
                 }, 0);
             }
         }catch(_){}
+        }
     
         defaultThinkingProcess = new ThinkingProcess("othersProcessnetwork", "load");
         displayTriggerData("who", others_node);
