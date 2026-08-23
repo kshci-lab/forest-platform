@@ -648,6 +648,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             from: from_node_id,
             to: to_node_id,
             group: "versionEdges",
+            isDefaultVersionEdge: true,
             fixed: true,
         };
         defaultThinkingProcess.edges.add(newEdge);
@@ -668,7 +669,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         const adjacency = {};
         this.edges.forEach((edge) => {
             if(!edge || edge.from == null || edge.to == null) return;
-            if(edge.group === "versionEdges"){
+            if(edge.isDefaultVersionEdge === true){
                 defaultVersionEdges.push(edge);
                 return;
             }
@@ -758,9 +759,24 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 break;
         }
 
+        const hasStoredFromEdge = defaultThinkingProcess.edges.get().some((edge) => {
+            return edge
+                && edge.isDefaultVersionEdge !== true
+                && String(edge.from) === String(from_node)
+                && String(edge.to) === String(trigger_id);
+        });
+        const hasStoredToEdge = defaultThinkingProcess.edges.get().some((edge) => {
+            return edge
+                && edge.isDefaultVersionEdge !== true
+                && String(edge.from) === String(trigger_id)
+                && String(edge.to) === String(to_node);
+        });
+
         // trigger_fromの設定
         const targetEdge = edge_id ? defaultThinkingProcess.edges.get(edge_id) : null;
-        if(targetEdge && targetEdge.group == "trigger_from"){
+        if(hasStoredFromEdge){
+            // DBから読み込んだエッジをそのまま使用する。
+        }else if(targetEdge && (targetEdge.group == "trigger_from" || targetEdge.group == "trigger_to")){
             // エッジの先がtrigger_nodeならその先のversion_nodeに繋ぐ
             //　trigge自身を指す新しいエッジを追加
             const newEdge = {
@@ -769,10 +785,21 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 arrows: 'to',
                 color: color,
                 group: "trigger_from",
+                isDefaultVersionEdge: false,
                 smooth: false,
                 fixed: true,
             };
-            defaultThinkingProcess.edges.add(newEdge);
+            if(targetEdge.group == "trigger_to"){
+                targetEdge.to = trigger_id;
+                targetEdge.group = "trigger_from";
+                targetEdge.isDefaultVersionEdge = false;
+                targetEdge.smooth = false;
+                targetEdge.arrows = 'to';
+                targetEdge.color = color;
+                defaultThinkingProcess.edges.update(targetEdge);
+            }else{
+                defaultThinkingProcess.edges.add(newEdge);
+            }
 
         }else if(targetEdge && targetEdge.group == "versionEdges"){
             // 既存のversionEdgeをtrigger自身を指すようにエッジを繋ぎかえ
@@ -781,6 +808,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             update_edge.color = color;
             update_edge.to = trigger_id;
             update_edge.group = "trigger_from";
+            update_edge.isDefaultVersionEdge = false;
             update_edge.smooth = false;
             defaultThinkingProcess.edges.update(update_edge);
         }else{
@@ -791,6 +819,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 arrows: 'to',
                 color: color,
                 group: "trigger_from",
+                isDefaultVersionEdge: false,
                 smooth: false,
                 fixed: true,
             };
@@ -798,16 +827,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         //　trigger_toの設定
-        const newEdge = {
-            from: trigger_id,
-            to: to_node,
-            arrows: 'to',
-            color: color,
-            group: "trigger_to",
-            smooth: false,
-            fixed: true,
-        };
-        defaultThinkingProcess.edges.add(newEdge);
+        if(!hasStoredToEdge){
+            const newEdge = {
+                from: trigger_id,
+                to: to_node,
+                arrows: 'to',
+                color: color,
+                group: "trigger_to",
+                isDefaultVersionEdge: false,
+                smooth: false,
+                fixed: true,
+            };
+            defaultThinkingProcess.edges.add(newEdge);
+        }
 
         //triggerとなるノードを追加（既に存在するIDは追加せず更新する）
         const newNode = {
@@ -842,7 +874,23 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     addReloadEdge(edge_id, edge_start, edge_end, edge_label) {
-        this.edges.add({id: edge_id, from: edge_start, to: edge_end ,label: edge_label});
+        const edgeId = String(edge_id || '');
+        const isTriggerFrom = edgeId.indexOf('tf_') === 0;
+        const isTriggerTo = edgeId.indexOf('tt_') === 0;
+        const edge = {
+            id: edge_id,
+            from: edge_start,
+            to: edge_end,
+            label: edge_label,
+            isDefaultVersionEdge: false
+        };
+        if(isTriggerFrom || isTriggerTo){
+            edge.group = isTriggerFrom ? "trigger_from" : "trigger_to";
+            edge.arrows = 'to';
+            edge.smooth = false;
+            edge.fixed = true;
+        }
+        this.edges.add(edge);
         this.removeSupersededVersionEdges();
     }
 
@@ -1240,7 +1288,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
 
     addNewEdge(E_start, E_end){
         let edge_id = this.generateUniqueNumberText();
-        this.edges.add({ id: edge_id ,from: E_start, to: E_end });
+        this.edges.add({ id: edge_id, from: E_start, to: E_end, isDefaultVersionEdge: false });
         defaultRecordThinkingProcess.record_Edge(edge_id, E_start, E_end);
         this.removeSupersededVersionEdges();
     }
@@ -1274,7 +1322,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     return;
                 }
                 let edge_id = this.generateUniqueNumberText();
-                this.edges.add({id: edge_id, from: this.dragStartNodeId, to: this.dragEndNodeId });
+                this.edges.add({id: edge_id, from: this.dragStartNodeId, to: this.dragEndNodeId, isDefaultVersionEdge: false });
                 defaultRecordThinkingProcess.record_Edge(edge_id, this.dragStartNodeId, this.dragEndNodeId);
                 this.removeSupersededVersionEdges();
             }
@@ -1783,6 +1831,56 @@ const getEmptyInitialVersionIds = (nodeVersions) => {
     return emptyIds;
 };
 
+const renderReloadTriggerNodes = (triggerRows) => {
+    let pending = (Array.isArray(triggerRows) ? triggerRows : []).filter(Boolean);
+    let madeProgress = true;
+
+    while(pending.length > 0 && madeProgress){
+        madeProgress = false;
+        const unresolved = [];
+
+        pending.forEach((trigger) => {
+            const fromNode = trigger.node_version_from;
+            const toNode = trigger.node_version_to;
+            if(!defaultThinkingProcess.nodes.get(fromNode) || !defaultThinkingProcess.nodes.get(toNode)){
+                unresolved.push(trigger);
+                return;
+            }
+
+            const connectedEdges = defaultThinkingProcess.ownNetwork.getConnectedEdges(fromNode) || [];
+            let edgeId = null;
+            for(let i = 0; i < connectedEdges.length; i++){
+                const edge = defaultThinkingProcess.edges.get(connectedEdges[i]);
+                if(edge && String(edge.from) === String(fromNode) && String(edge.to) === String(toNode)){
+                    edgeId = edge.id;
+                    break;
+                }
+            }
+
+            defaultThinkingProcess.addTriggerNode(
+                "Reload",
+                trigger.trigger_id,
+                edgeId,
+                fromNode,
+                toNode,
+                trigger.activity_id,
+                trigger.content,
+                trigger.activity_type,
+                trigger.activity_time,
+                trigger.x,
+                trigger.y
+            );
+            madeProgress = true;
+        });
+
+        pending = unresolved;
+    }
+
+    if(pending.length > 0){
+        console.warn('Some triggers could not be rendered because their connected nodes were not loaded.', pending);
+    }
+};
+
 const displayTriggerData = (mode, process_display_option) => {
     process_mode = mode;
     let node_x = 0;
@@ -1817,29 +1915,7 @@ const displayTriggerData = (mode, process_display_option) => {
             trigger_list_info.pedge.map((n) => {
                 defaultThinkingProcess.addReloadEdge(n.process_edge_id, n.edge_start, n.edge_end, n.label);
             });
-            // triggerノードの表示
-            trigger_list_info.trigger.forEach((u) => {
-                j++;
-                if(u){
-                    let from_node = u.node_version_from;
-                    let to_node = u.node_version_to;
-                    if(!defaultThinkingProcess.nodes.get(from_node) || !defaultThinkingProcess.nodes.get(to_node)){
-                        return;
-                    }
-                    let edge_ids = defaultThinkingProcess.ownNetwork.getConnectedEdges(from_node);
-                    let num = 0;
-                    for(i = 0; i<edge_ids.length; i++){
-                        if(defaultThinkingProcess.edges.get(edge_ids[i]).group == "versionEdges" || defaultThinkingProcess.edges.get(edge_ids[i]).group == "trigger_from"){
-                            //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
-                            if(defaultThinkingProcess.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
-                                num = i;
-                            }
-                        }
-                    }
-                    let edge_id = edge_ids.length > 0 ? edge_ids[num] : null;
-                    defaultThinkingProcess.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, u.x, u.y);
-                }
-            });
+            renderReloadTriggerNodes(trigger_list_info.trigger);
             const nodes = this.nodes;
             const edges = this.edges;
 
@@ -1871,34 +1947,13 @@ const displayTriggerData = (mode, process_display_option) => {
                 from_id = v.node_version_id;
                 node_x += 150;
             });
-            // triggerノードの表示
-            trigger_list_info.trigger.forEach((u) => {
-                j++;
-                if(u){
-                    let from_node = u.node_version_from;
-                    let to_node = u.node_version_to;
-                    let edge_ids = defaultThinkingProcess.ownNetwork.getConnectedEdges(from_node);
-                    let num = 0;
-                    for(i = 0; i<edge_ids.length; i++){
-                        if(defaultThinkingProcess.edges.get(edge_ids[i]).group == "versionEdges" || defaultThinkingProcess.edges.get(edge_ids[i]).group == "trigger_from"){
-                            //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
-                            if(defaultThinkingProcess.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
-                                num = i;
-                            }
-                        }
-                    }
-                    let edge_id = edge_ids[num];
-                    node_x = (defaultThinkingProcess.nodes.get(from_node).x + defaultThinkingProcess.nodes.get(to_node).x)/2;
-                    node_y = defaultThinkingProcess.nodes.get(from_node).y;
-                    defaultThinkingProcess.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, node_x, node_y);
-                }
-            });
             trigger_list_info.pnode.map((n) => {
                 defaultThinkingProcess.addReloadNode(n.process_node_id, n.content, n.process_node_type, n.node_x, n.node_y);
             });
             trigger_list_info.pedge.map((n) => {
                 defaultThinkingProcess.addReloadEdge(n.process_edge_id, n.edge_start, n.edge_end, n.label);
             });
+            renderReloadTriggerNodes(trigger_list_info.trigger);
 
             const nodes = this.nodes;
             const edges = this.edges;
@@ -1945,32 +2000,13 @@ const displayTriggerData = (mode, process_display_option) => {
                 from_id = v.node_version_id;
                 node_x += 300;
             });
-            // triggerノードの表示
-            trigger_list_info.trigger.forEach((u) => {
-                j++;
-                if(u){
-                    let from_node = u.node_version_from;
-                    let to_node = u.node_version_to;
-                    let edge_ids = defaultThinkingProcess.ownNetwork.getConnectedEdges(from_node);
-                    let num = 0;
-                    for(i = 0; i<edge_ids.length; i++){
-                        if(defaultThinkingProcess.edges.get(edge_ids[i]).group == "versionEdges" || defaultThinkingProcess.edges.get(edge_ids[i]).group == "trigger_from"){
-                            //(versionEdgesのときなど)自身が指されている(左側のものと繋がっている)edgeを除外
-                            if(defaultThinkingProcess.ownNetwork.getConnectedNodes(edge_ids[i])[1] != from_node){
-                                num = i;
-                            }
-                        }
-                    }
-                    let edge_id = edge_ids[num];
-                    defaultThinkingProcess.addTriggerNode("Reload", u.trigger_id, edge_id, from_node, to_node, u.activity_id, u.content, u.activity_type, u.activity_time, u.x, u.y);
-                }
-            });
             trigger_list_info.pnode.map((n) => {
                 defaultThinkingProcess.addReloadNode(n.process_node_id, n.content, n.process_node_type, n.node_x, n.node_y);
             });
             trigger_list_info.pedge.map((n) => {
                 defaultThinkingProcess.addReloadEdge(n.process_edge_id, n.edge_start, n.edge_end, n.label);
             });
+            renderReloadTriggerNodes(trigger_list_info.trigger);
 
             const nodes = this.nodes;
             const edges = this.edges;

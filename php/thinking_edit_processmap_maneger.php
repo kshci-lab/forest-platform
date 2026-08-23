@@ -10,6 +10,33 @@
 	$purpose = $_POST['purpose'];  //記録(record)か，更新(update)か，削除(delete)か
 
 	$timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
+
+	function trigger_process_edge_id($trigger_id, $direction){
+		$prefix = ($direction === 'from') ? 'tf_' : 'tt_';
+		return $prefix . substr(hash('sha256', (string)$trigger_id), 0, 42);
+	}
+
+	function upsert_trigger_process_edge($mysqli, $edge_id, $edge_start, $edge_end, $timestamp, &$error_message){
+		$sql = "INSERT INTO process_edges (process_edge_id, edge_start, edge_end, label, created_at, updated_at, deleted)
+				VALUES (?, ?, ?, '', ?, ?, 0)
+				ON DUPLICATE KEY UPDATE
+					edge_start = VALUES(edge_start),
+					edge_end = VALUES(edge_end),
+					label = '',
+					updated_at = VALUES(updated_at),
+					deleted = 0";
+		if(!($stmt = $mysqli->prepare($sql))){
+			$error_message = $mysqli->error;
+			return false;
+		}
+		$stmt->bind_param('sssss', $edge_id, $edge_start, $edge_end, $timestamp, $timestamp);
+		$ok = $stmt->execute();
+		if(!$ok){
+			$error_message = $stmt->error;
+		}
+		$stmt->close();
+		return $ok;
+	}
 	
 	if($purpose === 'record'){
 		$record_thing = $_POST['record_thing'];  //nodeか，edgeか，ネットワークとマインドマップの繋がり(connection)，オントロジーとのつながり(ontology)，採用不採用(recruit)
@@ -71,6 +98,9 @@
 						x = VALUES(x),
 						y = VALUES(y),
 						deleted = 0";
+			$mysqli->begin_transaction();
+			$save_ok = false;
+			$error_message = '';
 			if($stmt = $mysqli->prepare($sql)){
 				$stmt->bind_param(
 					'ssssssssii',
@@ -85,14 +115,30 @@
 					$x,
 					$y
 				);
-				if(!$stmt->execute()){
-					http_response_code(500);
-					echo "Error triggers insert: " . $stmt->error;
+				$save_ok = $stmt->execute();
+				if(!$save_ok){
+					$error_message = $stmt->error;
 				}
 				$stmt->close();
 			}else{
+				$error_message = $mysqli->error;
+			}
+
+			if($save_ok && $node_version_from !== '' && $node_version_from !== '0'){
+				$from_edge_id = trigger_process_edge_id($trigger_id, 'from');
+				$save_ok = upsert_trigger_process_edge($mysqli, $from_edge_id, $node_version_from, $trigger_id, $timestamp, $error_message);
+			}
+			if($save_ok && $node_version_to !== ''){
+				$to_edge_id = trigger_process_edge_id($trigger_id, 'to');
+				$save_ok = upsert_trigger_process_edge($mysqli, $to_edge_id, $trigger_id, $node_version_to, $timestamp, $error_message);
+			}
+
+			if($save_ok){
+				$mysqli->commit();
+			}else{
+				$mysqli->rollback();
 				http_response_code(500);
-				echo "Error triggers prepare: " . $mysqli->error;
+				echo "Error trigger/process_edges insert: " . $error_message;
 			}
 		}
 	}else if($purpose === 'update'){
@@ -141,10 +187,36 @@
 				echo "Error (node delete): " . $mysqli->error;
 			}
 		}else if($delete_thing === 'trigger'){
-			$trigger_id = $_POST["trigger_id"];
-			$mysqli->query("UPDATE triggers SET deleted = 1 WHERE trigger_id = '$trigger_id'");
-			if (!$mysqli->query($query)) {
-				echo "Error (trigger delete): " . $mysqli->error;
+			$trigger_id = isset($_POST["trigger_id"]) ? trim((string)$_POST["trigger_id"]) : '';
+			$from_edge_id = trigger_process_edge_id($trigger_id, 'from');
+			$to_edge_id = trigger_process_edge_id($trigger_id, 'to');
+			$delete_ok = ($trigger_id !== '');
+			$error_message = '';
+			$mysqli->begin_transaction();
+			if($delete_ok && ($stmt = $mysqli->prepare("UPDATE triggers SET deleted = 1 WHERE trigger_id = ?"))){
+				$stmt->bind_param('s', $trigger_id);
+				$delete_ok = $stmt->execute();
+				if(!$delete_ok) $error_message = $stmt->error;
+				$stmt->close();
+			}else if($delete_ok){
+				$delete_ok = false;
+				$error_message = $mysqli->error;
+			}
+			if($delete_ok && ($stmt = $mysqli->prepare("UPDATE process_edges SET deleted = 1, updated_at = ? WHERE process_edge_id IN (?, ?)"))){
+				$stmt->bind_param('sss', $timestamp, $from_edge_id, $to_edge_id);
+				$delete_ok = $stmt->execute();
+				if(!$delete_ok) $error_message = $stmt->error;
+				$stmt->close();
+			}else if($delete_ok){
+				$delete_ok = false;
+				$error_message = $mysqli->error;
+			}
+			if($delete_ok){
+				$mysqli->commit();
+			}else{
+				$mysqli->rollback();
+				http_response_code(500);
+				echo "Error (trigger/process edge delete): " . $error_message;
 			}
 		}else if($delete_thing === 'edge'){
 			$edge_start = $_POST["edge_start"];          //エッジ開始
