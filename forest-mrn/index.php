@@ -66,7 +66,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <link rel="stylesheet" type="text/css" href="../css/jquery.cleditor.css">
         <link rel="stylesheet" type="text/css" href="../css/ui.css">
         <link rel="stylesheet" type="text/css" href="../css/style.css">
-	        <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css" />
+	        <link rel="stylesheet" type="text/css" href="../css/thinking-process-network.css?v=20260823-version-edit-notice" />
 	        <link rel="stylesheet" type="text/css" href="../css/organizational-map.css?v=20260823-kfrag-canvas-reload" />
 
         <script type="text/javascript" src="js/jquery-1.8.2.min.js"></script>
@@ -1096,7 +1096,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/add_node.js"></script>
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
-        <script type="text/javascript" src="../js/thinking-process-network.js?v=20260823-kfrag-process-overlay"></script>
+        <script type="text/javascript" src="../js/thinking-process-network.js?v=20260823-hide-superseded-version-edge"></script>
 	        <script type="text/javascript" src="../js/organizational-map.js?v=20260823-kfrag-process-overlay"></script>
 	        <script type="text/javascript" src="js/organizational-combination-tab.js?v=20260823-kfrag-canvas-reload"></script>
 	        <script type="text/javascript" src="js/past_sheet.js"></script>

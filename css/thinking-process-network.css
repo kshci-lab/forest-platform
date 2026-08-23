@@ -27,6 +27,30 @@
 	background:#fff;
 	overflow: auto;
 }
+
+#myProcessnetwork .process-network-notice{
+	position:absolute;
+	top:12px;
+	right:12px;
+	z-index:20;
+	max-width:calc(100% - 24px);
+	padding:9px 12px;
+	border:1px solid #d6d9dd;
+	background:#fff;
+	color:#3f444a;
+	font-size:13px;
+	line-height:1.4;
+	box-shadow:0 4px 12px rgba(0,0,0,0.14);
+	opacity:0;
+	transform:translateY(-4px);
+	pointer-events:none;
+	transition:opacity 0.18s ease, transform 0.18s ease;
+}
+
+#myProcessnetwork .process-network-notice.is-visible{
+	opacity:1;
+	transform:translateY(0);
+}
 #myProcessnetwork2{
 	width: 100%;
 	min-width: 300px;
