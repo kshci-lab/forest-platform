@@ -282,7 +282,12 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         * 思考過程表出化マップのエッジデータの取得
         */
     $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
-                WHERE (edge_start IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0) OR edge_end IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0))AND deleted = 0");
+                WHERE (
+                    edge_start IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                    OR edge_end IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                    OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                    OR edge_end IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                ) AND deleted = 0");
     $processmap_edge = [];
     while ($row = $result_processmap_edge->fetch_assoc()) {
         array_push($processmap_edge, $row);
@@ -302,6 +307,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
                             WHERE (
                                 t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."')
                                 OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                                OR t.`to` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."')
                                 OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
                             ) AND t.deleted = 0");
     $trigger = [];
@@ -338,7 +344,12 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         * 思考過程表出化マップのエッジデータの取得
         */
     $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
-                WHERE (edge_start IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0) OR edge_end IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0))AND deleted = 0");
+                WHERE (
+                    edge_start IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                    OR edge_end IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                    OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                    OR edge_end IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                ) AND deleted = 0");
     $processmap_edge = [];
     while ($row = $result_processmap_edge->fetch_assoc()) {
         array_push($processmap_edge, $row);
@@ -374,6 +385,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
                             WHERE (
                                 t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."')
                                 OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
+                                OR t.`to` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$selected_node_id."')
                                 OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$selected_node_id."' AND deleted = 0)
                             ) AND t.deleted = 0");
     $trigger = [];
@@ -440,10 +452,15 @@ if($process_mode === "all" || $process_mode === "allRE" ){
         */
     if($node_id_for_query !== null){
         $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
-                    WHERE (edge_start IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0) OR edge_end IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)) AND deleted = 0");
+                    WHERE (
+                        edge_start IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                        OR edge_end IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                        OR edge_start IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                        OR edge_end IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                    ) AND deleted = 0");
     }else{
         $result_processmap_edge = $mysqli->query("SELECT process_edge_id, edge_start, edge_end, label FROM process_edges
-                    WHERE ((edge_start = '".$selected_node_id."' AND deleted = 0) OR (edge_end = '".$selected_node_id."' AND deleted = 0)) AND deleted = 0");
+                    WHERE (edge_start = '".$selected_node_id."' OR edge_end = '".$selected_node_id."') AND deleted = 0");
     }
     $processmap_edge = [];
     while ($row = $result_processmap_edge->fetch_assoc()) {
@@ -469,6 +486,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
                                 WHERE (
                                     t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
                                     OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
+                                    OR t.`to` IN (SELECT node_version_id FROM node_versions WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
                                     OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id = '".$node_id_for_query."' AND deleted = 0)
                                 ) AND t.deleted = 0");
     }else{
@@ -476,6 +494,7 @@ if($process_mode === "all" || $process_mode === "allRE" ){
                                 WHERE (
                                     t.`from` IN (SELECT node_version_id FROM node_versions WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0)
                                     OR t.`from` IN (SELECT process_node_id FROM process_nodes WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0)
+                                    OR t.`to` IN (SELECT node_version_id FROM node_versions WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0)
                                     OR t.`to` IN (SELECT process_node_id FROM process_nodes WHERE node_id IN (SELECT node_id FROM process_nodes WHERE process_node_id = '".$selected_node_id."') AND deleted = 0)
                                 ) AND t.deleted = 0");
     }
