@@ -2117,7 +2117,54 @@ function ShowRelatedProcess(mode){
     
 }
 
-function showThinkingProcessMap(others_node){
+function prepareFloatingThinkingProcessOverlay(container){
+    if(!container) return;
+    if(!container.__floatingOriginalParent){
+        container.__floatingOriginalParent = container.parentNode;
+        container.__floatingOriginalNextSibling = container.nextSibling;
+    }
+    if(container.parentNode !== document.body){
+        document.body.appendChild(container);
+    }
+    container.classList.add('is-floating-overlay');
+    container.style.removeProperty('width');
+    container.style.removeProperty('height');
+    container.style.removeProperty('min-height');
+    container.style.removeProperty('flex');
+    container.style.display = 'flex';
+
+    if(!container.style.left || !container.style.top){
+        var width = Math.min(960, Math.max(520, window.innerWidth * 0.72));
+        container.style.left = Math.max(16, Math.round((window.innerWidth - width) / 2)) + 'px';
+        container.style.top = Math.max(16, Math.round(window.innerHeight * 0.08)) + 'px';
+    }
+
+    if(container.__floatingDragBound) return;
+    container.__floatingDragBound = true;
+    var handle = container.querySelector('#buttoncluster');
+    if(!handle) return;
+    handle.addEventListener('mousedown', function(event){
+        if(event.button !== 0 || (event.target && event.target.closest('input, button, a, select, textarea'))) return;
+        event.preventDefault();
+        var rect = container.getBoundingClientRect();
+        var offsetX = event.clientX - rect.left;
+        var offsetY = event.clientY - rect.top;
+        function move(moveEvent){
+            var maxLeft = Math.max(8, window.innerWidth - container.offsetWidth - 8);
+            var maxTop = Math.max(8, window.innerHeight - 48);
+            container.style.left = Math.max(8, Math.min(maxLeft, moveEvent.clientX - offsetX)) + 'px';
+            container.style.top = Math.max(8, Math.min(maxTop, moveEvent.clientY - offsetY)) + 'px';
+        }
+        function stop(){
+            document.removeEventListener('mousemove', move, true);
+            document.removeEventListener('mouseup', stop, true);
+        }
+        document.addEventListener('mousemove', move, true);
+        document.addEventListener('mouseup', stop, true);
+    }, false);
+}
+
+function showThinkingProcessMap(others_node, options){
     // 重複呼び出しを短時間内に受けた場合は無視する（UIからの二重トリガ防止）
     try{
         const now = Date.now();
@@ -2135,10 +2182,17 @@ function showThinkingProcessMap(others_node){
         console.log("他者の思考過程表出化マップを表示");
         document.getElementById('feedback_area').style.display = "block";
         document.getElementById('xml_upload_area').style.display = "block";
-        $('#process_others_network_container').css('display','block');
+        var processContainer = document.getElementById('process_others_network_container');
+        var floatingDisplay = !!(options && options.floating);
+        if(floatingDisplay){
+            prepareFloatingThinkingProcessOverlay(processContainer);
+        }else{
+            $('#process_others_network_container').css('display','block');
+        }
         // organizational_container をフレックスレイアウトに変更して垂直分割対応
         // Use a definite pixel height to avoid a feedback loop where vis.js canvas height expands the container,
         // and the container expansion makes the canvas even larger.
+        if(!floatingDisplay){
         try{
             var oc = document.getElementById('organizational_container');
             if(oc && !oc.dataset.prevHeight){
@@ -2184,6 +2238,7 @@ function showThinkingProcessMap(others_node){
                 }, 0);
             }
         }catch(_){}
+        }
     
         defaultThinkingProcess = new ThinkingProcess("othersProcessnetwork", "load");
         displayTriggerData("who", others_node);

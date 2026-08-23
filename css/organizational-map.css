@@ -2,7 +2,7 @@
 
 /*ネットワーク*/
 #organizational_container{
-	width: calc(100vw - 350px);
+	width: 95%;
 	/* width: 100%; */
 	min-width: 300px;
 	/* height:100%; */
@@ -58,6 +58,43 @@
 	overflow: hidden;
 	display: none;
 	flex: 0 0 auto;
+}
+
+#process_others_network_container.is-floating-overlay{
+	position: fixed;
+	z-index: 12000;
+	width: min(960px, calc(100vw - 32px)) !important;
+	height: min(680px, calc(100vh - 64px)) !important;
+	min-width: 0;
+	min-height: 360px !important;
+	flex: none !important;
+	border: 1px solid #c7cbd1;
+	border-top: 4px solid #faae2b;
+	box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+	background: #fff;
+	box-sizing: border-box;
+}
+
+#process_others_network_container.is-floating-overlay #othersProcessnetwork_area{
+	height: 100%;
+	min-height: 0;
+	resize: none;
+	overflow: hidden;
+}
+
+#process_others_network_container.is-floating-overlay #othersProcessnetwork{
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	flex: 1 1 auto;
+}
+
+#process_others_network_container.is-floating-overlay #buttoncluster{
+	flex: 0 0 auto;
+	cursor: move;
+	user-select: none;
 }
 #othersProcessnetwork {
 	position: relative;
@@ -373,6 +410,53 @@ input[type="checkbox"][name="check_organizational"]{
 	text-decoration:none;
 }
 
+.kfrag-context-menu{
+	display: none;
+	position: fixed;
+	z-index: 12050;
+	min-width: 250px;
+	padding: 5px;
+	border: 3px solid #FBC362;
+	background: #fff;
+	box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+	box-sizing: border-box;
+}
+
+.kfrag-context-menu-button{
+	display: block;
+	width: 100%;
+	padding: 9px 10px;
+	border: 0;
+	border-bottom: 1px solid #e6e8eb;
+	background: #fff;
+	color: #222;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.kfrag-context-menu-button:last-child{
+	border-bottom: 0;
+}
+
+.kfrag-context-menu-button:hover,
+.kfrag-context-menu-button:focus-visible{
+	background: #f4f5f6;
+	outline: none;
+}
+
+.kfrag-context-menu-button.is-cancel{
+	color: #666;
+}
+
+@media (max-width: 640px){
+	#process_others_network_container.is-floating-overlay{
+		width: calc(100vw - 16px) !important;
+		height: calc(100vh - 24px) !important;
+		min-height: 0 !important;
+	}
+}
+
 /* ------------------------------------------------------------------------- */
 /* forest-mrn: 組織知マップ（共同化/連結化）サブタブ + 連結化オーバーレイ最小スタイル */
 
@@ -562,7 +646,8 @@ input[type="checkbox"][name="check_organizational"]{
 	gap:6px;
 	margin-right:8px;
 }
-#shared_combination_overlay .kfrag-zoom-btn{
+#shared_combination_overlay .kfrag-zoom-btn,
+#shared_combination_overlay .kfrag-reload-btn{
 	border:1px solid rgba(0,0,0,0.16);
 	background:#fff;
 	border-radius:999px;
@@ -571,6 +656,36 @@ input[type="checkbox"][name="check_organizational"]{
 	line-height:1.2;
 	cursor:pointer;
 	color:#4b5563;
+}
+
+#shared_combination_overlay .kfrag-reload-btn{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	width:30px;
+	height:30px;
+	padding:0;
+	font-size:18px;
+}
+
+#shared_combination_overlay .kfrag-reload-btn:hover,
+#shared_combination_overlay .kfrag-reload-btn:focus-visible{
+	background:#f4f5f6;
+	outline:none;
+}
+
+#shared_combination_overlay .kfrag-reload-btn:disabled{
+	opacity:0.55;
+	cursor:wait;
+}
+
+#shared_combination_overlay .kfrag-reload-btn.is-loading span{
+	display:inline-block;
+	animation:kfrag-reload-spin 0.8s linear infinite;
+}
+
+@keyframes kfrag-reload-spin{
+	to{ transform:rotate(360deg); }
 }
 #shared_combination_overlay .kfrag-zoom-label{
 	display:inline-flex;
@@ -1194,7 +1309,7 @@ body.is-fragment-canvas-dragging *{
 }
 #shared_combination_overlay .knowledge_register_form{
 	padding:8px 10px;
-	max-height:310px;
+	resize: vertical;
 	overflow:auto;
 }
 #shared_combination_overlay .kra-label{
@@ -1263,6 +1378,44 @@ body.is-fragment-canvas-dragging *{
 }
 #shared_combination_overlay .discussion_history_area .overlay-title{
 	border-bottom:1px solid rgba(0,0,0,0.08);
+}
+#shared_combination_overlay .discussion_history_area .overlay-title .title-text{
+	margin-right:auto;
+}
+#shared_combination_overlay .discussion-refresh-button{
+	width:30px;
+	height:30px;
+	flex:0 0 30px;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	padding:0;
+	border:1px solid rgba(0,0,0,0.18);
+	border-radius:50%;
+	background:#fff;
+	color:#444;
+	font-size:20px;
+	line-height:1;
+	cursor:pointer;
+}
+#shared_combination_overlay .discussion-refresh-button:hover{
+	background:#f3f3f3;
+	border-color:rgba(0,0,0,0.3);
+}
+#shared_combination_overlay .discussion-refresh-button:focus-visible{
+	outline:2px solid #FAAE2B;
+	outline-offset:2px;
+}
+#shared_combination_overlay .discussion-refresh-button[disabled]{
+	opacity:0.6;
+	cursor:wait;
+}
+#shared_combination_overlay .discussion-refresh-button.is-syncing span{
+	display:inline-block;
+	animation:discussion-refresh-spin 0.8s linear infinite;
+}
+@keyframes discussion-refresh-spin{
+	to{ transform:rotate(360deg); }
 }
 #shared_combination_overlay .fragment-discussed-btn,
 #shared_combination_overlay .fragment-add-select-btn{
@@ -1354,10 +1507,10 @@ body.is-fragment-canvas-dragging *{
 	border:1px solid rgba(0,0,0,0.08);
 	border-radius:8px;
 	padding:8px;
-	max-height: 14vh;
-	min-height:72px;
+	min-height:200px;
 	overflow:auto;
 	background:#fff;
+	resize:vertical;
 }
 #shared_combination_overlay .discussion-placeholder{
 	padding:12px 10px;

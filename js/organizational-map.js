@@ -1012,6 +1012,19 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
     }
 
     //概念をマップに追加（完了）
+    openThinkingProcessMapForNode(othersNode, options){
+        if (!othersNode || !othersNode.thought_experience_node_id) {
+            alert('この知識フラグメントには思考過程表出化マップの参照情報がありません。');
+            return;
+        }
+
+        try {
+            showThinkingProcessMap(othersNode, options || {});
+        } catch (e) {
+            console.error('showThinkingProcessMap error:', e);
+        }
+    }
+
     view_otherprocessmap (){
         document.getElementById('t_Organizational_conmenu').style.display = "none";
         // 右クリックで選択されたノードIDを優先して取得
@@ -1027,18 +1040,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
 
         console.log('view_otherprocessmap -> node:', others_node);
 
-        // process_others_network_container を表示（存在すれば）
-        const procContainer = document.getElementById('process_others_network_container');
-        if (procContainer) {
-            procContainer.style.display = 'block';
-        }
-
-        // 他者の思考過程マップを開く（user_id が null の場合は既定動作に従う）
-        try {
-            showThinkingProcessMap(others_node);
-        } catch (e) {
-            console.error('showThinkingProcessMap error:', e);
-        }
+        this.openThinkingProcessMapForNode(others_node);
     }
 
     // Recruit_Idea (){
@@ -1800,8 +1802,30 @@ function showOrganizationalMap(){
 }
 
 function closeOthersThinkingProcessMap(){
-  
+    var processContainer = document.getElementById('process_others_network_container');
+    var wasFloating = !!(processContainer && processContainer.classList.contains('is-floating-overlay'));
     $('#process_others_network_container').css('display','none');
+    if(wasFloating){
+        processContainer.classList.remove('is-floating-overlay');
+        processContainer.style.removeProperty('left');
+        processContainer.style.removeProperty('top');
+        processContainer.style.removeProperty('width');
+        processContainer.style.removeProperty('height');
+        processContainer.style.removeProperty('min-height');
+        processContainer.style.removeProperty('flex');
+        var originalParent = processContainer.__floatingOriginalParent;
+        var originalNext = processContainer.__floatingOriginalNextSibling;
+        if(originalParent){
+            if(originalNext && originalNext.parentNode === originalParent){
+                originalParent.insertBefore(processContainer, originalNext);
+            }else{
+                originalParent.appendChild(processContainer);
+            }
+        }
+        processContainer.__floatingOriginalParent = null;
+        processContainer.__floatingOriginalNextSibling = null;
+        return;
+    }
     // restore previous height if we pinned it during split view
     var prevH = null;
     try{
