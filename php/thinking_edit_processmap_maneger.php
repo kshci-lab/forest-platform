@@ -181,9 +181,19 @@
 	}else if($purpose === 'delete'){
 		$delete_thing = $_POST['delete_thing'];
 		if($delete_thing === 'node'){
-			$node_id = $_POST["node_id"];
-			$mysqli->query("UPDATE process_nodes SET deleted = 1, updated_at = '$timestamp' WHERE process_node_id = '$node_id'");
-			if (!$mysqli->query($query)) {
+			$node_id = isset($_POST["node_id"]) ? trim((string)$_POST["node_id"]) : '';
+			if($node_id === ''){
+				http_response_code(400);
+				echo "Error (node delete): node_id is empty";
+			}else if($stmt = $mysqli->prepare("UPDATE process_nodes SET deleted = 1, updated_at = ? WHERE process_node_id = ?")){
+				$stmt->bind_param('ss', $timestamp, $node_id);
+				if(!$stmt->execute()){
+					http_response_code(500);
+					echo "Error (node delete): " . $stmt->error;
+				}
+				$stmt->close();
+			}else{
+				http_response_code(500);
 				echo "Error (node delete): " . $mysqli->error;
 			}
 		}else if($delete_thing === 'trigger'){
@@ -219,18 +229,34 @@
 				echo "Error (trigger/process edge delete): " . $error_message;
 			}
 		}else if($delete_thing === 'edge'){
-			$edge_start = $_POST["edge_start"];          //エッジ開始
-			$edge_end = $_POST["edge_end"]; 
-			$edge_id = $_POST['edge_id'];
-			if($edge_start === ""){
-				$mysqli->query("UPDATE process_edges SET deleted = 1, updated_at = '$timestamp' WHERE edge_end = '$edge_end'");
-			}else if($edge_end === ""){
-				$mysqli->query("UPDATE process_edges SET deleted = 1, updated_at = '$timestamp' WHERE edge_start = '$edge_start'");
+			$edge_start = isset($_POST["edge_start"]) ? trim((string)$_POST["edge_start"]) : '';
+			$edge_end = isset($_POST["edge_end"]) ? trim((string)$_POST["edge_end"]) : '';
+			$edge_id = isset($_POST['edge_id']) ? trim((string)$_POST['edge_id']) : '';
+			$stmt = null;
+			$value = '';
+			if($edge_start === '' && $edge_end !== ''){
+				$stmt = $mysqli->prepare("UPDATE process_edges SET deleted = 1, updated_at = ? WHERE edge_end = ?");
+				$value = $edge_end;
+			}else if($edge_end === '' && $edge_start !== ''){
+				$stmt = $mysqli->prepare("UPDATE process_edges SET deleted = 1, updated_at = ? WHERE edge_start = ?");
+				$value = $edge_start;
+			}else if($edge_id !== ''){
+				$stmt = $mysqli->prepare("UPDATE process_edges SET deleted = 1, updated_at = ? WHERE process_edge_id = ?");
+				$value = $edge_id;
 			}else{
-				$mysqli->query("UPDATE process_edges SET deleted = 1, updated_at = '$timestamp' WHERE process_edge_id = '$edge_id'");
+				http_response_code(400);
+				echo "Error (edge delete): edge identifier is empty";
 			}
 
-			if (!$mysqli->query($query)) {
+			if($stmt){
+				$stmt->bind_param('ss', $timestamp, $value);
+				if(!$stmt->execute()){
+					http_response_code(500);
+					echo "Error (edge delete): " . $stmt->error;
+				}
+				$stmt->close();
+			}else if(http_response_code() < 400){
+				http_response_code(500);
 				echo "Error (edge delete): " . $mysqli->error;
 			}
 		}
