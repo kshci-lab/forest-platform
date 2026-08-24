@@ -1390,11 +1390,13 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     // エッジの削除（完了）
     deleteEdge() {
         const selectEdgeId = this.ownNetwork.getSelection().edges[0];
-        const startid = this.edges.get(selectEdgeId).from;
-        const endid = this.edges.get(selectEdgeId).to;
-        if(selectEdgeId !== undefined){
-            this.edges.remove({id: selectEdgeId});
-            defaultRecordThinkingProcess.delete_db_Edge(selectEdgeId, startid, endid);
+        const selectedEdge = selectEdgeId !== undefined ? this.edges.get(selectEdgeId) : null;
+        if(selectedEdge){
+            const startid = selectedEdge.from;
+            const endid = selectedEdge.to;
+            defaultRecordThinkingProcess.delete_db_Edge(selectEdgeId, startid, endid).done(() => {
+                this.edges.remove({id: selectEdgeId});
+            });
             // const Edge_index = this.OntologyConnectNodeId.indexOf(startid);
             // if(Edge_index !== -1){
             //     this.EdgeStartId.splice(Edge_index, 1);
@@ -1572,7 +1574,7 @@ class RecordThinkingProcess{
     
     //エッジの削除(完了)
     delete_db_Edge (edge_id, edge_start,edge_end){
-        $.ajax({
+        return $.ajax({
             url: "../php/thinking_edit_processmap_maneger.php",
             type: "POST",
             data: {edge_id: edge_id,
@@ -1584,6 +1586,9 @@ class RecordThinkingProcess{
                     if(e){
                         console.log(e);
                     }
+                },
+                error: function(xhr, status, error){
+                    console.error("edge delete failed", status, error, xhr.responseText);
                 }
         });
     }
