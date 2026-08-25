@@ -1097,8 +1097,8 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
         <script type="text/javascript" src="../js/thinking-process-network.js?v=20260824-edge-delete-fix"></script>
-	        <script type="text/javascript" src="../js/organizational-map.js?v=20260823-kfrag-process-overlay"></script>
-	        <script type="text/javascript" src="js/organizational-combination-tab.js?v=20260823-kfrag-canvas-reload"></script>
+	        <script type="text/javascript" src="../js/organizational-map.js?v=20260825-produced-knowledge-details"></script>
+	        <script type="text/javascript" src="js/organizational-combination-tab.js?v=20260825-include-unassigned-knowledge"></script>
 	        <script type="text/javascript" src="js/past_sheet.js"></script>
         <script type="text/javascript" src="js/record_presentation.js"></script>
         <script type="text/javascript" src="js/presentation.js"></script>

@@ -1507,6 +1507,7 @@ body.is-fragment-canvas-dragging *{
 	border:1px solid rgba(0,0,0,0.08);
 	border-radius:8px;
 	padding:8px;
+	height:300px;
 	min-height:200px;
 	overflow:auto;
 	background:#fff;

@@ -650,6 +650,23 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
         });
     }
 
+    buildProducedKnowledgeTooltipData(nodeInfo){
+        const valueOrEmptyLabel = (value) => {
+            const text = value == null ? '' : String(value).trim();
+            return text !== '' ? text : '未入力';
+        };
+        return {
+            sections: [
+                { heading: 'When', body: valueOrEmptyLabel(nodeInfo.tacto_when) },
+                { heading: 'What', body: valueOrEmptyLabel(nodeInfo.tacto_what) },
+                { heading: 'Why', body: valueOrEmptyLabel(nodeInfo.tacto_why) },
+                { heading: '組織知化の根拠', body: valueOrEmptyLabel(nodeInfo.organizational_basis) },
+                { heading: 'コメント', body: valueOrEmptyLabel(nodeInfo.comment) },
+                { heading: '更新日時', body: valueOrEmptyLabel(nodeInfo.updated_at) }
+            ]
+        };
+    }
+
     addProducedKnowledgeNode(nodeInfo, childMap){
         if (!nodeInfo || nodeInfo.node_id === null || typeof nodeInfo.node_id === 'undefined') return false;
         const fragmentIds = this.getKnowledgeTreeFragmentIds(nodeInfo);
@@ -681,12 +698,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 },
                 shape: 'box',
                 font: { color: 'black' },
-                tooltip_data: {
-                    sections: [
-                        { heading: 'コメント', body: nodeInfo.comment || '' },
-                        { heading: '更新日時', body: nodeInfo.updated_at || '' }
-                    ]
-                },
+                tooltip_data: this.buildProducedKnowledgeTooltipData(nodeInfo),
                 fixed: false,
             });
             addedNode = true;
@@ -696,7 +708,8 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 knowledge_fragment_ids: fragmentIds,
                 knowledge_fragment_node_ids: fragmentNodeIds,
                 source_type: sourceTypes[0] || '',
-                source_types: sourceTypes
+                source_types: sourceTypes,
+                tooltip_data: this.buildProducedKnowledgeTooltipData(nodeInfo)
             });
         }
 
@@ -728,7 +741,11 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
                 node_id: nodeId,
                 parent_id: ktNode.classList.contains('kt-root') ? null : '__dom_parent__',
                 node_title: titleEl.textContent || '',
-                comment: '',
+                tacto_when: ktNode.getAttribute('data-tacto-when') || '',
+                tacto_what: ktNode.getAttribute('data-tacto-what') || '',
+                tacto_why: ktNode.getAttribute('data-tacto-why') || '',
+                organizational_basis: ktNode.getAttribute('data-organizational-basis') || '',
+                comment: ktNode.getAttribute('data-comment') || '',
                 updated_at: '',
                 knowledge_fragment_id: ktNode.getAttribute('data-kfrag-id') || ''
             };
