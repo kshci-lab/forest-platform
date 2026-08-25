@@ -2084,7 +2084,12 @@
 
   function prepareKnowledgeTreeNodes(nodes, groupId){
     var scoped = (nodes || []).filter(function(node){
-      return node && String(node.knowledge_group_id) === String(groupId);
+      if(!node) return false;
+      var nodeGroupId = node.knowledge_group_id;
+      return nodeGroupId === null
+        || typeof nodeGroupId === 'undefined'
+        || String(nodeGroupId).trim() === ''
+        || String(nodeGroupId) === String(groupId);
     }).map(function(node){
       var copy = {};
       Object.keys(node).forEach(function(key){ copy[key] = node[key]; });
@@ -2156,7 +2161,7 @@
     }
     el.textContent = '読み込み中...';
 
-    var url = 'php/get_knowledge_tree.php?group_id=' + encodeURIComponent(gid);
+    var url = 'php/get_knowledge_tree.php?group_id=' + encodeURIComponent(gid) + '&include_unassigned=1';
 
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
