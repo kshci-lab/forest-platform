@@ -1,4 +1,5 @@
 function micro_rationality_xmlLoad(){
+	if(window.isInquirySearchActive && window.isInquirySearchActive()) return;
 
 	$.ajax({
 

@@ -2,6 +2,7 @@
 
 //問いエリアの初期化とhozo.xmlの読み込み
 function recommend_xmlLoad(){
+	if(window.isInquirySearchActive && window.isInquirySearchActive()) return;
 
 	$("#testxml").html("");
 	$("#intention").html("");

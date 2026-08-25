@@ -90,6 +90,11 @@
     return area ? area.querySelector('.inquiry-search-result') : null;
   }
 
+  function hasSearchQuery(area){
+    var input = getSearchInput(area);
+    return !!(input && normalizeText(input.value));
+  }
+
   function applyInquirySearch(area){
     area = area || document.querySelector('.inquiry_area');
     var input = getSearchInput(area);
@@ -130,6 +135,21 @@
     }, 0);
   }
 
+  function handleSearchInput(area){
+    var isActive = hasSearchQuery(area);
+
+    if(isActive && !area.__inquirySearchActive){
+      area.__inquirySearchActive = true;
+      // Node selection replaces the list with related questions. Reload the
+      // mode's complete list once so search always uses the full source.
+      runCurrentModeInquiry(area);
+      return;
+    }
+
+    area.__inquirySearchActive = isActive;
+    applyInquirySearch(area);
+  }
+
   function initInquirySearchArea(area){
     ensureInquirySearchForm(area);
     var input = getSearchInput(area);
@@ -146,14 +166,15 @@
 
     input.__inquirySearchBound = true;
     input.addEventListener('input', function(){
-      applyInquirySearch(area);
+      handleSearchInput(area);
     }, false);
     input.addEventListener('search', function(){
-      applyInquirySearch(area);
+      handleSearchInput(area);
     }, false);
     if(showAll){
       showAll.addEventListener('click', function(){
         input.value = '';
+        area.__inquirySearchActive = false;
         runCurrentModeInquiry(area);
         try{ input.focus(); }catch(_){}
       }, false);
@@ -230,11 +251,14 @@
   window.applyInquirySearch = function(){
     getInquiryAreas().forEach(applyInquirySearch);
   };
+  window.isInquirySearchActive = function(){
+    return getInquiryAreas().some(hasSearchQuery);
+  };
   window.updateFilter = function(value){
     getInquiryAreas().forEach(function(area){
       var input = getSearchInput(area);
       if(input) input.value = value || '';
-      applyInquirySearch(area);
+      handleSearchInput(area);
     });
   };
 })();

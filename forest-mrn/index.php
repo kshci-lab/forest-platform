@@ -1115,7 +1115,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/ont_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_inquiry_verp.js"></script>
         <script type="text/javascript" src="js/ont_choose_inquiry.js"></script>
-        <script type="text/javascript" src="js/inquiry_search.js"></script>
+        <script type="text/javascript" src="js/inquiry_search.js?v=20260825-search-priority"></script>
         <script type="text/javascript" src="js/ont_choose_input_output.js"></script>
         <script type="text/javascript" src="js/ont_rationality.js"></script>
         <script type="text/javascript" src="js/ont_scenario_inquiry.js"></script>
