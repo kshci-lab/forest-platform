@@ -882,7 +882,7 @@ if(isset($_POST["logout"])){ //logoutボタンが押された
         <script type="text/javascript" src="js/add_annotations.js?v=20260518-annotation-save"></script>
         <script type="text/javascript" src="js/version.js"></script>
         <script type="text/javascript" src="js/node_change.js"></script>
-       <script type="text/javascript" src="js/add_node.js?v=20260817-reflections"></script>
+       <script type="text/javascript" src="js/add_node.js?v=20260825-map-reload"></script>
        <script type="text/javascript" src="js/mindmap.js?v=20260817-other-map-switch"></script>
         <script type="text/javascript" src="js/user_sheet.js?v=20260817-other-map-syntax"></script>
         <script type="text/javascript" src="js/document.js"></script>

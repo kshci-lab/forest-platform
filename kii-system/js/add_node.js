@@ -28,7 +28,76 @@ function make_micro_strat(node) {
     });    
 }
 
-getData();
+getAllMindmapData();
+
+function getAllMindmapData(){
+	$.ajax({
+		url: "php/open_data.php",
+		type: "POST",
+		dataType: "json",
+		data: { val: "all" },
+		success: function(response){
+			if (!response || response.success !== true || !Array.isArray(response.nodes)) {
+				console.error("Failed to load mind map data", response);
+				return;
+			}
+			restoreMindmapNodes(response.nodes);
+			if (response.warnings && response.warnings.length) {
+				console.warn("Mind map loaded without optional metadata:", response.warnings);
+			}
+		},
+		error: function(xhr){
+			console.error("Failed to load mind map", xhr.status, xhr.responseText);
+		}
+	});
+}
+
+function restoreMindmapNodes(nodes){
+	var pending = nodes.slice();
+	var added = { root: true };
+
+	while (pending.length) {
+		var next = [];
+		var progressed = false;
+
+		pending.forEach(function(node){
+			var parentId = node.parent_id || "root";
+			if (parentId !== "root" && !added[parentId] && !_jm.get_node(parentId)) {
+				next.push(node);
+				return;
+			}
+
+			if (!_jm.get_node(node.node_id)) {
+				show_node(node.node_id, parentId, node.content, node.concept_id, node.type,
+					node.class, node.start_char_id, node.end_char_id,
+					node.is_edited === true || node.is_edited === 1,
+					node.has_reflection === true || node.has_reflection === 1);
+			}
+			added[node.node_id] = true;
+			progressed = true;
+		});
+
+		if (!progressed) {
+			console.warn("Nodes with missing parents were attached to the root.", next);
+			next.forEach(function(node){
+				if (!_jm.get_node(node.node_id)) {
+					show_node(node.node_id, "root", node.content, node.concept_id, node.type,
+						node.class, node.start_char_id, node.end_char_id,
+						node.is_edited === true || node.is_edited === 1,
+						node.has_reflection === true || node.has_reflection === 1);
+				}
+			});
+			break;
+		}
+		pending = next;
+	}
+
+	mouseoverNode();
+	change_select_Cnode("onload");
+	document.querySelectorAll("#jsmind_container jmnode").forEach(function(node){
+		make_micro_strat(node);
+	});
+}
 
 function getData(){
 

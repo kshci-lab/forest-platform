@@ -7,6 +7,111 @@
 	require("connect_db.php");
 
 	$id = $_SESSION["MAPID"];
+	$val = isset($_POST["val"]) ? $_POST["val"] : "";
+
+	if ($val === "all") {
+		header('Content-Type: application/json; charset=utf-8');
+		$nodes = array();
+		$node_indexes = array();
+		$warnings = array();
+		$sql_nodes = "SELECT DISTINCT latest.node_id, latest.parent_id, latest.content,
+				latest.concept_id, latest.type, latest.class, latest.appeared_at
+			FROM node_latest latest
+			INNER JOIN map_node_links link ON link.node_id = latest.node_id
+			WHERE link.map_id = ?
+			ORDER BY latest.appeared_at ASC, latest.node_id ASC";
+
+		try {
+			$stmt = $mysqli->prepare($sql_nodes);
+			if (!$stmt) {
+				throw new Exception($mysqli->error);
+			}
+			$stmt->bind_param('s', $id);
+			$stmt->execute();
+			$result = $stmt->get_result();
+			while ($row = $result->fetch_assoc()) {
+				$row['start_char_id'] = null;
+				$row['end_char_id'] = null;
+				$row['is_edited'] = false;
+				$row['has_reflection'] = false;
+				$node_indexes[$row['node_id']] = count($nodes);
+				$nodes[] = $row;
+			}
+			$stmt->close();
+		} catch (Throwable $e) {
+			http_response_code(500);
+			echo json_encode(array('success' => false, 'error' => 'Failed to load mind map nodes.'));
+			error_log('open_data all nodes: ' . $e->getMessage());
+			return;
+		}
+
+		// Optional metadata must not prevent the core mind map from loading.
+		try {
+			$stmt = $mysqli->prepare("SELECT pa.node_id, pa.start_char_id, pa.end_char_id
+				FROM paper_annotations pa
+				INNER JOIN map_node_links link ON link.node_id = pa.node_id
+				WHERE link.map_id = ? AND pa.deleted = 0
+				ORDER BY pa.created_at ASC, pa.annotation_id ASC");
+			if (!$stmt) { throw new Exception($mysqli->error); }
+			$stmt->bind_param('s', $id);
+			$stmt->execute();
+			$result = $stmt->get_result();
+			while ($row = $result->fetch_assoc()) {
+				if (isset($node_indexes[$row['node_id']])) {
+					$index = $node_indexes[$row['node_id']];
+					$nodes[$index]['start_char_id'] = $row['start_char_id'];
+					$nodes[$index]['end_char_id'] = $row['end_char_id'];
+				}
+			}
+			$stmt->close();
+		} catch (Throwable $e) {
+			$warnings[] = 'annotations';
+			error_log('open_data all annotations: ' . $e->getMessage());
+		}
+
+		try {
+			$stmt = $mysqli->prepare("SELECT DISTINCT reflection.node_id
+				FROM paper_reading_reflections reflection
+				INNER JOIN map_node_links link ON link.node_id = reflection.node_id
+				WHERE link.map_id = ?");
+			if (!$stmt) { throw new Exception($mysqli->error); }
+			$stmt->bind_param('s', $id);
+			$stmt->execute();
+			$result = $stmt->get_result();
+			while ($row = $result->fetch_assoc()) {
+				if (isset($node_indexes[$row['node_id']])) {
+					$nodes[$node_indexes[$row['node_id']]]['has_reflection'] = true;
+				}
+			}
+			$stmt->close();
+		} catch (Throwable $e) {
+			$warnings[] = 'reflections';
+			error_log('open_data all reflections: ' . $e->getMessage());
+		}
+
+		try {
+			$stmt = $mysqli->prepare("SELECT DISTINCT changed.node_id
+				FROM view_changed_content_vs_latest changed
+				INNER JOIN map_node_links link ON link.node_id = changed.node_id
+				WHERE link.map_id = ?");
+			if (!$stmt) { throw new Exception($mysqli->error); }
+			$stmt->bind_param('s', $id);
+			$stmt->execute();
+			$result = $stmt->get_result();
+			while ($row = $result->fetch_assoc()) {
+				if (isset($node_indexes[$row['node_id']])) {
+					$nodes[$node_indexes[$row['node_id']]]['is_edited'] = true;
+				}
+			}
+			$stmt->close();
+		} catch (Throwable $e) {
+			$warnings[] = 'edited_nodes';
+			error_log('open_data all edited nodes: ' . $e->getMessage());
+		}
+
+		echo json_encode(array('success' => true, 'nodes' => $nodes, 'warnings' => $warnings));
+		return;
+	}
 
 	if (isset($_POST["val"]) && $_POST["val"] === "edited_nodes") {
 		$i = 0;
