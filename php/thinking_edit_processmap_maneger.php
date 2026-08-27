@@ -62,6 +62,7 @@
 		}else if($record_thing === 'trigger'){
 			$trigger_id = isset($_POST["trigger_id"]) ? trim((string)$_POST["trigger_id"]) : '';
 			$activity_id = isset($_POST["activity_id"]) ? trim((string)$_POST["activity_id"]) : '';
+			$node_id = isset($_POST["node_id"]) ? trim((string)$_POST["node_id"]) : '';
 			$node_version_from = isset($_POST["from"]) ? trim((string)$_POST["from"]) : (isset($_POST["node_version_from"]) ? trim((string)$_POST["node_version_from"]) : '');
 			$node_version_to = isset($_POST["to"]) ? trim((string)$_POST["to"]) : (isset($_POST["node_version_to"]) ? trim((string)$_POST["node_version_to"]) : '');
 			$activity_time = isset($_POST["activity_time"]) ? trim((string)$_POST["activity_time"]) : '';
@@ -71,12 +72,19 @@
 			$y = isset($_POST["y"]) && is_numeric($_POST["y"]) ? (int)$_POST["y"] : 0;
 			$trigger_id = function_exists('mb_substr') ? mb_substr($trigger_id, 0, 45, 'UTF-8') : substr($trigger_id, 0, 45);
 			$activity_id = function_exists('mb_substr') ? mb_substr($activity_id, 0, 45, 'UTF-8') : substr($activity_id, 0, 45);
+			$node_id = function_exists('mb_substr') ? mb_substr($node_id, 0, 45, 'UTF-8') : substr($node_id, 0, 45);
 			$node_version_from = function_exists('mb_substr') ? mb_substr($node_version_from, 0, 45, 'UTF-8') : substr($node_version_from, 0, 45);
 			$node_version_to = function_exists('mb_substr') ? mb_substr($node_version_to, 0, 45, 'UTF-8') : substr($node_version_to, 0, 45);
 			$activity_type = function_exists('mb_substr') ? mb_substr($activity_type, 0, 100, 'UTF-8') : substr($activity_type, 0, 100);
 			$content = function_exists('mb_substr') ? mb_substr($content, 0, 999, 'UTF-8') : substr($content, 0, 999);
 			if($trigger_id === ''){
+				http_response_code(400);
 				echo "Error triggers insert: trigger_id is empty";
+				exit;
+			}
+			if($node_id === ''){
+				http_response_code(400);
+				echo "Error triggers insert: node_id is empty";
 				exit;
 			}
 			if($node_version_from === ''){
@@ -85,10 +93,11 @@
 			if($activity_time === ''){
 				$activity_time = null;
 			}
-			$sql = "INSERT INTO triggers (trigger_id, activity_id, `from`, `to`, activity_time, activity_type, content, add_time, x, y, deleted)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+			$sql = "INSERT INTO triggers (trigger_id, activity_id, node_id, `from`, `to`, activity_time, activity_type, content, add_time, x, y, deleted)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
 					ON DUPLICATE KEY UPDATE
 						activity_id = VALUES(activity_id),
+						node_id = VALUES(node_id),
 						`from` = VALUES(`from`),
 						`to` = VALUES(`to`),
 						activity_time = VALUES(activity_time),
@@ -103,9 +112,10 @@
 			$error_message = '';
 			if($stmt = $mysqli->prepare($sql)){
 				$stmt->bind_param(
-					'ssssssssii',
+					'sssssssssii',
 					$trigger_id,
 					$activity_id,
+					$node_id,
 					$node_version_from,
 					$node_version_to,
 					$activity_time,
