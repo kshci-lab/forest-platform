@@ -865,7 +865,8 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         if(flag == "New"){
-            defaultRecordThinkingProcess.record_trigger(trigger_id, activity_id, from_node, to_node, t_time, t_type, t_label, node_x, node_y);
+            const mapNodeId = getOpenThinkingProcessNodeId();
+            defaultRecordThinkingProcess.record_trigger(trigger_id, activity_id, mapNodeId, from_node, to_node, t_time, t_type, t_label, node_x, node_y);
         }
 
         defaultThinkingProcess.removeSupersededVersionEdges();
@@ -1640,13 +1641,18 @@ class RecordThinkingProcess{
     //     });
     // }
 
-    record_trigger(trigger_id, activity_id, from, to, time, activity_type, content, x, y){
+    record_trigger(trigger_id, activity_id, node_id, from, to, time, activity_type, content, x, y){
+        if(!node_id){
+            console.error("trigger record failed: the open thinking-process node_id is unavailable");
+            return;
+        }
         
         $.ajax({
             url: "../php/thinking_edit_processmap_maneger.php",
             type: "POST",
             data: {trigger_id : trigger_id,
                 activity_id : activity_id,
+                node_id : node_id,
                 from : from,
                 to : to,
                 activity_time : time,
@@ -1695,6 +1701,19 @@ let selected_other_process_id; // 他者の思考過程表出化マップを表�
 let selected_other_process_group; // 他者ノードのgroupを保持する変数
 // ガード用タイムスタンプ（同一操作による二重実行を抑止）
 let _lastShowThinkingProcessCall = 0;
+
+const getOpenThinkingProcessNodeId = () => {
+    const conceptDisplay = document.getElementById("conceptdisplay");
+    const displayedNodeId = conceptDisplay ? conceptDisplay.getAttribute("nodeid") : "";
+    if(displayedNodeId){
+        return displayedNodeId;
+    }
+    if((process_mode === "all" || process_mode === "allRE") && typeof _jm !== "undefined" && _jm.get_selected_node){
+        const selectedNode = _jm.get_selected_node();
+        return selectedNode && selectedNode.id ? selectedNode.id : "";
+    }
+    return "";
+};
 
 const getProcessMapDataFromDB = (callback) => {
     //選択されているノードIDとconcept_id
