@@ -6,7 +6,7 @@
 	$db_port = 8889;  // ポート番号
 	$db_user = "root";
 	$db_password = "root";
-	$db_dbname = "forest_platform_0817";
+	$db_dbname = "forest_platform";
 
 	// デスクトップPCに接続
 	// $db_host = "10.250.63.6";  // ホスト名のみ
