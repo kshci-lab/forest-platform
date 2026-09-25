@@ -481,6 +481,25 @@
   background: #f8fafc !important;
   border-color: #94a3b8 !important;
 }
+.btn-view-past-logs.has-history-records,
+.jr-history-toggle.has-history-records {
+  background: #f0fdf4 !important;
+  border: 1px solid #86efac !important;
+  color: #166534 !important;
+}
+.btn-view-past-logs.has-history-records:hover,
+.jr-history-toggle.has-history-records:hover {
+  background: #dcfce7 !important;
+  border-color: #4ade80 !important;
+}
+.btn-view-past-logs.has-history-records::before,
+.jr-history-toggle.has-history-records::before {
+  content: "● ";
+  color: #22c55e;
+  margin-right: 4px;
+  font-size: 10px;
+}
+
 
 /* 最下部：手動ボタンを廃止した「保存済み」ステータスバー */
 .reflection-footer-status {

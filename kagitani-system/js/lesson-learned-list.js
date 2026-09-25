@@ -217,6 +217,7 @@
         }
         body.innerHTML = '';
         data.items.forEach(item => {
+          const hasPast = item.has_past_records === true || item.has_past_records === 'true';
           const card = document.createElement('div');
           card.style.cssText = 'background:linear-gradient(135deg, #fef9f3 0%, #fdf6ed 100%);border-radius:6px;padding:8px 12px 8px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-left:4px solid #f97316;transition:transform 0.15s ease, box-shadow 0.15s ease;position:relative;';
 
@@ -227,6 +228,14 @@
           // 左側：ラベル + 場所情報
           const leftWrap = document.createElement('div');
           leftWrap.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
+
+          if (hasPast) {
+            const historyIcon = document.createElement('span');
+            historyIcon.style.cssText = 'font-size:12px;cursor:default;margin-right:2px;display:inline-flex;align-items:center;';
+            historyIcon.textContent = '🕒';
+            historyIcon.title = (getCurrentLang() === 'en') ? 'This lesson has revision history' : 'この教訓は更新履歴があります';
+            leftWrap.appendChild(historyIcon);
+          }
 
           // ラベル（色付きバッジ）- SRL整理マップはオレンジ
           const label = document.createElement('span');
@@ -327,6 +336,7 @@
         }
         body.innerHTML = '';
         data.items.forEach(item => {
+          const hasPast = item.has_past_records === true || item.has_past_records === 'true';
           const card = document.createElement('div');
           card.style.cssText = 'background:linear-gradient(135deg, #f3faf5 0%, #edf7f0 100%);border-radius:6px;padding:8px 12px 8px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-left:4px solid #28a745;transition:transform 0.15s ease, box-shadow 0.15s ease;position:relative;';
 
@@ -338,6 +348,14 @@
           const leftWrap = document.createElement('div');
           leftWrap.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
 
+          if (hasPast) {
+            const historyIcon = document.createElement('span');
+            historyIcon.style.cssText = 'font-size:12px;cursor:default;margin-right:2px;display:inline-flex;align-items:center;';
+            historyIcon.textContent = '🕒';
+            historyIcon.title = (getCurrentLang() === 'en') ? 'This lesson has revision history' : 'この教訓は更新履歴があります';
+            leftWrap.appendChild(historyIcon);
+          }
+
           // ラベル（色付きバッジ）- SRLジャーナルは緑色
           const label = document.createElement('span');
           label.className = 'll-trans-label';
@@ -346,7 +364,7 @@
           label.textContent = oppLabel;
           leftWrap.appendChild(label);
 
-          // 期間情報（バッジの右側）
+          // 期間情報（バッジ of 右側）
           if (item.journal_start_date || item.journal_finish_date) {
             const sourceInfo = document.createElement('span');
             sourceInfo.style.cssText = 'font-size:10px;color:#6b7280;display:inline-flex;align-items:center;gap:2px;';

@@ -74,7 +74,8 @@ try {
 			ll.`map_id`,
 			oj.`object_journal_id` AS object_journal_id,
 			oj.`start_date` AS journal_start_date,
-			oj.`finish_date` AS journal_finish_date
+			oj.`finish_date` AS journal_finish_date,
+			(SELECT COUNT(*) FROM object_journal_reflections ojr_count WHERE ojr_count.object_journal_id = oj.object_journal_id) AS journal_record_count
 			FROM " . $ll_table_escaped . " ll
 			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` = ojr.`object_journal_reflection_id`
 			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` = oj.`object_journal_id`
@@ -106,7 +107,8 @@ try {
 			ll.`map_id`,
 			oj.`object_journal_id` AS object_journal_id,
 			oj.`start_date` AS journal_start_date,
-			oj.`finish_date` AS journal_finish_date
+			oj.`finish_date` AS journal_finish_date,
+			(SELECT COUNT(*) FROM object_journal_reflections ojr_count WHERE ojr_count.object_journal_id = oj.object_journal_id) AS journal_record_count
 			FROM " . $ll_table_escaped . " ll
 			LEFT JOIN `object_journal_reflections` ojr ON ll.`object_journal_reflection_id` = ojr.`object_journal_reflection_id`
 			LEFT JOIN `object_journals` oj ON ojr.`object_journal_id` = oj.`object_journal_id`
@@ -128,7 +130,12 @@ try {
 	$stmt->execute();
 	$rows = $stmt->fetchAll();
 
-	$out = [ 'success' => true, 'items' => $rows, 'debug_table' => $foundTable ];
+	$norm = array_map(function($r){
+		$r['has_past_records'] = isset($r['journal_record_count']) && (int)$r['journal_record_count'] > 1;
+		return $r;
+	}, $rows);
+
+	$out = [ 'success' => true, 'items' => $norm, 'debug_table' => $foundTable ];
 	if ($debug) $out['debug_sql'] = $sql;
 	echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 

@@ -844,6 +844,43 @@ try {
                 console.log("[toggleNetworkLanguage] 日本語に一括復元します。");
                 defaultThinkingProcess.nodes.update(updates);
             }
+
+            // 進捗ステータスツールバー（#t_Process_conmenu）の多言語化
+            const conMenu = document.getElementById('t_Process_conmenu');
+            if (conMenu) {
+                const header = conMenu.querySelector('.seg-header');
+                if (header) {
+                    header.textContent = (lang === 'en') ? 'Progress Status' : '進捗ステータス';
+                }
+                const btn0 = document.getElementById('object_conmenu0');
+                if (btn0) {
+                    btn0.title = (lang === 'en') ? 'Not Started' : '未着手';
+                    btn0.setAttribute('aria-label', (lang === 'en') ? 'Not Started' : '未着手');
+                    const text = btn0.querySelector('.seg-text');
+                    if (text) text.textContent = (lang === 'en') ? 'Not Started' : '未着手';
+                }
+                const btn1 = document.getElementById('object_conmenu1');
+                if (btn1) {
+                    btn1.title = (lang === 'en') ? 'In Progress' : '実行中';
+                    btn1.setAttribute('aria-label', (lang === 'en') ? 'Start Working' : '作業開始');
+                    const text = btn1.querySelector('.seg-text');
+                    if (text) text.textContent = (lang === 'en') ? 'In Progress' : '実行中';
+                }
+                const btn3 = document.getElementById('object_conmenu3');
+                if (btn3) {
+                    btn3.title = (lang === 'en') ? 'Paused' : '中断';
+                    btn3.setAttribute('aria-label', (lang === 'en') ? 'Pause Working' : '作業中断');
+                    const text = btn3.querySelector('.seg-text');
+                    if (text) text.textContent = (lang === 'en') ? 'Paused' : '中断';
+                }
+                const btn2 = document.getElementById('object_conmenu2');
+                if (btn2) {
+                    btn2.title = (lang === 'en') ? 'Completed' : '完了';
+                    btn2.setAttribute('aria-label', (lang === 'en') ? 'Complete Working' : '作業完了');
+                    const text = btn2.querySelector('.seg-text');
+                    if (text) text.textContent = (lang === 'en') ? 'Completed' : '完了';
+                }
+            }
         }
 
         async function toggleWeeklyGoalsLanguage(lang) {

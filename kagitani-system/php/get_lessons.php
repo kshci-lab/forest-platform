@@ -143,9 +143,15 @@ try {
                 $latest_reflection_where = "\n                      AND (ol.reflection_id IS NULL OR ol.reflection_id = '' OR ol.reflection_id = latest_ref.reflection_id)";
             }
 
+            $ref_count_sql = "0 AS reflection_record_count";
+            if ($has_reflection_records) {
+                $ref_count_sql = "(SELECT COUNT(*) FROM object_reflection_records rr WHERE rr.object_node_id = ol.object_node_id) AS reflection_record_count";
+            }
+
             // 問いノード（topic-tag）の情報も取得するためにサブクエリを追加
             $sql = "SELECT ol.object_le_id, ol.object_node_id, ol.lesson_learned, ol.why_important, ol.opportunity, ol.created_at, ol.updated_at,
                     o.content AS node_content, o.node_id,
+                    {$ref_count_sql},
                     (SELECT t.content FROM object_nodes t WHERE t.node_id = o.node_id AND t.object_nodes_type = 'topic-tag' AND t.deleted = 0 LIMIT 1) AS topic_tag_content
                     FROM {$tbl} ol
                     JOIN object_nodes o ON ol.object_node_id = o.object_node_id
@@ -166,6 +172,7 @@ try {
                 $r['why_important'] = isset($r['why_important']) ? $r['why_important'] : null;
                 $r['source_node_content'] = isset($r['node_content']) ? $r['node_content'] : '';
                 $r['topic_tag_content'] = isset($r['topic_tag_content']) ? $r['topic_tag_content'] : '';
+                $r['has_past_records'] = isset($r['reflection_record_count']) && (int)$r['reflection_record_count'] > 1;
                 return $r;
             }, $rows);
             echo json_encode([ 'success' => true, 'items' => $norm ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

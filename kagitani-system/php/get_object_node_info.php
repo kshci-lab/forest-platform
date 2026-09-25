@@ -82,19 +82,39 @@ if (isset($_GET['test_simple']) && $_GET['test_simple'] == '1') {
 }
 
 // --- 6. メイン処理 ---
-$where = "node_id = '" . $escaped_node_id . "' and deleted = 0";
+// 日付パラメータの正規化（スラッシュ区切り・ハイフン区切りの両方に対応）
+$h_start = '';
+$h_next_day = '';
+$has_date_filter = false;
+
 if ($start_date !== '' && $end_date !== '') {
-    $escaped_start = $mysqli->real_escape_string($start_date);
-    $escaped_end = $mysqli->real_escape_string($end_date);
-    
-    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $end_date)) {
-        $escaped_start = $mysqli->real_escape_string($start_date . ' 00:00:00');
-        $next_day = date('Y-m-d', strtotime($end_date . ' +1 day'));
-        $escaped_next_day = $mysqli->real_escape_string($next_day);
-        $where .= " AND updated_at >= '" . $escaped_start . "' AND updated_at < '" . $escaped_next_day . "'";
-    } else {
-        $where .= " AND updated_at >= '" . $escaped_start . "' AND updated_at <= '" . $escaped_end . "'";
+    $norm_start = str_replace('/', '-', $start_date);
+    $norm_end = str_replace('/', '-', $end_date);
+    $ts_start = strtotime($norm_start);
+    $ts_end = strtotime($norm_end);
+    if ($ts_start !== false && $ts_end !== false) {
+        $h_start = date('Y-m-d 00:00:00', $ts_start);
+        $h_next_day = date('Y-m-d 00:00:00', strtotime('+1 day', $ts_end));
+        $has_date_filter = true;
     }
+}
+
+// 該当するnode_id（問いノードなど）に属する未削除ノードを取得
+// ※ updated_at で絞り込むと、後日ノードを編集・移動した際に過去の期間から除外されてしまうため、
+// 　期間指定がある場合は「その期間内に履歴が存在する」または「その期間内に作成された」ノードを取得する。
+$where = "node_id = '" . $escaped_node_id . "' AND deleted = 0";
+if ($has_date_filter) {
+    $escaped_h_start = $mysqli->real_escape_string($h_start);
+    $escaped_h_next_day = $mysqli->real_escape_string($h_next_day);
+    $where .= " AND (
+        object_node_id IN (
+            SELECT DISTINCT object_node_id 
+            FROM `object_nodes_histories` 
+            WHERE appeared_at >= '" . $escaped_h_start . "' 
+              AND appeared_at < '" . $escaped_h_next_day . "'
+        )
+        OR (created_at >= '" . $escaped_h_start . "' AND created_at < '" . $escaped_h_next_day . "')
+    )";
 }
 
 $sql = "SELECT * FROM object_nodes WHERE $where ORDER BY created_at DESC";
@@ -121,14 +141,10 @@ while ($row = $result->fetch_assoc()) {
 
     $answer_histories = [];
     $histDateClauseForAnswer = '';
-    if ($start_date !== '' && $end_date !== '') {
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
-            $h_start = $start_date . ' 00:00:00';
-            $h_next = date('Y-m-d', strtotime($end_date . ' +1 day'));
-            $histDateClauseForAnswer = " AND h.appeared_at >= '$h_start' AND h.appeared_at < '$h_next'";
-        } else {
-            $histDateClauseForAnswer = " AND h.appeared_at >= '$start_date' AND h.appeared_at <= '$end_date'";
-        }
+    if ($has_date_filter) {
+        $escaped_h_start = $mysqli->real_escape_string($h_start);
+        $escaped_h_next_day = $mysqli->real_escape_string($h_next_day);
+        $histDateClauseForAnswer = " AND h.appeared_at >= '$escaped_h_start' AND h.appeared_at < '$escaped_h_next_day'";
     }
     
     // Fetch answer histories in the date range
@@ -159,14 +175,10 @@ while ($row = $result->fetch_assoc()) {
             
             // 履歴取得
             $histDateClause = '';
-            if ($start_date !== '' && $end_date !== '') {
-                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $start_date)) {
-                    $h_start = $start_date . ' 00:00:00';
-                    $h_next = date('Y-m-d', strtotime($end_date . ' +1 day'));
-                    $histDateClause = " AND appeared_at >= '$h_start' AND appeared_at < '$h_next'";
-                } else {
-                    $histDateClause = " AND appeared_at >= '$start_date' AND appeared_at <= '$end_date'";
-                }
+            if ($has_date_filter) {
+                $escaped_h_start = $mysqli->real_escape_string($h_start);
+                $escaped_h_next_day = $mysqli->real_escape_string($h_next_day);
+                $histDateClause = " AND appeared_at >= '$escaped_h_start' AND appeared_at < '$escaped_h_next_day'";
             }
 
             $sql_hist = "SELECT * FROM `object_nodes_histories` WHERE object_node_id IN ($inClause) AND drag = 0 $histDateClause 

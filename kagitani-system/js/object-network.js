@@ -3485,6 +3485,33 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             return;
         }
 
+        window.translateFeedbackTextareas = async (tooltipEl) => {
+            const isEn = (document.getElementById('language-toggle') && document.getElementById('language-toggle').checked);
+            if (!isEn || typeof window.translateText !== 'function') return;
+
+            const textareas = Array.from(tooltipEl.querySelectorAll('textarea'));
+            const promises = textareas.map(async (ta) => {
+                const orig = ta.value.trim();
+                if (orig && orig !== 'New Node' && orig !== '未リンク') {
+                    if (!ta.dataset.originalValue) {
+                        ta.dataset.originalValue = ta.value;
+                    }
+                    const trans = await window.translateText(ta.dataset.originalValue, 'en');
+                    ta.value = trans;
+                    ta.dataset.translatedValue = trans;
+                }
+                
+                if (!ta.dataset.hasInputListener) {
+                    ta.addEventListener('input', function() {
+                        delete ta.dataset.originalValue;
+                        delete ta.dataset.translatedValue;
+                    });
+                    ta.dataset.hasInputListener = 'true';
+                }
+            });
+            await Promise.all(promises);
+        };
+
         const getCurrentLang = () => {
             try {
                 if (window.currentLang === 'ja' || window.currentLang === 'en') {
@@ -3755,6 +3782,17 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         tooltip.style.left = `${Math.max(0, centerX)}px`;
         tooltip.style.top = `${Math.max(0, centerY)}px`;
         this.setupReflectionHistoryButton();
+        this.loadReflectionHistory();
+        (async () => {
+            try {
+                if (typeof window.translateFeedbackTextareas === 'function') {
+                    await window.translateFeedbackTextareas(tooltip);
+                }
+                if (typeof tooltip._resetOriginalValues === 'function') {
+                    tooltip._resetOriginalValues();
+                }
+            } catch(e) {}
+        })();
 
         const applyAutoGrow = (ta) => {
             if (!ta) return;
@@ -3799,6 +3837,21 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     lessonTabContentContainer,
                     addLessonTabBtn
                 };
+                
+                // Re-snapshot originalValues after AJAX data has been loaded
+                (async () => {
+                    try {
+                        const tip = document.getElementById('feedbackTooltip');
+                        if (tip) {
+                            if (typeof window.translateFeedbackTextareas === 'function') {
+                                await window.translateFeedbackTextareas(tip);
+                            }
+                            if (typeof tip._resetOriginalValues === 'function') {
+                                tip._resetOriginalValues();
+                            }
+                        }
+                    } catch(e) { console.warn('AJAX translate/reset error', e); }
+                })();
                 
                 const activateLessonTab = (index) => {
                     const tabs = getLessonTabs();
@@ -4134,10 +4187,19 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     }
                 } catch(e) { /* ignore */ }
                 // Re-snapshot originalValues after synchronous data has been loaded
-                try {
-                    const tip = document.getElementById('feedbackTooltip');
-                    if (tip && typeof tip._resetOriginalValues === 'function') tip._resetOriginalValues();
-                } catch(e) {}
+                (async () => {
+                    try {
+                        const tip = document.getElementById('feedbackTooltip');
+                        if (tip) {
+                            if (typeof window.translateFeedbackTextareas === 'function') {
+                                await window.translateFeedbackTextareas(tip);
+                            }
+                            if (typeof tip._resetOriginalValues === 'function') {
+                                tip._resetOriginalValues();
+                            }
+                        }
+                    } catch(e) { console.warn('Sync translate/reset error', e); }
+                })();
             }
         } catch (e) {
             console.warn('error while pre-filling feedbackTooltip from reflection-tag', e);
@@ -4280,6 +4342,16 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 }
                 const records = Array.isArray(res.records) ? res.records : [];
                 const visibleRecords = records.length > 1 ? records.slice(1) : [];
+                
+                const historyBtn = document.getElementById('btnReflectionHistory');
+                if (historyBtn) {
+                    if (records.length > 1) {
+                        historyBtn.classList.add('has-history-records');
+                    } else {
+                        historyBtn.classList.remove('has-history-records');
+                    }
+                }
+
                 if (visibleRecords.length === 0) {
                     listEl.innerHTML = '<div data-empty="1" class="history-empty">過去の記録はありません。</div>';
                     return;

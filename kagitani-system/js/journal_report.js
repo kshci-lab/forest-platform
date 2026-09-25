@@ -712,17 +712,24 @@
                                     dataType: 'json',
                                     data: { object_journal_id: objectJournalId },
                                     success: function (res) {
-                                        if (!res || !res.success) {
-                                            historyList.innerHTML = '<div class="jr-history-empty">読み込みに失敗しました。</div>';
-                                            return;
-                                        }
-                                        var snapshots = [];
-                                        if (Array.isArray(res.snapshots)) {
-                                            snapshots = res.snapshots;
-                                        } else if (Array.isArray(res.reflections)) {
-                                            snapshots = [{ reflections: res.reflections }];
-                                        }
-                                        renderHistory(historyList, snapshots);
+                                         if (!res || !res.success) {
+                                             historyList.innerHTML = '<div class="jr-history-empty">読み込みに失敗しました。</div>';
+                                             return;
+                                         }
+                                         var snapshots = [];
+                                         if (Array.isArray(res.snapshots)) {
+                                             snapshots = res.snapshots;
+                                         } else if (Array.isArray(res.reflections)) {
+                                             snapshots = [{ reflections: res.reflections }];
+                                         }
+                                         if (historyBtn) {
+                                             if (snapshots.length > 1) {
+                                                 historyBtn.classList.add("has-history-records");
+                                             } else {
+                                                 historyBtn.classList.remove("has-history-records");
+                                             }
+                                         }
+                                         renderHistory(historyList, snapshots);
                                         if (getCurrentLang() === "en") { translateModalContent(historyList); }
                                     },
                                     error: function () {
@@ -746,6 +753,8 @@
                                 historyHeader.appendChild(historyBtn);
                                 loadJournalHistory();
                             });
+
+                            loadJournalHistory();
 
                             // Resize logic for divider
                             (function() {
