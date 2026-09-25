@@ -262,6 +262,26 @@
 
                             // (Removed headerWrapper as per user request)
 
+                            // Helper functions for auto-resizing textareas to fit content perfectly
+                            function autoResizeTextarea(ta) {
+                                if (!ta) return;
+                                // 非表示（親要素が display: none 等で offsetParent が null かつ scrollHeight <= 0）の場合は高さを変更しない
+                                if (ta.offsetParent === null && ta.scrollHeight <= 0) return;
+                                ta.style.height = 'auto';
+                                var minH = ta.classList.contains('jr-textarea-small') ? 36 : 40;
+                                var newH = Math.max(minH, ta.scrollHeight);
+                                ta.style.height = newH + 'px';
+                            }
+
+                            function autoResizeAllTextareas(container) {
+                                var root = container || modalContent;
+                                if (!root) return;
+                                var textareas = root.querySelectorAll('textarea.jr-textarea, textarea');
+                                textareas.forEach(function(ta) {
+                                    autoResizeTextarea(ta);
+                                });
+                            }
+
                             // Initialize unsaved changes state
                             window.__jr_hasUnsavedChanges = false;
 
@@ -501,6 +521,10 @@
                             var historyPanel = document.createElement('div');
                             historyPanel.className = 'jr-history-panel';
                             historyPanel.setAttribute('aria-label', (getCurrentLang() === 'ja') ? '過去の記録' : 'History');
+
+                            var historyResizeHandle = document.createElement('div');
+                            historyResizeHandle.className = 'jr-history-resize-handle';
+                            historyPanel.appendChild(historyResizeHandle);
 
                             var historyHeader = document.createElement('div');
                             historyHeader.className = 'jr-history-header';
@@ -756,6 +780,60 @@
 
                             loadJournalHistory();
 
+                            // Resize logic for historyPanel
+                            (function() {
+                                var savedWidth = localStorage.getItem('jr_history_panel_width');
+                                if (savedWidth) {
+                                    var w = parseInt(savedWidth, 10);
+                                    if (w >= 220 && w <= 800) {
+                                        historyPanel.style.width = w + 'px';
+                                        historyPanel.style.flex = '0 0 ' + w + 'px';
+                                    }
+                                }
+
+                                var dragging = false;
+                                var startX = 0;
+                                var startWidth = 0;
+
+                                historyResizeHandle.addEventListener('pointerdown', function(e) {
+                                    dragging = true;
+                                    startX = e.clientX;
+                                    startWidth = historyPanel.getBoundingClientRect().width;
+                                    try { historyResizeHandle.setPointerCapture(e.pointerId); } catch(err) {}
+                                    historyResizeHandle.classList.add('is-resizing');
+                                    document.body.style.cursor = 'col-resize';
+                                    document.body.style.userSelect = 'none';
+                                    e.preventDefault();
+                                });
+
+                                historyResizeHandle.addEventListener('pointermove', function(e) {
+                                    if (!dragging) return;
+                                    var dx = e.clientX - startX;
+                                    var maxW = Math.min(800, window.innerWidth * 0.7);
+                                    var newWidth = Math.max(220, Math.min(maxW, startWidth - dx));
+                                    historyPanel.style.width = newWidth + 'px';
+                                    historyPanel.style.flex = '0 0 ' + newWidth + 'px';
+                                });
+
+                                function stopResize(e) {
+                                    if (dragging) {
+                                        dragging = false;
+                                        try { historyResizeHandle.releasePointerCapture(e.pointerId); } catch (err) {}
+                                        historyResizeHandle.classList.remove('is-resizing');
+                                        document.body.style.cursor = '';
+                                        document.body.style.userSelect = '';
+                                        var currentW = parseInt(historyPanel.style.width, 10);
+                                        if (currentW) {
+                                            localStorage.setItem('jr_history_panel_width', currentW);
+                                        }
+                                        autoResizeAllTextareas(modalContent);
+                                    }
+                                }
+
+                                historyResizeHandle.addEventListener('pointerup', stopResize);
+                                historyResizeHandle.addEventListener('pointercancel', stopResize);
+                            })();
+
                             // Resize logic for divider
                             (function() {
                                 var dragging = false;
@@ -785,6 +863,7 @@
                                         dragging = false;
                                         document.body.style.cursor = '';
                                         document.body.style.userSelect = '';
+                                        autoResizeAllTextareas(modalContent);
                                     }
                                 });
                             })();
@@ -905,12 +984,12 @@
                                 _tabContents.forEach(function(c, i) {
                                     if (i === index) {
                                         c.classList.add('jr-tab-content-active');
+                                        requestAnimationFrame(function() {
+                                            autoResizeAllTextareas(c);
+                                        });
                                         setTimeout(function() {
-                                            c.querySelectorAll('textarea').forEach(function(ta) {
-                                                ta.style.height = 'auto';
-                                                ta.style.height = ta.scrollHeight + 'px';
-                                            });
-                                        }, 10);
+                                            autoResizeAllTextareas(c);
+                                        }, 50);
                                     } else {
                                         c.classList.remove('jr-tab-content-active');
                                     }
@@ -994,12 +1073,12 @@
                                     contents.forEach(function(c, i) {
                                         if (i === index) {
                                             c.classList.add('jr-lesson-tab-content-active');
+                                            requestAnimationFrame(function() {
+                                                autoResizeAllTextareas(c);
+                                            });
                                             setTimeout(function() {
-                                                c.querySelectorAll('textarea').forEach(function(ta) {
-                                                    ta.style.height = 'auto';
-                                                    ta.style.height = ta.scrollHeight + 'px';
-                                                });
-                                            }, 10);
+                                                autoResizeAllTextareas(c);
+                                            }, 50);
                                         } else {
                                             c.classList.remove('jr-lesson-tab-content-active');
                                         }
@@ -1432,6 +1511,12 @@
                                 _lessonTabContents.forEach(function(c, i) {
                                     if (i === index) {
                                         c.classList.add('jr-lesson-tab-content-active');
+                                        requestAnimationFrame(function() {
+                                            autoResizeAllTextareas(c);
+                                        });
+                                        setTimeout(function() {
+                                            autoResizeAllTextareas(c);
+                                        }, 50);
                                     } else {
                                         c.classList.remove('jr-lesson-tab-content-active');
                                     }
@@ -1819,6 +1904,12 @@
                                     // Activate the first lesson tab
                                     var firstLessonTab = wrap.querySelector('.jr-lesson-tab');
                                     if (firstLessonTab) firstLessonTab.click();
+                                    requestAnimationFrame(function() {
+                                        autoResizeAllTextareas(wrap);
+                                    });
+                                    setTimeout(function() {
+                                        autoResizeAllTextareas(wrap);
+                                    }, 50);
                                     if (getCurrentLang() === "en") { translateModalContent(wrap); }
                                 } catch(e) { console.warn('populateWrapWithReflection failed', e); }
                             }
@@ -1904,6 +1995,8 @@
                                                         }
                                                     }
                                                 } catch (e) { console.warn('populate additional lessons error', e); }
+                                                autoResizeAllTextareas(modalContent);
+                                                setTimeout(function() { autoResizeAllTextareas(modalContent); }, 50);
 
                                                 // Additionally, fetch the canonical reflection row (evaluation/attribution)
                                                 try {
@@ -1951,12 +2044,9 @@
                                                                     }
                                                                 } catch (e) { console.warn('apply reflection prefill failed', e); }
                                                                 // Resize all textareas after population
-                                                                setTimeout(function() {
-                                                                    modalContent.querySelectorAll('textarea').forEach(function(ta) {
-                                                                        ta.style.height = 'auto';
-                                                                        ta.style.height = ta.scrollHeight + 'px';
-                                                                    });
-                                                                }, 100);
+                                                                requestAnimationFrame(function() { autoResizeAllTextareas(modalContent); });
+                                                                setTimeout(function() { autoResizeAllTextareas(modalContent); }, 50);
+                                                                setTimeout(function() { autoResizeAllTextareas(modalContent); }, 200);
                                                         },
                                                         error: function () { /* ignore reflection fetch errors silently */ }
                                                     });
@@ -2728,11 +2818,10 @@ nodeWrap.appendChild(nodeContentWrap);
 
                             infoWrap.appendChild(saveBtnV); // Append to the wrapper
 
-                            // Global input listener to switch save button to State B
+                            // Global input listener to switch save button to State B and auto-resize textarea
                             modalContent.addEventListener('input', function(e) {
                                 if (e.target.tagName.toLowerCase() === 'textarea') {
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                    autoResizeTextarea(e.target);
                                 }
                                 if (e.target.tagName.toLowerCase() === 'textarea' || e.target.tagName.toLowerCase() === 'input') {
                                     window.__jr_hasUnsavedChanges = true;
@@ -2747,6 +2836,13 @@ nodeWrap.appendChild(nodeContentWrap);
                                 }
                             });
 
+                            // Focusin listener: ensure textarea expands to show all content on click/focus
+                            modalContent.addEventListener('focusin', function(e) {
+                                if (e.target.tagName.toLowerCase() === 'textarea') {
+                                    autoResizeTextarea(e.target);
+                                }
+                            });
+
                             // Bind the save button for this initial wrapper
                             saveBtnV.addEventListener('click', function () {
                                 saveWrapper(infoWrap);
@@ -2757,6 +2853,27 @@ nodeWrap.appendChild(nodeContentWrap);
                             modal.appendChild(modalContent);
                             document.body.appendChild(modal);
                             if (getCurrentLang() === "en") { translateModalContent(modal); }
+
+                            // Auto-resize all textareas upon initial display (with staggered retries for rendering & fonts)
+                            requestAnimationFrame(function() {
+                                autoResizeAllTextareas(modalContent);
+                            });
+                            setTimeout(function() { autoResizeAllTextareas(modalContent); }, 50);
+                            setTimeout(function() { autoResizeAllTextareas(modalContent); }, 150);
+                            setTimeout(function() { autoResizeAllTextareas(modalContent); }, 350);
+                            setTimeout(function() { autoResizeAllTextareas(modalContent); }, 700);
+
+                            // Window resize handler to maintain proper textarea heights when width changes
+                            var winResizeTimer = null;
+                            var onWinResize = function() {
+                                clearTimeout(winResizeTimer);
+                                winResizeTimer = setTimeout(function() {
+                                    if (modal && modal.parentNode) {
+                                        autoResizeAllTextareas(modalContent);
+                                    }
+                                }, 100);
+                            };
+                            window.addEventListener('resize', onWinResize);
                         }).catch(function (err) { console.error('journal_report: Promise.all error', err); });
                     },
                     error: function (xhr, status, error) { console.error('journal_report: get_object_journal_nodes.php error', error); }

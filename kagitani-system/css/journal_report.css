@@ -282,11 +282,32 @@
   background:#fffdf9;
   padding:10px 12px 12px 12px;
   width: 320px;
+  min-width: 220px;
+  max-width: 800px;
   flex: 0 0 320px;
   overflow-y: auto;
   box-sizing: border-box;
+  position: relative;
 }
 .jr-history-panel.jr-history-open{ display:flex; flex-direction: column; }
+
+/* 過去の記録パネルの左端リサイズハンドル */
+.jr-history-resize-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 100;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.jr-history-resize-handle:hover,
+.jr-history-resize-handle.is-resizing {
+  background: #3b82f6;
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
+}
 .jr-history-header{
   font-weight:700;
   color:#2b2722;
@@ -445,13 +466,15 @@
 .jr-textarea{
   width:100%; box-sizing:border-box; padding:6px 10px;
   border-radius:8px; border:1px solid rgba(0,0,0,0.05); background:rgba(255,255,255,0.9);
-  color:#333; resize:none !important; overflow-y:hidden !important; font-size:14px; line-height:1.4; min-height:40px;
+  color:#333; resize:none !important; overflow-y:hidden; font-size:14px; line-height:1.45; min-height:40px;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
   transition: border-color 0.2s, box-shadow 0.2s;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 .jr-textarea::placeholder{ color:#999; font-size:0.85em; }
-.jr-textarea:focus{ outline:none; border-color:#cbb9a5; box-shadow: inset 0 0 0 1px rgba(203,185,165,0.6); background:#fff; }
-.jr-textarea-small{ min-height:40px }
+.jr-textarea:focus{ outline:none; border-color:#cbb9a5; box-shadow: inset 0 0 0 1px rgba(203,185,165,0.6); background:#fff; overflow-y:auto; }
+.jr-textarea-small{ min-height:36px; }
 
 /* Lesson (application) section */
 .jr-lesson-div{

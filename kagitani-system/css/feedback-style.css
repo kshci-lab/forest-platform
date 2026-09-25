@@ -300,10 +300,6 @@
 
 /* ジャーナル履歴 差分表示用スタイル */
 .jr-history-unchanged {
-  opacity: 0.5;
-  transition: opacity 0.2s ease;
-}
-.jr-history-unchanged:hover {
   opacity: 1.0;
 }
 

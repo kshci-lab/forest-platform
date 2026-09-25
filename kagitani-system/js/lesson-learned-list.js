@@ -468,7 +468,7 @@
     
     // SRL整理マップから生まれた教訓の場合、マップを開く
     if (source === 'map' && item.node_id) {
-      openProcessMapForLesson(item.node_id, item.source_node_content || '');
+      openProcessMapForLesson(item.node_id, item.object_node_id, item.source_node_content || '');
     }
     
     // SRLジャーナルから生まれた教訓の場合、振り返りモーダルを開く
@@ -599,23 +599,25 @@
   }
 
   // 教訓カードからマップを開く処理
-  function openProcessMapForLesson(nodeId, nodeText) {
-    console.log('openProcessMapForLesson:', { nodeId: nodeId, nodeText: nodeText });
+  function openProcessMapForLesson(targetJmNodeId, targetObjectNodeId, nodeText) {
+    console.log('openProcessMapForLesson:', { targetJmNodeId: targetJmNodeId, targetObjectNodeId: targetObjectNodeId, nodeText: nodeText });
     
     // 保存用（process map 側で参照できるように）
     try {
-      if (nodeId) sessionStorage.setItem('processMap_targetNodeId', nodeId);
+      if (targetJmNodeId) sessionStorage.setItem('processMap_targetNodeId', targetJmNodeId);
+      if (targetObjectNodeId) sessionStorage.setItem('processMap_targetObjectNodeId', targetObjectNodeId);
       if (nodeText) sessionStorage.setItem('processMap_targetText', nodeText);
     } catch (err) {
-      window.processMap_targetNodeId = nodeId;
+      window.processMap_targetNodeId = targetJmNodeId;
+      window.processMap_targetObjectNodeId = targetObjectNodeId;
       window.processMap_targetText = nodeText;
     }
 
     // 1) jsMind の選択を明示的にセット
     try {
-      if (typeof _jm !== 'undefined' && _jm && typeof _jm.select_node === 'function' && nodeId) {
+      if (typeof _jm !== 'undefined' && _jm && typeof _jm.select_node === 'function' && targetJmNodeId) {
         try {
-          _jm.select_node(nodeId);
+          _jm.select_node(targetJmNodeId);
         } catch (selErr) {
           console.warn('select_node failed', selErr);
         }
@@ -624,113 +626,106 @@
       console.warn('select_node check failed', err);
     }
 
-    // 2) 対応する jmnode 要素を探してアイコンクリックを発火
-    var iconClicked = false;
+    // 2) 思考プロセスマップ（整理マップ）を開く
+    // targetJmNodeId（問いノードID）を渡して直接 showThinkingProcessMap を実行
     try {
-      if (nodeId) {
-        var jmElem = document.querySelector('jmnode[nodeid="' + nodeId + '"]');
-        if (!jmElem) {
-          // 試しに id 属性でも検索
-          jmElem = document.querySelector('jmnode[id="' + nodeId + '"]');
-        }
-        if (jmElem) {
-          var iconWrapper = jmElem.querySelector('.node-icon-wrapper');
-          if (iconWrapper) {
-            // dispatch a real click event
-            try {
-              iconWrapper.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-              iconClicked = true;
-            } catch (evErr) {
-              try { iconWrapper.click(); iconClicked = true; } catch(e){/* fallthrough */}
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('icon wrapper click failed', err);
-    }
-
-    // 3) フォールバック: showThinkingProcessMap を直接呼び出す
-    if (!iconClicked) {
-      try {
-        if (typeof showNavigatorGreeting === 'function') {
-          try { showNavigatorGreeting(); } catch(e){ console.warn('showNavigatorGreeting error', e); }
-        }
-      } catch(e){/* ignore */}
-
-      try {
-        if (typeof showThinkingProcessMap === 'function') {
-          showThinkingProcessMap();
-        } else {
-          console.warn('showThinkingProcessMap 関数が見つかりません');
-        }
-      } catch (err) {
-        console.error('showThinkingProcessMap 呼出しエラー', err);
-      }
-    }
-    
-    // 4) feedbackTooltip を表示（少し遅延させてマップの描画を待つ）
-    setTimeout(function() {
-      showFeedbackTooltipForNode(nodeId);
-    }, 300);
-  }
-  
-  // 特定のノードに対してfeedbackTooltipを表示する
-  // nodeIdはjsMindのノードIDなので、vis.jsの対応するノードIDを探す必要がある
-  function showFeedbackTooltipForNode(jmNodeId) {
-    try {
-      if (typeof defaultThinkingProcess !== 'undefined' && defaultThinkingProcess) {
-        // jsMindノードIDからvis.jsネットワークノードIDを探す
-        var networkNodeId = null;
-        
-        // ConnectMindMapNodeIdとConnectNetworkNodeIdの対応を探す
-        if (defaultThinkingProcess.ConnectMindMapNodeId && defaultThinkingProcess.ConnectNetworkNodeId) {
-          var idx = defaultThinkingProcess.ConnectMindMapNodeId.indexOf(jmNodeId);
-          if (idx !== -1) {
-            networkNodeId = defaultThinkingProcess.ConnectNetworkNodeId[idx];
-            console.log('Found network node:', networkNodeId, 'for jmNode:', jmNodeId);
-          }
-        }
-        
-        // 対応が見つからない場合、ノードのラベルテキストで検索を試みる
-        if (!networkNodeId) {
-          // sessionStorageからノードテキストを取得
-          var nodeText = null;
-          try {
-            nodeText = sessionStorage.getItem('processMap_targetText');
-          } catch(e) {
-            nodeText = window.processMap_targetText;
-          }
-          
-          if (nodeText && defaultThinkingProcess.nodes) {
-            var allNodes = defaultThinkingProcess.nodes.get();
-            for (var i = 0; i < allNodes.length; i++) {
-              var n = allNodes[i];
-              if (n.label && n.label.indexOf(nodeText) !== -1) {
-                networkNodeId = n.id;
-                console.log('Found network node by text:', networkNodeId, 'for text:', nodeText);
-                break;
-              }
-            }
-          }
-        }
-        
-        // ネットワークノードが見つかったらfeedbackTooltipを表示
-        if (networkNodeId && defaultThinkingProcess.nodes && defaultThinkingProcess.nodes.get(networkNodeId)) {
-          defaultThinkingProcess.selectId = networkNodeId;
-          if (typeof defaultThinkingProcess.showFeedbackTooltip === 'function') {
-            defaultThinkingProcess.showFeedbackTooltip();
-            console.log('feedbackTooltip displayed for network node:', networkNodeId);
-          }
-        } else {
-          console.warn('Network node not found for jmNode:', jmNodeId);
-        }
+      if (typeof showThinkingProcessMap === 'function') {
+        showThinkingProcessMap(targetJmNodeId);
       } else {
-        console.warn('defaultThinkingProcess is not available');
+        console.warn('showThinkingProcessMap 関数が見つかりません');
       }
     } catch (err) {
-      console.error('showFeedbackTooltipForNode error:', err);
+      console.error('showThinkingProcessMap 呼出しエラー', err);
     }
+
+    // 3) マップデータの描画完了を待機し、該当手段ノードへフォーカス＆ツールチップ展開
+    focusTargetProcessNode(targetObjectNodeId, nodeText, targetJmNodeId);
+  }
+
+  // 整理マップ上の該当手段ノードを探索し、フォーカス＆ツールチップを表示する
+  function focusTargetProcessNode(targetObjectNodeId, nodeText, targetJmNodeId) {
+    var checkCount = 0;
+    var maxChecks = 35; // 100ms * 35 = 最大3.5秒間ポーリング待機
+    var intervalId = setInterval(function() {
+      checkCount++;
+
+      if (typeof defaultThinkingProcess === 'undefined' || !defaultThinkingProcess || !defaultThinkingProcess.nodes || !defaultThinkingProcess.ownNetwork) {
+        if (checkCount >= maxChecks) {
+          clearInterval(intervalId);
+          console.warn('defaultThinkingProcess が準備完了しませんでした');
+        }
+        return;
+      }
+
+      var networkNodeId = null;
+
+      // A) targetObjectNodeId で直接検索（手段ノードのIDと一致）
+      if (targetObjectNodeId && defaultThinkingProcess.nodes.get(targetObjectNodeId)) {
+        networkNodeId = targetObjectNodeId;
+      }
+
+      // B) ConnectMindMapNodeId と ConnectNetworkNodeId の対応マップから検索
+      if (!networkNodeId && targetJmNodeId && defaultThinkingProcess.ConnectMindMapNodeId && defaultThinkingProcess.ConnectNetworkNodeId) {
+        var idx = defaultThinkingProcess.ConnectMindMapNodeId.indexOf(targetJmNodeId);
+        if (idx !== -1) {
+          networkNodeId = defaultThinkingProcess.ConnectNetworkNodeId[idx];
+        }
+      }
+
+      // C) nodeText（手段ノードのテキスト）によるラベル部分一致検索
+      if (!networkNodeId && nodeText) {
+        var allNodes = defaultThinkingProcess.nodes.get();
+        for (var i = 0; i < allNodes.length; i++) {
+          var n = allNodes[i];
+          if (n.label && n.label.indexOf(nodeText) !== -1) {
+            networkNodeId = n.id;
+            break;
+          }
+        }
+      }
+
+      // 該当ノードが見つかった場合
+      if (networkNodeId && defaultThinkingProcess.nodes.get(networkNodeId)) {
+        clearInterval(intervalId);
+        console.log('Target process node found and focusing:', networkNodeId);
+
+        try {
+          defaultThinkingProcess.ownNetwork.selectNodes([networkNodeId]);
+          defaultThinkingProcess.ownNetwork.focus(networkNodeId, {
+            scale: 1.1,
+            animation: {
+              duration: 500,
+              easingFunction: 'easeInOutQuad'
+            }
+          });
+        } catch (fErr) {
+          console.warn('ownNetwork.focus failed:', fErr);
+        }
+
+        // 内省ツールチップを表示
+        defaultThinkingProcess.selectId = networkNodeId;
+        if (typeof defaultThinkingProcess.showFeedbackTooltip === 'function') {
+          setTimeout(function() {
+            try {
+              defaultThinkingProcess.showFeedbackTooltip();
+            } catch (ttErr) {
+              console.warn('showFeedbackTooltip failed:', ttErr);
+            }
+          }, 200);
+        }
+        return;
+      }
+
+      // タイムアウト
+      if (checkCount >= maxChecks) {
+        clearInterval(intervalId);
+        console.warn('Target node could not be found within process map:', {
+          targetObjectNodeId: targetObjectNodeId,
+          targetJmNodeId: targetJmNodeId,
+          nodeText: nodeText
+        });
+      }
+    }, 100);
   }
 
   function makeDraggable(el){
