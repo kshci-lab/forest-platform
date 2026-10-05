@@ -1,6 +1,7 @@
 <?php
 session_start();
 require("connect_db.php");
+require_once __DIR__ . '/kf_sync_service.php';
 
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Asia/Tokyo');
@@ -19,31 +20,25 @@ $user_id = intval($_SESSION['USERID']);
 $experience_knowledge_id = intval($_POST['experience_knowledge_id']);
 $timestamp = date("Y-m-d H:i:s") . "." . substr(explode(".", (microtime(true) . ""))[1], 0, 3);
 
-$sql = "UPDATE experience_knowledges
-    SET deleted = 1, updated_at = ?
-    WHERE experience_knowledge_id = ?
-        AND user_id = ?
-        AND deleted = 0";
-
-if (!($stmt = $mysqli->prepare($sql))) {
-    echo json_encode(['status' => 'error', 'message' => '削除処理の準備に失敗しました'], JSON_UNESCAPED_UNICODE);
-    exit;
+try {
+    $result = kf_sync_delete_fragment(
+        $mysqli,
+        $experience_knowledge_id,
+        $user_id,
+        $timestamp,
+        isset($_SESSION['HCIMLAB_SSO_SUB']) ? (string)$_SESSION['HCIMLAB_SSO_SUB'] : ''
+    );
+    echo json_encode([
+        'status' => 'ok',
+        'source_revision' => $result['source_revision'],
+        'outbox_id' => $result['outbox_id'],
+        'ok_core' => $result['ok_core']
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $error) {
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => $error->getMessage()
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
-
-$stmt->bind_param('sii', $timestamp, $experience_knowledge_id, $user_id);
-
-if (!$stmt->execute()) {
-    $stmt->close();
-    echo json_encode(['status' => 'error', 'message' => '組織知の削除に失敗しました'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-if ($stmt->affected_rows < 1) {
-    $stmt->close();
-    echo json_encode(['status' => 'error', 'message' => '削除できる組織知が見つかりませんでした'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$stmt->close();
-echo json_encode(['status' => 'ok'], JSON_UNESCAPED_UNICODE);
 ?>
