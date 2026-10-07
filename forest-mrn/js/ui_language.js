@@ -6,7 +6,6 @@
     { key: "sheetSelectButton", selector: "#sheet-select-button", kind: "value" },
     { key: "tabMain", selector: ".tabnav > li:nth-of-type(1) a", kind: "text" },
     { key: "tabPast", selector: ".tabnav > li:nth-of-type(2) a", kind: "text" },
-    { key: "tabOrg", selector: ".tabnav > li:nth-of-type(3) a", kind: "text" },
     { key: "modeOption0", selector: "form[name='target_mode'] select[name='Select1'] option:nth-of-type(1)", kind: "text" },
     { key: "modeOption1", selector: "form[name='target_mode'] select[name='Select1'] option:nth-of-type(2)", kind: "text" },
     { key: "modeOption2", selector: "form[name='target_mode'] select[name='Select1'] option:nth-of-type(3)", kind: "text" },

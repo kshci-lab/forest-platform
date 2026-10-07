@@ -115,6 +115,9 @@ if(isset($_POST["record"])){
         <form name="return" method="POST" align="center">
             <input class="button3" type="submit" name="logout" value="ログアウト">
         </form>
+        <div class="ok-core-navigation">
+            <a class="ok-core-button" href="https://archive.kshci-lab.net/software/OK-Core/login.php" target="_blank" rel="noopener noreferrer" aria-label="OK-Coreを別タブで開く">OK-Core</a>
+        </div>
 
         <div style="text-align:center; margin-top:8px;">
           <input class="button3" type="button" value="モード選択" onclick="location.href='../select_mode.php'">

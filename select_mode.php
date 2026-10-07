@@ -47,6 +47,9 @@ if (isset($_POST["logout"])) {
         <form name="return" method="POST" align="center">
             <input class="button3" type="submit" name="logout" value="ログアウト">
         </form>
+        <div class="ok-core-navigation">
+            <a class="ok-core-button" href="https://archive.kshci-lab.net/software/OK-Core/login.php" target="_blank" rel="noopener noreferrer" aria-label="OK-Coreを別タブで開く">OK-Core</a>
+        </div>
     </div>
     <!--サイドメニュー　finish-->
 
