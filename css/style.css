@@ -1897,6 +1897,20 @@ select[name="user_list"] {
 	background-color: #3E7F77;
 }
 
+.ok-core-button::after {
+	content: "↗";
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.2em;
+	height: 1.2em;
+	margin-left: 0.45em;
+	border: 1px solid currentColor;
+	border-radius: 3px;
+	font-size: 0.85em;
+	line-height: 1;
+}
+
 .button3 {
 	background-color: #90B1AB;
 	color: #fff;

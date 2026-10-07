@@ -206,6 +206,44 @@ body{
 	background-color: #d04289;
 }
 
+.ok-core-navigation {
+	text-align: center;
+	margin-top: 8px;
+}
+
+.ok-core-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 150px;
+	min-height: 30px;
+	background-color: #00473e;
+	color: #fff;
+	font-size: 14px;
+	text-decoration: none;
+	border-radius: 4px;
+}
+
+.ok-core-button:hover,
+.ok-core-button:focus {
+	background-color: #006f61;
+	color: #fff;
+}
+
+.ok-core-button::after {
+	content: "↗";
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.2em;
+	height: 1.2em;
+	margin-left: 0.45em;
+	border: 1px solid currentColor;
+	border-radius: 3px;
+	font-size: 0.85em;
+	line-height: 1;
+}
+
 #paper_read_area{
 	width: 100%;
 	height: 20%;

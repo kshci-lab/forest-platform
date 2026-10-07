@@ -8,7 +8,7 @@ jQuery(function($){
     var first_tab= "true";
   }
 
-  $('.tabnav a').click(function () {
+  $('.tabnav a[href^="#"]').click(function () {
 
     if(first_tab=="false" && $(".tabnav .active").text()=="思考整理支援システムリフレクションリフレクション履歴" && (($(this).html()=="履歴")||($(this).html()=="思考整理支援システム")) && !confirm('現在のリフレクション情報は保存されません．\n思考整理支援活動に戻りますか？')){
         /* キャンセルの時の処理 */
