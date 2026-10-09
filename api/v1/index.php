@@ -6,6 +6,7 @@ ob_start();
 require_once dirname(__DIR__, 2) . '/php/connect_db.php';
 require_once dirname(__DIR__, 2) . '/php/ok_core_api_client.php';
 require_once dirname(__DIR__, 2) . '/php/kf_sync_service.php';
+require_once __DIR__ . '/process_map_read_service.php';
 
 function forest_api_header(string $name): string
 {
@@ -95,6 +96,64 @@ try {
     }
     $requestPath = preg_replace('#^/index\.php#', '', $requestPath) ?? $requestPath;
     $requestPath = '/' . ltrim($requestPath, '/');
+
+    if (preg_match('#^/knowledge-fragments/([1-9][0-9]*)/thinking-process-map/?$#', $requestPath, $matches)) {
+        // OK-Core checks the signed-in viewer's group membership and KF sharing
+        // before signing this request. Forest verifies the signature and source
+        // KF sharing; the viewer does not need a Forest account.
+        $externalKfId = (int)$matches[1];
+        $actorSub = forest_api_header('X-Acting-User-Sub');
+        $groupId = forest_api_header('X-Knowledge-Group-Id');
+        if ($actorSub === '' || !ctype_digit($groupId) || (int)$groupId <= 0) {
+            forest_api_respond([
+                'error' => ['code' => 'ACTOR_AND_GROUP_REQUIRED', 'message' => 'ユーザーと共有グループが必要です。'],
+                'meta' => ['request_id' => $requestId],
+            ], 403, $requestId);
+        }
+        $proofKey = (string)($config['token'] ?? '');
+        if ($proofKey === '') {
+            forest_api_respond([
+                'error' => ['code' => 'VIEWER_PROOF_NOT_CONFIGURED', 'message' => '閲覧確認の設定がありません。'],
+                'meta' => ['request_id' => $requestId],
+            ], 503, $requestId);
+        }
+        $proofTimeRaw = forest_api_header('X-OK-Core-Proof-Time');
+        $proof = forest_api_header('X-OK-Core-Proof');
+        $proofTime = ctype_digit($proofTimeRaw) ? (int)$proofTimeRaw : 0;
+        $proofPayload = "GET\n{$externalKfId}\n{$groupId}\n{$actorSub}\n{$proofTimeRaw}";
+        if ($proofTime <= 0 || abs(time() - $proofTime) > 120
+            || !preg_match('/^[a-f0-9]{64}$/', $proof)
+            || !hash_equals(hash_hmac('sha256', $proofPayload, $proofKey), $proof)) {
+            forest_api_respond([
+                'error' => ['code' => 'VIEWER_PROOF_INVALID', 'message' => 'OK-Coreの閲覧確認を検証できません。'],
+                'meta' => ['request_id' => $requestId],
+            ], 403, $requestId);
+        }
+        $allowed = forest_api_process_map_rows(
+            $mysqli,
+            'SELECT 1 FROM shared_nodes sn
+               INNER JOIN knowledge_groups kg ON kg.group_id = sn.knowledge_group_id AND kg.deleted = 0
+               INNER JOIN experience_knowledges ek ON ek.experience_knowledge_id = sn.experience_knowledge_id AND ek.deleted = 0
+              WHERE sn.knowledge_group_id = ? AND sn.experience_knowledge_id = ?
+                AND sn.deleted = 0 LIMIT 1',
+            'ii',
+            [(int)$groupId, $externalKfId]
+        );
+        if (!$allowed) {
+            forest_api_respond([
+                'error' => ['code' => 'PROCESS_MAP_FORBIDDEN', 'message' => 'このマップを閲覧できません。'],
+                'meta' => ['request_id' => $requestId],
+            ], 403, $requestId);
+        }
+        $map = forest_api_read_thinking_process_map($mysqli, $externalKfId);
+        if ($map === null) {
+            forest_api_respond([
+                'error' => ['code' => 'PROCESS_MAP_NOT_FOUND', 'message' => '共有KFに対応する思考過程表出化マップが見つかりません。'],
+                'meta' => ['request_id' => $requestId],
+            ], 404, $requestId);
+        }
+        forest_api_respond(['data' => $map, 'meta' => ['request_id' => $requestId]], 200, $requestId);
+    }
 
     if (!preg_match('#^/kf-context-packages/([1-9][0-9]*)/?$#', $requestPath, $matches)) {
         forest_api_respond([

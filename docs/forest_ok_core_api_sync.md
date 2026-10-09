@@ -88,6 +88,10 @@ php/ok_core_api_local.php
 | `OK_CORE_API_TIMEOUT_SECONDS` | HTTPタイムアウト秒数 |
 | `FOREST_CONTEXT_API_TOKEN` | OK-Coreから文脈を読むためのトークン |
 
+同じ読み取りトークンで、共有済みexperience KFの思考過程表出化マップを取得できます。`GET /api/v1/knowledge-fragments/{experience_knowledge_id}/thinking-process-map`にはBearerトークンに加えて`X-Acting-User-Sub`と`X-Knowledge-Group-Id`が必要です。OK-Coreはログイン中のユーザーのグループ所属とKF共有を確認し、既存の`OK_CORE_API_TOKEN`でKF ID・グループID・SSOユーザー・時刻を署名した`X-OK-Core-Proof-Time`と`X-OK-Core-Proof`を送ります。Forestは署名（時刻差120秒以内）と元KFの共有状態を確認し、既存の`process_nodes`、`node_versions`、`triggers`、`process_edges`を返します。閲覧者がForest側に所属登録されている必要はありません。追加のDB変更はありません。両側のコードを同時に更新してください。
+
+マップ応答の各triggerにはForest側で選んだ`icon_id`、マップ全体には使用する画像だけを含む`trigger_icons`（PNGのdata URI）を返します。閲覧側はこの画像をそのまま描画できます。画像ファイルを閲覧側へ配布する必要はありません。
+
 環境変数はローカル設定ファイルより優先されます。
 
 ## 5. データの対応
