@@ -99,8 +99,8 @@ try {
 
     if (preg_match('#^/knowledge-fragments/([1-9][0-9]*)/thinking-process-map/?$#', $requestPath, $matches)) {
         // OK-Core checks the signed-in viewer's group membership and KF sharing
-        // before signing this request. Forest verifies the signature and source
-        // KF sharing; the viewer does not need a Forest account.
+        // before signing this request. Forest trusts this signed grant; Forest's
+        // own memberships/share-group IDs are not OK-Core's access authority.
         $externalKfId = (int)$matches[1];
         $actorSub = forest_api_header('X-Acting-User-Sub');
         $groupId = forest_api_header('X-Knowledge-Group-Id');
@@ -119,9 +119,14 @@ try {
         }
         $proofTimeRaw = forest_api_header('X-OK-Core-Proof-Time');
         $proof = forest_api_header('X-OK-Core-Proof');
+        $sourceReference = forest_api_header('X-KF-Source-Reference');
+        $sourceType = forest_api_header('X-KF-Source-Type');
         $proofTime = ctype_digit($proofTimeRaw) ? (int)$proofTimeRaw : 0;
         $proofPayload = "GET\n{$externalKfId}\n{$groupId}\n{$actorSub}\n{$proofTimeRaw}";
+        if ($sourceReference !== '') $proofPayload .= "\n{$sourceReference}\n{$sourceType}";
         if ($proofTime <= 0 || abs(time() - $proofTime) > 120
+            || strlen($sourceReference) > 191 || strlen($sourceType) > 64
+            || strpbrk($sourceReference . $sourceType, "\r\n") !== false
             || !preg_match('/^[a-f0-9]{64}$/', $proof)
             || !hash_equals(hash_hmac('sha256', $proofPayload, $proofKey), $proof)) {
             forest_api_respond([
@@ -129,26 +134,10 @@ try {
                 'meta' => ['request_id' => $requestId],
             ], 403, $requestId);
         }
-        $allowed = forest_api_process_map_rows(
-            $mysqli,
-            'SELECT 1 FROM shared_nodes sn
-               INNER JOIN knowledge_groups kg ON kg.group_id = sn.knowledge_group_id AND kg.deleted = 0
-               INNER JOIN experience_knowledges ek ON ek.experience_knowledge_id = sn.knowledge_fragment_id AND ek.deleted = 0
-              WHERE sn.knowledge_group_id = ? AND sn.knowledge_fragment_id = ?
-                AND sn.deleted = 0 LIMIT 1',
-            'ii',
-            [(int)$groupId, $externalKfId]
-        );
-        if (!$allowed) {
-            forest_api_respond([
-                'error' => ['code' => 'PROCESS_MAP_FORBIDDEN', 'message' => 'このマップを閲覧できません。'],
-                'meta' => ['request_id' => $requestId],
-            ], 403, $requestId);
-        }
-        $map = forest_api_read_thinking_process_map($mysqli, $externalKfId);
+        $map = forest_api_read_thinking_process_map($mysqli, $externalKfId, $sourceReference, $sourceType);
         if ($map === null) {
             forest_api_respond([
-                'error' => ['code' => 'PROCESS_MAP_NOT_FOUND', 'message' => '共有KFに対応する思考過程表出化マップが見つかりません。'],
+                'error' => ['code' => 'PROCESS_MAP_NOT_FOUND', 'message' => 'Forest側に元KFまたは対応する思考過程表出化マップが見つかりません。'],
                 'meta' => ['request_id' => $requestId],
             ], 404, $requestId);
         }
