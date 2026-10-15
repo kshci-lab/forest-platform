@@ -1137,58 +1137,63 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         showTriggerDisplay();
     }
 
-    selectShareOrganization (){// 右クリックメニューを非表示
-        document.getElementById('t_Process_conmenu').style.display = "none";
-        const selected_node_id = defaultThinkingProcess.ownNetwork.getSelection().nodes[0];
-        const selected_node_group = defaultThinkingProcess.nodes.get(selected_node_id).group;
-
-        // group_selectから動的に組織リストを取得
-        const groupSelect = document.getElementById('group_select');
-        const options = groupSelect.options;
-        
-        // 組織リストを動的に作成
-        let organizationList = "共有する組織を選択してください:\n\n";
-        let organizationMap = {}; // 番号と組織の対応付け
-        
-        let optionIndex = 1;
-        for (let i = 0; i < options.length; i++) {
-            if (options[i].value !== "") { // 空のoption要素は除外
-                organizationList += optionIndex + ". " + options[i].text + "\n";
-                organizationMap[optionIndex.toString()] = {
-                    value: options[i].value,
-                    text: options[i].text
-                };
-                optionIndex++;
-            }
+    async selectShareOrganization() {
+        if (this.shareOrganizationLoading) return;
+        const menu = document.getElementById('t_Process_conmenu');
+        if (menu) menu.style.display = 'none';
+        const nodeId = this.ownNetwork.getSelection().nodes[0];
+        if (nodeId == null || !this.nodes.get(nodeId)) {
+            alert('共有するノードを選択してください。');
+            return;
         }
-        
-        organizationList += "\n組織番号を入力 (1-" + (optionIndex - 1) + "):";
-        
-        const selectedNumber = prompt(organizationList, "1");
-        
-        if (selectedNumber !== null && selectedNumber.trim() !== "") {
-            if (organizationMap[selectedNumber]) {
-                const selectedOrg = organizationMap[selectedNumber];
-                console.log("選択された組織: " + selectedOrg.text + " (ID: " + selectedOrg.value + ")");
 
-                // 共有するノードの content を取得して渡す
-                const selNode = defaultThinkingProcess.nodes.get(selected_node_id) || {};
-                // ノードのラベルは改行を含むことがあるので空白に置換して送る
-                const selected_contents = (selNode.label || '').toString().replace(/\n+/g, ' ').trim();
-                this.shareKnowledgeFragmentToOrganization(selectedOrg.value, selected_node_id, selected_contents);
-
-                alert("組織 " + selectedOrg.text + " へ共有しました。");
-            } else {
-                alert("無効な番号です。もう一度やり直してください。");
+        // 共有先の正本はOK-Core。旧組織知マップのDOMやForestの所属情報に依存しない。
+        this.shareOrganizationLoading = true;
+        try {
+            const response = await fetch('../php/ok_core_groups.php', {
+                credentials: 'same-origin', cache: 'no-store',
+                headers: { Accept: 'application/json' }
+            });
+            let result;
+            try {
+                result = await response.json();
+            } catch (_) {
+                throw new Error('組織一覧を取得できませんでした（HTTP ' + response.status + '）。サーバーの設定・ログを確認してください。');
             }
-        } else if (selectedNumber === null) {
-            // キャンセルされた場合
-            console.log("組織選択がキャンセルされました");
-        } else {
-            alert("組織を選択してください。");
+            if (!response.ok || result.status !== 'ok') {
+                throw new Error((result.message || 'OK-Coreの組織一覧を取得できませんでした。')
+                    + (result.error_code ? ' [' + result.error_code + ']' : ''));
+            }
+            const groups = (Array.isArray(result.groups) ? result.groups : [])
+                .filter(group => Number.isInteger(Number(group.group_id)) && Number(group.group_id) > 0);
+            if (!groups.length) {
+                alert('共有できる組織がありません。OK-Coreにログインし、組織への所属を確認してください。');
+                return;
+            }
+            const list = groups.map((group, index) => (index + 1) + '. ' + group.name).join('\n');
+            const answer = prompt('共有する組織を選択してください:\n\n' + list
+                + '\n\n組織番号を入力 (1-' + groups.length + '):', '1');
+            if (answer === null) return;
+            const number = answer.trim();
+            const group = /^\d+$/.test(number) ? groups[Number(number) - 1] : null;
+            if (!group) {
+                alert('無効な番号です。もう一度やり直してください。');
+                return;
+            }
+            const node = this.nodes.get(nodeId);
+            if (!node) {
+                alert('共有対象のノードがありません。選択し直してください。');
+                return;
+            }
+            const contents = String(node.label || '').replace(/\n+/g, ' ').trim();
+            this.shareKnowledgeFragmentToOrganization(Number(group.group_id), nodeId, contents);
+        } catch (error) {
+            console.error('共有先組織の取得に失敗:', error);
+            alert(error.message || '共有先の取得に失敗しました。通信状態を確認してください。');
+        } finally {
+            this.shareOrganizationLoading = false;
         }
     }
-
     shareKnowledgeFragmentToOrganization(organizationId, nodeId, selected_contents = '') {
         // バリデーション
         if (!organizationId || !nodeId) {
@@ -1226,12 +1231,22 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             $.ajax({
                 url: "../php/thinking_edit_processmap_maneger.php",
                 type: "POST",
+                dataType: "json",
                 data: postData,
                 success: function(resp) {
                     console.log('externalised_contents 保存成功:', resp);
+                    if (resp.status !== 'ok') {
+                        alert(resp.message || 'KFの保存に失敗しました。');
+                    } else if (resp.ok_core && resp.ok_core.status === 'SENT') {
+                        alert('OK-CoreへKFを共有しました。');
+                    } else {
+                        alert('ForestにKFを保存しました。OK-Coreへの送信は未完了です。'
+                            + (resp.ok_core && resp.ok_core.message ? '\n' + resp.ok_core.message : ''));
+                    }
                 },
                 error: function(xhr, status, err) {
                     console.error('save fragment error:', status, err, xhr.responseText);
+                    alert('KFの保存に失敗しました。通信状態・サーバーログを確認してください。');
                 }
             });
         } catch (e) {
