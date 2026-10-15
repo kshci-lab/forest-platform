@@ -115,7 +115,7 @@ function forest_api_read_thinking_process_map(mysqli $db, int $externalKfId): ?a
            FROM experience_knowledges ek
           WHERE ek.experience_knowledge_id = ? AND ek.deleted = 0
             AND EXISTS (SELECT 1 FROM shared_nodes sn
-                         WHERE sn.experience_knowledge_id = ek.experience_knowledge_id
+                         WHERE sn.knowledge_fragment_id = ek.experience_knowledge_id
                            AND sn.deleted = 0)
           LIMIT 1',
         'i',

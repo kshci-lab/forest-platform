@@ -409,7 +409,7 @@ function kf_sync_build_payload(
     $statement = $db->prepare(
         'SELECT knowledge_group_id
          FROM shared_nodes
-         WHERE experience_knowledge_id = ? AND deleted = 0
+         WHERE knowledge_fragment_id = ? AND deleted = 0
          ORDER BY knowledge_group_id'
     );
     if (!$statement) {
@@ -834,7 +834,7 @@ function kf_sync_create_fragment(mysqli $db, array $input): array
         $statement = $db->prepare(
             'INSERT INTO shared_nodes (
                 id,
-                experience_knowledge_id,
+                knowledge_fragment_id,
                 knowledge_group_id,
                 created_at,
                 updated_at,

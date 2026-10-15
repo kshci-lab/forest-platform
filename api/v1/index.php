@@ -133,8 +133,8 @@ try {
             $mysqli,
             'SELECT 1 FROM shared_nodes sn
                INNER JOIN knowledge_groups kg ON kg.group_id = sn.knowledge_group_id AND kg.deleted = 0
-               INNER JOIN experience_knowledges ek ON ek.experience_knowledge_id = sn.experience_knowledge_id AND ek.deleted = 0
-              WHERE sn.knowledge_group_id = ? AND sn.experience_knowledge_id = ?
+               INNER JOIN experience_knowledges ek ON ek.experience_knowledge_id = sn.knowledge_fragment_id AND ek.deleted = 0
+              WHERE sn.knowledge_group_id = ? AND sn.knowledge_fragment_id = ?
                 AND sn.deleted = 0 LIMIT 1',
             'ii',
             [(int)$groupId, $externalKfId]
