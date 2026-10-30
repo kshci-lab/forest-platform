@@ -413,17 +413,21 @@
                             
                             printBtn.addEventListener('click', function(e) {
                                 e.stopPropagation();
+
                                 document.body.classList.add('jr-printing');
                                 
                                 // 画面上で一瞬だけ完全に展開させて、正確な高さを取得する
                                 document.body.classList.add('jr-measuring');
                                 
-                                // reflowを強制
-                                 modalContent.querySelectorAll('textarea').forEach(function(ta) {
-                                     ta.style.height = 'auto';
-                                     ta.style.height = ta.scrollHeight + 'px';
-                                 });
-                                 var currentHeight = modalContent.offsetHeight;
+                                // 印刷時の折り返し増加で見切れないよう、各textareaに十分な高さを確保する
+                                modalContent.querySelectorAll('textarea').forEach(function(ta) {
+                                    ta.style.height = 'auto';
+                                    var minH = ta.classList.contains('jr-textarea-small') ? 36 : 40;
+                                    var extraBuffer = 32; // 印刷時の幅やフォントの差を吸収する安全バッファ
+                                    ta.style.height = (Math.max(minH, ta.scrollHeight) + extraBuffer) + 'px';
+                                });
+
+                                var currentHeight = modalContent.offsetHeight;
                                 
                                 document.body.classList.remove('jr-measuring');
                                 
@@ -467,17 +471,30 @@
                                 var dateStr = yyyy + '-' + mm + '-' + dd;
                                 document.title = dateStr + '_' + numStr + '_' + uid + '_自己調整さん';
 
-                                window.print();
-                                
-                                document.title = originalTitle;
-
-                                setTimeout(function() {
+                                // 印刷終了時の確実なクリーンアップ処理（afterprintイベントで制御）
+                                var cleanedUp = false;
+                                var cleanup = function() {
+                                    if (cleanedUp) return;
+                                    cleanedUp = true;
+                                    window.removeEventListener('afterprint', cleanup);
+                                    document.title = originalTitle;
                                     document.body.classList.remove('jr-printing');
                                     modalContent.style.zoom = '';
                                     modalContent.style.transform = '';
                                     modalContent.style.transformOrigin = '';
                                     modalContent.style.width = '100%';
-                                }, 1000);
+                                    
+                                    // テキストエリアの高さを通常状態に復元
+                                    modalContent.querySelectorAll('textarea').forEach(function(ta) {
+                                        autoResizeTextarea(ta);
+                                    });
+                                };
+
+                                window.addEventListener('afterprint', cleanup, { once: true });
+                                // 万が一 afterprint が発火しないブラウザ用のセーフティタイマー（十分な時間）
+                                setTimeout(cleanup, 60000);
+
+                                window.print();
                             });
 
                             headingWrapper.appendChild(periodHeading);

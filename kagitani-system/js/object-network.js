@@ -1104,16 +1104,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             this.networkClick(params);
         });
 
-        // 衝突回避ロジックを自動実行
-        network.on("afterDrawing", (ctx) => {
-            if (this._needsCollisionResolution) {
-                this._needsCollisionResolution = false;
-                this.resolveCollisions();
-            }
-        });
+        // 衝突回避ロジックを自動実行（ノードが勝手に吹き飛ぶバグを防ぐため無効化）
+        // network.on("afterDrawing", (ctx) => {
+        //     if (this._needsCollisionResolution) {
+        //         this._needsCollisionResolution = false;
+        //         this.resolveCollisions();
+        //     }
+        // });
 
-        // 初回ロード時に一回避ける
-        this._needsCollisionResolution = true;
+        this._needsCollisionResolution = false;
         return network;
 
         // this.setCanvasOptions(load);
@@ -1121,9 +1120,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
     }
 
     /*
-     * ノードの衝突解決ロジック
+     * ノードの衝突解決ロジック（手動レイアウトを壊さないよう無効化）
      */
     resolveCollisions() {
+        return; // ノードの意図しない移動を防ぐため無効化
         if (!this.nodes || !this.ownNetwork) return;
         
         const nodesData = this.nodes.get();
@@ -1314,7 +1314,6 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         }
 
         this.nodes.add(newNode);
-        this._needsCollisionResolution = true;
         const boundingBox = this.ownNetwork.getBoundingBox(node_id);
         node_y += Math.floor(((boundingBox.bottom)-(boundingBox.top))/2);
         this.nodes.update({
@@ -1853,8 +1852,6 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             x: node_x, y: node_y,
         };
         this.nodes.add(newNode);
-        this._needsCollisionResolution = true;
-
         if(flag == "New"){
             defaultRecordThinkingProcess.record_trigger(trigger_id, activity_id, from_node, to_node, t_time, t_type, t_label, node_x, node_y);
         }
@@ -3120,7 +3117,6 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         
         // 完了予定タグをネットワークに追加
         this.nodes.add(timeTag);
-        this._needsCollisionResolution = true;
         
         // 完了予定の関連付けを記録
         this.TimeConnectNodeId.push(this.selectId);
@@ -4752,7 +4748,6 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                                 }
                             };
                             this.nodes.add(reflectionTag);
-                            this._needsCollisionResolution = true;
                             console.log('新しい内省タグを追加しました:', reflectionTagId);
                         }
                     }
@@ -5531,6 +5526,92 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         });
     }
 
+    // サブツリー（指定ノードおよびその下流ノード群）をY方向に指定ピクセル分押し下げる
+    shiftSubtreeDown(rootNodeId, shiftY) {
+        if (!shiftY || shiftY <= 0) return;
+        
+        const visited = new Set();
+        const queue = [rootNodeId];
+        visited.add(rootNodeId);
+        
+        const allEdges = this.edges.get();
+        while (queue.length > 0) {
+            const currentId = queue.shift();
+            allEdges.forEach(edge => {
+                if (String(edge.from) === String(currentId) && !visited.has(edge.to)) {
+                    visited.add(edge.to);
+                    queue.push(edge.to);
+                }
+            });
+        }
+        
+        const targetIds = Array.from(visited);
+        const nodePositions = this.ownNetwork.getPositions(targetIds);
+        const updates = [];
+        
+        targetIds.forEach(nodeId => {
+            const node = this.nodes.get(nodeId);
+            if (!node) return;
+            const pos = nodePositions[nodeId] || { x: node.x || 0, y: node.y || 0 };
+            const newY = pos.y + shiftY;
+            updates.push({
+                id: nodeId,
+                x: pos.x,
+                y: newY,
+                color: node.color
+            });
+            
+            // DB記録も更新
+            if (typeof defaultRecordThinkingProcess !== 'undefined' && defaultRecordThinkingProcess.update_Node) {
+                defaultRecordThinkingProcess.update_Node("point", nodeId, pos.x, newY, 1);
+            }
+        });
+        
+        if (updates.length > 0) {
+            this.nodes.update(updates);
+            
+            // 各ノードの付随タグ（内省タグ、時間タグ、オントロジー）の位置も追従させる
+            targetIds.forEach(nodeId => {
+                const nodeBB = this.ownNetwork.getBoundingBox(nodeId);
+                if (!nodeBB) return;
+                
+                // 内省タグ
+                const reflectionTagId = `reflection-tag-${nodeId}`;
+                if (this.nodes.get(reflectionTagId)) {
+                    this.nodes.update({
+                        id: reflectionTagId,
+                        x: nodeBB.right - 4,
+                        y: nodeBB.top + 4
+                    });
+                }
+                
+                // 時間タグ
+                const timeTagId = `time-tag-${nodeId}`;
+                if (this.nodes.get(timeTagId)) {
+                    this.nodes.update({
+                        id: timeTagId,
+                        x: nodeBB.left + 8,
+                        y: nodeBB.bottom - 8
+                    });
+                }
+                
+                // オントロジーノード
+                const ontIdx = this.OntologyConnectNodeId ? this.OntologyConnectNodeId.indexOf(nodeId) : -1;
+                if (ontIdx !== -1 && this.OntologyNodeId && this.OntologyNodeId[ontIdx]) {
+                    const ontId = this.OntologyNodeId[ontIdx];
+                    this.nodes.update({
+                        id: ontId,
+                        x: nodeBB.left,
+                        y: nodeBB.top
+                    });
+                    if (typeof defaultRecordThinkingProcess !== 'undefined' && defaultRecordThinkingProcess.update_Node) {
+                        defaultRecordThinkingProcess.update_Node("point", ontId, nodeBB.left, nodeBB.top);
+                    }
+                }
+            });
+        }
+    }
+
     // モーダル一元管理（追加・編集・接続）
     openActionModal(modeOrConfig, targetNodeId, focusTarget = 'name', providedReason = null) {
         let config;
@@ -5862,13 +5943,38 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     return;
                 }
                 
-                const midPoint = {
-                    x: (fromPos.x + toPos.x) / 2,
-                    y: (fromPos.y + toPos.y) / 2
-                };
-                
                 const newNodeId = this.generateUniqueNumberText();
                 const actualLabel = newLabel || '新しいノード';
+
+                const fromBB = this.ownNetwork.getBoundingBox(edge.from);
+                const toBB = this.ownNetwork.getBoundingBox(edge.to);
+                
+                // 上ノードの下端と下ノードの上端
+                const upperBottom = fromBB ? fromBB.bottom : (fromPos.y + 25);
+                const lowerTop = toBB ? toBB.top : (toPos.y - 25);
+
+                // 追加するノードの推定高さと快適な上下余白
+                const linesCount = Math.max(1, Math.ceil(actualLabel.length / 20));
+                const estimatedNodeHeight = Math.max(45, linesCount * 22 + 20);
+                const verticalMargin = 40; // 上下のマージン
+
+                // 必要なスペースと現在のスペースを比較
+                const requiredSpace = estimatedNodeHeight + (verticalMargin * 2);
+                const currentSpace = lowerTop - upperBottom;
+
+                let shiftY = 0;
+                if (currentSpace < requiredSpace) {
+                    shiftY = Math.ceil(requiredSpace - currentSpace);
+                }
+
+                // もしスペースが不足してノードが被る場合、下のノードおよびその下流ノード群を下に移動する
+                if (shiftY > 0) {
+                    this.shiftSubtreeDown(edge.to, shiftY);
+                }
+
+                // 新規ノードの配置座標（上ノードの下端 + 余白 + 高さの半分）
+                const newNodeX = (fromPos.x + toPos.x) / 2;
+                const newNodeY = Math.floor(upperBottom + verticalMargin + (estimatedNodeHeight / 2));
                 
                 const originalEdgeLabel = this.EdgeLabels[edgeId] || edge.label || '';
                 const originalToNodeId = edge.to;
@@ -5913,7 +6019,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                     this.edges.remove({id: edgeId});
                 }
                 
-                this.addNode(newNodeId, actualLabel, "step", midPoint.x, midPoint.y);
+                this.addNode(newNodeId, actualLabel, "step", newNodeX, newNodeY);
                 
                 if (this.edges.get(edgeId)) {
                     this.edges.remove([edgeId]);
@@ -6143,11 +6249,15 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 //     default: // その他
                 //         break;
                 // }
-                this.nodes.update({ id: movedNodeId, color: node_color, x: params.pointer.x, y: params.pointer.y });
+                const actualPositions = this.ownNetwork.getPositions([movedNodeId]);
+                const actualPos = actualPositions[movedNodeId];
                 const nodeBoundingBox = this.ownNetwork.getBoundingBox(movedNodeId);
+                const actualX = actualPos ? actualPos.x : (nodeBoundingBox ? (nodeBoundingBox.right + nodeBoundingBox.left)/2 : 0);
+                const actualY = actualPos ? actualPos.y : (nodeBoundingBox ? (nodeBoundingBox.bottom + nodeBoundingBox.top)/2 : 0);
+                this.nodes.update({ id: movedNodeId, color: node_color, x: actualX, y: actualY });
                 //次に追加したノードの座標指定
-                this.latest_selected_node_info.x = (nodeBoundingBox.right + nodeBoundingBox.left)/2;
-                this.latest_selected_node_info.y = nodeBoundingBox.bottom + 10;
+                this.latest_selected_node_info.x = nodeBoundingBox ? (nodeBoundingBox.right + nodeBoundingBox.left)/2 : actualX;
+                this.latest_selected_node_info.y = nodeBoundingBox ? (nodeBoundingBox.bottom + 10) : (actualY + 50);
                 console.log(params.nodes);
                 console.log(`ノード ${movedNodeId} の位置を更新しました。新しい座標: (${this.latest_selected_node_info.x}, ${this.latest_selected_node_info.y})`);
             
