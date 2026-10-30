@@ -31,6 +31,38 @@ function kf_sync_to_iso_timestamp(string $timestamp): string
     return $date->format('Y-m-d\TH:i:s.vP');
 }
 
+function kf_sync_validate_text(string $title, string ...$stages): void
+{
+    $length = static function (string $text): int {
+        if (!preg_match('//u', $text)) throw new InvalidArgumentException('UTF-8の文字列を入力してください。');
+        return function_exists('mb_strlen') ? mb_strlen($text, 'UTF-8') : preg_match_all('/./us', $text);
+    };
+    if (trim($title) === '' || $length($title) > 255) throw new InvalidArgumentException('KFの概要を1～255文字で入力してください。');
+    foreach ($stages as $stage) {
+        if ($length($stage) > 255) throw new InvalidArgumentException('各stageの内容は255文字以内で入力してください。');
+    }
+}
+
+function kf_sync_lock(mysqli $db, string $purpose): ?string
+{
+    $database = (string)$db->query('SELECT DATABASE()')->fetch_row()[0];
+    $name = 'forest-kf-' . substr(hash('sha256', $database . ':' . $purpose), 0, 48);
+    $stmt = $db->prepare('SELECT GET_LOCK(?, 0) AS acquired');
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $acquired = (int)$stmt->get_result()->fetch_assoc()['acquired'];
+    $stmt->close();
+    return $acquired === 1 ? $name : null;
+}
+
+function kf_sync_unlock(mysqli $db, string $name): void
+{
+    $stmt = $db->prepare('SELECT RELEASE_LOCK(?)');
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $stmt->close();
+}
+
 function kf_sync_stage_payload(string $stage1, string $stage2, string $stage3): array
 {
     return [
@@ -135,6 +167,7 @@ function kf_sync_source_snapshot(
             LIMIT 1',
         'trigger' => 'SELECT
                 trigger_id,
+                node_id,
                 activity_id,
                 `from`,
                 `to`,
@@ -172,6 +205,27 @@ function kf_sync_source_snapshot(
         'content' => $fallbackContent,
         'source_row_found' => false,
     ];
+}
+
+function kf_sync_assert_source_owner(mysqli $db, array $snapshot, string $entityType, string $entityId, int $userId): void
+{
+    $nodeId = (string)($snapshot['node_id'] ?? '');
+    if ($nodeId === '' && $entityType === 'trigger') {
+        $stmt = $db->prepare('SELECT nv.node_id FROM triggers t INNER JOIN node_versions nv
+            ON nv.node_version_id = t.`from` OR nv.node_version_id = t.`to`
+            WHERE t.trigger_id = ? AND t.deleted = 0 LIMIT 1');
+        $stmt->bind_param('s', $entityId);
+        $stmt->execute();
+        $nodeId = (string)($stmt->get_result()->fetch_assoc()['node_id'] ?? '');
+        $stmt->close();
+    }
+    if ($nodeId === '' || (int)($snapshot['deleted'] ?? 0) !== 0) throw new InvalidArgumentException('有効な元ノードを確認できません。');
+    $stmt = $db->prepare('SELECT 1 FROM nodes WHERE node_id = ? AND user_id = ? AND deleted = 0');
+    $stmt->bind_param('si', $nodeId, $userId);
+    $stmt->execute();
+    $allowed = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$allowed) throw new InvalidArgumentException('自分の思考過程マップのノードを選択してください。');
 }
 
 function kf_sync_create_context_package(
@@ -409,7 +463,7 @@ function kf_sync_build_payload(
     $statement = $db->prepare(
         'SELECT knowledge_group_id
          FROM shared_nodes
-         WHERE experience_knowledge_id = ? AND deleted = 0
+         WHERE knowledge_fragment_id = ? AND deleted = 0
          ORDER BY knowledge_group_id'
     );
     if (!$statement) {
@@ -561,7 +615,7 @@ function kf_sync_retry_at(int $attemptCount): ?string
         ->format('Y-m-d H:i:s');
 }
 
-function kf_sync_attempt_outbox(mysqli $db, int $outboxId): array
+function kf_sync_attempt_outbox_locked(mysqli $db, int $outboxId, bool $force = false): array
 {
     $statement = $db->prepare(
         'SELECT *
@@ -591,6 +645,13 @@ function kf_sync_attempt_outbox(mysqli $db, int $outboxId): array
             'attempt_count' => (int)$outbox['attempt_count'],
             'request_id' => (string)($outbox['last_request_id'] ?? ''),
         ];
+    }
+
+    if (!$force && $outbox['status'] === 'FAILED' &&
+        ($outbox['next_retry_at'] === null || $outbox['next_retry_at'] > kf_sync_now())) {
+        return ['status' => $outbox['next_retry_at'] === null ? 'FAILED' : 'QUEUED',
+            'outbox_id' => $outboxId, 'next_retry_at' => $outbox['next_retry_at'],
+            'attempt_count' => (int)$outbox['attempt_count']];
     }
 
     $attemptCount = (int)$outbox['attempt_count'] + 1;
@@ -629,9 +690,17 @@ function kf_sync_attempt_outbox(mysqli $db, int $outboxId): array
             );
         }
 
+        $ack = $response['body']['data'] ?? null;
+        if (!is_array($ack) || (string)($ack['external_kf_id'] ?? '') !== (string)$outbox['experience_knowledge_id'] ||
+            (string)($ack['accepted_revision'] ?? '') !== (string)$outbox['source_revision'] ||
+            ($outbox['operation'] === 'UPSERT' && (string)($ack['knowledge_fragment_id'] ?? '') === '')) {
+            throw new OkCoreApiException('OK-Coreの受理結果が送信したKF・版と一致しません。',
+                (int)$response['http_status'], 'ACK_IDENTITY_MISMATCH', null, (string)$response['request_id'], true);
+        }
         $httpStatus = (int)$response['http_status'];
         $requestId = (string)$response['request_id'];
         $responseJson = kf_sync_json_encode($response['body']);
+        $attemptAt = kf_sync_now();
         $statement = $db->prepare(
             'UPDATE kf_sync_outbox
              SET status = "SENT",
@@ -641,23 +710,27 @@ function kf_sync_attempt_outbox(mysqli $db, int $outboxId): array
                  last_request_id = ?,
                  last_error = NULL,
                  response_json = ?,
-                 updated_at = NOW(3),
-                 sent_at = NOW(3)
-             WHERE outbox_id = ?'
+                 updated_at = ?,
+                 sent_at = ?
+             WHERE outbox_id = ? AND status <> "SUPERSEDED"'
         );
         if (!$statement) {
             throw new RuntimeException('Outbox成功更新の準備に失敗しました: ' . $db->error);
         }
         $statement->bind_param(
-            'iissi',
+            'iissssi',
             $attemptCount,
             $httpStatus,
             $requestId,
             $responseJson,
+            $attemptAt,
+            $attemptAt,
             $outboxId
         );
-        $statement->execute();
+        if (!$statement->execute()) throw new RuntimeException('Outbox送信結果を保存できませんでした。');
+        $superseded = $statement->affected_rows < 1;
         $statement->close();
+        if ($superseded) return ['status' => 'SUPERSEDED', 'outbox_id' => $outboxId];
         return [
             'status' => 'SENT',
             'outbox_id' => $outboxId,
@@ -674,6 +747,7 @@ function kf_sync_attempt_outbox(mysqli $db, int $outboxId): array
         $httpStatus = $error->httpStatus() > 0 ? $error->httpStatus() : null;
         $requestId = $error->requestId();
         $message = $error->errorCode() . ': ' . $error->getMessage();
+        $attemptAt = kf_sync_now();
         $statement = $db->prepare(
             'UPDATE kf_sync_outbox
              SET status = "FAILED",
@@ -683,25 +757,27 @@ function kf_sync_attempt_outbox(mysqli $db, int $outboxId): array
                  last_request_id = ?,
                  last_error = ?,
                  response_json = ?,
-                 updated_at = NOW(3)
-             WHERE outbox_id = ?'
+                 updated_at = ?
+             WHERE outbox_id = ? AND status <> "SUPERSEDED"'
         );
         if (!$statement) {
             throw new RuntimeException('Outbox失敗更新の準備に失敗しました: ' . $db->error);
         }
         $statement->bind_param(
-            'isisssi',
+            'isissssi',
             $attemptCount,
             $nextRetryAt,
             $httpStatus,
             $requestId,
             $message,
             $responseJson,
+            $attemptAt,
             $outboxId
         );
-        $statement->execute();
+        if (!$statement->execute()) throw new RuntimeException('Outbox失敗結果を保存できませんでした。');
+        $superseded = $statement->affected_rows < 1;
         $statement->close();
-
+        if ($superseded) return ['status' => 'SUPERSEDED', 'outbox_id' => $outboxId];
         return [
             'status' => $nextRetryAt !== null ? 'QUEUED' : 'FAILED',
             'outbox_id' => $outboxId,
@@ -714,6 +790,14 @@ function kf_sync_attempt_outbox(mysqli $db, int $outboxId): array
             'message' => $error->getMessage(),
         ];
     }
+}
+
+function kf_sync_attempt_outbox(mysqli $db, int $outboxId, bool $force = false): array
+{
+    $name = kf_sync_lock($db, 'delivery');
+    if ($name === null) return ['status' => 'BUSY', 'outbox_id' => $outboxId, 'retryable' => true];
+    try { return kf_sync_attempt_outbox_locked($db, $outboxId, $force); }
+    finally { kf_sync_unlock($db, $name); }
 }
 
 function kf_sync_attempt_safely(mysqli $db, int $outboxId): array
@@ -732,6 +816,16 @@ function kf_sync_attempt_safely(mysqli $db, int $outboxId): array
 
 function kf_sync_create_fragment(mysqli $db, array $input): array
 {
+    $name = kf_sync_lock($db, 'creation');
+    if ($name === null) throw new RuntimeException('別のKFを保存中です。少し待ってから操作してください。');
+    try { $saved = kf_sync_create_fragment_locked($db, $input); }
+    finally { kf_sync_unlock($db, $name); }
+    $saved['ok_core'] = kf_sync_attempt_safely($db, $saved['outbox_id']);
+    return $saved;
+}
+
+function kf_sync_create_fragment_locked(mysqli $db, array $input): array
+{
     $userId = (int)($input['user_id'] ?? 0);
     $groupId = (int)($input['group_id'] ?? 0);
     $mapId = (int)($input['map_id'] ?? 0);
@@ -748,9 +842,7 @@ function kf_sync_create_fragment(mysqli $db, array $input): array
     if ($userId <= 0 || $groupId <= 0 || $entityId === '') {
         throw new InvalidArgumentException('ユーザー、共有先グループ、文脈ノードが必要です。');
     }
-    if (strlen($title) > 255) {
-        throw new InvalidArgumentException('KFの概要は255文字以内にしてください。');
-    }
+    kf_sync_validate_text($title, $stage1, $stage2, $stage3);
 
     $ssoSub = kf_sync_resolve_sso_sub($db, $userId, $sessionSub);
     $entityTypeCode = kf_sync_entity_type_code($experienceType);
@@ -760,6 +852,7 @@ function kf_sync_create_fragment(mysqli $db, array $input): array
         $entityId,
         $selectedContents
     );
+    kf_sync_assert_source_owner($db, $snapshot, $entityTypeCode, $entityId, $userId);
     $stagePayload = kf_sync_stage_payload($stage1, $stage2, $stage3);
     $stagePayloadJson = kf_sync_json_encode($stagePayload);
     $sourceRevision = 1;
@@ -834,7 +927,7 @@ function kf_sync_create_fragment(mysqli $db, array $input): array
         $statement = $db->prepare(
             'INSERT INTO shared_nodes (
                 id,
-                experience_knowledge_id,
+                knowledge_fragment_id,
                 knowledge_group_id,
                 created_at,
                 updated_at,
@@ -885,7 +978,7 @@ function kf_sync_create_fragment(mysqli $db, array $input): array
         'context_package_id' => $contextPackageId,
         'source_revision' => $sourceRevision,
         'outbox_id' => $outboxId,
-        'ok_core' => kf_sync_attempt_safely($db, $outboxId),
+        'ok_core' => ['status' => 'PENDING', 'outbox_id' => $outboxId],
     ];
 }
 
@@ -900,9 +993,7 @@ function kf_sync_update_fragment(
     string $timestamp,
     string $sessionSub = ''
 ): array {
-    if (strlen($title) > 255) {
-        throw new InvalidArgumentException('KFの概要は255文字以内にしてください。');
-    }
+    kf_sync_validate_text($title, $stage1, $stage2, $stage3);
     $ssoSub = kf_sync_resolve_sso_sub($db, $userId, $sessionSub);
     $stagePayloadJson = kf_sync_json_encode(
         kf_sync_stage_payload($stage1, $stage2, $stage3)
@@ -1061,18 +1152,15 @@ function kf_sync_delete_fragment(
 function kf_sync_retry_due(mysqli $db, int $limit = 20): array
 {
     $limit = max(1, min(100, $limit));
-    $result = $db->query(
-        'SELECT outbox_id
-         FROM kf_sync_outbox
-         WHERE status = "PENDING"
-            OR (
-                status = "FAILED"
-                AND next_retry_at IS NOT NULL
-                AND next_retry_at <= NOW()
-            )
-         ORDER BY outbox_id
-         LIMIT ' . $limit
+    $now = kf_sync_now();
+    $statement = $db->prepare(
+        'SELECT outbox_id FROM kf_sync_outbox
+         WHERE status = "PENDING" OR (status = "FAILED" AND next_retry_at IS NOT NULL AND next_retry_at <= ?)
+         ORDER BY outbox_id LIMIT ' . $limit
     );
+    $statement->bind_param('s', $now);
+    $statement->execute();
+    $result = $statement->get_result();
     if (!$result) {
         throw new RuntimeException('再送対象を取得できませんでした: ' . $db->error);
     }

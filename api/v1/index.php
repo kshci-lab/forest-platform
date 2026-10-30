@@ -6,7 +6,8 @@ ob_start();
 require_once dirname(__DIR__, 2) . '/php/connect_db.php';
 require_once dirname(__DIR__, 2) . '/php/ok_core_api_client.php';
 require_once dirname(__DIR__, 2) . '/php/kf_sync_service.php';
-require_once __DIR__ . '/process_map_read_service.php';
+require_once __DIR__ . '/context_contract.php';
+require_once __DIR__ . '/context_read_service.php';
 
 function forest_api_header(string $name): string
 {
@@ -40,6 +41,7 @@ function forest_api_respond(array $body, int $status, string $requestId): never
     header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: no-store');
     header('X-Request-Id: ' . $requestId);
+    $body['meta']['request_id'] = $requestId;
     echo json_encode(
         $body,
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
@@ -48,7 +50,7 @@ function forest_api_respond(array $body, int $status, string $requestId): never
 }
 
 $requestId = forest_api_header('X-Request-Id');
-if ($requestId === '' || !preg_match('/^[A-Za-z0-9._:-]{1,100}$/', $requestId)) {
+if ($requestId === '' || !preg_match('/^[A-Za-z0-9._:-]{1,80}$/D', $requestId)) {
     $requestId = 'forest-context-' . bin2hex(random_bytes(8));
 }
 
@@ -97,145 +99,44 @@ try {
     $requestPath = preg_replace('#^/index\.php#', '', $requestPath) ?? $requestPath;
     $requestPath = '/' . ltrim($requestPath, '/');
 
-    if (preg_match('#^/knowledge-fragments/([1-9][0-9]*)/thinking-process-map/?$#', $requestPath, $matches)) {
-        // OK-Core checks the signed-in viewer's group membership and KF sharing
-        // before signing this request. Forest verifies the signature and source
-        // KF sharing; the viewer does not need a Forest account.
-        $externalKfId = (int)$matches[1];
-        $actorSub = forest_api_header('X-Acting-User-Sub');
-        $groupId = forest_api_header('X-Knowledge-Group-Id');
-        if ($actorSub === '' || !ctype_digit($groupId) || (int)$groupId <= 0) {
-            forest_api_respond([
-                'error' => ['code' => 'ACTOR_AND_GROUP_REQUIRED', 'message' => 'ユーザーと共有グループが必要です。'],
-                'meta' => ['request_id' => $requestId],
-            ], 403, $requestId);
-        }
-        $proofKey = (string)($config['token'] ?? '');
-        if ($proofKey === '') {
-            forest_api_respond([
-                'error' => ['code' => 'VIEWER_PROOF_NOT_CONFIGURED', 'message' => '閲覧確認の設定がありません。'],
-                'meta' => ['request_id' => $requestId],
-            ], 503, $requestId);
-        }
-        $proofTimeRaw = forest_api_header('X-OK-Core-Proof-Time');
-        $proof = forest_api_header('X-OK-Core-Proof');
-        $proofTime = ctype_digit($proofTimeRaw) ? (int)$proofTimeRaw : 0;
-        $proofPayload = "GET\n{$externalKfId}\n{$groupId}\n{$actorSub}\n{$proofTimeRaw}";
-        if ($proofTime <= 0 || abs(time() - $proofTime) > 120
-            || !preg_match('/^[a-f0-9]{64}$/', $proof)
-            || !hash_equals(hash_hmac('sha256', $proofPayload, $proofKey), $proof)) {
-            forest_api_respond([
-                'error' => ['code' => 'VIEWER_PROOF_INVALID', 'message' => 'OK-Coreの閲覧確認を検証できません。'],
-                'meta' => ['request_id' => $requestId],
-            ], 403, $requestId);
-        }
-        $allowed = forest_api_process_map_rows(
-            $mysqli,
-            'SELECT 1 FROM shared_nodes sn
-               INNER JOIN knowledge_groups kg ON kg.group_id = sn.knowledge_group_id AND kg.deleted = 0
-               INNER JOIN experience_knowledges ek ON ek.experience_knowledge_id = sn.experience_knowledge_id AND ek.deleted = 0
-              WHERE sn.knowledge_group_id = ? AND sn.experience_knowledge_id = ?
-                AND sn.deleted = 0 LIMIT 1',
-            'ii',
-            [(int)$groupId, $externalKfId]
-        );
-        if (!$allowed) {
-            forest_api_respond([
-                'error' => ['code' => 'PROCESS_MAP_FORBIDDEN', 'message' => 'このマップを閲覧できません。'],
-                'meta' => ['request_id' => $requestId],
-            ], 403, $requestId);
-        }
-        $map = forest_api_read_thinking_process_map($mysqli, $externalKfId);
-        if ($map === null) {
-            forest_api_respond([
-                'error' => ['code' => 'PROCESS_MAP_NOT_FOUND', 'message' => '共有KFに対応する思考過程表出化マップが見つかりません。'],
-                'meta' => ['request_id' => $requestId],
-            ], 404, $requestId);
-        }
-        forest_api_respond(['data' => $map, 'meta' => ['request_id' => $requestId]], 200, $requestId);
+    $legacyMap = preg_match('#^/knowledge-fragments/([1-9][0-9]*)/thinking-process-map/?$#', $requestPath, $matches);
+    $packageId = null;
+    if ($legacyMap) {
+        $id = $matches[1];
+        $format = 'forest.thinking-process-map.v1';
+    } elseif (preg_match('#^/knowledge-fragments/([1-9][0-9]*)/context/?$#', $requestPath, $matches)) {
+        $id = $matches[1];
+        $format = (string)($_GET['format'] ?? 'context-package.v1');
+    } elseif (preg_match('#^/kf-context-packages/([1-9][0-9]*)/?$#', $requestPath, $matches)) {
+        $packageId = (int)$matches[1];
+        $id = forest_api_header('X-External-KF-Id');
+        $format = (string)($_GET['format'] ?? 'context-package.v1');
+    } else {
+        forest_api_respond(['error' => ['code' => 'ENDPOINT_NOT_FOUND', 'message' => '指定されたAPIは存在しません。']], 404, $requestId);
     }
-
-    if (!preg_match('#^/kf-context-packages/([1-9][0-9]*)/?$#', $requestPath, $matches)) {
-        forest_api_respond([
-            'error' => [
-                'code' => 'ENDPOINT_NOT_FOUND',
-                'message' => '指定されたAPIは存在しません。',
-            ],
-            'meta' => ['request_id' => $requestId],
-        ], 404, $requestId);
+    if (!in_array($format, ['context-package.v1', 'forest.thinking-process-map.v1'], true)) {
+        forest_api_respond(['error' => ['code' => 'UNSUPPORTED_CONTEXT_FORMAT', 'message' => '対応していない文脈形式です。']], 422, $requestId);
     }
-    $contextPackageId = (int)$matches[1];
-
-    $statement = $mysqli->prepare(
-        'SELECT
-            context_package_id,
-            activity_type_code,
-            external_activity_id,
-            created_at
-         FROM kf_context_packages
-         WHERE context_package_id = ?
-         LIMIT 1'
-    );
-    if (!$statement) {
-        throw new RuntimeException('文脈パッケージ読込の準備に失敗しました。');
+    $grant = forest_api_verify_context_grant([
+        'actor' => forest_api_header('X-Acting-User-Sub'), 'group' => forest_api_header('X-Knowledge-Group-Id'),
+        'external_kf_id' => $id, 'system' => forest_api_header('X-Source-System-Code'),
+        'time' => forest_api_header('X-OK-Core-Proof-Time'), 'proof' => forest_api_header('X-OK-Core-Proof'),
+        'version' => forest_api_header('X-OK-Core-Proof-Version'),
+        'reference' => forest_api_header('X-KF-Source-Reference'), 'reference_type' => forest_api_header('X-KF-Source-Type'),
+    ], rtrim($requestPath, '/'), $format, (string)($config['token'] ?? ''), time());
+    // OK-Core has checked its own current membership and KF sharing before signing.
+    // Forest never compares the two systems' local group IDs or requires a viewer account.
+    $context = forest_api_read_context($mysqli, $grant['external_kf_id'], $format, $packageId,
+        $grant['reference'], $grant['reference_type']);
+    if ($context === null) {
+        forest_api_respond(['error' => ['code' => $legacyMap ? 'PROCESS_MAP_NOT_FOUND' : 'CONTEXT_NOT_FOUND',
+            'message' => '元KF・文脈パッケージまたは対応する記録が見つかりません。']], 404, $requestId);
     }
-    $statement->bind_param('i', $contextPackageId);
-    $statement->execute();
-    $result = $statement->get_result();
-    $package = $result ? $result->fetch_assoc() : null;
-    if ($result) {
-        $result->free();
-    }
-    $statement->close();
-    if (!$package) {
-        forest_api_respond([
-            'error' => [
-                'code' => 'CONTEXT_PACKAGE_NOT_FOUND',
-                'message' => '文脈パッケージが見つかりません。',
-            ],
-            'meta' => ['request_id' => $requestId],
-        ], 404, $requestId);
-    }
-
-    $items = [];
-    $statement = $mysqli->prepare(
-        'SELECT entity_type_code, entity_id, display_order, snapshot_json
-         FROM kf_context_package_items
-         WHERE context_package_id = ?
-         ORDER BY display_order, context_package_item_id'
-    );
-    if (!$statement) {
-        throw new RuntimeException('文脈項目読込の準備に失敗しました。');
-    }
-    $statement->bind_param('i', $contextPackageId);
-    $statement->execute();
-    $result = $statement->get_result();
-    while ($result && ($row = $result->fetch_assoc())) {
-        $snapshot = json_decode((string)$row['snapshot_json'], true);
-        $items[] = [
-            'entity_type_code' => (string)$row['entity_type_code'],
-            'entity_id' => (string)$row['entity_id'],
-            'display_order' => (int)$row['display_order'],
-            'snapshot' => is_array($snapshot) ? $snapshot : [],
-        ];
-    }
-    if ($result) {
-        $result->free();
-    }
-    $statement->close();
-
-    forest_api_respond([
-        'data' => [
-            'external_context_package_id' => (string)$package['context_package_id'],
-            'activity' => [
-                'type_code' => (string)$package['activity_type_code'],
-                'external_activity_id' => (string)$package['external_activity_id'],
-            ],
-            'items' => $items,
-            'created_at' => kf_sync_to_iso_timestamp((string)$package['created_at']),
-        ],
-        'meta' => ['request_id' => $requestId],
-    ], 200, $requestId);
+    forest_api_respond(['data' => $legacyMap ? $context['map'] : $context,
+        'meta' => ['request_id' => $requestId]], 200, $requestId);
+} catch (ForestContextAccessException $error) {
+    forest_api_respond(['error' => ['code' => 'VIEWER_PROOF_INVALID', 'message' => 'OK-Coreの閲覧確認を検証できません。'],
+        'meta' => ['request_id' => $requestId]], 403, $requestId);
 } catch (Throwable $error) {
     forest_api_respond([
         'error' => [

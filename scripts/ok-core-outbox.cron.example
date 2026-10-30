@@ -1,0 +1,3 @@
+# Install under the PHP application's OS user after replacing both absolute paths.
+# Run the --dry-run command from the deployment guide before enabling this job.
+* * * * * /usr/bin/php /ABSOLUTE/PATH/forest-platform/scripts/retry-ok-core-outbox.php --limit=20 >> /WRITABLE/LOG/DIRECTORY/forest-kf-outbox.log 2>&1

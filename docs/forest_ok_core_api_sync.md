@@ -1,247 +1,61 @@
-# forest-platform / OK-Core API同期
+# Forest-platform / OK-Core API同期（段階2）
 
-## 1. 現在の構成
+2026-10-30更新。共通仕様・設定・署名・配備手順は、OK-Coreリポジトリの`api/v1/README.md`へ集約しています。機械向け仕様は同じフォルダの`openapi.yaml`。初学者向けには`docs/common-api-beginners-guide.md`があります。
 
-forest-platformはOK-Core DBを直接操作しません。KF共有時は次の順序で処理します。
+## Forestが担当する処理
 
-```text
-1. forest DBへKF正本を保存
-2. forest DBへ形成文脈を保存
-3. forest DBへグループ共有を保存
-4. forest DBのOutboxへ送信JSONを保存
-5. 1〜4をまとめてコミット
-6. OK-Core APIへHTTP送信
-7. 成功ならOutboxをSENTへ更新
-8. 失敗ならOutboxをFAILEDとして再送対象にする
-```
+1. 共有先をOK-Coreの所属グループAPIから取得する。旧組織知マップのgroup_selectを使用しない。
+2. 自分が所有する元ノードからKFと文脈を確定する。
+3. KF正本・文脈・送信予定JSONを同じトランザクションで保存する。
+4. コミット後にOK-Coreへ送信し、保存済み／送信待ち／送信済みを区別して表示する。
+5. 通信失敗では、確定したJSONをOutboxから再送する。新しい版に置き換わった旧送信を復活させない。
+6. 文脈GETでは、読み取り用トークンと対象を限定したOK-Coreの署名を検証して、自分のDBだけを読み取る。
 
-1〜4は同じDBトランザクションです。トランザクションとは、複数のDB更新を「全部成功」または「全部取消」のどちらかにする仕組みです。
-
-OK-Coreが停止していてもforest側のKFは保存されます。送信失敗を理由に、ユーザーが作ったKFを消しません。
-
-## 2. 主なファイル
+## 主なファイル
 
 | ファイル | 役割 |
 | --- | --- |
-| `php/ok_core_api_client.php` | OK-Core APIとのHTTP通信 |
-| `php/kf_sync_service.php` | KF・文脈・Outboxの保存、revision、再送 |
-| `php/ok_core_bridge.php` | 既存画面からグループAPIを呼ぶ互換窓口 |
-| `php/thinking_edit_processmap_maneger.php` | 新規KF共有の入口 |
-| `php/update_experience_knowledge.php` | KF更新とrevision追加 |
-| `php/delete_experience_knowledge.php` | KF論理削除と削除通知 |
-| `api/v1/index.php` | forestが提供する文脈パッケージ取得API |
-| `scripts/retry-ok-core-outbox.php` | 送信失敗Outboxの再送 |
+| `js/ok-core-sharing.js` | 共有先の取得と選択、保存・送信状態の表示と照会 |
+| `php/ok_core_groups.php` / `ok_core_bridge.php` | ログイン中の利用者のSSO subでOK-CoreのグループAPIを呼ぶ |
+| `php/kf_sync_service.php` | 原子保存・文脈・Outbox・版・排他・再送 |
+| `php/ok_core_api_client.php` | HTTP通信。実接続設定はGit対象外のok_core_api_local.php |
+| `php/get_kf_sync_status.php` | 本人のOutbox状態だけを取得する |
+| `api/v1/context_contract.php` | 対象・形式・グループ・利用者・期限・旧参照の署名検証 |
+| `api/v1/context_read_service.php` | KFに紐づく文脈パッケージ、マップの読取 |
+| `scripts/check-ok-core-connection.php` | 構造とAPI疎通の読み取り専用確認 |
+| `scripts/retry-ok-core-outbox.php` | CLI専用のdry-run、自動期限判定、対象を指定した再送 |
 
-## 3. DBマイグレーション
+## DB
 
-SQL:
+現行DBのexperience_knowledges、shared_nodes、kf_context_packages、kf_context_package_items、kf_sync_outboxを使用します。段階2としてテーブル・カラムを追加していません。旧列experience_knowledge_idを参照していた共有処理はknowledge_fragment_idへ揃えました。
 
-```text
-docs/migrations/2026_07_31_ok_core_api_outbox.sql
+過去の共有列改名が未適用の環境だけに、`sql/2026-10-15_rename_shared_nodes_knowledge_fragment_id.sql`を同梱しています。対象はForestのshared_nodesの列改名です。バックアップとDB名の確認後、利用者が適用します。改名済みなら不要で、今回は自動実行していません。
+
+文脈・Outboxそのものの過去の構造追加例は`docs/migrations/2026_07_31_ok_core_api_outbox.sql`にありますが、既存環境へ一括実行せず、現在の構造に合わせて不足箇所を確定してください。
+
+## 運用
+
+アプリ設定ファイル ＞ 環境変数 ＞ 既定値の順に使います。Apacheの環境変数を必須にしません。既存の秘密設定は今回書き換えていません。
+
+```bash
+php scripts/check-ok-core-connection.php
+php scripts/check-ok-core-connection.php --user-id=<Forestの利用者ID>
+php scripts/retry-ok-core-outbox.php --dry-run
+php scripts/retry-ok-core-outbox.php --limit=20
+php scripts/retry-ok-core-outbox.php --outbox-id=7 --force
 ```
 
-実行:
+上から3つはGET・SELECTのみです。下の2つは送信状態を更新し、OK-Coreへ実際に送信します。既存FAILED行を検証目的で自動再送しないでください。
 
-```powershell
-& 'C:\MAMP\bin\mysql\bin\mysql.exe' `
-  -h localhost -P 8889 -u root -proot `
-  --default-character-set=utf8mb4 forest_platform `
-  -e "SOURCE C:/MAMP/htdocs/forest-platform/docs/migrations/2026_07_31_ok_core_api_outbox.sql"
-```
+cronの雛形は`scripts/ok-core-outbox.cron.example`。絶対パスとログ書込権限を設定し、PHP実行ユーザーで確認してから登録します。AWSの定期実行は今回未登録です。停止行はterminal_failuresと終了コードで確認できます。
 
-追加内容:
+再送日時は日本時間で統一し、同じアプリ時刻で期限判定します。DBのタイムゾーンには依存しません。
 
-- `kf_context_packages`
-- `kf_context_package_items`
-- `kf_sync_outbox`
-- `experience_knowledges.context_package_id`
-- `experience_knowledges.stage_payload_json`
-- `experience_knowledges.source_revision`
+## 検証
 
-既存のKF本文やstage列は削除しません。
+- `node tests/ok_core_phase2_flow_test.cjs`：一時SQLite・一時PHPサーバーで保存、停止、自動/明示再送、重複、ロールバック、委任閲覧、更新、削除等を検証。実DB・本番設定は使用しません。
+- `php tests/context_grant_test.php`：署名の改変・期限・旧マップ互換。
+- `node tests/ok_core_sharing_test.cjs`：旧DOMに依存しない組織選択と状態通知。
+- `php tests/ok_core_api_config_test.php`：設定優先順位と文字列ID。
 
-## 4. ローカルAPI設定
-
-OK-Coreが発行したforest-platform用トークンを設定します。
-
-```powershell
-& powershell.exe -NoProfile -ExecutionPolicy Bypass `
-  -File .\scripts\configure-ok-core-api-local.ps1 `
-  -Token '<OK-Coreが発行したトークン>'
-```
-
-生成先:
-
-```text
-php/ok_core_api_local.php
-```
-
-このファイルはGit管理対象外です。
-
-環境変数を使う場合:
-
-| 環境変数 | 用途 |
-| --- | --- |
-| `OK_CORE_API_BASE_URL` | OK-Core API v1の基点URL |
-| `OK_CORE_API_TOKEN` | forest-platform用Bearerトークン |
-| `OK_CORE_SOURCE_SYSTEM_CODE` | 通常は `forest-platform` |
-| `OK_CORE_API_TIMEOUT_SECONDS` | HTTPタイムアウト秒数 |
-| `FOREST_CONTEXT_API_TOKEN` | OK-Coreから文脈を読むためのトークン |
-
-同じ読み取りトークンで、共有済みexperience KFの思考過程表出化マップを取得できます。`GET /api/v1/knowledge-fragments/{experience_knowledge_id}/thinking-process-map`にはBearerトークンに加えて`X-Acting-User-Sub`と`X-Knowledge-Group-Id`が必要です。OK-Coreはログイン中のユーザーのグループ所属とKF共有を確認し、既存の`OK_CORE_API_TOKEN`でKF ID・グループID・SSOユーザー・時刻を署名した`X-OK-Core-Proof-Time`と`X-OK-Core-Proof`を送ります。Forestは署名（時刻差120秒以内）と元KFの共有状態を確認し、既存の`process_nodes`、`node_versions`、`triggers`、`process_edges`を返します。閲覧者がForest側に所属登録されている必要はありません。追加のDB変更はありません。両側のコードを同時に更新してください。
-
-マップ応答の各triggerにはForest側で選んだ`icon_id`、マップ全体には使用する画像だけを含む`trigger_icons`（PNGのdata URI）を返します。閲覧側はこの画像をそのまま描画できます。画像ファイルを閲覧側へ配布する必要はありません。
-
-環境変数はローカル設定ファイルより優先されます。
-
-## 5. データの対応
-
-### KF
-
-| forest-platform | OK-Core API |
-| --- | --- |
-| `experience_knowledge_id` | URLの `external_kf_id` |
-| `knowledge_fragment_content` | `summary` |
-| `stage_payload_json` | `stages` |
-| `source_revision` | `source_revision` |
-| `users.sso_sub` | `expresser_sso_sub` |
-| `shared_nodes.knowledge_group_id` | `share_group_ids` |
-
-### 形成文脈
-
-| `experience_type` | `entity_type_code` |
-| --- | --- |
-| `process` | `process_node` |
-| `trigger` / `triggers` | `trigger` |
-| `versions` / `versionsBro` | `node_version` |
-| その他 | `source_entity` |
-
-`entity_id`は、対応するforest側テーブルの主キーです。たとえば:
-
-```text
-entity_type_code = process_node
-entity_id = 1785133092019493822
-
-参照先:
-process_nodes.process_node_id = 1785133092019493822
-```
-
-`activity_type_code`は現在 `thinking_process_map`、`external_activity_id`は `map-{MAPID}` です。項目のIDではなく、KFが形成された思考活動全体を表します。
-
-## 6. 工程別デバッグ
-
-### 工程1: OK-Coreの稼働
-
-```powershell
-& 'C:\MAMP\bin\php\php8.3.1\php.exe' -r `
-  "require 'php/ok_core_api_client.php'; print_r(ok_core_api_health());"
-```
-
-`http_status => 200`、`schema_ready => true`なら正常です。
-
-### 工程2: API認証とグループ
-
-```powershell
-& 'C:\MAMP\bin\php\php8.3.1\php.exe' -r `
-  "require 'php/ok_core_api_client.php'; print_r(ok_core_api_get_groups('3'));"
-```
-
-`3`はSSOの `sub` の例です。forestのローカル `user_id`ではありません。
-
-### 工程3: forest DBのOutbox
-
-```sql
-SELECT
-    outbox_id,
-    experience_knowledge_id,
-    source_revision,
-    operation,
-    status,
-    attempt_count,
-    next_retry_at,
-    last_http_status,
-    last_request_id,
-    last_error
-FROM kf_sync_outbox
-ORDER BY outbox_id DESC
-LIMIT 20;
-```
-
-状態:
-
-| status | 意味 |
-| --- | --- |
-| `PENDING` | まだ送信していない |
-| `SENT` | OK-Coreが受け付けた |
-| `FAILED` | 送信に失敗した |
-| `SUPERSEDED` | より新しいrevisionが作られたため再送不要 |
-
-HTTP 500・503、通信断、429は再送対象です。入力不正、権限エラー、revision競合などは自動で直らないため、`next_retry_at`を空にして確認待ちにします。
-
-### 工程4: 手動再送
-
-```powershell
-& 'C:\MAMP\bin\php\php8.3.1\php.exe' `
-  .\scripts\retry-ok-core-outbox.php 20
-```
-
-最大20件を処理します。1回目は1分後、2回目は5分後、3回目は30分後に再送し、4回失敗したら管理者確認待ちにします。
-
-自動再送にする場合は、このコマンドをWindowsタスクスケジューラやcronから1分間隔で実行します。スケジュール未設定の場合は手動再送です。
-
-### 工程5: request_idの照合
-
-forest:
-
-```sql
-SELECT last_request_id, last_error
-FROM kf_sync_outbox
-WHERE outbox_id = 123;
-```
-
-OK-Core:
-
-```powershell
-Select-String `
-  -Path C:\MAMP\htdocs\OK-Core\var\log\api-v1.log `
-  -Pattern '<last_request_id>'
-```
-
-同じrequest_idで、送信側と受付側の処理を追跡できます。
-
-### 工程6: 文脈パッケージAPI
-
-```http
-GET /forest-platform/api/v1/kf-context-packages/{context_package_id}
-Authorization: Bearer <FOREST_CONTEXT_API_TOKEN>
-```
-
-PowerShell例:
-
-```powershell
-$headers = @{ Authorization = 'Bearer <FOREST_CONTEXT_API_TOKEN>' }
-Invoke-WebRequest `
-  -UseBasicParsing `
-  -Uri 'http://localhost:8888/forest-platform/api/v1/kf-context-packages/1' `
-  -Headers $headers
-```
-
-認証なし・トークン不一致はHTTP 401、存在しない文脈IDは404です。
-
-## 7. 更新と削除
-
-- 新規KF: revision 1
-- 編集: 現在値に1加算してPUT
-- 削除: 現在値に1加算してDELETE
-
-送信済みrevision 2の後にrevision 3が通信失敗しても、OutboxのJSONは作成時の内容のまま残ります。再送時に日時や本文を組み立て直さないため、同じrevisionで内容が変わることはありません。
-
-## 8. 本番前の確認
-
-- HTTPSを使用する
-- 開発用トークンを本番へ持ち込まない
-- forest-platformと他システムでトークンを共用しない
-- `php/ok_core_api_local.php`をGitへ登録しない
-- 再送スクリプトの定期実行と失敗通知を設定する
-- `FAILED`かつ`next_retry_at IS NULL`の行を管理者が確認する
-- forest側からOK-Core DBへ接続できない状態でもAPI同期できることを確認する
+Windowsの隔離フローテストではPHP_BINARYとPHP_EXTENSION_DIRで実行環境を指定できます。PHPのcURL・PDO SQLiteと、Forestのvendor/autoload.phpが必要です。別配置ならFOREST_PROJECT_ROOTとOK_CORE_PROJECT_ROOTを指定します。

@@ -106,25 +106,24 @@ function forest_api_trigger_icons(array $triggers): array
     return $icons;
 }
 
-function forest_api_read_thinking_process_map(mysqli $db, int $externalKfId): ?array
+function forest_api_read_thinking_process_map(mysqli $db, int $externalKfId, string $sourceReference = '', string $sourceType = ''): ?array
 {
     $fragments = forest_api_process_map_rows(
         $db,
         'SELECT ek.experience_knowledge_id, ek.thought_experience_node_id,
                 ek.experience_type, ek.knowledge_fragment_content
            FROM experience_knowledges ek
-          WHERE ek.experience_knowledge_id = ? AND ek.deleted = 0
-            AND EXISTS (SELECT 1 FROM shared_nodes sn
-                         WHERE sn.experience_knowledge_id = ek.experience_knowledge_id
-                           AND sn.deleted = 0)
+          WHERE ek.experience_knowledge_id = ?
           LIMIT 1',
         'i',
         [$externalKfId]
     );
-    if (!$fragments) {
-        return null;
+    $fragment = $fragments[0] ?? null;
+    if ($sourceReference !== '' && (!$fragment || (string)$fragment['thought_experience_node_id'] !== $sourceReference)) {
+        $fragment = ['thought_experience_node_id' => $sourceReference, 'experience_type' => $sourceType,
+            'knowledge_fragment_content' => '', 'deleted' => 0];
     }
-    $fragment = $fragments[0];
+    if (!$fragment || (int)$fragment['deleted'] !== 0) return null;
     $reference = trim((string)($fragment['thought_experience_node_id'] ?? ''));
     if ($reference === '') {
         return null;

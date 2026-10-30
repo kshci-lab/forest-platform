@@ -53,13 +53,8 @@ final class OkCoreApiException extends RuntimeException
     }
 }
 
-function ok_core_api_config(): array
+function ok_core_api_resolve_config(array $local, array $environmentValues): array
 {
-    static $config = null;
-    if (is_array($config)) {
-        return $config;
-    }
-
     $config = [
         'base_url' => 'http://localhost:8888/OK-Core/api/v1',
         'token' => '',
@@ -67,14 +62,6 @@ function ok_core_api_config(): array
         'timeout_seconds' => 10.0,
         'context_api_token' => '',
     ];
-
-    $localPath = __DIR__ . '/ok_core_api_local.php';
-    if (is_file($localPath)) {
-        $local = require $localPath;
-        if (is_array($local)) {
-            $config = array_replace($config, $local);
-        }
-    }
 
     $environment = [
         'base_url' => 'OK_CORE_API_BASE_URL',
@@ -84,14 +71,26 @@ function ok_core_api_config(): array
         'context_api_token' => 'FOREST_CONTEXT_API_TOKEN',
     ];
     foreach ($environment as $key => $name) {
-        $value = getenv($name);
+        $value = $environmentValues[$name] ?? false;
         if ($value !== false && $value !== '') {
             $config[$key] = $key === 'timeout_seconds' ? (float)$value : (string)$value;
         }
     }
 
+    // An app-owned file wins over environment values; env remains a fallback.
+    $config = array_replace($config, $local);
     $config['base_url'] = rtrim((string)$config['base_url'], '/');
     $config['timeout_seconds'] = max(1.0, (float)$config['timeout_seconds']);
+    return $config;
+}
+
+function ok_core_api_config(): array
+{
+    static $config = null;
+    if (is_array($config)) return $config;
+    $localPath = __DIR__ . '/ok_core_api_local.php';
+    $local = is_file($localPath) ? require $localPath : [];
+    $config = ok_core_api_resolve_config(is_array($local) ? $local : [], getenv());
     return $config;
 }
 
@@ -240,7 +239,7 @@ function ok_core_api_get_groups(string $ssoSub): array
 }
 
 function ok_core_api_put_fragment(
-    int $experienceKnowledgeId,
+    int|string $experienceKnowledgeId,
     string $ssoSub,
     array $payload
 ): array {
@@ -253,7 +252,7 @@ function ok_core_api_put_fragment(
 }
 
 function ok_core_api_delete_fragment(
-    int $experienceKnowledgeId,
+    int|string $experienceKnowledgeId,
     string $ssoSub,
     int $sourceRevision,
     string $sourceDeletedAt

@@ -30,6 +30,7 @@ function ok_core_get_user_groups(mysqli $forest, int $userId): array
         return [
             'status' => 'error',
             'message' => $error->getMessage(),
+            'error_code' => $error instanceof OkCoreApiException ? $error->errorCode() : 'GROUP_LOOKUP_FAILED',
             'groups' => [],
         ];
     }

@@ -1137,56 +1137,24 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         showTriggerDisplay();
     }
 
-    selectShareOrganization (){// 右クリックメニューを非表示
-        document.getElementById('t_Process_conmenu').style.display = "none";
-        const selected_node_id = defaultThinkingProcess.ownNetwork.getSelection().nodes[0];
-        const selected_node_group = defaultThinkingProcess.nodes.get(selected_node_id).group;
-
-        // group_selectから動的に組織リストを取得
-        const groupSelect = document.getElementById('group_select');
-        const options = groupSelect.options;
-        
-        // 組織リストを動的に作成
-        let organizationList = "共有する組織を選択してください:\n\n";
-        let organizationMap = {}; // 番号と組織の対応付け
-        
-        let optionIndex = 1;
-        for (let i = 0; i < options.length; i++) {
-            if (options[i].value !== "") { // 空のoption要素は除外
-                organizationList += optionIndex + ". " + options[i].text + "\n";
-                organizationMap[optionIndex.toString()] = {
-                    value: options[i].value,
-                    text: options[i].text
-                };
-                optionIndex++;
-            }
-        }
-        
-        organizationList += "\n組織番号を入力 (1-" + (optionIndex - 1) + "):";
-        
-        const selectedNumber = prompt(organizationList, "1");
-        
-        if (selectedNumber !== null && selectedNumber.trim() !== "") {
-            if (organizationMap[selectedNumber]) {
-                const selectedOrg = organizationMap[selectedNumber];
-                console.log("選択された組織: " + selectedOrg.text + " (ID: " + selectedOrg.value + ")");
-
-                // 共有するノードの content を取得して渡す
-                const selNode = defaultThinkingProcess.nodes.get(selected_node_id) || {};
-                // ノードのラベルは改行を含むことがあるので空白に置換して送る
-                const selected_contents = (selNode.label || '').toString().replace(/\n+/g, ' ').trim();
-                this.shareKnowledgeFragmentToOrganization(selectedOrg.value, selected_node_id, selected_contents);
-
-                alert("組織 " + selectedOrg.text + " へ共有しました。");
-            } else {
-                alert("無効な番号です。もう一度やり直してください。");
-            }
-        } else if (selectedNumber === null) {
-            // キャンセルされた場合
-            console.log("組織選択がキャンセルされました");
-        } else {
-            alert("組織を選択してください。");
-        }
+    async selectShareOrganization() {
+        if (this.shareOrganizationLoading) return;
+        const menu = document.getElementById('t_Process_conmenu');
+        if (menu) menu.style.display = 'none';
+        const nodeId = this.ownNetwork.getSelection().nodes[0];
+        if (nodeId == null || !this.nodes.get(nodeId)) { alert('共有するノードを選択してください。'); return; }
+        this.shareOrganizationLoading = true;
+        try {
+            const group = await window.ForestOkCoreSharing.chooseGroup();
+            if (!group) return;
+            if (this.ownNetwork.getSelection().nodes[0] !== nodeId) throw new Error('選択ノードが変わりました。共有するノードを選択し直してください。');
+            const node = this.nodes.get(nodeId);
+            if (!node) throw new Error('共有対象のノードがありません。選択し直してください。');
+            await this.shareKnowledgeFragmentToOrganization(group.group_id, nodeId,
+                String(node.label || '').replace(/\n+/g, ' ').trim());
+        } catch (error) {
+            alert(error.message || '保存結果を確認できません。再操作する前にKFと送信状態を確認してください。');
+        } finally { this.shareOrganizationLoading = false; }
     }
 
     shareKnowledgeFragmentToOrganization(organizationId, nodeId, selected_contents = '') {
@@ -1196,7 +1164,7 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             return;
         }
 
-        console.log('Sharing process node ID:', nodeId, 'to organization ID:', organizationId);
+
 
         // 学び(lesson)のテキストエリアを収集してサーバへ保存
         try {
@@ -1220,22 +1188,25 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
                 postData.process_node_id = nodeId; // 互換性のため process_node_id も送る
             }
 
-            console.log('Prepared post data for sharing:', postData);
+
 
             // 送信
-            $.ajax({
+            return new Promise((resolve, reject) => $.ajax({
                 url: "../php/thinking_edit_processmap_maneger.php",
                 type: "POST",
+                dataType: 'json',
                 data: postData,
                 success: function(resp) {
-                    console.log('externalised_contents 保存成功:', resp);
+                    window.ForestOkCoreSharing.notify(resp);
+                    resolve(resp);
                 },
-                error: function(xhr, status, err) {
-                    console.error('save fragment error:', status, err, xhr.responseText);
+                error: function(xhr) {
+                    reject(new Error(xhr.responseJSON && xhr.responseJSON.message
+                        || '保存結果を確認できません。再操作する前にKFと送信状態を確認してください。'));
                 }
-            });
+            }));
         } catch (e) {
-            console.error('lesson 保存処理で例外が発生しました:', e);
+            return Promise.reject(e);
         }
     }
 
