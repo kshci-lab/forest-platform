@@ -11,4 +11,3 @@ php/sso_local.php
 # SSO credential files
 php/sso_local.php
 php/sso_production.php
-php/hcimlab_sso.php
