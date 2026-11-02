@@ -2,7 +2,7 @@
 	/*index.phpでシート名を表示する*/
 	function getMapname(){
 
-		require "connect_db.php";
+		require "../php/connect_db.php";
 
 		$sql = "SELECT * FROM maps WHERE map_id = ".$_SESSION["MAPID"]."";
 
@@ -23,7 +23,7 @@
 	/*select_sheet.phpで既に作成済みのシートを表示する*/
 	function showSheet(){
 
-		require "connect_db.php";
+		require "../php/connect_db.php";
 
 		$id = $_SESSION['USERID'];
 
@@ -41,7 +41,7 @@
 	/*select_sheet.phpからシートを新規作成する*/
 	function createSheet(){
 
-		require "connect_db.php";
+		require "../php/connect_db.php";
 		date_default_timezone_set('Asia/Tokyo');
 
 		$_SESSION["MAPID"] = rand(); //ここでセッションが定義されているらしい
@@ -111,7 +111,7 @@
 	//2024-10-07 使用なし
 	function createDocument(){
 
-		require "connect_db.php";
+		require "../php/connect_db.php";
 		date_default_timezone_set('Asia/Tokyo');
 
 		$_SESSION["MAPID"] = rand();
@@ -145,7 +145,7 @@
 	}
 
 	function deleteSheet(){
-		require "connect_db.php";
+		require "../php/connect_db.php";
 
 		$deleted = 0;
 		$updated_at = date("Y-m-d H:i:s");
@@ -173,7 +173,7 @@
 
 	//2022-11-24 shimizu
 	function deleteDocument(){
-		require "connect_db.php";
+		require "../php/connect_db.php";
 
 		$deleted = 0;
 		$updated_at = date("Y-m-d H:i:s");
@@ -193,7 +193,7 @@
 	// index.phpで，ユーザのMT時間一覧を表示する
 	function get_mttiming(){
 
-		require "connect_db.php";
+		require "../php/connect_db.php";
 
 		$id = $_SESSION['USERID'];
 	  $sql = " SELECT mt_time FROM mt_timing WHERE user_id = '$id' ORDER BY mt_time DESC";

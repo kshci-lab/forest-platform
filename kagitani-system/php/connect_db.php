@@ -19,7 +19,7 @@ if ($isProduction) {
 	$db_user = "root";
 	$db_password = "kslabkslab";
 } else {
-	$db_host = "localhost";
+	$db_host = "localhost:8889";
 	$db_user = "root";
 	$db_password = "root";
 }
