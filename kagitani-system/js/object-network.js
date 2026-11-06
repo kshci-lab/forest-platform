@@ -2437,7 +2437,10 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
         // デフォルトの右クリックメニューを無効化
         params.event.preventDefault();
 
-        if (this.isViewingPastData) return;
+        if (this.isViewingPastData) {
+            this.onNodeDeselectedForToolbar();
+            return;
+        }
 
         const nodeId = this.ownNetwork.getNodeAt(params.pointer.DOM);
         if (nodeId) {
@@ -2446,10 +2449,202 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             
             // onNodeSelectedForToolbarと同じ形式のパラメータを渡してツールバーを表示
             this.onNodeSelectedForToolbar({ nodes: [nodeId] });
+            this.ensureAiSuggestionButton(nodeId);
         } else {
             // ノード以外の場所が右クリックされた場合は非表示にする
             this.onNodeDeselectedForToolbar();
         }
+    }
+
+    ensureAiSuggestionButton(nodeId) {
+        const button = document.getElementById('ask_ai_suggestion');
+        if (!button) return;
+        button.dataset.nodeId = nodeId;
+        if (button.dataset.handlerBound === 'true') return;
+        button.dataset.handlerBound = 'true';
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const targetId = button.dataset.nodeId;
+            if (targetId) this.requestAiSuggestion(targetId);
+        });
+    }
+
+    async requestAiSuggestion(nodeId) {
+        const node = nodeId ? this.nodes.get(nodeId) : null;
+        if (!node) return;
+        const dialog = this.getAiSuggestionDialog();
+        const content = dialog.querySelector('[data-ai-content]');
+        const close = dialog.querySelector('[data-ai-close]');
+        const heading = dialog.querySelector('h2');
+        if (heading) heading.textContent = `「${node.label || node.content || '選択ノード'}」についての提案`;
+        content.textContent = '提案を作成しています…';
+        close.disabled = true;
+        dialog.showModal();
+
+        const connected = this.ownNetwork.getConnectedEdges(nodeId)
+            .map((edgeId) => this.edges.get(edgeId))
+            .filter(Boolean);
+        const neighbors = connected.map((edge) => {
+            const otherId = String(edge.from) === String(nodeId) ? edge.to : edge.from;
+            const other = this.nodes.get(otherId);
+            return other ? { content: other.label || other.content || '', group: other.group || '' } : null;
+        }).filter(Boolean);
+        const parentCandidates = connected
+            .filter((edge) => String(edge.to) === String(nodeId))
+            .map((edge) => this.nodes.get(edge.from))
+            .filter(Boolean);
+        const childCandidates = connected
+            .filter((edge) => String(edge.from) === String(nodeId))
+            .map((edge) => this.nodes.get(edge.to))
+            .filter(Boolean);
+
+        try {
+            const response = await fetch('php/ai_goal_means_suggestion.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    node: { group: node.group || '', content: node.label || node.content || '' },
+                    parents: parentCandidates.map((item) => item.label || item.content || ''),
+                    children: childCandidates.map((item) => item.label || item.content || ''),
+                    neighbors
+                })
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || '提案を取得できませんでした。');
+            content.replaceChildren();
+            const intro = document.createElement('p');
+            intro.textContent = result.summary || '次のような案が考えられます。';
+            content.appendChild(intro);
+            (result.suggestions || []).forEach((suggestion) => {
+                const isMeans = suggestion.type === '手段';
+                const card = document.createElement(isMeans ? 'button' : 'section');
+                if (isMeans) {
+                    card.type = 'button';
+                    card.addEventListener('click', () => this.addAiSuggestedMeans(nodeId, suggestion.content, card));
+                }
+                card.style.cssText = `display:block;width:100%;box-sizing:border-box;text-align:left;padding:12px;margin:10px 0;border:1px solid ${isMeans ? '#93c5fd' : '#d8dee8'};border-radius:8px;background:${isMeans ? '#f8fbff' : '#fff'};${isMeans ? 'cursor:pointer;' : ''}`;
+                const title = document.createElement('strong');
+                title.textContent = `${suggestion.type || '提案'}：${suggestion.content || ''}`;
+                const reason = document.createElement(isMeans ? 'span' : 'p');
+                if (isMeans) reason.style.cssText = 'display:block;margin-top:6px;';
+                reason.textContent = suggestion.reason || '';
+                card.append(title, reason);
+                if (isMeans) {
+                    const action = document.createElement('span');
+                    action.textContent = 'クリックして手段ノードを追加';
+                    action.style.cssText = 'display:block;margin-top:8px;color:#1d4ed8;font-size:12px;font-weight:700;';
+                    card.appendChild(action);
+                }
+                content.appendChild(card);
+            });
+            (result.questions || []).forEach((question) => {
+                const p = document.createElement('p');
+                p.textContent = `確認したいこと：${question}`;
+                content.appendChild(p);
+            });
+        } catch (error) {
+            content.textContent = error.message;
+        } finally {
+            close.disabled = false;
+        }
+    }
+
+    addAiSuggestedMeans(parentNodeId, suggestedContent, actionButton) {
+        const label = String(suggestedContent || '').trim();
+        if (!label || actionButton.disabled) return;
+        const parentNode = this.nodes.get(parentNodeId);
+        if (!parentNode || this.isViewingPastData) {
+            this.showAiSuggestionStatus('追加先ノードが見つからないか、過去データを表示中のため追加できません。');
+            return;
+        }
+        if (parentNode.shape === 'ellipse') {
+            this.showAiSuggestionStatus('このノードには手段を接続できません。');
+            return;
+        }
+        const siblingIds = this.edges.get()
+            .filter((edge) => String(edge.from) === String(parentNodeId))
+            .map((edge) => edge.to);
+        const normalizedLabel = label.replace(/[\s\r\n]/g, '');
+        const duplicate = siblingIds.some((id) => {
+            const sibling = this.nodes.get(id);
+            return sibling && String(sibling.label || '').replace(/[\s\r\n]/g, '') === normalizedLabel;
+        });
+        if (duplicate) {
+            this.showAiSuggestionStatus('同じ内容の子ノードがすでにあります。');
+            return;
+        }
+
+        actionButton.disabled = true;
+        const originalText = actionButton.textContent;
+        actionButton.textContent = '追加しています…';
+        try {
+            const positions = this.ownNetwork.getPositions([parentNodeId]);
+            const parentPosition = positions[parentNodeId] || { x: parentNode.x || 0, y: parentNode.y || 0 };
+            const parentBounds = this.ownNetwork.getBoundingBox(parentNodeId);
+            const newNodeId = this.generateUniqueNumberText();
+            this.addNode(newNodeId, label, 'step', parentPosition.x, parentBounds ? parentBounds.bottom + 80 : parentPosition.y + 80);
+            if (!this.addEdgeBetweenNodes(parentNodeId, newNodeId)) {
+                this.nodes.remove(newNodeId);
+                defaultRecordThinkingProcess.delete_db_Node(newNodeId);
+                throw new Error('親ノードへの接続を作成できませんでした。');
+            }
+
+            this.selectId = newNodeId;
+            sessionStorage.setItem('currentSelectId', newNodeId);
+            this.ownNetwork.selectNodes([newNodeId]);
+            this.ownNetwork.focus(newNodeId, { animation: { duration: 350 } });
+            this.onNodeSelectedForToolbar({ nodes: [newNodeId] });
+            this.ensureAiSuggestionButton(newNodeId);
+
+            const dialog = this.getAiSuggestionDialog();
+            const content = dialog.querySelector('[data-ai-content]');
+            content.replaceChildren();
+            const success = document.createElement('p');
+            success.textContent = `「${label}」を手段ノードとして追加しました。`;
+            content.appendChild(success);
+            actionButton.textContent = '追加済み';
+            actionButton.title = 'この提案は追加済みです。';
+        } catch (error) {
+            actionButton.disabled = false;
+            actionButton.textContent = originalText;
+            actionButton.title = error.message || 'ノードを追加できませんでした。';
+            this.showAiSuggestionStatus(actionButton.title);
+            console.error('AI提案ノードの追加に失敗しました:', error);
+        }
+    }
+
+    showAiSuggestionStatus(message) {
+        const dialog = this.getAiSuggestionDialog();
+        const content = dialog.querySelector('[data-ai-content]');
+        const status = document.createElement('p');
+        status.setAttribute('role', 'status');
+        status.textContent = message;
+        status.style.cssText = 'padding:10px 12px;border-radius:8px;background:#fff7ed;color:#9a3412;';
+        content.prepend(status);
+    }
+
+    getAiSuggestionDialog() {
+        let dialog = document.getElementById('ai_suggestion_dialog');
+        if (dialog) return dialog;
+        dialog = document.createElement('dialog');
+        dialog.id = 'ai_suggestion_dialog';
+        dialog.style.cssText = 'width:min(600px,90vw);max-height:80vh;border:0;border-radius:12px;padding:22px;box-shadow:0 12px 40px #0004;';
+        const heading = document.createElement('h2');
+        heading.textContent = '生成AIからの提案';
+        const content = document.createElement('div');
+        content.dataset.aiContent = '';
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.dataset.aiClose = '';
+        close.textContent = '閉じる';
+        close.style.cssText = 'display:block;margin:16px 0 0 auto;padding:8px 18px;';
+        close.addEventListener('click', () => dialog.close());
+        dialog.append(heading, content, close);
+        dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) dialog.close();
+        });
+        document.body.appendChild(dialog);
+        return dialog;
     }
 
     onNodeSelectedForToolbar(params) {
@@ -2466,14 +2661,14 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             if (!nodeObj) return;
             
             const nodeGroup = nodeObj.group;
-            // 一番上のノード（versions, versionsBro）や各種タグにはツールバーを表示しない
-            if(nodeGroup === "reflection-tag" || nodeGroup === "time-tag" || nodeGroup === "ontology-tag" || nodeGroup === "goal-tag" || nodeGroup === "versions" || nodeGroup === "versionsBro") {
-                console.log("Ignored nodeGroup:", nodeGroup);
-                return; // don't show toolbar for tags or version nodes
-            }
-            
+            const statusOnlyGroups = ["reflection-tag", "time-tag", "ontology-tag", "goal-tag", "versions", "versionsBro"];
+            const hideStatusControls = statusOnlyGroups.includes(nodeGroup);
             const NetworkMenu = document.getElementById('t_Process_conmenu');
             if(!NetworkMenu) return;
+            const statusHeader = NetworkMenu.querySelector('.seg-header');
+            const statusGroup = NetworkMenu.querySelector('.status-btn-group');
+            if (statusHeader) statusHeader.style.display = hideStatusControls ? 'none' : '';
+            if (statusGroup) statusGroup.style.display = hideStatusControls ? 'none' : '';
             
             // Calculate DOM position
             const nodePosition = this.ownNetwork.getPositions([selectId])[selectId];
@@ -2481,23 +2676,24 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const myProcessnetworkElem = document.getElementById("myProcessnetwork");
             const mynetPosition = myProcessnetworkElem ? myProcessnetworkElem.getBoundingClientRect() : {left: 0, top: 0};
             
-            // Position above the node
-            const menuX = domPosition.x + mynetPosition.left;
-            const menuY = domPosition.y + mynetPosition.top - 40; // 40px above node center
-            
-            NetworkMenu.style.left = menuX + 'px';
-            NetworkMenu.style.top = menuY + 'px';
-            NetworkMenu.style.display = 'block';
-            
-            // Allow CSS transition to trigger by adding visible class after display block
-            setTimeout(() => {
-                NetworkMenu.classList.add('visible');
-            }, 10);
+            // AIボタンと進捗ボタンをまとめたパネル全体を、画面内に収まる位置へ表示
+            const anchorX = domPosition.x + mynetPosition.left;
+            const anchorY = domPosition.y + mynetPosition.top;
+            NetworkMenu.style.display = 'flex';
+            NetworkMenu.classList.add('visible');
+            const menuWidth = NetworkMenu.offsetWidth;
+            const menuHeight = NetworkMenu.offsetHeight;
+            const menuX = Math.max(8, Math.min(anchorX - menuWidth / 2, window.innerWidth - menuWidth - 8));
+            let menuY = anchorY - menuHeight - 12;
+            if (menuY < 8) menuY = Math.min(anchorY + 12, window.innerHeight - menuHeight - 8);
+            NetworkMenu.style.left = `${menuX}px`;
+            NetworkMenu.style.top = `${Math.max(8, menuY)}px`;
             
             // Update active state based on node status
             const statusBtns = NetworkMenu.querySelectorAll('.seg-btn');
             statusBtns.forEach(btn => btn.classList.remove('active'));
-            
+            if (hideStatusControls) return;
+
             let currentStatus = nodeObj.status || 'todo';
             if (currentStatus === 'todo') {
                 document.getElementById('object_conmenu0')?.classList.add('active');
@@ -2531,9 +2727,18 @@ class ThinkingProcess { // forestMRN: forest Meeting Reflection Network
             const nodePosition = this.ownNetwork.getPositions([this.selectId])[this.selectId];
             if(nodePosition) {
                 const domPosition = this.ownNetwork.canvasToDOM(nodePosition);
-                const mynetPosition = document.getElementById("myProcessnetwork2").getBoundingClientRect();
-                NetworkMenu.style.left = (domPosition.x + mynetPosition.left) + 'px';
-                NetworkMenu.style.top = (domPosition.y + mynetPosition.top - 40) + 'px';
+                const networkContainer = document.getElementById("myProcessnetwork");
+                if (!networkContainer) return;
+                const rect = networkContainer.getBoundingClientRect();
+                const menuWidth = NetworkMenu.offsetWidth;
+                const menuHeight = NetworkMenu.offsetHeight;
+                const anchorX = domPosition.x + rect.left;
+                const anchorY = domPosition.y + rect.top;
+                const left = Math.max(8, Math.min(anchorX - menuWidth / 2, window.innerWidth - menuWidth - 8));
+                let top = anchorY - menuHeight - 12;
+                if (top < 8) top = Math.min(anchorY + 12, window.innerHeight - menuHeight - 8);
+                NetworkMenu.style.left = `${left}px`;
+                NetworkMenu.style.top = `${Math.max(8, top)}px`;
             }
         }
     }

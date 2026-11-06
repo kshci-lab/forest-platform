@@ -1691,6 +1691,9 @@ try {
                                         
                                     <div id="t_Process_conmenu" class="floating-status-toolbar segmented" role="menu" aria-label="進捗記録メニュー" style="display:none; position:fixed; z-index:999999;">
                                         <div class="seg-header">進捗ステータス</div>
+                                        <div class="ai-suggestion-control">
+                                            <button type="button" id="ask_ai_suggestion" class="ai-suggestion-button">生成AIに聞く</button>
+                                        </div>
                                         <div class="status-btn-group seg-group">
                                             <button type="button" id="object_conmenu0" class="seg-btn" title="未着手" aria-label="未着手">
                                                 <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
