@@ -1,0 +1,9 @@
+{
+  "source_mode": "onedrive",
+  "cache_dir": "/Users/YOUR-NAME/Library/Application Support/forest-platform/meeting-cache",
+  "roots": {
+    "research": { "path": "/Users/YOUR-NAME/Library/CloudStorage/OneDrive-UNIVERSITY/0010-研究MT", "web_url": "" },
+    "general": { "path": "/Users/YOUR-NAME/Library/CloudStorage/OneDrive-UNIVERSITY/0011-全体MT", "web_url": "" }
+  },
+  "participants": { "file_ids": {}, "stems": {} }
+}

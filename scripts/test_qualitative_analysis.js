@@ -1,0 +1,10 @@
+'use strict';const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=require('path');
+const window={};const sandbox={window,document:{addEventListener(){},getElementById(){}},console};vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'../kagitani-system/js/qualitative_analysis.js'),'utf8'),sandbox);
+const labels={a:{name:'計画',category:'調整'},b:{name:'問い直し',category:'調整'},c:{name:'実行',category:'実施'}};
+const items=[['1',['a']],['2',['b']],['3',['c']],['4',['a','b']],['5',[]]].map(([id,lids])=>({id,person_id:'person'+id,person:'架空',created_at:'2026-06-01',origin:'map',codes:Object.fromEntries(lids.map(l=>[l,{}])),proposals:{},review:id==='5'?'hold':'complete',excluded:false}));
+const calc=window.ForestQualitativeMath.compute;
+let r=calc(items,labels,'label',false);assert.equal(r.n,5);assert.equal(r.coded,4);assert.equal(r.links,5);assert.equal(r.hold,1);assert.equal(r.rows.find(r=>r.key==='a').ids.length,2);
+assert.equal(calc(items,labels,'pair',false).rows[0].ids.length,1);assert.equal(calc(items,labels,'category',false).rows.find(r=>r.key==='調整').ids.length,3);
+items[4].proposals.x={labels:['a','b'],adopted:false};r=calc(items,labels,'label',true);assert.equal(r.coded,5);assert.equal(r.links,7);assert.equal(calc(items,labels,'label',false).links,5);
+items[0].excluded=true;assert.equal(calc(items,labels,'label',false).n,4);assert.equal(calc(items,labels,'label',false).rows.find(r=>r.key==='a').ids.length,1);
+console.log('PASS: denominator, multi-label totals, co-occurrence, category union, proposed/adopted distinction and exclusion.');

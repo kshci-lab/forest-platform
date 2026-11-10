@@ -1,0 +1,15 @@
+{
+  "tenant_id": "YOUR-TENANT-GUID",
+  "client_id": "YOUR-APPLICATION-GUID",
+  "cache_dir": "/var/lib/forest-platform/sharepoint-meetings",
+  "certificate_path": "/etc/forest-platform/sharepoint-sync.crt.pem",
+  "private_key_path": "/etc/forest-platform/sharepoint-sync.key.pem",
+  "roots": {
+    "research": { "drive_id": "DOCUMENT-LIBRARY-DRIVE-ID", "folder_id": "0010-RESEARCH-MT-ITEM-ID" },
+    "general": { "drive_id": "DOCUMENT-LIBRARY-DRIVE-ID", "folder_id": "0011-GENERAL-MT-ITEM-ID" }
+  },
+  "participants": {
+    "file_ids": {},
+    "stems": {}
+  }
+}

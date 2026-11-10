@@ -1,0 +1,12 @@
+<details id="curationPanel" class="curation-panel">
+  <summary>重複を確認・整理する（元記録は削除しません）</summary>
+  <p>同じ文章でも、別の日や文脈なら別の記録です。比較して判断してください。資料共有・音声・保存済み分析には自動反映しません。</p>
+  <div class="qa-toolbar"><button type="button" class="btn-secondary" id="curationLoad">現在の期間・参加者で候補を調べる</button><button type="button" class="btn-secondary" id="curationCompare">選択した記録を比較</button><button type="button" class="btn-secondary" id="curationClear">比較用の選択を解除</button><button type="button" class="btn-secondary" id="curationHistory">整理履歴・取り消し</button><button type="button" class="btn-secondary" id="curationCsv">整理確認用CSV</button></div>
+  <p id="curationStatus" role="status" aria-live="polite">候補を調べるか、一覧の「比較に追加」から対象を選んでください。</p>
+  <div id="curationCandidates"></div>
+  <details><summary>任意の記録を選ぶ・整理対象も確認する</summary><label>内容で検索 <input id="curationSearch" type="search"></label><div id="curationRecords"></div></details>
+  <div id="curationComparison" tabindex="-1"></div>
+  <div id="curationJudgment" hidden><label>判断 <select id="curationDecision"><option value="exclude">重複として集計から除外</option><option value="hold">判断を保留（件数は変えない）</option><option value="distinct">重複ではない（件数は変えない）</option></select></label><label>判断理由（必須）<textarea id="curationReason" rows="3"></textarea></label><button type="button" class="btn-primary" id="curationPreview">集計への影響を確認</button><p id="curationPermission"></p></div>
+  <div id="curationHistoryList"></div>
+</details>
+<dialog id="curationDialog" aria-labelledby="curationDialogTitle"><h2 id="curationDialogTitle">集計への影響を確認</h2><div id="curationImpact"></div><p id="curationSaveStatus" role="status"></p><div class="qa-toolbar"><button type="button" class="btn-secondary" id="curationBack">比較に戻る</button><button type="button" class="btn-primary" id="curationConfirm">この判断を確定する</button></div></dialog>

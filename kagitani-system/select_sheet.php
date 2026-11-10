@@ -12,6 +12,14 @@ if (!isset($_SESSION["USERID"])) {
   exit;
 }
 
+$isAdmin = false;
+if (!empty($_SESSION["USERID"])) {
+    $roleRes = $mysqli->query("SELECT role FROM users WHERE user_id = '" . $mysqli->real_escape_string($_SESSION["USERID"]) . "' LIMIT 1");
+    if ($roleRes && $rRow = $roleRes->fetch_assoc()) {
+        $isAdmin = ($rRow['role'] === 'admin');
+    }
+}
+
 if (isset($_POST["logout"])) {
   header("Location: ../logout.php");
   exit;
@@ -115,6 +123,11 @@ if(isset($_POST["record"])){
         <form name="return" method="POST" align="center">
             <input class="button3" type="submit" name="logout" value="ログアウト">
         </form>
+        <?php if ($isAdmin): ?>
+        <div align="center" style="margin-top: 10px;">
+            <a href="admin_dashboard.php" style="display:inline-block; padding: 8px 14px; background: #2563eb; color: #fff; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">📊 研究データダッシュボード</a>
+        </div>
+        <?php endif; ?>
 
         <form method="POST">
         　<div align="center">
