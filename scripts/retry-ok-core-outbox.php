@@ -3,11 +3,12 @@ declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 $limit = 20; $id = null; $force = false; $dryRun = false;
 foreach (array_slice($argv, 1) as $arg) {
+    if (preg_match('/^--environment=(production|local)$/D', $arg, $environmentMatch)) { putenv('APP_ENV=' . $environmentMatch[1]); continue; }
     if ($arg === '--force') $force = true;
     elseif ($arg === '--dry-run') $dryRun = true;
     elseif (preg_match('/^--outbox-id=([1-9][0-9]*)$/D', $arg, $m)) $id = (int)$m[1];
     elseif (preg_match('/^(?:--limit=)?([1-9][0-9]*)$/D', $arg, $m)) $limit = min(100, (int)$m[1]);
-    else { fwrite(STDERR, "Usage: php retry-ok-core-outbox.php [--limit=20] [--dry-run] [--outbox-id=7 --force]\n"); exit(2); }
+    else { fwrite(STDERR, "Usage: php retry-ok-core-outbox.php [--limit=20] [--dry-run] [--outbox-id=7 --force] [--environment=production|local]\n"); exit(2); }
 }
 if ($force && $id === null) { fwrite(STDERR, "--force requires a specific --outbox-id.\n"); exit(2); }
 ob_start(); require_once dirname(__DIR__) . '/php/connect_db.php'; require_once dirname(__DIR__) . '/php/kf_sync_service.php'; ob_end_clean();

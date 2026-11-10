@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+require_once __DIR__ . '/deployment_urls.php';
 
 final class OkCoreApiException extends RuntimeException
 {
@@ -79,7 +80,8 @@ function ok_core_api_resolve_config(array $local, array $environmentValues): arr
 
     // An app-owned file wins over environment values; env remains a fallback.
     $config = array_replace($config, $local);
-    $config['base_url'] = rtrim((string)$config['base_url'], '/');
+    $config['base_url'] = kf_deployment_url((string)$config['base_url'], 'OK-Core', '/api/v1', null, $environmentValues,
+        (bool)($config['auto_detect_urls'] ?? true));
     $config['timeout_seconds'] = max(1.0, (float)$config['timeout_seconds']);
     return $config;
 }

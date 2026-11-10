@@ -56,12 +56,15 @@ async function serve(project, number) {
 }
 
 (async () => {
-    for (const file of ['sqlite_mysqli.php', 'phase2_fixture.php']) put('support/' + file, fs.readFileSync(path.join(__dirname, 'support', file)));
-    for (const file of ['php/ok_core_api_client.php', 'php/kf_sync_service.php', 'api/v1/index.php',
+    for (const file of ['sqlite_mysqli.php', 'phase2_fixture.php']) {
+        const support = path.join(__dirname, 'support', file);
+        put('support/' + file, fs.readFileSync(fs.existsSync(support) ? support : path.join(forestRoot, 'tests/support', file)));
+    }
+    for (const file of ['php/deployment_urls.php', 'php/ok_core_api_client.php', 'php/kf_sync_service.php', 'api/v1/index.php',
         'api/v1/process_map_read_service.php', 'api/v1/context_contract.php', 'api/v1/context_read_service.php',
         'scripts/retry-ok-core-outbox.php']) copyCode('forest', file, 'ForestTest');
     for (const file of ['api/v1/index.php', 'api/v1/service.php', 'api/v1/contract.php',
-        'php/source_context_client.php', 'php/source_context_service.php', 'php/knowledge_group_access.php']) copyCode('core', file, 'CoreTest');
+        'php/deployment_urls.php', 'php/source_context_client.php', 'php/source_context_service.php', 'php/knowledge_group_access.php']) copyCode('core', file, 'CoreTest');
     for (const project of ['forest', 'core']) {
         put(project + '/php/connect_db.php', '<?php require_once ' + quote(path.join(root, 'support/sqlite_mysqli.php'))
             + '; $mysqli=new \\Phase2Fixture\\SqliteMysqli(' + quote(path.join(root, project + '.sqlite')) + ');');

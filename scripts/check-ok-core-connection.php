@@ -3,7 +3,8 @@ declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 $userId = null;
 foreach (array_slice($argv, 1) as $argument) {
-    if (!preg_match('/^--user-id=([1-9][0-9]*)$/D', $argument, $match)) { fwrite(STDERR, "Usage: php check-ok-core-connection.php [--user-id=1]\n"); exit(2); }
+    if (preg_match('/^--environment=(production|local)$/D', $argument, $environmentMatch)) { putenv('APP_ENV=' . $environmentMatch[1]); continue; }
+    if (!preg_match('/^--user-id=([1-9][0-9]*)$/D', $argument, $match)) { fwrite(STDERR, "Usage: php check-ok-core-connection.php [--user-id=1] [--environment=production|local]\n"); exit(2); }
     $userId = (int)$match[1];
 }
 ob_start(); require_once dirname(__DIR__) . '/php/connect_db.php'; require_once dirname(__DIR__) . '/php/kf_sync_service.php'; ob_end_clean();

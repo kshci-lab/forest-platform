@@ -2,6 +2,8 @@
 
 2026-10-30更新。共通仕様・設定・署名・配備手順は、OK-Coreリポジトリの`api/v1/README.md`へ集約しています。機械向け仕様は同じフォルダの`openapi.yaml`。初学者向けには`docs/common-api-beginners-guide.md`があります。
 
+2026-11-06追補：`php/deployment_urls.php`でlocalhostとarchive.kshci-lab.netの標準URLを自動選択する。共有先API・KF送信・SSO・外部リンクのために、配備ごとにURLを書き換える必要はない。再送ジョブ等のCLIには`--environment=production`を一度指定する。認証情報は各環境の非公開設定を継続利用する。詳細・配備対象は共通ガイド第10節「ローカル・本番のURL自動切替」を参照。
+
 ## Forestが担当する処理
 
 1. 共有先をOK-Coreの所属グループAPIから取得する。旧組織知マップのgroup_selectを使用しない。
