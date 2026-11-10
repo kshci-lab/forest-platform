@@ -121,13 +121,9 @@ class AdminWorkbenchLib {
             if(isset($perUser[$uid])){$perUser[$uid]['nodes_total']++;$perUser[$uid]['nodes_completed']+=$completed;$perUser[$uid]['nodes_with_reason']+=$reason;}
         }
 
-        // One thinking map per originating question; duplicate topic tags/links do not add maps.
-        $mapDate = $this->buildDateCondition('q', $basis, $filter['start_date'], $filter['end_date']);
-        $totalMaps = $count("SELECT COUNT(DISTINCT q.node_id)
-            FROM (SELECT node_id, MIN(created_at) AS created_at, MAX(updated_at) AS updated_at
-                  FROM object_nodes WHERE deleted = 0 AND object_nodes_type = 'topic-tag' GROUP BY node_id) q
-            JOIN nodes m ON q.node_id = m.node_id
-            WHERE 1=1 $mapDate $userCondNode", ['maps_total'])[0];
+        // A topic tag can be display-only. Persisted activity proves a thinking map exists.
+        $totalMaps=0;
+        foreach($this->getMapsList($filter) as $record){$totalMaps++;if(isset($perUser[$record['user_id']]))$perUser[$record['user_id']]['maps_total']++;}
 
         // 4. ジャーナル数
         $sql4 = "
@@ -199,6 +195,22 @@ class AdminWorkbenchLib {
             'reflections_total' => $jourReflections + $nodeReflections,
             'lessons_updated' => $updatedLessons
         ]);
+    }
+
+    /** One persisted thinking map per originating question, independent of topic-tag storage. */
+    public function getMapsList(array $filter) {
+        $date=$this->buildDateCondition('q',$filter['date_basis'],$filter['start_date'],$filter['end_date']);
+        $users=$this->buildUserCondition('u',$filter['user_ids']);
+        return $this->pdo->query("SELECT q.node_id,q.created_at,q.updated_at,u.user_id,u.name AS user_name,
+            COALESCE((SELECT nv.content FROM node_versions nv WHERE nv.node_id=q.node_id
+                ORDER BY nv.appeared_at DESC,nv.node_version_id DESC LIMIT 1),
+                (SELECT o.content FROM object_nodes o WHERE o.node_id=q.node_id AND o.deleted=0 AND o.object_nodes_type='topic-tag'
+                ORDER BY o.created_at,o.object_node_id LIMIT 1),'') AS content
+            FROM (SELECT node_id,MIN(created_at) AS created_at,MAX(updated_at) AS updated_at
+                FROM object_nodes WHERE node_id IS NOT NULL GROUP BY node_id
+                HAVING SUM(CASE WHEN deleted=0 THEN 1 ELSE 0 END)>0) q
+            JOIN nodes n ON n.node_id=q.node_id JOIN users u ON u.user_id=n.user_id
+            WHERE 1=1 $date $users ORDER BY q.created_at,q.node_id")->fetchAll();
     }
 
     public function getLessonsList(array $filter) {
@@ -450,12 +462,7 @@ class AdminWorkbenchLib {
         if ($isMeeting) {
             $records = $this->meetings->records($metric, $filter, $this->meetingUsers());
         } elseif ($metric === 'maps_total') {
-            $dateCond = $this->buildDateCondition('q', $filter['date_basis'], $filter['start_date'], $filter['end_date']);
-            $userCond = $this->buildUserCondition('m', $filter['user_ids']);
-            $records = $this->pdo->query("SELECT q.node_id, q.created_at, q.updated_at, m.user_id, u.name AS user_name,
-                (SELECT t.content FROM object_nodes t WHERE t.node_id=q.node_id AND t.deleted=0 AND t.object_nodes_type='topic-tag' ORDER BY t.created_at LIMIT 1) AS content
-                FROM (SELECT node_id, MIN(created_at) AS created_at, MAX(updated_at) AS updated_at FROM object_nodes WHERE deleted=0 AND object_nodes_type='topic-tag' GROUP BY node_id) q
-                JOIN nodes m ON m.node_id=q.node_id JOIN users u ON u.user_id=m.user_id WHERE 1=1 $dateCond $userCond")->fetchAll();
+            $records=$this->getMapsList($filter);
         } elseif (strpos($metric, 'lessons') !== false) {
             $records = $this->getLessonsList($filter);
         } elseif (strpos($metric, 'nodes') !== false) {

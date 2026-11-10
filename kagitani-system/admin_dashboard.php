@@ -321,7 +321,7 @@ $currentUserName = $_SESSION['USERNAME'] ?? '研究者';
           <div class="kpi-header"><span class="kpi-title">1人あたりのマップ作成数</span></div>
           <div id="kpiMapsMean" class="kpi-value">-</div>
           <div class="kpi-subtext">合計 <span id="kpiMapsTotal">-</span> 件 ／ 分散 <span id="kpiMapsVariance">-</span></div>
-          <div class="kpi-subtext">問いごとの整理マップを1件（重複・削除済みを除く）</div>
+          <div class="kpi-subtext">問いごとの整理マップを1件（保存済みの記録から集計）</div>
         </div>
 
         <div class="kpi-card" data-target="lessons">

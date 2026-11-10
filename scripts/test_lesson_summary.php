@@ -2,7 +2,7 @@
 require __DIR__ . '/../kagitani-system/php/admin_workbench_lib.php';
 $p=new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
 $tables=[
-'node_versions(node_version_id INTEGER,content TEXT,node_type_id INTEGER)','node_types(node_type_id INTEGER,class TEXT)',
+'node_versions(node_version_id INTEGER,content TEXT,node_type_id INTEGER,node_id INTEGER,appeared_at TEXT)','node_types(node_type_id INTEGER,class TEXT)',
 'users(user_id INTEGER, name TEXT)', 'maps(map_id INTEGER,user_id INTEGER,name TEXT)',
 'nodes(node_id INTEGER,user_id INTEGER)','map_node_links(map_id INTEGER,node_id INTEGER)',
 'object_nodes(object_node_id INTEGER,node_id INTEGER,content TEXT,deleted INTEGER,object_nodes_type TEXT,status TEXT,purpose TEXT,estimated_time TEXT,created_at TEXT,updated_at TEXT,evaluation_good TEXT,attribution TEXT,evaluation_bad TEXT,attribution_bad TEXT)',
