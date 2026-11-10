@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/php/deployment_urls.php';
 
 session_start();
 require("php/connect_db.php");
@@ -48,7 +49,7 @@ if (isset($_POST["logout"])) {
             <input class="button3" type="submit" name="logout" value="ログアウト">
         </form>
         <div class="ok-core-navigation">
-            <a class="ok-core-button" href="https://archive.kshci-lab.net/software/OK-Core/login.php" target="_blank" rel="noopener noreferrer" aria-label="OK-Coreを別タブで開く">OK-Core</a>
+            <a class="ok-core-button" href="<?php echo htmlspecialchars(kf_deployment_url('https://archive.kshci-lab.net/software/OK-Core/login.php', 'OK-Core', '/login.php'), ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" aria-label="OK-Coreを別タブで開く">OK-Core</a>
         </div>
     </div>
     <!--サイドメニュー　finish-->

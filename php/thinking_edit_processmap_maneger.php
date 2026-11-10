@@ -339,7 +339,7 @@
 				'ok_core' => $result['ok_core']
 			], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 		} catch (Throwable $error) {
-			http_response_code(500);
+			http_response_code($error instanceof InvalidArgumentException ? 400 : 500);
 			echo json_encode([
 				'status' => 'error',
 				'message' => $error->getMessage()

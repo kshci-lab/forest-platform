@@ -106,30 +106,24 @@ function forest_api_trigger_icons(array $triggers): array
     return $icons;
 }
 
-function forest_api_read_thinking_process_map(mysqli $db, int $externalKfId,
-    string $sourceReference = '', string $sourceType = ''): ?array
+function forest_api_read_thinking_process_map(mysqli $db, int $externalKfId, string $sourceReference = '', string $sourceType = ''): ?array
 {
     $fragments = forest_api_process_map_rows(
         $db,
         'SELECT ek.experience_knowledge_id, ek.thought_experience_node_id,
                 ek.experience_type, ek.knowledge_fragment_content
            FROM experience_knowledges ek
-          WHERE ek.experience_knowledge_id = ? AND ek.deleted = 0
+          WHERE ek.experience_knowledge_id = ?
           LIMIT 1',
         'i',
         [$externalKfId]
     );
-    if (!$fragments && $sourceReference === '') {
-        return null;
-    }
     $fragment = $fragments[0] ?? null;
-    if ($sourceReference !== '' && (!$fragment
-        || (string)$fragment['thought_experience_node_id'] !== $sourceReference)) {
-        // Only the API's verified OK-Core grant may provide this legacy reference.
-        // Resolve the exact original node, never another KF with a coinciding ID.
-        $fragment = ['thought_experience_node_id' => $sourceReference,
-            'experience_type' => $sourceType, 'knowledge_fragment_content' => ''];
+    if ($sourceReference !== '' && (!$fragment || (string)$fragment['thought_experience_node_id'] !== $sourceReference)) {
+        $fragment = ['thought_experience_node_id' => $sourceReference, 'experience_type' => $sourceType,
+            'knowledge_fragment_content' => '', 'deleted' => 0];
     }
+    if (!$fragment || (int)$fragment['deleted'] !== 0) return null;
     $reference = trim((string)($fragment['thought_experience_node_id'] ?? ''));
     if ($reference === '') {
         return null;

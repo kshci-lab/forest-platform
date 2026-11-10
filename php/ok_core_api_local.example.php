@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+// App-owned values override Apache/process environment variables.
 return [
     // 'base_url' => 'http://localhost:8888/OK-Core/api/v1',
     'base_url' => 'https://archive.kshci-lab.net/software/OK-Core/api/v1',

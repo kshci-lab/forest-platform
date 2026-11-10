@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__DIR__) . '/php/deployment_urls.php';
 session_start();
 require("../php/connect_db.php");
 require("php/sheet.php");
@@ -146,7 +147,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                  <li class="active"><a href="#tab03" >リフレクション</a></li>
                  <li class="active"><a href="#record_tab" >履歴</a></li> -->
             <!-- <li class="active"><a href="#tab04">過去のマインドマップ</a></li>  hatakeyama -->
-            <li><a class="ok-core-button" href="https://archive.kshci-lab.net/software/OK-Core/login.php" target="_blank" rel="noopener noreferrer" aria-label="OK-Coreを別タブで開く">OK-Core</a></li>
+            <li><a class="ok-core-button" href="<?php echo htmlspecialchars(kf_deployment_url('https://archive.kshci-lab.net/software/OK-Core/login.php', 'OK-Core', '/login.php'), ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" aria-label="OK-Coreを別タブで開く">OK-Core</a></li>
 
             <div class="checkbox_mode">
                 <!-- <input type="checkbox" id="checkbox" class="checkbox" name="check" onclick="CheckClick()"> -->
@@ -1096,8 +1097,9 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/add_node.js"></script>
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
-        <script type="text/javascript" src="../js/thinking-process-network.js?v=<?php echo filemtime(__DIR__ . '/../js/thinking-process-network.js'); ?>"></script>
-	        <script type="text/javascript" src="../js/organizational-map.js?v=20260825-produced-knowledge-details"></script>
+        <script src="../js/ok-core-sharing.js?v=<?php echo filemtime(__DIR__ . '/../js/ok-core-sharing.js'); ?>"></script>
+        <script src="../js/thinking-process-network.js?v=<?php echo filemtime(__DIR__ . '/../js/thinking-process-network.js'); ?>"></script>
+	        <script type="text/javascript" src="../js/organizational-map.js?v=<?php echo filemtime(__DIR__ . '/../js/organizational-map.js'); ?>"></script>
 	        <script type="text/javascript" src="js/organizational-combination-tab.js?v=20260825-include-unassigned-knowledge"></script>
 	        <script type="text/javascript" src="js/past_sheet.js"></script>
         <script type="text/javascript" src="js/record_presentation.js"></script>
@@ -1115,7 +1117,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/ont_inquiry.js"></script>
         <script type="text/javascript" src="js/ont_inquiry_verp.js"></script>
         <script type="text/javascript" src="js/ont_choose_inquiry.js"></script>
-        <script type="text/javascript" src="js/inquiry_search.js?v=20260825-search-priority"></script>
+        <script type="text/javascript" src="js/inquiry_search.js"></script>
         <script type="text/javascript" src="js/ont_choose_input_output.js"></script>
         <script type="text/javascript" src="js/ont_rationality.js"></script>
         <script type="text/javascript" src="js/ont_scenario_inquiry.js"></script>
