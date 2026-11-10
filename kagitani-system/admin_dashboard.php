@@ -5,6 +5,7 @@
  */
 
 session_start();
+require_once __DIR__.'/php/dashboard_auth.php';
 require_once(__DIR__ . "/php/connect_db.php");
 require_once(__DIR__ . "/php/admin_workbench_lib.php");
 
@@ -17,7 +18,7 @@ if (!isset($_SESSION["USERID"])) {
 // パスワード認証処理
 $passwordError = "";
 if (isset($_POST['dashboard_password'])) {
-    if ($_POST['dashboard_password'] === 'kagitani') {
+    if (forestDashboardVerifyPassword((string)$_POST['dashboard_password'])) {
         $_SESSION['DASHBOARD_AUTHENTICATED'] = true;
     } else {
         $passwordError = "パスワードが正しくありません。もう一度入力してください。";

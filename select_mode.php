@@ -128,15 +128,7 @@ if (isset($_POST["logout"])) {
           });
         }
 
-        if (form) {
-          form.addEventListener('submit', function(e) {
-            if (input.value.trim() !== 'kagitani') {
-              e.preventDefault();
-              error.style.display = 'block';
-              input.select();
-            }
-          });
-        }
+        // Password verification is performed only on the server.
       })();
     </script>
 	</body>
