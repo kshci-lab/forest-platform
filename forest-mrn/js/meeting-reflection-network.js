@@ -213,7 +213,11 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
     //エッジ編集できる場合の処理
     enableEditEdge() {
         // エッジを編集するときは，ノードの動きを止める
-        document.getElementById("mrnb_startEditEdge").value="エッジ追加終了";
+        const edgeButton = document.getElementById("mrnb_startEditEdge");
+        if (edgeButton) {
+            edgeButton.setAttribute('data-edge-editing', 'true');
+            edgeButton.value = window.currentLang === 'en' ? 'Finish Adding Edges' : 'エッジ追加終了';
+        }
         this.nodes.update(this.nodes.map(n => {
             return { ...n, fixed: true };
         }));     
@@ -221,7 +225,11 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
 
     //エッジ編集できない場合の処理
     disableEditEdge() {
-        document.getElementById("mrnb_startEditEdge").value="エッジ追加";
+        const edgeButton = document.getElementById("mrnb_startEditEdge");
+        if (edgeButton) {
+            edgeButton.setAttribute('data-edge-editing', 'false');
+            edgeButton.value = window.currentLang === 'en' ? 'Add Edge' : 'エッジ追加';
+        }
         // エッジの編集モードを抜けたときは，ノードの動きを再度始める（ただし，タグノードはFixedにしておく）
         this.edgeEditMode = false;
         this.nodes.update(this.nodes.map(n => {
@@ -243,7 +251,7 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
             }
         }).success((r) => {
             alert("議論データアップロードに成功しました")
-            document.getElementById("meetingUtteranceXmlFileUploader").value = "";
+            if (document.getElementById("meetingUtteranceXmlFileUploader")) document.getElementById("meetingUtteranceXmlFileUploader").value = "";
         });
     }
 
@@ -589,7 +597,7 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
             FeedBackReflection.push(document.getElementById("text"+this.RecruitNodeId[i]).value);
         }
         const node_info = this.nodes.get(this.selectId);
-        document.getElementById("accordion_discussion").innerHTML += "<div id='"+this.selectId+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+node_info.label+"」は"+selectionlist.value+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ this.selectId +"' class='accordion-input'></textarea></div></div>";
+        if (document.getElementById("accordion_discussion")) document.getElementById("accordion_discussion").innerHTML += "<div id='"+this.selectId+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+node_info.label+"」は"+selectionlist.value+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ this.selectId +"' class='accordion-input'></textarea></div></div>";
         const accordionHeaders = document.querySelectorAll('#accordion_discussion .accordion-header');
         accordionHeaders.forEach(header => {
           header.addEventListener('click', function () {
@@ -642,7 +650,7 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
     //ノードがクリックされたときの処理
     networkClick (params){
         //他のところクリックしたら色直す
-        document.getElementById("ontology_feedback").innerHTML = "";
+        if (document.getElementById("ontology_feedback")) document.getElementById("ontology_feedback").innerHTML = "";
         const feedbackarea = document.getElementsByClassName("accordion-item");
         for(var i=0; i<feedbackarea.length; i++){
             feedbackarea[i].style.display = "none";
@@ -662,7 +670,7 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
         if(this.nodes.get(params.nodes[0]).group === "utterance"){
             if(this.OntologyConnectNodeId.indexOf(params.nodes[0]) !== -1){
                 const node_infomation = this.nodes.get(this.OntologyNodeId[this.OntologyConnectNodeId.indexOf(params.nodes[0])]);
-                document.getElementById("ontology_feedback").innerHTML = "<div class='feedback_message'>この発言は「"+node_infomation.label + "」と「" + this.output_input[node_infomation.label] + "」<br>との合理性を意識して発言されたのかもしれません</div>";
+                if (document.getElementById("ontology_feedback")) document.getElementById("ontology_feedback").innerHTML = "<div class='feedback_message'>この発言は「"+node_infomation.label + "」と「" + this.output_input[node_infomation.label] + "」<br>との合理性を意識して発言されたのかもしれません</div>";
             } 
         }
         // if(this.OntologyConnectNodeId.indexOf(params.nodes[0]) !== -1){
@@ -671,7 +679,8 @@ class ForestMRN { // forestMRN: forest Meeting Reflection Network
         // } 
         if(this.RecruitNodeId.indexOf(params.nodes[0]) !== -1){
             this.FeedbackNodeId = params.nodes[0];
-            document.getElementById(this.FeedbackNodeId).style.display = "block";
+            const feedbackNode = document.getElementById(this.FeedbackNodeId);
+            if (feedbackNode) feedbackNode.style.display = "block";
         }
         if(params.nodes.length == 1){
             const net_index = this.ConnectNetworkNodeId.map((n_id, index) => {
@@ -1256,7 +1265,7 @@ const displayUtteranceNodeInList = (display_target_area_id, target_reflection_ti
             timedisplay_area.empty();
             // rightclick()
         });
-        document.getElementById("accordion_discussion").innerHTML = "";      
+        if (document.getElementById("accordion_discussion")) document.getElementById("accordion_discussion").innerHTML = "";      
     });
 }
 
@@ -1312,7 +1321,7 @@ const displayDiscussionMapData = (display_target_area_id, target_reflection_time
             if(n.reason === null){
                 defaultForestMRN.Feedback.push(n.network_node_id);
             }
-            document.getElementById("accordion_discussion").innerHTML += "<div id='"+n.network_node_id+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+defaultForestMRN.nodes.get(n.network_node_id).label+"」は"+n.result_recruit+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ n.network_node_id +"' class='accordion-input'>"+n.reason+"</textarea></div></div>";
+            if (document.getElementById("accordion_discussion")) document.getElementById("accordion_discussion").innerHTML += "<div id='"+n.network_node_id+"' class='accordion-item'><div class='accordion-header' style='font-size:10px'>なぜ「"+defaultForestMRN.nodes.get(n.network_node_id).label+"」は"+n.result_recruit+"されたのですか？</div><div class='accordion-content'><textarea id='text"+ n.network_node_id +"' class='accordion-input'>"+n.reason+"</textarea></div></div>";
         });
         console.log(defaultForestMRN.Feedback);
     }).then(() => {
@@ -1422,6 +1431,7 @@ const getXMLTagInfo = () => {
 const setUploadedXMLData = (file_input_btn_id, xml_area_id) => {
   // 読み込んだXMLファイルの中身を一度，HTML上にDisplayする（要素とかを取得する処理をしやすくするため）
   const btn = document.getElementById(file_input_btn_id);
+  if (!btn) return; // XML upload panel is currently disabled.
   btn.addEventListener("click", () => {
       btn.addEventListener("change", (evt) => {
           const file = evt.target.files;
@@ -1537,7 +1547,8 @@ window.addEventListener('load', () => {
     // 初期表示時点でいくつかのオブジェクトを非表示にする
     document.getElementById("network_container").style.display="none";
     defaultForestMRN = new ForestMRN("mynetwork", "load");
-    setUploadedXMLData("meetingUtteranceXmlFileUploader", "uploaded_meeting_utterance_xml_concent_display_area");
+    // 未使用のXMLアップロードUIは停止中。
+    // setUploadedXMLData("meetingUtteranceXmlFileUploader", "uploaded_meeting_utterance_xml_concent_display_area");
     $("#discussion_log_xml_file_upload_button").on("click", () => {
         // ファイルアップロードボタンにアップロードイベントを付与
         document.getElementById("mynetwork").innerHTML="";

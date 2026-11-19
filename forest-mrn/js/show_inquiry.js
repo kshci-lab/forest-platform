@@ -161,7 +161,8 @@ function showIntention(){
 			atag.href = "#";
 			atag.id = inquiry_id_array[i];
 			atag.onclick = add_node;
-			atag.innerHTML = inquiry_content_array[i];
+			atag.setAttribute("data-ja-text", inquiry_content_array[i]);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText(inquiry_content_array[i], window.currentLang || "ja") : inquiry_content_array[i];
 			ultag.appendChild(atag);
 
 
@@ -355,7 +356,8 @@ function showChildInquiry(arr,mode){
 			atag.href = "#";
 			atag.id = c_inquiry_id_array[i];
 			atag.onclick = add_node;
-			atag.innerHTML = c_inquiry_content_array[i];
+			atag.setAttribute("data-ja-text", c_inquiry_content_array[i]);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText(c_inquiry_content_array[i], window.currentLang || "ja") : c_inquiry_content_array[i];
 			ultag.appendChild(atag);
 
 		}

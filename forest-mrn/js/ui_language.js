@@ -226,6 +226,7 @@
     if (document.body) {
       document.body.classList.toggle("lang-en", lang === "en");
     }
+    applyEdgeEditButtonLanguage(lang);
     applyTriggerAreaLanguage(lang);
     applyLessonDisplayLanguage(lang);
     if (window.setInquiryLang) {
@@ -233,6 +234,17 @@
     } else if (window.applyInquiryLanguageToCurrentArea) {
       window.applyInquiryLanguageToCurrentArea(lang);
     }
+  }
+
+  function applyEdgeEditButtonLanguage(lang) {
+    ['mrnb_startEditEdge', 'process_startEditEdge'].forEach(function(id) {
+      var button = document.getElementById(id);
+      if (!button) return;
+      var editing = button.getAttribute('data-edge-editing') === 'true';
+      button.value = lang === 'en'
+        ? (editing ? 'Finish Adding Edges' : 'Add Edge')
+        : (editing ? 'エッジ追加終了' : 'エッジ追加');
+    });
   }
 
   function applyTriggerAreaLanguage(lang) {
@@ -243,14 +255,7 @@
     var isOpen = !!triggerActivity;
     var jaClosed = " \uFF0B \u6D3B\u52D5\u3092\u5165\u529B";
     var jaOpen = " \u00D7 \u9589\u3058\u308B";
-    var jaOptions = [
-      "-\u6D3B\u52D5\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044-",
-      "\u601D\u8003\u652F\u63F4",
-      "\u4F1A\u8B70\u5185\u7701",
-      "\u4F1A\u8B70",
-      "\u8CC7\u6599\u4F5C\u6210",
-      "\u8CC7\u6599\u691C\u8A0E"
-    ];
+
 
     if (triggerButton) {
       triggerButton.value = lang === "en"
@@ -259,18 +264,10 @@
     }
 
     if (triggerActivity) {
-      var optionTexts = lang === "en"
-        ? [
-            "- Select an activity -",
-            "Thinking Support",
-            "Meeting Reflection",
-            "Meeting",
-            "Document Creation",
-            "Document Review"
-          ]
-        : jaOptions;
-      for (var i = 0; i < triggerActivity.options.length && i < optionTexts.length; i += 1) {
-        triggerActivity.options[i].text = optionTexts[i];
+      for (var i = 0; i < triggerActivity.options.length; i += 1) {
+        var option = triggerActivity.options[i];
+        var original = option.value || '-何の活動を行いましたか？-';
+        option.text = window.translateThinkingProcessText ? window.translateThinkingProcessText(original, lang) : original;
       }
     }
 
@@ -285,6 +282,15 @@
         ? "Add as Node"
         : "\u30CE\u30FC\u30C9\u3068\u3057\u3066\u8FFD\u52A0";
     }
+    [['triggerFromList','ノードとして追加'], ['triggerMapShow','マインドマップを表示']].forEach(function(item) {
+      var control = document.getElementById(item[0]);
+      if (control) control.value = window.translateThinkingProcessText ? window.translateThinkingProcessText(item[1], lang) : item[1];
+    });
+    [['trigger_time','活動日時'], ['trigger_activity','活動の種類'], ['trigger_content','きっかけの内容']].forEach(function(item) {
+      var control = document.getElementById(item[0]);
+      if (control) control.setAttribute('aria-label', window.translateThinkingProcessText ? window.translateThinkingProcessText(item[1], lang) : item[1]);
+    });
+    if (window.applyThinkingProcessDisplayLanguage) window.applyThinkingProcessDisplayLanguage();
   }
 
   window.applyTriggerAreaLanguage = applyTriggerAreaLanguage;

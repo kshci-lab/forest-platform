@@ -1,59 +1,4 @@
-// 初期設定（allボタンを押した時の関数定義）
-//動的ではない
-//いったんHTMLを空にする
-$(function(){
-
-	$("div#testxml").html("");
-
-});
-
-// XML読み込み
-function c_xmlLoad(){
-
-	// $("div#intention").html("");
-	$("div#testxml").html("");
-
-	$.ajax({
-
-		url:'js/hozo.xml',
-		type:'get',
-		dataType:'xml',
-		timeout:1000,
-		success:c_parse_xml
-
-	});
-
-}
-
-// XMLデータを取得
-function c_parse_xml(xml,status){
-
-	if(status!='success')return;
-	xml = window.filterForestInquiryOntology(xml);
-	$(xml).find('W_CONCEPTS').each(function(){
-		c_disp.call(this);
-	});
-}
-
-// HTML生成関数
-function c_disp(){
-
-	//console.log(this);　
-	//上と下のthisは法造のノード情報，親子関係を全て取得している．
-
-	//各要素を変数に格納
-	var $concept_tag = $(this).find('CONCEPT');
-	//各要素を変数に格納
-	var $concept_tag = $(this).find('CONCEPT');
-	var $label = $(this).find('LABEL');
-	var $concept = $(this).find('SLOT').text();
-	var $parent = $(this).find('R_CONST').text();
-
-	// 言語切替用: グローバル window.currentLang (default 'ja')
-	var lang = window.currentLang || 'ja';
-	// 問い文の辞書（グローバルに保持して他関数からも参照できるようにする）
-	// NOTE: showGeneration() からも参照されるため、ここでローカル var に閉じない。
-	var inquiryDict = window.inquiryDict || (window.inquiryDict = {
+var inquiryDict = window.inquiryDict || (window.inquiryDict = {
 	'時間的制約を考慮すると、その計画は現実的ですか？': { ja: '時間的制約を考慮すると、その計画は現実的ですか？', en: 'Considering time constraints, is the plan realistic?' },
 	'実践は行いましたか？': { ja: '実践は行いましたか？', en: 'Did you carry out the practice?' },
 	'どのようなスキルの向上を目掛けていますか？': { ja: 'どのようなスキルの向上を目掛けていますか？', en: 'What skills are you aiming to improve?' },
@@ -187,6 +132,80 @@ function c_disp(){
 	});
 	window.inquiryDict = inquiryDict;
 
+// Shared by initial, Concept_id-adaptive, presentation and scenario renderers.
+window.translateInquiryText = function(text, lang) {
+    var original = String(text == null ? '' : text);
+    var entry = window.inquiryDict[original];
+    return entry && entry[lang || window.currentLang || 'ja'] || original;
+};
+
+window.applyInquiryLanguageToCurrentArea = function(lang) {
+    var links = document.querySelectorAll('.inquiry_area #testxml a, .inquiry_area #ont a, .inquiry_area #intention a, .inquiry_area #rationality a');
+    for (var i = 0; i < links.length; i++) {
+        var original = links[i].getAttribute('data-ja-text');
+        if (original === null) {
+            original = links[i].textContent;
+            links[i].setAttribute('data-ja-text', original);
+        }
+        var translated = window.translateInquiryText(original, lang);
+        if (links[i].textContent !== translated) links[i].textContent = translated;
+    }
+    if (window.applyInquirySearch) window.applyInquirySearch();
+};
+
+// 初期設定（allボタンを押した時の関数定義）
+//動的ではない
+//いったんHTMLを空にする
+$(function(){
+
+	$("div#testxml").html("");
+
+});
+
+// XML読み込み
+function c_xmlLoad(){
+
+	// $("div#intention").html("");
+	$("div#testxml").html("");
+
+	$.ajax({
+
+		url:'js/hozo.xml',
+		type:'get',
+		dataType:'xml',
+		timeout:1000,
+		success:c_parse_xml
+
+	});
+
+}
+
+// XMLデータを取得
+function c_parse_xml(xml,status){
+
+	if(status!='success')return;
+	xml = window.filterForestInquiryOntology(xml);
+	$(xml).find('W_CONCEPTS').each(function(){
+		c_disp.call(this);
+	});
+}
+
+// HTML生成関数
+function c_disp(){
+
+	//console.log(this);　
+	//上と下のthisは法造のノード情報，親子関係を全て取得している．
+
+	//各要素を変数に格納
+	var $concept_tag = $(this).find('CONCEPT');
+	//各要素を変数に格納
+	var $concept_tag = $(this).find('CONCEPT');
+	var $label = $(this).find('LABEL');
+	var $concept = $(this).find('SLOT').text();
+	var $parent = $(this).find('R_CONST').text();
+
+
+
 	for(var i=0; i<$concept_tag.length; i++){
 		if($concept_tag[i].getAttribute('instantiation') == undefined){
 			//インスタンスがない
@@ -220,12 +239,8 @@ function c_disp(){
 							atag.href = '#';
 							atag.id = $id;
 							atag.onclick = add_node;
-							// 問い文を言語で切り替え
-							if (inquiryDict[$inquiry_content]) {
-								atag.innerHTML = inquiryDict[$inquiry_content][lang];
-							} else {
-								atag.innerHTML = (lang === 'en') ? $inquiry_content : $inquiry_content;
-							}
+							atag.setAttribute('data-ja-text', $inquiry_content);
+							atag.textContent = window.translateInquiryText($inquiry_content, window.currentLang || 'ja');
 							ultag.appendChild(atag);
 						}
 					}
@@ -242,18 +257,13 @@ function showGeneration(){
 	$("div#rationality").html("");	//[合理性]　を空白に
 	// console.log("showGeneration");
 	c_xmlLoad();
-	return;
-	var infoHeader = inquiryDict['【情報の表出化】'] ? inquiryDict['【情報の表出化】'][lang] : (lang === 'en' ? '[Externalized Information]' : '【情報の表出化】');
-	// Section header for 【理由・目的】
-	var reasonHeader = inquiryDict['【理由・目的】'] ? inquiryDict['【理由・目的】'][lang] : (lang === 'en' ? '[Reason/Purpose]' : '【理由・目的】');
-	// Section header for 【合理性】
-	var rationalityHeader = inquiryDict['【合理性】'] ? inquiryDict['【合理性】'][lang] : (lang === 'en' ? '[Rationality]' : '【合理性】');
+
 }
 
 // 言語切替イベント (index.php から呼び出し)
 window.setInquiryLang = function(lang) {
-	window.currentLang = lang;
-	showGeneration();
+	window.currentLang = lang === 'en' ? 'en' : 'ja';
+	window.applyInquiryLanguageToCurrentArea(window.currentLang);
 };
 
 // index.phpを読み込むたびに関数実行
