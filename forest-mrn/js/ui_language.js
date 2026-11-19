@@ -99,7 +99,7 @@
       logoutButton: "Logout",
       sheetSelectButton: "Back to Sheet Selection",
       tabMain: "Thinking Support",
-      tabOk: "OK-Core",
+      tabOK: "OK-Core",
       tabOrg: "Organizational Knowledge Map",
       modeOption0: "Thinking Support Mode",
       modeOption1: "Document Creation Prep Mode",
