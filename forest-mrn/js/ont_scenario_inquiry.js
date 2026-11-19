@@ -97,7 +97,8 @@ function recommend_disp(){
 			atag.id = $id;
 			atag.setAttribute("concept_id", $concept_id);
 			atag.onclick = Toi_Append;
-			atag.innerHTML = $inquiry_content;
+			atag.setAttribute("data-ja-text", $inquiry_content);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 			ultag.appendChild(atag);
 
 		}
@@ -125,7 +126,8 @@ function recommend_disp(){
 			atag.id = $id;
 			atag.setAttribute("concept_id", $concept_id);
 			atag.onclick = Toi_Append;
-			atag.innerHTML = $inquiry_content;
+			atag.setAttribute("data-ja-text", $inquiry_content);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 			ultag.appendChild(atag);
 
 
@@ -208,7 +210,8 @@ function recommend_disp(){
 											atag.id = $id;
 											atag.setAttribute("concept_id", $concept_id);
 											atag.onclick = Toi_Append;
-											atag.innerHTML = $inquiry_content;
+											atag.setAttribute("data-ja-text", $inquiry_content);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 											ultag.appendChild(atag);
 
 										}
@@ -281,7 +284,8 @@ function recommend_disp(){
 														atag.id = $id;
 														atag.setAttribute("concept_id", $concept_id);
 														atag.onclick = Toi_Append;
-														atag.innerHTML = $inquiry_content;
+														atag.setAttribute("data-ja-text", $inquiry_content);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 														ultag.appendChild(atag);
 
 
@@ -360,7 +364,8 @@ function recommend_disp(){
 														atag.id = $id;
 														atag.setAttribute("concept_id", $concept_id);
 														atag.onclick = Toi_Append;
-														atag.innerHTML = $inquiry_content;
+														atag.setAttribute("data-ja-text", $inquiry_content);
+			atag.textContent = window.translateInquiryText ? window.translateInquiryText($inquiry_content, window.currentLang || "ja") : $inquiry_content;
 														ultag.appendChild(atag);
 
 

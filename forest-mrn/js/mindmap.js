@@ -1843,8 +1843,8 @@ function ModeChangeButtonClick() {
       //ここから大槻変更
     }else if(BeforeSelectModeNumber == 3){
       $('#network_container').toggle('fast');
-      document.getElementById('feedback_area').style.display = "none";
-      document.getElementById('xml_upload_area').style.display = "none";
+      // 未使用エリアの表示切替は停止中: document.getElementById('feedback_area').style.display = "none";
+      // 未使用エリアの表示切替は停止中: document.getElementById('xml_upload_area').style.display = "none";
     }
     //ここまで大槻変更
    
@@ -1893,8 +1893,8 @@ function ModeChangeButtonClick() {
       $('#node_slide').toggle('fast');  //
       $('#ImageAddContent').toggle('fast');
       $('#network_container').toggle('fast');
-      document.getElementById('feedback_area').style.display = "none";
-      document.getElementById('xml_upload_area').style.display = "none";
+      // 未使用エリアの表示切替は停止中: document.getElementById('feedback_area').style.display = "none";
+      // 未使用エリアの表示切替は停止中: document.getElementById('xml_upload_area').style.display = "none";
     }
     //ここまで大槻変更
 
@@ -1945,8 +1945,8 @@ function ModeChangeButtonClick() {
       $('#node_slide').toggle('fast');  //
       $('#ImageAddContent').toggle('fast');
       $('#network_container').toggle('fast');
-      document.getElementById('feedback_area').style.display = "none";
-      document.getElementById('xml_upload_area').style.display = "none";
+      // 未使用エリアの表示切替は停止中: document.getElementById('feedback_area').style.display = "none";
+      // 未使用エリアの表示切替は停止中: document.getElementById('xml_upload_area').style.display = "none";
     }
     //ここまで大槻変更
 
@@ -1972,8 +1972,8 @@ function ModeChangeButtonClick() {
     BeforeSelectModeNumber = 2;
     MoveAndExpensionImageArea();
   }else if(num == 3){
-    document.getElementById('feedback_area').style.display = "block";
-    document.getElementById('xml_upload_area').style.display = "block";
+    // 未使用エリアの表示切替は停止中: document.getElementById('feedback_area').style.display = "block";
+    // 未使用エリアの表示切替は停止中: document.getElementById('xml_upload_area').style.display = "block";
     $('#network_container').toggle('fast');
     $('#network_container').css('display','flex');
     $('#jsmind_container').css('width','50%');

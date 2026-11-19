@@ -812,7 +812,11 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
             color = '#60bfa3'; // ノードの背景色
         }
 
-        t_title.innerHTML = "<div id='" + trigger_id + "' class='trigger_title' timestamp='" + t_time + "'><b>"+t_type+"</b></br>" + t_label + " </div>";
+        if (window.createThinkingProcessTriggerTitle) {
+            window.createThinkingProcessTriggerTitle(trigger_id, t_label, t_type, t_time, t_title);
+        } else {
+            t_title.innerHTML = "<div id='" + trigger_id + "' class='trigger_title' timestamp='" + t_time + "'><b>"+t_type+"</b></br>" + t_label + " </div>";
+        }
         if(!node_x){
             node_x = (defaultOrganizational.nodes.get(from_node).x + defaultOrganizational.nodes.get(to_node).x ) /2; //ノードがversionの間に来るように
         }
@@ -1284,7 +1288,7 @@ class Organizational { // forestMRN: forest Meeting Reflection Network
     //ノードがクリックされたときの処理
     networkClick (params){
         //他のところクリックしたら色直す
-        document.getElementById("ontology_feedback").innerHTML = "";
+        if (document.getElementById("ontology_feedback")) document.getElementById("ontology_feedback").innerHTML = "";
         const feedbackarea = document.getElementsByClassName("accordion-item");
         for(var i=0; i<feedbackarea.length; i++){
             feedbackarea[i].style.display = "none";

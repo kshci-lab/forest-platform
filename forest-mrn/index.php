@@ -83,7 +83,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="js/get_thinking.js"></script>
         <script type="text/javascript" src="js/jsmind.screenshot.js"></script>
         <script type="text/javascript" src="js/change_tab.js"></script>
-	        <script type="text/javascript" src="js/meeting-reflection-network.js"></script>
+	        <script type="text/javascript" src="js/meeting-reflection-network.js?v=<?php echo (int)filemtime(__DIR__ . '/js/meeting-reflection-network.js'); ?>"></script>
 	        <link rel="stylesheet" type="text/css" href="css/meeting-reflection-network.css" />
         <script type="text/javascript">
         window.onbeforeunload = function(e) {e.returnValue = "ページを離れようとしています。よろしいですか？";}
@@ -676,6 +676,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
 
                         <!--ここから大槻修正-->
+                        <!-- 未使用: feedback_area / xml_upload_area は一時停止中
                         <div id = "feedback_area" style="display: none">
                             <div id = "ontology_feedback"></div>
                             <div id = "accordion_discussion"></div>
@@ -689,6 +690,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
                             <button id="discussion_log_xml_file_upload_button">アップロード</button>
                             <div id="uploaded_meeting_utterance_xml_concent_display_area" style="display: none"></div>
                         </div>
+                        -->
                         <!--ここまで大槻修正-->
                         <!-- <div class="correct_reason">修正理由</div>
                             <div id="reason" align="center"></div>
@@ -1093,7 +1095,7 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
 
 
         <script type="text/javascript" src="js/second_advice.js"></script>
-        <script type="text/javascript" src="js/mindmap.js"></script>
+        <script type="text/javascript" src="js/mindmap.js?v=<?php echo (int)filemtime(__DIR__ . '/js/mindmap.js'); ?>"></script>
         <script type="text/javascript" src="js/add_node.js"></script>
         <script type="text/javascript" src="../js/node_tag.js"></script>
         <script type="text/javascript" src="../js/ont_choose_thinking.js"></script>
@@ -1114,16 +1116,16 @@ if(isset($_POST["myFileImage"])){ //imageFileImage
         <script type="text/javascript" src="plugins/Modaal-master/dist/js/modaal.min.js"></script>
         <!-- <script src="plugins/Modaal-master/dist/css/modaal.css"></script> -->
         <script type="text/javascript" src="js/inquiry_filter.js"></script>
-        <script type="text/javascript" src="js/ont_inquiry.js"></script>
+        <script type="text/javascript" src="js/ont_inquiry.js?v=<?php echo (int)filemtime(__DIR__ . '/js/ont_inquiry.js'); ?>"></script>
         <script type="text/javascript" src="js/ont_inquiry_verp.js"></script>
         <script type="text/javascript" src="js/ont_choose_inquiry.js"></script>
         <script type="text/javascript" src="js/inquiry_search.js"></script>
         <script type="text/javascript" src="js/ont_choose_input_output.js"></script>
         <script type="text/javascript" src="js/ont_rationality.js"></script>
-        <script type="text/javascript" src="js/ont_scenario_inquiry.js"></script>
+        <script type="text/javascript" src="js/ont_scenario_inquiry.js?v=<?php echo (int)filemtime(__DIR__ . '/js/ont_scenario_inquiry.js'); ?>"></script>
         <script type="text/javascript" src="js/ont_audience_model.js"></script>
         <script type="text/javascript" src="js/upload.js"></script>
-        <script type="text/javascript" src="js/ui_language.js"></script>
+        <script type="text/javascript" src="js/ui_language.js?v=<?php echo (int)filemtime(__DIR__ . '/js/ui_language.js'); ?>"></script>
         <!-- 2022.shimizu -->
         <script type="text/javascript" src="js/html2canvas.min.js"></script>
         <script type="text/javascript" src="js/add_OntologyArea.js"></script>
